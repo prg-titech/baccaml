@@ -59,7 +59,11 @@ let rec to_string_exp exp =
 let rec to_string_t t =
   match t with
   | Ans (exp) ->
-     to_string_exp exp
+     Printf.sprintf "Ans (%s)" (to_string_exp exp)
+  | Let (x', exp, t') ->
+     match x' with
+     | (id', type') ->
+        Printf.sprintf "Let ((%s, %s), %s, %s)" id' (to_string_type type') (to_string_exp exp) (to_string_t t')
 
 let print_exp exp =
   Printf.printf "%s" (to_string_exp exp)
