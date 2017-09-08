@@ -76,6 +76,24 @@ let rec to_string_exp exp =
      let t1 = to_string_t e1 in
      let t2 = to_string_t e2 in
      Printf.sprintf "IfFLE (%s, %s, %s, %s)" x1 x2 t1 t2
+  | CallCls (x', ids1, ids2) ->
+     let rec to_string_ids ids =
+       match ids with
+       | [] -> ""
+       | hd :: tl -> hd ^ (to_string_ids tl)
+     in
+     Printf.sprintf "CallCls (%s, %s, %s)" x' (to_string_ids ids1) (to_string_ids ids2)
+  | CallDir (l', ids1, ids2) ->
+     let rec to_string_ids ids =
+       match ids with
+       | [] -> ""
+       | hd :: tl -> hd ^ (to_string_ids tl)
+     in
+     Printf.sprintf "CallCls (%s, %s, %s)" (to_string_id_l l') (to_string_ids ids1) (to_string_ids ids2)
+  | Save (x1, x2) ->
+     Printf.sprintf "Save (%s, %s)" x1 x2
+  | Restore x ->
+     Printf.sprintf "Restore (%s)" x
 
 and to_string_t t =
   match t with
