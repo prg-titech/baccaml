@@ -1,1 +1,1 @@
-val print_asm: Asm.t -> unit;;
+val f: Asm.prog -> unit;;

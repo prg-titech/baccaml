@@ -103,6 +103,38 @@ and to_string_t t =
      | (id', type') ->
         Printf.sprintf "Let ((%s, %s), %s, %s)" id' (to_string_type type') (to_string_exp exp) (to_string_t t')
 
-(* エントリーポイント *)
-let print_asm asm_t =
-  Printf.printf "%s" (to_string_t asm_t)
+(* fundef to string *)
+let to_string_fundef fundef' =
+  match fundef' with
+  | { name = n; args = a; fargs = f; body = b; ret = r } ->
+     let name_str = to_string_idl n in
+     let args_str = to_string_ids a in
+     let fargs_str = to_string_ids f in
+     let body_str = to_string_t b in
+     let ret_str = to_string_type r in
+     Printf.sprintf "{name = %s; args = %s; fargs = %s; body = %s; ret = %s}" name_str args_str fargs_str body_str ret_str
+
+let rec to_string_floating_point_table lst =
+  match lst with
+  | [] -> ""
+  | hd :: tl ->
+     let (idl, f) = hd in
+     (to_string_idl idl) ^ (Pervasives.string_of_float f) ^ (to_string_floating_point_table lst)
+
+let rec to_string_lst lst =
+  match lst with
+  | [] -> ""
+  | hd :: tl -> "[" ^ hd ^ ", " ^ (to_string_lst tl) ^ "]"
+
+(* Asm.prog to string *)
+let to_string_prog p =
+  match p with
+  | Prog (xs, fundefs, t') ->
+     let table = to_string_floating_point_table xs in
+     let toplevel_function = to_string_lst (List.map to_string_fundef fundefs) in
+     let main_exp = to_string_t t' in
+     Printf.sprintf "Prog (%s, %s, %s)" table toplevel_function main_exp
+
+(* entry point *)
+let f asm_prog =
+  Printf.printf "%s" (to_string_prog asm_prog)
