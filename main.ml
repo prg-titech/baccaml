@@ -12,7 +12,7 @@ let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
 let lexbuf outchan l = (* バッファをコンパイルしてチャンネルへ出力する (caml2html: main_lexbuf) *)
   Id.counter := 0;
   Typing.extenv := M.empty;
-  let emit_virtual lex =
+  let virtualized lex =
     Virtual.f
         (Closure.f
           (iter !limit
@@ -22,12 +22,12 @@ let lexbuf outchan l = (* バッファをコンパイルしてチャンネルへ出力する (caml2htm
                          (Parser.exp Lexer.token lex))))))
   in
   if !is_emit_virtual then
-    ignore (emit_virtual l)
+    EmitVirtual.f (virtualized l)
   else
     Emit.f outchan
            (RegAlloc.f
               (Simm.f
-                 (emit_virtual l)))
+                 (virtualized l)))
 
 let string s = lexbuf stdout (Lexing.from_string s) (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
 
