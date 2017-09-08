@@ -1,7 +1,7 @@
 open Asm
 
-let to_string_id id =
-  match id with
+let to_string_id_l id_l =
+  match id_l with
   | Id.L (s) -> s
 
 let to_string_id_or_imm id_or_imm =
@@ -35,7 +35,7 @@ let rec to_string_exp exp =
   match exp with
   | Nop -> "Nop"
   | Set (i) -> Printf.sprintf "Set (%d)" i
-  | SetL (l) -> Printf.sprintf "SetL (%s)" (to_string_id l)
+  | SetL (l) -> Printf.sprintf "SetL (%s)" (to_string_id_l l)
   | Mov (x')-> Printf.sprintf "Mov (%s)" x'
   | Neg (x')-> Printf.sprintf "Neg (%s)" x'
   | Add (x', y') -> Printf.sprintf "Add (%s, %s)" x' (to_string_id_or_imm y')
@@ -55,8 +55,29 @@ let rec to_string_exp exp =
      let id_or_imm = to_string_id_or_imm y' in
      Printf.sprintf "StDf (%s, %s, %s, %d)" x1 x2 id_or_imm i
   | Comment (s) -> Printf.sprintf "Comment (%s)" s
-    
-let rec to_string_t t =
+  (* virtual instructions *)
+  | IfEq (x', y', e1, e2) ->
+     let t1 = to_string_t e1 in
+     let t2 = to_string_t e2 in
+     Printf.sprintf "IfEq (%s, %s, %s, %s)" x' (to_string_id_or_imm y') t1 t2
+  | IfLE (x', y', e1, e2) ->
+     let t1 = to_string_t e1 in
+     let t2 = to_string_t e2 in
+     Printf.sprintf "IfLE (%s, %s, %s, %s)" x' (to_string_id_or_imm y') t1 t2
+  | IfGE (x', y', e1, e2) ->
+     let t1 = to_string_t e1 in
+     let t2 = to_string_t e2 in
+     Printf.sprintf "IfGE (%s, %s, %s, %s)" x' (to_string_id_or_imm y') t1 t2
+  | IfFEq (x1, x2, e1, e2) ->
+     let t1 = to_string_t e1 in
+     let t2 = to_string_t e2 in
+     Printf.sprintf "IfFEq (%s, %s, %s, %s)" x1 x2 t1 t2
+  | IfFLE (x1, x2, e1, e2) ->
+     let t1 = to_string_t e1 in
+     let t2 = to_string_t e2 in
+     Printf.sprintf "IfFLE (%s, %s, %s, %s)" x1 x2 t1 t2
+
+and to_string_t t =
   match t with
   | Ans (exp) ->
      Printf.sprintf "Ans (%s)" (to_string_exp exp)
