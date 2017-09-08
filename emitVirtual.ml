@@ -20,13 +20,16 @@ let rec to_string_type typ =
   | Type.Bool -> "Bool"
   | Type.Int -> "Int"
   | Type.Float -> "Float"
-  | Type.Fun (hd :: tl, t) ->"Fun (" ^ (to_string_type hd) ^ ", " ^  (to_string_type_list tl) ^ ", " ^ (to_string_type t) ^ ")"
-  | Type.Tuple (hd :: tl) -> "Tuple (" ^ (to_string_type hd) ^ ", " ^ (to_string_type_list tl) ^ ")"
-  | Type.Array (t) -> "Array (" ^ (to_string_type t) ^ ")"
+  | Type.Fun (hd :: tl, t) ->
+     Printf.sprintf "Fun (%s, %s, %s)" (to_string_type hd) (to_string_type_list tl) (to_string_type t)
+  | Type.Tuple (hd :: tl) ->
+     Printf.sprintf "Tuple (%s, %s)" (to_string_type hd) (to_string_type_list tl)
+  | Type.Array (t) ->
+     Printf.sprintf "Array (%s)" (to_string_type t)
   | Type.Var (x) ->
      match !x with
      | None -> "Var (ref None)"
-     | Some v -> "Var ( ref Some (" ^ (to_string_type v) ^ ")"
+     | Some v -> Printf.sprintf "Var (ref Some (%s))" (to_string_type v)
 
 let rec to_string_exp exp =
   match exp with
