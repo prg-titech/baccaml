@@ -1,1 +1,1 @@
-val print_exp: Asm.exp -> unit;;
+val print_asm: Asm.t -> unit;;
