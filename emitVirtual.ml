@@ -1,7 +1,7 @@
 open Asm
 
-let to_string_id_l id_l =
-  match id_l with
+let to_string_idl idl =
+  match idl with
   | Id.L (s) -> s
 
 let to_string_id_or_imm id_or_imm =
@@ -31,12 +31,19 @@ let rec to_string_type typ =
      | None -> "Var (ref None)"
      | Some v -> Printf.sprintf "Var (ref Some (%s))" (to_string_type v)
 
-(* Asm.exp の printer*)
+
+let rec to_string_ids ids =
+  match ids with
+  | [] -> ""
+  | hd :: tl -> hd ^ (to_string_ids tl)
+
+
+(* Asm.exp to string *)
 let rec to_string_exp exp =
   match exp with
   | Nop -> "Nop"
   | Set (i) -> Printf.sprintf "Set (%d)" i
-  | SetL (l) -> Printf.sprintf "SetL (%s)" (to_string_id_l l)
+  | SetL (l) -> Printf.sprintf "SetL (%s)" (to_string_idl l)
   | Mov (x')-> Printf.sprintf "Mov (%s)" x'
   | Neg (x')-> Printf.sprintf "Neg (%s)" x'
   | Add (x', y') -> Printf.sprintf "Add (%s, %s)" x' (to_string_id_or_imm y')
@@ -78,25 +85,15 @@ let rec to_string_exp exp =
      let t2 = to_string_t e2 in
      Printf.sprintf "IfFLE (%s, %s, %s, %s)" x1 x2 t1 t2
   | CallCls (x', ids1, ids2) ->
-     let rec to_string_ids ids =
-       match ids with
-       | [] -> ""
-       | hd :: tl -> hd ^ (to_string_ids tl)
-     in
      Printf.sprintf "CallCls (%s, %s, %s)" x' (to_string_ids ids1) (to_string_ids ids2)
   | CallDir (l', ids1, ids2) ->
-     let rec to_string_ids ids =
-       match ids with
-       | [] -> ""
-       | hd :: tl -> hd ^ (to_string_ids tl)
-     in
-     Printf.sprintf "CallCls (%s, %s, %s)" (to_string_id_l l') (to_string_ids ids1) (to_string_ids ids2)
+     Printf.sprintf "CallCls (%s, %s, %s)" (to_string_idl l') (to_string_ids ids1) (to_string_ids ids2)
   | Save (x1, x2) ->
      Printf.sprintf "Save (%s, %s)" x1 x2
   | Restore x ->
      Printf.sprintf "Restore (%s)" x
 
-(* Asm.t の printer*)
+(* Asm.t to string *)
 and to_string_t t =
   match t with
   | Ans (exp) ->
