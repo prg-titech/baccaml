@@ -121,17 +121,12 @@ let rec to_string_floating_point_table lst =
      let (idl, f) = hd in
      (to_string_idl idl) ^ (Pervasives.string_of_float f) ^ (to_string_floating_point_table lst)
 
-let rec to_string_lst lst =
-  match lst with
-  | [] -> ""
-  | hd :: tl -> "[" ^ hd ^ ", " ^ (to_string_lst tl) ^ "]"
-
 (* Asm.prog to string *)
 let to_string_prog p =
   match p with
   | Prog (xs, fundefs, t') ->
      let table = to_string_floating_point_table xs in
-     let toplevel_function = to_string_lst (List.map to_string_fundef fundefs) in
+     let toplevel_function = String.concat " " (List.map to_string_fundef fundefs) in
      let main_exp = to_string_t t' in
      Printf.sprintf "Prog (%s, %s, %s)" table toplevel_function main_exp
 
