@@ -31,6 +31,7 @@ let rec to_string_type typ =
      | None -> "Var (ref None)"
      | Some v -> Printf.sprintf "Var (ref Some (%s))" (to_string_type v)
 
+(* Asm.exp の printer*)
 let rec to_string_exp exp =
   match exp with
   | Nop -> "Nop"
@@ -95,6 +96,7 @@ let rec to_string_exp exp =
   | Restore x ->
      Printf.sprintf "Restore (%s)" x
 
+(* Asm.t の printer*)
 and to_string_t t =
   match t with
   | Ans (exp) ->
@@ -104,5 +106,6 @@ and to_string_t t =
      | (id', type') ->
         Printf.sprintf "Let ((%s, %s), %s, %s)" id' (to_string_type type') (to_string_exp exp) (to_string_t t')
 
+(* エントリーポイント *)
 let print_asm asm_t =
   Printf.printf "%s" (to_string_t asm_t)
