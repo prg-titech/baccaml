@@ -131,5 +131,5 @@ let to_string_prog p =
      Printf.sprintf "Prog (%s, %s, %s)\n" table toplevel_function main_exp
 
 (* entry point *)
-let f asm_prog =
-  Printf.printf "%s" (to_string_prog asm_prog)
+let f oc asm_prog =
+  Printf.fprintf oc "%s" (to_string_prog asm_prog)

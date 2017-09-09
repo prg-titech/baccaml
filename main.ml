@@ -22,7 +22,8 @@ let lexbuf outchan l = (* バッファをコンパイルしてチャンネルへ出力する (caml2htm
                          (Parser.exp Lexer.token lex))))))
   in
   if !is_emit_virtual then
-    EmitVirtual.f (virtualized l)
+    EmitVirtual.f outchan
+                  (virtualized l)
   else
     Emit.f outchan
            (RegAlloc.f
