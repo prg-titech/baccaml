@@ -1,6 +1,6 @@
 test: test-fib test-ack test-tak test-harmonic test-mandelbrot
 clean:
-	rm -f *.s *.min-caml *.ocamlopt *.gcc *.gcc64 *.cmi *.cmx *.o *.out
+	rm -f *.s *.min-caml *.ocamlopt *.gcc *.gcc64 *.cmi *.cmx *.o *.out *.v
 
 test-fib: fib.min-caml fib.ocamlopt fib.gcc # fib.gcc64
 	time ./fib.min-caml > fib.min-caml.out
