@@ -34,7 +34,11 @@ let string s = lexbuf stdout (Lexing.from_string s) (* Ê¸»úÎó¤ò¥³¥ó¥Ñ¥¤¥ë¤·¤ÆÉ¸½
 
 let file f = (* ¥Õ¥¡¥¤¥ë¤ò¥³¥ó¥Ñ¥¤¥ë¤·¤Æ¥Õ¥¡¥¤¥ë¤Ë½ÐÎÏ¤¹¤ë (caml2html: main_file) *)
   let inchan = open_in (f ^ ".ml") in
-  let outchan = open_out (f ^ ".s") in
+  let outchan =
+    if !is_emit_virtual then
+      open_out (f ^ ".v")
+    else
+      open_out (f ^ ".s") in
   try
     lexbuf outchan (Lexing.from_channel inchan);
     close_in inchan;
