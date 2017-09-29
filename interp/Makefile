@@ -1,7 +1,10 @@
-test:
+build:
 	ocamlc -c interp.ml
 	ocamlc -c interpSpec.ml
-	ocamlc -o run interp.cmo interpSpec.cmo
+	ocamlc -o test interp.cmo interpSpec.cmo
 
 clean:
-	rm -f *.cmi *.cmo run
+	rm -f *.cmi *.cmo test
+
+test: build
+	./test

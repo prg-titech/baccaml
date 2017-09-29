@@ -1,7 +1,5 @@
 open Interp
 
-let add1 = [| Add (0, 1); Halt |]
-;;
 
 (*
 # r0 <- n
@@ -13,13 +11,19 @@ l1:
   r2 += 1;
   if (r2 != r0) goto l1;
 *)
-let sum1 = [| MovImm(0, 1); MovImm(0, 2); Add(2, 1); AddImm(1, 2); Cmp(0, 2); Jne(2); Halt |]
+let sum_n = [| MovImm(0, 1); MovImm(0, 2); Add(2, 1); AddImm(1, 2); Cmp(0, 2); Jne(2); Halt |]
+;;
+
+let add1_spec =
+  Printf.printf "\n=== add spec ===\n";
+  let add = [| Add (0, 1); Halt |] in
+  let res = interp add [|1; 2; 0; 0|] [||] 0 in
+  print_int res.(1)
+;;
+
+let sum_n_spec =
+  Printf.printf "\n=== sum_n spec ===\n";
 ;;
 
 let () =
-  let reg = Array.make 256 0 in
-  let mem = [||] in
-  let pc = 0 in
-  reg.(0) <- 10;
-  let res = interp add1 reg mem pc in
-  print_int res.(1)
+  add1_spec
