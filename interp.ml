@@ -72,20 +72,14 @@ let rec interp (program : instruction array) (reg : int array) (mem : int array)
   | And (x, y) ->
     let r1 = reg.(x) in
     let r2 = reg.(y) in
-    (if r1 = 1 && r2 = 1 then
-       reg.(y) <- 1
-     else
-       reg.(y) <- 0
-    );
+    if r1 = 1 && r2 = 1 then reg.(y) <- 1
+    else reg.(y) <- 0;
     interp program reg mem (pc + 1)
   | Or (x, y) ->
     let r1 = reg.(x) in
     let r2 = reg.(y) in
-    (if r1 = 1 || r2 = 1 then
-       reg.(y) <- 1
-     else
-       reg.(y) <- 0
-    );
+    if r1 = 1 || r2 = 1 then reg.(y) <- 1
+    else reg.(y) <- 0;
     interp program reg mem (pc + 1)
   | Jump address ->
     interp program reg mem address
