@@ -36,9 +36,9 @@ let rec interp (program : instruction array) (reg : int array) (mem : int array)
     let r2 = reg.(y) in
     reg.(y) <- (r1 + r2);
     interp program reg mem (pc + 1)
-  | AddImm (imm, y) ->
-    let r2 = reg.(imm) in
-    reg.(y) <- (imm + r2);
+  | AddImm (x, y) ->
+    let r2 = reg.(y) in
+    reg.(y) <- (x + r2);
     interp program reg mem (pc + 1)
   | Cmp (x, y) ->
     let r1 = reg.(x) in
