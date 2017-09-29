@@ -105,8 +105,7 @@ let rec interp (program : instruction array) (reg : int array) (mem : int array)
     reg
 ;;
 
-(* 以下、テスト用プログラム *)
-let add1 = [| AddImm (0, 1) |]
+let add1 = [| Add (0, 1); Halt |]
 ;;
 
 (*
