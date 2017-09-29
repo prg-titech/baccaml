@@ -81,7 +81,7 @@ let rec interp (program : instruction array) (reg : int array) (mem : int array)
   | Or (x, y) ->
     let r1 = reg.(x) in
     let r2 = reg.(y) in
-    (if r1 = 1 || r2 = 0 then
+    (if r1 = 1 || r2 = 1 then
        reg.(y) <- 1
      else
        reg.(y) <- 0
