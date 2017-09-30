@@ -1,4 +1,4 @@
-open Core.Std
+open Core
 
 (* x86 命令セット *)
 (* オペランドの順番は GAS 形式 *)
@@ -57,12 +57,14 @@ let rec interp (program : instruction array) (reg : int array) (mem : int array)
     interp program mem reg flag (pc + 1)
   | Div x ->
     let r1 = reg.(x) in
-    reg.(0) <- (reg.(0) / r1);
-    reg.(1) <- (reg.(0) mod r1);
+    let n = reg.(0) in
+    reg.(0) <- (n / r1);
+    reg.(1) <- (n mod r1);
     interp program reg mem flag (pc + 1)
   | DivImm x ->
-    reg.(0) <- (reg.(0) / x);
-    reg.(1) <- (reg.(0) mod x);
+    let n = reg.(0) in
+    reg.(0) <- (n / x);
+    reg.(1) <- (n mod x);
     interp program reg mem flag (pc + 1)
   | Sub (x, y) ->
     let r1 = reg.(x) in
@@ -76,14 +78,18 @@ let rec interp (program : instruction array) (reg : int array) (mem : int array)
   | And (x, y) ->
     let r1 = reg.(x) in
     let r2 = reg.(y) in
-    if r1 = 1 && r2 = 1 then reg.(y) <- 1
-    else reg.(y) <- 0;
+    if r1 = 1 && r2 = 1 then
+      reg.(y) <- 1
+    else
+      reg.(y) <- 0;
     interp program reg mem flag (pc + 1)
   | Or (x, y) ->
     let r1 = reg.(x) in
     let r2 = reg.(y) in
-    if r1 = 1 || r2 = 1 then reg.(y) <- 1
-    else reg.(y) <- 0;
+    if r1 = 1 || r2 = 1 then
+      reg.(y) <- 1
+    else
+      reg.(y) <- 0;
     interp program reg mem flag (pc + 1)
   | Jump address ->
     interp program reg mem flag address
