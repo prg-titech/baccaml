@@ -1,0 +1,28 @@
+# program name
+PROGRAM = interpSpec
+
+FILES[] = interp interpSpec
+
+# ocamlfind をつかう場合
+USE_OCAMLFIND = true
+
+# ocamlfind で探してつかうパッケージ
+OCAMLPACKS[] =
+	ounit
+	core
+
+OCAMLCFLAGS += -thread
+OCAMLOPTFLAGS += -thread
+
+# 実行ファイルの生成
+OCamlProgram($(PROGRAM), $(FILES))
+
+# デフォルト動作: バイトコードかネイティブコードのどちらか又は両方の生成
+.DEFAULT: $(if $(BYTE_ENABLED), $(PROGRAM).run) \
+          $(if $(NATIVE_ENABLED), $(PROGRAM).opt)
+
+.PHONY: clean
+clean:
+	rm -f \
+	  $(filter-proper-targets $(glob $(addsuffix .*, $(FILES)))) \
+	  $(PROGRAM).run $(PROGRAM).opt
