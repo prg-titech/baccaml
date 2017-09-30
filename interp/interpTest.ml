@@ -120,12 +120,21 @@ let test_fixture = "Interp" >:::
                        );
 
                      "sum_n" >:: ( fun () ->
-                         let sum_n = [| MovImm(0, 1); MovImm(0, 2); Add(2, 1); AddImm(1, 2); Cmp(0, 2); Jne(2); Add(2, 1); Halt |] in
+                         let sum_n = [| AddImm(1, 0); MovImm(0, 1); MovImm(0, 2); Add(2, 1); AddImm(1, 2); Cmp(0, 2); Jne(3);  Halt |] in
                          let reg = [|10; 0; 0; 0; 0|] in
                          let flag = Array.create 256 0 in
                          let mem = Array.create 256 0 in
                          let res = interp sum_n reg mem flag 0 in
                          assert_equal 55 (res.(1))
+                       );
+
+                     "factorial" >:: ( fun () ->
+                         let fact' = [| AddImm(1, 0); MovImm(1, 1); MovImm(1, 2); Mul(2, 1); AddImm(1, 2); Cmp(0, 2); Jne(3); Halt |] in
+                         let reg = Array.create 256 0 in reg.(0) <- 7;
+                         let flag = Array.create 256 0 in
+                         let mem = Array.create 256 0 in
+                         let res = interp fact' reg flag mem 0 in
+                         assert_equal 5040 (res.(1))
                        );
                    ]
 
