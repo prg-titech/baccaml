@@ -22,8 +22,7 @@ type instruction =
 ;;
 
 let rec interp (program : instruction array) (reg : int array) (mem : int array) (pc : int) : 'a =
-  let operation = Array.get program pc in
-  match operation with
+  match program.(pc) with
   | Mov (x, y) ->
     let op1 = reg.(x) in
     reg.(y) <- op1;
