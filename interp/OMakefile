@@ -1,7 +1,7 @@
 # program name
-PROGRAM = interpSpec
+PROGRAM = interpTest
 
-FILES[] = interp interpSpec
+FILES[] = interp interpTest
 
 # ocamlfind をつかう場合
 USE_OCAMLFIND = true
