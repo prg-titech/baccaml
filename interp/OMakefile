@@ -21,7 +21,7 @@ OCamlProgram($(PROGRAM), $(FILES))
 .DEFAULT: $(if $(BYTE_ENABLED), $(PROGRAM).run) \
           $(if $(NATIVE_ENABLED), $(PROGRAM).opt)
 
-.PHONY: all clean check
+.PHONY: all clean test
 clean:
 	rm -f \
 	  $(filter-proper-targets $(glob $(addsuffix .*, $(FILES)))) \
@@ -31,5 +31,5 @@ clean:
 
 all: $(OCamlProgram $(PROGRAM), $(FILES))
 
-check: all
+test: all
 	./$(PROGRAM)
