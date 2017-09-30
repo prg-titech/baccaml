@@ -100,6 +100,15 @@ let test_fixture = "Interp" >:::
                          assert_equal 1 (res.(1))
                        );
 
+                     "jump" >:: (fun () ->
+                         let jump' = [| Jump(4); AddImm(1, 1); AddImm(1, 1); AddImm(1, 1); AddImm(1, 1); Halt |] in
+                         let reg = [|1; 1; 0|] in
+                         let mem = Array.create 256 0 in
+                         let flag = Array.create 256 0 in
+                         let res = interp jump' reg mem flag 0 in
+                         assert_equal 2 (res.(1))
+                       );
+
                      "load" >:: ( fun () ->
                          let load' = [| Load(0, 1); Add(1, 2); Halt |] in
                          let reg = [|1; 2; 3; |] in
