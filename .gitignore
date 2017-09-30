@@ -43,3 +43,4 @@
 /min-rt/*.cmp
 /test/*
 !/test/*.ml*.v
+/test/*dSYM/
