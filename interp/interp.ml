@@ -13,6 +13,8 @@ type instruction =
   | DivImm of int
   | Sub of int * int
   | SubImm of int * int
+  | Mul of int * int
+  | MulImm of int * int
   | And of int * int
   | Or of int * int
   | Jump of int
@@ -79,6 +81,15 @@ let rec interp (program : program) (reg : register) (mem : memory) (flag : flag)
   | SubImm (x, y) ->
     let r2 = reg.(y) in
     reg.(y) <- (r2 - y);
+    interp program reg mem flag (pc + 1)
+  | Mul (x, y) ->
+    let r1 = reg.(x) in
+    let r2 = reg.(y) in
+    reg.(y) <- (r1 * r2);
+    interp program reg mem flag (pc + 1)
+  | MulImm (x, y) ->
+    let r2 = reg.(y) in
+    reg.(y) <- (x * r2);
     interp program reg mem flag (pc + 1)
   | And (x, y) ->
     let r1 = reg.(x) in

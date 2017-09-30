@@ -62,6 +62,25 @@ let test_fixture = "Interp" >:::
                          assert_equal 1 (res.(3))
                        );
 
+                     "mul" >:: ( fun () ->
+                         let mul' = [| MovImm(2, 1); MovImm(3, 2); Mul(2, 1); Halt|] in
+                         let reg = Array.create 256 0 in
+                         let mem = Array.create 256 0 in
+                         let flag = Array.create 256 0 in
+                         let res = interp mul' reg mem flag 0 in
+                         assert_equal 6 (res.(1))
+                       );
+
+                     "mul_imm" >:: ( fun () ->
+                         let mul_imm = [| Mov(0, 1); MulImm(3, 1); Halt |] in
+                         let reg = Array.create 256 0 in
+                         let mem = Array.create 256 0 in
+                         let flag = Array.create 256 0 in
+                         reg.(0) <- 5;
+                         let res = interp mul_imm reg mem flag 0 in
+                         assert_equal 15 (res.(1))
+                       );
+
                      "or" >:: ( fun () ->
                          let or' = [| Or(0, 1); Halt |] in
                          let reg = Array.create 256 0 in
