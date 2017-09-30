@@ -22,9 +22,14 @@ type instruction =
   | Load of int * int
   | Store of int * int
   | Halt
-;;
 
-let rec interp (program : instruction array) (reg : int array) (mem : int array) (flag : int array) (pc : int) : int array =
+type program = instruction array
+type register = int array
+type memory = int array
+type flag = int array
+type program_counter = int
+
+let rec interp (program : program) (reg : register) (mem : memory) (flag : flag) (pc : program_counter) : register =
   match program.(pc) with
   | Mov (x, y) ->
     let op1 = reg.(x) in
@@ -117,4 +122,3 @@ let rec interp (program : instruction array) (reg : int array) (mem : int array)
     interp program reg mem flag (pc + 1)
   | Halt ->
     reg
-;;
