@@ -13,6 +13,13 @@
 # Binary
 *.o
 
+# omake
+*.omc
+*.lock
+*.opt
+*.cache
+*.omakedb
+
 # Symlink to Architecture-Specific Files
 /asm.ml
 /asm.mli
