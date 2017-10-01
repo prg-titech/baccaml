@@ -2,17 +2,10 @@ open Interp
 open OUnit
 open Core
 
-(* sample asm program for sum_n
- *# r0 <- n
- *# r1 <- 0
- *# r2 <- 0
- *
- * l1:
- * r1 += r2;
- * r2 += 1;
- * if (r2 != r0) goto l1;
- *   r1 += r2;
-*)
+let rec string_of_list f lst =
+  match lst with
+  | [] -> "|]"
+  | h :: t -> "[| " ^ (f h) ^ "; " ^ (string_of_list f t)
 
 (* Test Fixture *)
 let test_fixture = "Interp" >:::
@@ -23,7 +16,7 @@ let test_fixture = "Interp" >:::
                          let mem = [||] in
                          let flag = Array.create 256 0 in
                          let res = interp add reg mem flag 0 in
-                         assert_equal 11 (res.(1))
+                         assert_equal ~printer:string_of_int 11 (res.(1))
                        );
 
                      "add_imm" >:: ( fun () ->
@@ -32,7 +25,7 @@ let test_fixture = "Interp" >:::
                          let mem = [||] in
                          let flag = Array.create 256 0 in
                          let res = interp add_imm reg mem flag 0 in
-                         assert_equal 3 (res.(1))
+                         assert_equal ~printer:string_of_int 3 (res.(1))
                        );
 
                      "mov" >:: ( fun () ->
@@ -41,7 +34,7 @@ let test_fixture = "Interp" >:::
                          let mem = [||] in
                          let flag = Array.create 256 0 in
                          let res = interp mov reg mem flag 0 in
-                         assert_equal 100 (res.(1));
+                         assert_equal ~printer:string_of_int 100 (res.(1));
                        );
 
                      "div" >:: ( fun () ->
@@ -50,7 +43,7 @@ let test_fixture = "Interp" >:::
                          let flag = Array.create 10 0 in
                          let mem = Array.create 10 0 in
                          let res = interp div reg mem flag 0 in
-                         assert_equal 5 (res.(0))
+                         assert_equal ~printer:string_of_int 5 (res.(0))
                        );
 
                      "sub" >:: ( fun () ->
@@ -59,7 +52,7 @@ let test_fixture = "Interp" >:::
                          let mem = Array.create 256 0 in
                          let flag = Array.create 256 0 in
                          let res = interp sub reg mem flag 0 in
-                         assert_equal 1 (res.(3))
+                         assert_equal ~printer:string_of_int 1 (res.(3))
                        );
 
                      "mul" >:: ( fun () ->
@@ -68,7 +61,7 @@ let test_fixture = "Interp" >:::
                          let mem = Array.create 256 0 in
                          let flag = Array.create 256 0 in
                          let res = interp mul' reg mem flag 0 in
-                         assert_equal 6 (res.(1))
+                         assert_equal ~printer:string_of_int 6 (res.(1))
                        );
 
                      "mul_imm" >:: ( fun () ->
@@ -78,7 +71,7 @@ let test_fixture = "Interp" >:::
                          let flag = Array.create 256 0 in
                          reg.(0) <- 5;
                          let res = interp mul_imm reg mem flag 0 in
-                         assert_equal 15 (res.(1))
+                         assert_equal ~printer:string_of_int 15 (res.(1))
                        );
 
                      "or" >:: ( fun () ->
@@ -88,7 +81,7 @@ let test_fixture = "Interp" >:::
                          let flag = Array.create 256 0 in
                          reg.(0) <- 1;
                          let res = interp or' reg mem flag 0 in
-                         assert_equal 1 (res.(1))
+                         assert_equal ~printer:string_of_int  1 (res.(1))
                        );
 
                      "and" >:: ( fun () ->
@@ -97,7 +90,7 @@ let test_fixture = "Interp" >:::
                          let mem = Array.create 256 0 in
                          let flag = Array.create 256 0 in
                          let res = interp and' reg mem flag 0 in
-                         assert_equal 1 (res.(1))
+                         assert_equal ~printer:string_of_int  1 (res.(1))
                        );
 
                      "jump" >:: (fun () ->
@@ -106,7 +99,7 @@ let test_fixture = "Interp" >:::
                          let mem = Array.create 256 0 in
                          let flag = Array.create 256 0 in
                          let res = interp jump' reg mem flag 0 in
-                         assert_equal 2 (res.(1))
+                         assert_equal ~printer:string_of_int  2 (res.(1))
                        );
 
                      "load" >:: ( fun () ->
@@ -134,7 +127,7 @@ let test_fixture = "Interp" >:::
                          let flag = Array.create 256 0 in
                          let mem = Array.create 256 0 in
                          let res = interp sum_n reg mem flag 0 in
-                         assert_equal 55 (res.(1))
+                         assert_equal ~printer:string_of_int  55 (res.(1))
                        );
 
                      "factorial" >:: ( fun () ->
@@ -143,7 +136,7 @@ let test_fixture = "Interp" >:::
                          let flag = Array.create 256 0 in
                          let mem = Array.create 256 0 in
                          let res = interp fact' reg flag mem 0 in
-                         assert_equal 5040 (res.(1))
+                         assert_equal ~printer:string_of_int  5040 (res.(1))
                        );
                    ]
 
