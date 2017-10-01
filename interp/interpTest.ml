@@ -81,7 +81,7 @@ let test_fixture = "Interp" >:::
                          let flag = Array.create 256 0 in
                          reg.(0) <- 1;
                          let res = interp or' reg mem flag 0 in
-                         assert_equal ~printer:string_of_int  1 (res.(1))
+                         assert_equal ~printer:string_of_int 1 (res.(1))
                        );
 
                      "and" >:: ( fun () ->
@@ -90,7 +90,7 @@ let test_fixture = "Interp" >:::
                          let mem = Array.create 256 0 in
                          let flag = Array.create 256 0 in
                          let res = interp and' reg mem flag 0 in
-                         assert_equal ~printer:string_of_int  1 (res.(1))
+                         assert_equal ~printer:string_of_int 1 (res.(1))
                        );
 
                      "jump" >:: (fun () ->
@@ -99,7 +99,7 @@ let test_fixture = "Interp" >:::
                          let mem = Array.create 256 0 in
                          let flag = Array.create 256 0 in
                          let res = interp jump' reg mem flag 0 in
-                         assert_equal ~printer:string_of_int  2 (res.(1))
+                         assert_equal ~printer:string_of_int 2 (res.(1))
                        );
 
                      "load" >:: ( fun () ->
@@ -123,11 +123,11 @@ let test_fixture = "Interp" >:::
 
                      "sum_n" >:: ( fun () ->
                          let sum_n = [| AddImm(1, 0); MovImm(0, 1); MovImm(0, 2); Add(2, 1); AddImm(1, 2); Cmp(0, 2); Jne(3);  Halt |] in
-                         let reg = [|10; 0; 0; 0; 0|] in
+                         let reg = [|100; 0; 0; 0; 0|] in
                          let flag = Array.create 256 0 in
                          let mem = Array.create 256 0 in
                          let res = interp sum_n reg mem flag 0 in
-                         assert_equal ~printer:string_of_int  55 (res.(1))
+                         assert_equal ~printer:string_of_int 5050 (res.(1))
                        );
 
                      "factorial" >:: ( fun () ->
@@ -136,7 +136,7 @@ let test_fixture = "Interp" >:::
                          let flag = Array.create 256 0 in
                          let mem = Array.create 256 0 in
                          let res = interp fact' reg flag mem 0 in
-                         assert_equal ~printer:string_of_int  5040 (res.(1))
+                         assert_equal ~printer:string_of_int 5040 (res.(1))
                        );
                    ]
 
