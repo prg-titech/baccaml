@@ -1,5 +1,3 @@
-open Core
-
 (* x86 命令セット *)
 (* オペランドの順番は GAS 形式 *)
 type instruction =
