@@ -20,8 +20,11 @@ let rec to_string_type typ =
   | Type.Bool -> "Bool"
   | Type.Int -> "Int"
   | Type.Float -> "Float"
+  | Type.Fun ([], _) -> Printf.sprintf "Fun ()"
   | Type.Fun (hd :: tl, t) ->
     Printf.sprintf "Fun (%s, %s, %s)" (to_string_type hd) (to_string_type_list tl) (to_string_type t)
+  | Type.Tuple ([]) ->
+    Printf.sprintf "Tuple ()"
   | Type.Tuple (hd :: tl) ->
     Printf.sprintf "Tuple (%s, %s)" (to_string_type hd) (to_string_type_list tl)
   | Type.Array (t) ->
