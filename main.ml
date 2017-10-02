@@ -1,5 +1,5 @@
 let limit = ref 1000
-          
+
 let is_emit_virtual = ref false
 
 let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
@@ -12,23 +12,18 @@ let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
 let lexbuf outchan l = (* バッファをコンパイルしてチャンネルへ出力する (caml2html: main_lexbuf) *)
   Id.counter := 0;
   Typing.extenv := M.empty;
-  let virtualized lex =
-    Virtual.f
-        (Closure.f
-          (iter !limit
-                (Alpha.f
-                   (KNormal.f
-                      (Typing.f
-                         (Parser.exp Lexer.token lex))))))
-  in
+  let parser' = Parser.exp Lexer.token l in
+  let typing' = Typing.f parser' in
+  let k_normal' = KNormal.f typing' in
+  let alpha' = Alpha.f k_normal' in
+  let closure' = Closure.f (iter !limit alpha') in
+  let virtual' = Virtual.f closure' in
   if !is_emit_virtual then
-    EmitVirtual.f outchan
-                  (virtualized l)
+    EmitVirtual.f outchan virtual'
   else
-    Emit.f outchan
-           (RegAlloc.f
-              (Simm.f
-                 (virtualized l)))
+    let simm' = Simm.f virtual' in
+    let reg_alloc' = RegAlloc.f simm' in
+    Emit.f outchan reg_alloc'
 
 let string s = lexbuf stdout (Lexing.from_string s) (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
 
