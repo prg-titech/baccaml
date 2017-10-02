@@ -1,1 +1,53 @@
-*.v
+# OCamlMakefile
+._d
+._bcdi
+._ncdi
+# OCaml Binary
+*.cmi
+*.cmo
+*.cmx
+*.cma
+*.cmxa
+*.cmxs
+
+# Binary
+*.o
+
+# omake
+*.omc
+*.lock
+*.opt
+*.cache
+*.omakedb
+
+# Symlink to Architecture-Specific Files
+/asm.ml
+/asm.mli
+/bytemark/Makefile
+/emit.ml
+/libmincaml.S
+/regAlloc.ml
+/shootout/Makefile
+/simm.ml
+/virtual.ml
+
+# Project Specific Generated Files
+/lexer.ml
+/parser.ml
+/parser.mli
+/min-caml
+/min-caml.top
+
+/min-rt/ppmdiff
+/min-rt/raytrace
+/min-rt/globals.s
+/min-rt/min-rt
+/min-rt/min-rt.min-caml
+/min-rt/min-rt.s
+/min-rt/min-rt_b
+/min-rt/*.cmp
+/min-rt/*.sld_
+/min-rt/*.cmp
+/test/*
+!/test/*.ml*.v
+/test/*dSYM/

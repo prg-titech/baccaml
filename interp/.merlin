@@ -1,0 +1,24 @@
+S asmcomp
+S asmrun
+S bytecomp
+S byterun
+S driver
+S parsing
+S stdlib
+S tools
+S typing
+S utils
+
+B asmcomp
+B asmrun
+B bytecomp
+B byterun
+B driver
+B parsing
+B stdlib
+B tools
+B typing
+B utils
+
+PKG core
+PKG ounit
