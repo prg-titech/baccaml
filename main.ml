@@ -5,9 +5,9 @@ let is_emit_virtual = ref false
 let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
   if n = 0 then e else
-  let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f e)))) in
-  if e = e' then e else
-  iter (n - 1) e'
+    let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f e)))) in
+    if e = e' then e else
+      iter (n - 1) e'
 
 let lexbuf outchan l = (* バッファをコンパイルしてチャンネルへ出力する (caml2html: main_lexbuf) *)
   Id.counter := 0;
@@ -31,7 +31,7 @@ let file f = (* ファイルをコンパイルしてファイルに出力する 
   let inchan = open_in (f ^ ".ml") in
   let outchan =
     if !is_emit_virtual then
-      open_out (f ^ ".v")
+      open_out (f ^ ".virt.ml")
     else
       open_out (f ^ ".s") in
   try
