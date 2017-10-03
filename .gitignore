@@ -20,6 +20,8 @@
 *.cache
 *.omakedb
 
+.merlin
+
 # Symlink to Architecture-Specific Files
 /asm.ml
 /asm.mli
