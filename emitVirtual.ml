@@ -104,7 +104,7 @@ and to_string_t t =
   | Let (x', exp, t') ->
     match x' with
     | (id', type') ->
-      Printf.sprintf "Let ((%s, %s), %s, %s)" id' (to_string_type type') (to_string_exp exp) (to_string_t t')
+      Printf.sprintf "\nLet ((%s, %s), %s, %s)" id' (to_string_type type') (to_string_exp exp) (to_string_t t')
 
 (* fundef to string *)
 let to_string_fundef fundef' =
