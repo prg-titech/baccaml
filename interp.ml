@@ -26,15 +26,15 @@ let make_reg_set (reg_set : int array) (args_tmp : Id.t list) (args_real : Id.t 
   set (ListUtil.zip regs_tmp regs_real);
   reg_set
 
-let rec interp (program : prog) (instr : instruction) (reg_set : int array) : 'a =
-  match instr with
-  | Ans exp -> interp_exp program exp reg_set
+let rec interp (program : prog) (instruction : instruction) (reg_set : int array) (mem : int array): 'a =
+  match instruction with
+  | Ans exp -> interp_exp program exp reg_set mem
   | Let ((id, _), exp, body) ->
     let reg_num = int_of_id_t id in
-    let res = interp_exp program exp reg_set in
+    let res = interp_exp program exp reg_set mem in
     reg_set.(reg_num) <- res;
-    interp program body reg_set
-and interp_exp (program : prog) (exp' : exp) (reg_set : int array) : 'a =
+    interp program body reg_set mem
+and interp_exp (program : prog) (exp' : exp) (reg_set : int array) (mem : int array) : 'a =
   match exp' with
   | Nop -> 0 (* TODO: Nop の場合の処理を考える *)
   | Set n -> n
@@ -55,13 +55,13 @@ and interp_exp (program : prog) (exp' : exp) (reg_set : int array) : 'a =
     let r1 = reg_set.(int_of_id_t id1) in
     let r2 = reg_set.(int_of_id_t id2) in
     if r1 = r2 then
-      interp program t1 reg_set
+      interp program t1 reg_set mem
     else
-      interp program t2 reg_set
+      interp program t2 reg_set mem
   | CallDir (name, args, _) ->
     let fundef = lookup program name in
     (* 仮引数: args' 実引数: args *)
     let args' = fundef.args in
     let body' = fundef.body in
     let reg_set' = make_reg_set reg_set args args' in
-    interp program body' reg_set'
+    interp program body' reg_set' mem
