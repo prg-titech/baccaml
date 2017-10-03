@@ -128,8 +128,10 @@ let rec to_string_floating_point_table lst =
 let to_string_prog p =
   match p with
   | Prog (xs, fundefs, t') ->
+    let xs' = to_string_floating_point_table xs in
+    let fundefs' = String.concat " " (List.map to_string_fundef fundefs) in
     let main_exp = to_string_t t' in
-    Printf.sprintf "Prog (%s)" main_exp
+    Printf.sprintf "Prog (%s, %s, %s)" xs' fundefs' main_exp
 
 (* entry point *)
 let f oc asm_prog =
