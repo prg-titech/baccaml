@@ -1,5 +1,15 @@
 open Asm
-open Util
+
+module ListUtil = struct
+  let rec zip lst1 lst2 = match lst1, lst2 with
+    | [], _ -> []
+    | _, [] -> []
+    | (x::xs), (y::ys) -> (x, y) :: (zip xs ys)
+
+  let unzip lst =
+    let f (l, s) (x, y) = (x::l, y::s) in
+    List.fold_left f ([],[]) (List.rev lst)
+end
 
 type instruction = Asm.t
 
@@ -40,9 +50,6 @@ and interp_exp (program : prog) (exp' : exp) (reg_set : int array) (mem : int ar
   | Set n -> n
   | SetL (Id.L (s)) -> int_of_string s
   | Mov id_t -> int_of_id_t id_t
-  | Neg id_t ->
-    let n = int_of_id_t id_t in
-    Complement.two_complement n
   | Add (id_t, id_or_imm) ->
     let r1 = int_of_id_t id_t in
     let r2 = int_of_id_or_imm id_or_imm in
@@ -52,9 +59,6 @@ and interp_exp (program : prog) (exp' : exp) (reg_set : int array) (mem : int ar
     let r2 = int_of_id_or_imm id_or_imm in
     reg_set.(r2) - reg_set.(r1)
   | FMovD id_t -> int_of_id_t id_t
-  | FNegD id_t ->
-    let n = int_of_string id_t in
-    Complement.two_complement n
   | FAddD (x, y) ->
     let x' = int_of_id_t x in
     let y' = int_of_id_t x in
