@@ -51,6 +51,18 @@ and interp_exp (program : prog) (exp' : exp) (reg_set : int array) (mem : int ar
     let r1 = int_of_id_t id_t in
     let r2 = int_of_id_or_imm id_or_imm in
     reg_set.(r2) - reg_set.(r1)
+  | FMovD id_t -> int_of_id_t id_t
+  | FNegD id_t ->
+    let n = int_of_string id_t in
+    Complement.two_complement n
+  | FAddD (x, y) ->
+    let x' = int_of_id_t x in
+    let y' = int_of_id_t x in
+    reg_set.(y') + reg_set.(x')
+  | FSubD (x, y) ->
+    let x' = int_of_id_t x in
+    let y' = int_of_id_t x in
+    reg_set.(y') - reg_set.(x')
   | IfEq (id1, V (id2), t1, t2) ->
     let r1 = reg_set.(int_of_id_t id1) in
     let r2 = reg_set.(int_of_id_t id2) in
