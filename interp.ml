@@ -5,7 +5,6 @@ module ListUtil = struct
     | [], _ -> []
     | _, [] -> []
     | (x::xs), (y::ys) -> (x, y) :: (zip xs ys)
-
   let unzip lst =
     let f (l, s) (x, y) = (x::l, y::s) in
     List.fold_left f ([],[]) (List.rev lst)
@@ -129,3 +128,9 @@ and interp_exp (program : prog) (exp' : exp) (reg_set : int array) (mem : int ar
     let body' = fundef.body in
     let reg_set' = make_reg_set reg_set args args' in
     interp program body' reg_set' mem
+
+let f (prog : Asm.prog) =
+  let reg = Array.make 256 0 in
+  let mem = Array.make 256 0 in
+  let t' = match prog with Prog (_, _, t) -> t in
+  interp prog t' reg mem
