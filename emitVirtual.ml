@@ -90,7 +90,7 @@ let rec to_string_exp exp =
   | CallCls (x', ids1, ids2) ->
     Printf.sprintf "CallCls (%s, %s, %s)" x' (to_string_ids ids1) (to_string_ids ids2)
   | CallDir (l', ids1, ids2) ->
-    Printf.sprintf "CallCls (%s, %s, %s)" (to_string_idl l') (to_string_ids ids1) (to_string_ids ids2)
+    Printf.sprintf "CallDir (%s, %s, %s)" (to_string_idl l') (to_string_ids ids1) (to_string_ids ids2)
   | Save (x1, x2) ->
     Printf.sprintf "Save (%s, %s)" x1 x2
   | Restore x ->
