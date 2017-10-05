@@ -29,7 +29,9 @@ manyargs
 
 PACKS = str ounit
 
-do_test: $(TESTS:%=test/%.cmp)
+clean-build: clean byte-code
+
+do-test: $(TESTS:%=test/%.cmp)
 
 .PRECIOUS: test/%.s test/% test/%.res test/%.ans test/%.cmp
 TRASH = $(TESTS:%=test/%.s) $(TESTS:%=test/%) $(TESTS:%=test/%.res) $(TESTS:%=test/%.ans) $(TESTS:%=test/%.cmp)
