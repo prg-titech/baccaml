@@ -11,7 +11,9 @@ module ListUtil = struct
 end
 
 let int_of_id_t (id : Id.t) : int =
-  int_of_string (List.nth (Str.split (Str.regexp_string ".") id) 1)
+  let splitted = Str.split (Str.regexp_string ".") id in
+  let num = List.nth splitted 1 in
+  int_of_string num
 
 let int_of_id_or_imm = function
   | V (id_t) -> int_of_id_t id_t
@@ -43,13 +45,14 @@ let make_reg_set (reg_set : int array) (args_tmp : Id.t list) (args_real : Id.t 
 
 let rec interp (program : prog) (instruction : Asm.t) (reg_set : int array) (mem : int array) : 'a =
   match instruction with
-  | Ans exp -> interp_exp program exp reg_set mem
+  | Ans exp -> interp' program exp reg_set mem
   | Let ((id, _), exp, body) ->
     let reg_num = int_of_id_t id in
-    let res = interp_exp program exp reg_set mem in
+    let res = interp' program exp reg_set mem in
+    Printf.printf "id: %s, val: %d\n" id res;
     reg_set.(reg_num) <- res;
     interp program body reg_set mem
-and interp_exp (program : prog) (exp' : exp) (reg_set : int array) (mem : int array) : 'a =
+and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array) : 'a =
   match exp' with
   | Nop -> 0 (* TODO: Nop の場合の処理を考える *)
   | Set n -> n
@@ -129,8 +132,9 @@ and interp_exp (program : prog) (exp' : exp) (reg_set : int array) (mem : int ar
     let reg_set' = make_reg_set reg_set args args' in
     interp program body' reg_set' mem
 
-let f (prog : Asm.prog) =
+let f (oc : out_channel) (prog : prog) : unit =
   let reg = Array.make 256 0 in
   let mem = Array.make 256 0 in
   let t' = match prog with Prog (_, _, t) -> t in
-  interp prog t' reg mem
+  let res = interp prog t' reg mem in
+  Printf.fprintf oc "%d" res

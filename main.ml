@@ -2,6 +2,8 @@ let limit = ref 1000
 
 let is_emit_virtual = ref false
 
+let is_interpreter = ref false
+
 let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
   if n = 0 then e else
@@ -20,6 +22,8 @@ let lexbuf outchan l = (* バッファをコンパイルしてチャンネルへ
   let virtual' = Virtual.f closure' in
   if !is_emit_virtual then
     EmitVirtual.f outchan virtual'
+  else if !is_interpreter then
+    Interp.f outchan virtual'
   else
     let simm' = Simm.f virtual' in
     let reg_alloc' = RegAlloc.f simm' in
@@ -31,7 +35,9 @@ let file f = (* ファイルをコンパイルしてファイルに出力する 
   let inchan = open_in (f ^ ".ml") in
   let outchan =
     if !is_emit_virtual then
-      open_out (f ^ ".virt.ml")
+      open_out (f ^ ".dump")
+    else if !is_interpreter then
+      open_out (f ^ ".interp")
     else
       open_out (f ^ ".s") in
   try
@@ -45,10 +51,11 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: m
   Arg.parse
     [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
      ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated");
-     ("-virtual", Arg.Bool(fun b -> is_emit_virtual := b), "emit virtual machine code")]
+     ("-virtual", Arg.Bool(fun b -> is_emit_virtual := b), "emit virtual machine code");
+     ("-interp", Arg.Bool(fun b -> is_interpreter := b), "interpreter mode");]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
-     Printf.sprintf "usage: %s [-inline m] [-iter n] [-virtual b]...filenames without \".ml\"..." Sys.argv.(0));
+     Printf.sprintf "usage: %s [-inline m] [-iter n] [-virtual b] [-interp b]...filenames without \".ml\"..." Sys.argv.(0));
   List.iter
     (fun f -> ignore (file f))
     !files
