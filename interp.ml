@@ -22,7 +22,12 @@ let int_of_id_or_imm = function
 let rec lookup (prog : prog) (name : Id.l) : fundef  =
   match prog with
   | Prog (_, fundefs, _) ->
-    List.find (fun (fundef) -> fundef.name = name) fundefs
+    try
+      List.find (fun (fundef) -> fundef.name = name) fundefs
+    with Not_found ->
+      let Id.L s = name in
+      print_string s;
+      raise Not_found
 
 let rec lookup_by_id_t (prog : prog) (name : Id.t) : fundef =
   match prog with
@@ -43,6 +48,8 @@ let make_reg_set (reg_set : int array) (args_tmp : Id.t list) (args_real : Id.t 
   set (ListUtil.zip regs_tmp regs_real);
   reg_set
 
+exception Un_Implemented_Instruction of string
+
 let rec interp (program : prog) (instruction : Asm.t) (reg_set : int array) (mem : int array) : 'a =
   match instruction with
   | Ans exp -> interp' program exp reg_set mem
@@ -56,6 +63,7 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
   match exp' with
   | Nop -> 0 (* TODO: Nop の場合の処理を考える *)
   | Set n -> n
+  | Neg n -> (- int_of_id_t n)
   | SetL (Id.L (s)) -> int_of_string s
   | Mov id_t -> int_of_id_t id_t
   | Add (id_t, id_or_imm) ->
@@ -66,6 +74,17 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     let r1 = int_of_id_t id_t in
     let r2 = int_of_id_or_imm id_or_imm in
     reg_set.(r2) - reg_set.(r1)
+  | Ld (id_t, id_or_imm, x) ->
+    (* id_t + id_or_imm * x の番地から load *)
+    let m = (int_of_id_t id_t) + (int_of_id_or_imm id_or_imm) * x in
+    mem.(m)
+  | St (id_t1, id_t2, id_or_imm, x) ->
+    (* id_t2 + id_or_imm * x の番地に id_t1 を store *)
+    let src = int_of_id_t id_t1 in
+    let m = (int_of_id_t id_t2) + (int_of_id_or_imm id_or_imm) * x in
+    mem.(m) <- src;
+    0
+  | Comment _ -> 0
   | FMovD id_t -> int_of_id_t id_t
   | FAddD (x, y) ->
     let x' = int_of_id_t x in
@@ -124,6 +143,10 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     let body' = fundef.body in
     let reg_set' = make_reg_set reg_set args args' in
     interp program body' reg_set' mem
+  | CallDir (Id.L ("min_caml_print_int"), [arg], _) ->
+    let v1 = reg_set.(int_of_id_t arg) in
+    print_int v1;
+    0
   | CallDir (name, args, _) ->
     let fundef = lookup program name in
     (* 仮引数: args' 実引数: args *)
@@ -131,6 +154,7 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     let body' = fundef.body in
     let reg_set' = make_reg_set reg_set args args' in
     interp program body' reg_set' mem
+  | _ -> raise (Un_Implemented_Instruction "Not implemented.")
 
 let f (oc : out_channel) (prog : prog) : unit =
   let reg = Array.make 256 0 in
