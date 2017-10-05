@@ -10,6 +10,18 @@ module ListUtil = struct
     List.fold_left f ([],[]) (List.rev lst)
 end
 
+module Logging = struct
+  let info s =
+    print_string ("[INFO]" ^ s ^ "\n")
+
+  let debug s =
+    print_string ("[DEBUG]" ^ s ^ "\n")
+end
+
+module Exception = struct
+  exception Un_Implemented_Instruction of string
+end
+
 let int_of_id_t (id : Id.t) : int =
   let splitted = Str.split (Str.regexp_string ".") id in
   let num = List.nth splitted 1 in
@@ -26,7 +38,7 @@ let rec lookup (prog : prog) (name : Id.l) : fundef  =
       List.find (fun (fundef) -> fundef.name = name) fundefs
     with Not_found ->
       let Id.L s = name in
-      print_string s;
+      print_string (s ^ "\n");
       raise Not_found
 
 let rec lookup_by_id_t (prog : prog) (name : Id.t) : fundef =
@@ -56,16 +68,23 @@ let rec interp (program : prog) (instruction : Asm.t) (reg_set : int array) (mem
   | Let ((id, _), exp, body) ->
     let reg_num = int_of_id_t id in
     let res = interp' program exp reg_set mem in
-    Printf.printf "id: %s, val: %d\n" id res;
     reg_set.(reg_num) <- res;
     interp program body reg_set mem
 and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array) : 'a =
   match exp' with
-  | Nop -> 0 (* TODO: Nop の場合の処理を考える *)
-  | Set n -> n
-  | Neg n -> (- int_of_id_t n)
-  | SetL (Id.L (s)) -> int_of_string s
-  | Mov id_t -> int_of_id_t id_t
+  | Nop ->
+    0
+  | Set n ->
+    Logging.debug ("Set" ^ (string_of_int n));
+    n
+  | Neg n ->
+    Logging.debug "Neg";
+    (- int_of_id_t n)
+  | SetL (Id.L (s)) ->
+    int_of_string s
+  | Mov id_t ->
+    Logging.debug "Mov";
+    int_of_id_t id_t
   | Add (id_t, id_or_imm) ->
     let r1 = int_of_id_t id_t in
     let r2 = int_of_id_or_imm id_or_imm in
@@ -154,7 +173,7 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     let body' = fundef.body in
     let reg_set' = make_reg_set reg_set args args' in
     interp program body' reg_set' mem
-  | _ -> raise (Un_Implemented_Instruction "Not implemented.")
+  | _ -> raise (Exception.Un_Implemented_Instruction "Not implemented.")
 
 let f (oc : out_channel) (prog : prog) : unit =
   let reg = Array.make 256 0 in
