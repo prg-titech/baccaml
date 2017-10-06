@@ -10,7 +10,7 @@ module ListUtil = struct
     List.fold_left f ([],[]) (List.rev lst)
 end
 
-module Logging = struct
+module Logger = struct
   let info s =
     print_string ("[INFO]" ^ s ^ "\n")
 
@@ -75,36 +75,36 @@ let rec interp (program : prog) (instruction : Asm.t) (reg_set : int array) (mem
   | Let ((id, _), exp, body) ->
     let reg_num = int_of_id_t id in
     let res = interp' program exp reg_set mem in
-    Logging.debug ("Let " ^ id);
+    Logger.debug ("Let " ^ id);
     reg_set.(reg_num) <- res;
     interp program body reg_set mem
 and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array) : 'a =
   match exp' with
   | Nop ->
-    Logging.debug "Nop ";
+    Logger.debug "Nop ";
     0
   | Set n ->
-    Logging.debug ("Set " ^ (string_of_int n));
+    Logger.debug ("Set " ^ (string_of_int n));
     n
   | Neg n ->
-    Logging.debug ("Neg " ^ n);
+    Logger.debug ("Neg " ^ n);
     (- int_of_id_t n)
   | SetL (Id.L (s)) ->
-    Logging.debug ("SetL " ^ (s));
+    Logger.debug ("SetL " ^ (s));
     int_of_string s
   | Mov id_t ->
     let res = int_of_id_t id_t in
-    Logging.debug ("Mov " ^ (id_t));
+    Logger.debug ("Mov " ^ (id_t));
     res
   | Add (id_t, id_or_imm) ->
     let r1 = int_of_id_t id_t in
     let r2 = int_of_id_or_imm id_or_imm in
-    Logging.debug ("Add " ^ (string_of_int r1) ^ " " ^ (string_of_int r2));
+    Logger.debug ("Add " ^ (string_of_int r1) ^ " " ^ (string_of_int r2));
     reg_set.(r1) + reg_set.(r2)
   | Sub (id_t, id_or_imm) ->
     let r1 = int_of_id_t id_t in
     let r2 = int_of_id_or_imm id_or_imm in
-    Logging.debug ("Sub " ^ (string_of_int r1) ^ " " ^ (string_of_int r2));
+    Logger.debug ("Sub " ^ (string_of_int r1) ^ " " ^ (string_of_int r2));
     reg_set.(r1) - reg_set.(r2)
   | Ld (id_t, id_or_imm, x) ->
     (* id_t + id_or_imm * x の番地から load *)
@@ -137,13 +137,13 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
   | IfEq (id1, id_or_imm, t1, t2) ->
     let r1 = reg_set.(int_of_id_t id1) in
     let r2 = reg_set.(int_of_id_or_imm id_or_imm) in
-    Logging.debug ("IfEq " ^ (string_of_int r1) ^ " " ^ (string_of_int r2));
+    Logger.debug ("IfEq " ^ (string_of_int r1) ^ " " ^ (string_of_int r2));
     if r1 = r2 then
       interp program t1 reg_set mem
     else
       interp program t2 reg_set mem
   | IfLE (id, id_or_imm, t1, t2) ->
-    Logging.debug ("IfLE " ^ id ^ " " ^ (string_of_id_or_imm id_or_imm));
+    Logger.debug ("IfLE " ^ id ^ " " ^ (string_of_id_or_imm id_or_imm));
     let r1 = reg_set.(int_of_id_t id) in
     let r2 = reg_set.(int_of_id_or_imm id_or_imm) in
     if r1 <= r2 then
@@ -153,7 +153,7 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
   | IfGE (id, id_or_imm, t1, t2) ->
     let r1 = reg_set.(int_of_id_t id) in
     let r2 = reg_set.(int_of_id_or_imm id_or_imm) in
-    Logging.debug ("IfGE" ^ (string_of_int r1) ^ " " ^ (string_of_int r2));
+    Logger.debug ("IfGE" ^ (string_of_int r1) ^ " " ^ (string_of_int r2));
     if r1 >= r2 then
       interp program t1 reg_set mem
     else
@@ -161,7 +161,7 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
   | IfFEq (id1, id2, t1, t2) ->
     let r1 = reg_set.(int_of_id_t id1) in
     let r2 = reg_set.(int_of_id_t id2) in
-    Logging.debug ("IfFEq " ^ (string_of_int r1) ^ " " ^ (string_of_int r2));
+    Logger.debug ("IfFEq " ^ (string_of_int r1) ^ " " ^ (string_of_int r2));
     if r1 = r2 then
       interp program t1 reg_set mem
     else
@@ -181,7 +181,7 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     interp program body' reg_set' mem
   | CallDir (Id.L ("min_caml_print_int"), [arg], _) ->
     let v1 = reg_set.(int_of_id_t arg) in
-    Logging.debug ("CallDir " ^ ("min_caml_print_int" ^ " " ^ arg));
+    Logger.debug ("CallDir " ^ ("min_caml_print_int" ^ " " ^ arg));
     print_int v1;
     0
   | CallDir (name, args, _) ->
@@ -190,7 +190,7 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     let args' = fundef.args in
     let body' = fundef.body in
     let reg_set' = make_reg_set reg_set args' args in
-    Logging.debug ("CallDir ");
+    Logger.debug ("CallDir ");
     interp program body' reg_set' mem
   | _ -> raise (Exception.Un_Implemented_Instruction "Not implemented.")
 
