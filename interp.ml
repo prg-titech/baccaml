@@ -22,6 +22,9 @@ module Exception = struct
   exception Un_Implemented_Instruction of string
 end
 
+(* TODO: Split して数字を取り出す実装ではなく
+ * レジスタ番号を string で与えるように実装を変更する
+ *)
 let int_of_id_t (id : Id.t) : int =
   let splitted = Str.split (Str.regexp_string ".") id in
   let num = List.nth splitted 1 in
