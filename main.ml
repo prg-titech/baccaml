@@ -23,7 +23,7 @@ let lexbuf outchan l = (* バッファをコンパイルしてチャンネルへ
   if !is_emit_virtual then
     EmitVirtual.f outchan virtual'
   else if !is_interpreter then
-    Interp.f outchan virtual'
+    Interp.f virtual'
   else
     let simm' = Simm.f virtual' in
     let reg_alloc' = RegAlloc.f simm' in
