@@ -24,7 +24,7 @@ end
 
 (* TODO: Split して数字を取り出す実装ではなく
  * レジスタ番号を string で与えるように実装を変更する
- *)
+*)
 let int_of_id_t (id : Id.t) : int =
   let splitted = Str.split (Str.regexp_string ".") id in
   let num = List.nth splitted 1 in
@@ -38,7 +38,7 @@ let string_of_id_or_imm = function
   | V (id_t) -> id_t
   | C (n) -> string_of_int n
 
-let rec lookup (prog : prog) (name : Id.l) : fundef  =
+let rec lookup_by_id_l (prog : prog) (name : Id.l) : fundef =
   match prog with
   | Prog (_, fundefs, _) ->
     try
@@ -84,7 +84,6 @@ let rec interp (program : prog) (instruction : Asm.t) (reg_set : int array) (mem
 and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array) : 'a =
   match exp' with
   | Nop ->
-    (* Logger.debug "Nop "; *)
     0
   | Set n ->
     (* Logger.debug ("Set " ^ (string_of_int n)); *)
@@ -189,7 +188,7 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     Printf.printf "%d\n" v;
     0
   | CallDir (name, args, _) ->
-    let fundef = lookup program name in
+    let fundef = lookup_by_id_l program name in
     (* 仮引数: args' 実引数: args *)
     let args' = fundef.args in
     let body' = fundef.body in
