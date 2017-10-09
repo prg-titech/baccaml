@@ -38,7 +38,7 @@ let rec to_string_type typ =
 let rec to_string_ids ids =
   match ids with
   | [] -> ""
-  | hd :: tl -> hd ^ (to_string_ids tl)
+  | hd :: tl -> hd ^ ", " ^(to_string_ids tl)
 
 
 (* Asm.exp to string *)
@@ -100,7 +100,7 @@ let rec to_string_exp exp =
 and to_string_t t =
   match t with
   | Ans (exp) ->
-    Printf.sprintf "Ans (%s)" (to_string_exp exp)
+    Printf.sprintf "\nAns (%s)" (to_string_exp exp)
   | Let (x', exp, t') ->
     match x' with
     | (id', type') ->
@@ -123,7 +123,7 @@ let rec to_string_floating_point_table lst =
     | [] -> res
     | hd :: tl ->
       let (idl, f) = hd in
-      let res' = (to_string_idl idl) ^ (Pervasives.string_of_float f) ^ res in
+      let res' = (to_string_idl idl) ^ ", " ^ (Pervasives.string_of_float f) ^  ", " ^ res in
       loop tl res'
   in
   loop lst ""
@@ -133,7 +133,7 @@ let to_string_prog p =
   match p with
   | Prog (xs, fundefs, t') ->
     let xs' = to_string_floating_point_table xs in
-    let fundefs' = String.concat " " (List.map to_string_fundef fundefs) in
+    let fundefs' = String.concat ", " (List.map to_string_fundef fundefs) in
     let main_exp = to_string_t t' in
     Printf.sprintf "Prog (%s, %s, %s)" xs' fundefs' main_exp
 
