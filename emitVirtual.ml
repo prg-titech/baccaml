@@ -118,11 +118,15 @@ let to_string_fundef fundef' =
     Printf.sprintf "{name = %s; args = %s; fargs = %s; body = %s; ret = %s}" name_str args_str fargs_str body_str ret_str
 
 let rec to_string_floating_point_table lst =
-  match lst with
-  | [] -> ""
-  | hd :: tl ->
-    let (idl, f) = hd in
-    (to_string_idl idl) ^ (Pervasives.string_of_float f) ^ (to_string_floating_point_table lst)
+  let rec loop lst res =
+    match lst with
+    | [] -> res
+    | hd :: tl ->
+      let (idl, f) = hd in
+      let res' = (to_string_idl idl) ^ (Pervasives.string_of_float f) ^ res in
+      loop tl res'
+  in
+  loop lst ""
 
 (* Asm.prog to string *)
 let to_string_prog p =
