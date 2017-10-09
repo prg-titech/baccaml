@@ -1,22 +1,5 @@
 open Asm
-
-module ListUtil = struct
-  let rec zip lst1 lst2 = match lst1, lst2 with
-    | [], _ -> []
-    | _, [] -> []
-    | (x::xs), (y::ys) -> (x, y) :: (zip xs ys)
-  let unzip lst =
-    let f (l, s) (x, y) = (x::l, y::s) in
-    List.fold_left f ([],[]) (List.rev lst)
-end
-
-module Logger = struct
-  let info s =
-    print_string ("[INFO]" ^ s ^ "\n")
-
-  let debug s =
-    print_string ("[DEBUG]" ^ s ^ "\n")
-end
+open Util
 
 module Exception = struct
   exception Un_Implemented_Instruction of string
@@ -27,8 +10,14 @@ end
 *)
 let int_of_id_t (id : Id.t) : int =
   let splitted = Str.split (Str.regexp_string ".") id in
-  let num = List.nth splitted 1 in
-  int_of_string num
+  match splitted with
+  | [ "min_caml_hp" ] -> 1000
+  | _ ->
+    try
+      let num = List.nth splitted 1 in
+      int_of_string num
+    with _ ->
+      int_of_string (Str.string_after (List.hd splitted) 2)
 
 let int_of_id_or_imm = function
   | V (id_t) -> int_of_id_t id_t
@@ -45,7 +34,7 @@ let rec lookup_by_id_l (prog : prog) (name : Id.l) : fundef =
       List.find (fun (fundef) -> fundef.name = name) fundefs
     with Not_found ->
       let Id.L s = name in
-      print_string (s ^ "\n");
+      Logger.error s;
       raise Not_found
 
 let rec lookup_by_id_t (prog : prog) (name : Id.t) : fundef =
@@ -64,7 +53,7 @@ let make_reg_set (reg_set : int array) (argst : Id.t list) (argsr : Id.t list) :
     | [] -> reg
     | (x, y) :: tl ->
       let r = reg.(y) in
-      Printf.printf "[DEBUG] make_reg_set x: %d y: %d r: %d\n" x y r;
+      Logger.debug (Printf.sprintf "make_reg_set x: %d y: %d r: %d" x y r);
       reg.(x) <- r; set reg tl
   in
   set reg_set (ListUtil.zip regst regsr)
@@ -86,15 +75,15 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
   | Nop ->
     0
   | Set n ->
-    (* Logger.debug ("Set " ^ (string_of_int n)); *)
+    Logger.debug ("Set " ^ (string_of_int n));
     n
   | Neg n ->
-    (* Logger.debug ("Neg " ^ n); *)
+    Logger.debug ("Neg " ^ n);
     let res = reg_set.(int_of_id_t n) in
     (- res)
   | SetL (Id.L (s)) ->
-    (* Logger.debug ("SetL " ^ (s)); *)
-    int_of_string s
+    Logger.debug ("SetL " ^ (s));
+    int_of_id_t s
   | Mov id_t ->
     let res = reg_set.(int_of_id_t id_t) in
     Logger.debug ("Mov " ^ (string_of_int res));
@@ -187,6 +176,8 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     Logger.debug ("CallDir " ^ ("min_caml_print_int" ^ " " ^ arg));
     Printf.printf "%d\n" v;
     0
+  | CallDir (Id.L ("min_caml_create_array"), [arg1; arg2], _ ) ->
+    raise (Exception.Un_Implemented_Instruction ("min_caml_create array is not implemented."))
   | CallDir (name, args, _) ->
     let fundef = lookup_by_id_l program name in
     (* 仮引数: args' 実引数: args *)
@@ -198,8 +189,8 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
   | _ -> raise (Exception.Un_Implemented_Instruction "Not implemented.")
 
 let f (prog : prog) : unit =
-  let reg = Array.make 1000 0 in
-  let mem = Array.make 1000 0 in
+  let reg = Array.make 10000 0 in
+  let mem = Array.make 10000 0 in
   let instructions = match prog with
     | Prog (_, _, t) -> t
   in
