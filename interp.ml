@@ -109,6 +109,9 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     mem.(m) <- src;
     0
   | Comment _ -> 0
+  | FNegD id_t ->
+    let x' = int_of_id_t id_t in
+    (- reg_set.(x'))
   | FMovD id_t -> int_of_id_t id_t
   | FAddD (x, y) ->
     let x' = int_of_id_t x in
@@ -121,7 +124,7 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
   | FMulD (x, y) ->
     let x' = int_of_id_t x in
     let y' = int_of_id_t x in
-    reg_set.(y') * reg_set.(x')
+    reg_set.(x') * reg_set.(y')
   | FDivD (x, y) ->
     let x' = int_of_id_t x in
     let y' = int_of_id_t x in
@@ -175,6 +178,9 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     let v = reg_set.(int_of_id_t arg) in
     Logger.debug ("CallDir " ^ ("min_caml_print_int" ^ " " ^ arg));
     Printf.printf "%d\n" v;
+    0
+  | CallDir (Id.L ("min_caml_print_newline"), _, _) ->
+    print_newline ();
     0
   | CallDir (Id.L ("min_caml_create_array"), [arg1; arg2], _ ) ->
     raise (Exception.Un_Implemented_Instruction ("min_caml_create array is not implemented."))
