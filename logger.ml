@@ -13,3 +13,6 @@ let info s = match !log_level with
 let debug s = match !log_level with
   | Debug -> print_string ("[DEBUG] " ^ s ^ "\n")
   | _ -> ()
+
+let error s =
+  print_string ("[ERROR] " ^ s ^ "\n")
