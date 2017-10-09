@@ -194,7 +194,7 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     print_int v; print_newline ();
     0
   | CallDir (Id.L ("min_caml_print_newline"), _, _) -> print_newline (); 0
-  | CallDir (Id.L ("min_caml_truncate"), [arg], _) -> truncate (float_of_id_t arg)
+  | CallDir (Id.L ("min_caml_truncate"), _, [farg]) -> raise (Un_implemented_instruction "min_caml_truncate is not implemented.")
   | CallDir (Id.L ("min_caml_create_array"), _, _ ) -> raise (Un_implemented_instruction "min_caml_create array is not implemented.")
   | CallDir (name, args, _) ->
     (* 仮引数: args' 実引数: args *)
