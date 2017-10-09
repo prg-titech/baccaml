@@ -20,8 +20,6 @@ let lexbuf outchan l = (* バッファをコンパイルしてチャンネルへ
   let virtual' = Virtual.f closure' in
   if !is_emit_virtual then
     EmitVirtual.f outchan virtual'
-  else if !is_interpreter then
-    Interp.f virtual'
   else
     let simm' = Simm.f virtual' in
     let reg_alloc' = RegAlloc.f simm' in
@@ -34,8 +32,6 @@ let file f = (* ファイルをコンパイルしてファイルに出力する 
   let outchan =
     if !is_emit_virtual then
       open_out (f ^ ".dump")
-    else if !is_interpreter then
-      open_out (f ^ ".interp")
     else
       open_out (f ^ ".s") in
   try
@@ -43,6 +39,24 @@ let file f = (* ファイルをコンパイルしてファイルに出力する 
     close_in inchan;
     close_out outchan;
   with e -> (close_in inchan; close_out outchan; raise e)
+
+let interp l =
+  Id.counter := 0;
+  Typing.extenv := M.empty;
+  let parser' = Parser.exp Lexer.token l in
+  let typing' = Typing.f parser' in
+  let k_normal' = KNormal.f typing' in
+  let alpha' = Alpha.f k_normal' in
+  let closure' = Closure.f (iter !limit alpha') in
+  let virtual' = Virtual.f closure' in
+  Interp.f virtual'
+
+let interp_exec f =
+  let inchan = open_in (f ^ ".ml") in
+  try
+    interp (Lexing.from_channel inchan);
+    close_in inchan;
+  with e -> (close_in inchan; raise e)
 
 let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
   let files = ref [] in
@@ -54,7 +68,7 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: m
      ("-debug", Arg.Unit(fun _ -> Logger.log_level := Logger.Debug), "print debug messages")]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
-     Printf.sprintf "usage: %s [-inline m] [-iter n] [-virtual b] [-interp b]...filenames without \".ml\"..." Sys.argv.(0));
+     Printf.sprintf "usage: %s [-inline m] [-iter n] [-virtual] [-interp] [-debug]...filenames without \".ml\"..." Sys.argv.(0));
   List.iter
-    (fun f -> ignore (file f))
+    (fun f -> if !is_interpreter then interp_exec f else ignore (file f))
     !files
