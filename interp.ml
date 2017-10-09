@@ -1,9 +1,7 @@
 open Asm
 open Util
 
-module Exception = struct
-  exception Un_Implemented_Instruction of string
-end
+exception Un_implemented_instruction of string
 
 (* TODO: Split して数字を取り出す実装ではなく
  * レジスタ番号を string で与えるように実装を変更する
@@ -13,11 +11,15 @@ let int_of_id_t (id : Id.t) : int =
   match splitted with
   | [ "min_caml_hp" ] -> 1000
   | _ ->
-    try
-      let num = List.nth splitted 1 in
-      int_of_string num
-    with _ ->
-      int_of_string (Str.string_after (List.hd splitted) 2)
+    (match List.nth splitted 1 with
+     | num -> int_of_string num
+     | exception _ -> int_of_string (Str.string_after (List.hd splitted) 2))
+
+let float_of_id_t id =
+  let splitted = Str.split (Str.regexp_string ".") id in
+  match List.nth splitted 1 with
+   | num -> float_of_string num
+   | exception _ -> float_of_string (Str.string_after (List.hd splitted) 2)
 
 let int_of_id_or_imm = function
   | V (id_t) -> int_of_id_t id_t
@@ -38,12 +40,14 @@ let rec lookup_by_id_l (prog : prog) (name : Id.l) : fundef =
       raise Not_found
 
 let rec lookup_by_id_t (prog : prog) (name : Id.t) : fundef =
+  let to_string_id_l = function Id.L s -> s in
   match prog with
   | Prog (_, fundefs, _) ->
-    let get_fundef_name = function
-      | Id.L (s) -> s
-    in
-    List.find (fun (fundef) -> (get_fundef_name fundef.name) = name) fundefs
+    try
+      List.find (fun fundef -> (to_string_id_l fundef.name) = name) fundefs
+    with Not_found ->
+      Logger.error (Printf.sprintf "CallCls %s" name);
+      raise Not_found
 
 (* 仮引数のレジスタに実引数がしまわれている reg_set を作る *)
 let make_reg_set (reg_set : int array) (argst : Id.t list) (argsr : Id.t list) : int array =
@@ -75,11 +79,11 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
   | Nop ->
     0
   | Set n ->
-    Logger.debug ("Set " ^ (string_of_int n));
+    Logger.debug (Printf.sprintf "Set %d" n);
     n
   | Neg n ->
-    Logger.debug ("Neg " ^ n);
     let res = reg_set.(int_of_id_t n) in
+    Logger.debug (Printf.sprintf "Neg %d" res);
     (- res)
   | SetL (Id.L (s)) ->
     Logger.debug ("SetL " ^ (s));
@@ -101,7 +105,9 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
   | Ld (id_t, id_or_imm, x) ->
     (* id_t + id_or_imm * x の番地から load *)
     let m = (int_of_id_t id_t) + (int_of_id_or_imm id_or_imm) * x in
-    mem.(m)
+    let res = mem.(m) in
+    Logger.debug (Printf.sprintf "Ld %d" res);
+    res
   | St (id_t1, id_t2, id_or_imm, x) ->
     (* id_t2 + id_or_imm * x の番地に id_t1 を store *)
     let src = int_of_id_t id_t1 in
@@ -168,6 +174,14 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
       interp program t1 reg_set mem
     else
       interp program t2 reg_set mem
+  | LdDF (id_t, id_or_imm, x) ->
+    let m = (int_of_id_t id_t) + (int_of_id_or_imm id_or_imm) * x in
+    mem.(m)
+  | StDF (id_t1, id_t2, id_or_imm, x) ->
+    let src = int_of_id_t id_t1 in
+    let m = (int_of_id_t id_t2) + (int_of_id_or_imm id_or_imm) * x in
+    mem.(m) <- src;
+    0
   | CallCls (name, args, _) ->
     let fundef = lookup_by_id_t program name in
     let args' = fundef.args in
@@ -176,23 +190,21 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     interp program body' reg_set' mem
   | CallDir (Id.L ("min_caml_print_int"), [arg], _) ->
     let v = reg_set.(int_of_id_t arg) in
-    Logger.debug ("CallDir " ^ ("min_caml_print_int" ^ " " ^ arg));
-    Printf.printf "%d\n" v;
+    Logger.debug (Printf.sprintf "CallDir min_caml_print_int %d" v);
+    print_int v; print_newline ();
     0
-  | CallDir (Id.L ("min_caml_print_newline"), _, _) ->
-    print_newline ();
-    0
-  | CallDir (Id.L ("min_caml_create_array"), [arg1; arg2], _ ) ->
-    raise (Exception.Un_Implemented_Instruction ("min_caml_create array is not implemented."))
+  | CallDir (Id.L ("min_caml_print_newline"), _, _) -> print_newline (); 0
+  | CallDir (Id.L ("min_caml_truncate"), [arg], _) -> truncate (float_of_id_t arg)
+  | CallDir (Id.L ("min_caml_create_array"), _, _ ) -> raise (Un_implemented_instruction "min_caml_create array is not implemented.")
   | CallDir (name, args, _) ->
-    let fundef = lookup_by_id_l program name in
     (* 仮引数: args' 実引数: args *)
+    let fundef = lookup_by_id_l program name in
     let args' = fundef.args in
     let body' = fundef.body in
     let reg_set' = make_reg_set reg_set args' args in
-    Logger.debug ("CallDir ");
+    let Id.L s = name in Logger.debug (Printf.sprintf "CallDir %s" s);
     interp program body' reg_set' mem
-  | _ -> raise (Exception.Un_Implemented_Instruction "Not implemented.")
+  | _ -> raise (Un_implemented_instruction "Not implemented.")
 
 let f (prog : prog) : unit =
   let reg = Array.make 10000 0 in
