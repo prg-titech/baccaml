@@ -4,12 +4,10 @@ open Util
 exception Un_implemented_instruction of string
 
 let register_size = 10000
-
 let heap_pointer = register_size - 1
 
-(* TODO: Split して数字を取り出す実装ではなく
- * レジスタ番号を string で与えるように実装を変更する
-*)
+(* TODO: Split して数字を取り出す実装ではなく *)
+(* レジスタ番号を string で与えるように実装を変更する *)
 let int_of_id_t = function
   | "min_caml_hp" -> heap_pointer
   | id ->
@@ -39,13 +37,11 @@ let rec lookup_by_id_l (prog : prog) (name : Id.l) : fundef =
       raise Not_found
 
 let rec lookup_by_id_t (prog : prog) (name : Id.t) : fundef =
-  let to_string_id_l = function Id.L s -> s in
-  match prog with
-  | Prog (_, fundefs, _) ->
-    try
-      List.find (fun fundef -> (to_string_id_l fundef.name) = name) fundefs
-    with e ->
-      Logger.error (Printf.sprintf "CallCls %s" name); raise e
+  let Prog (_, fundefs, _) = prog in
+  try
+    List.find (fun fundef -> (let Id.L s = fundef.name in s) = name) fundefs
+  with e ->
+    Logger.error (Printf.sprintf "CallCls %s" name); raise e
 
 (* 仮引数のレジスタに実引数がしまわれている reg_set を作る *)
 let make_reg_set (reg_set : 'a array) (args_tmp : Id.t list) (args_real : Id.t list) : 'a array =
@@ -128,7 +124,7 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (freg_set : floa
   | Comment _ -> 0
   | FNegD id_t ->
     let x' = int_of_id_t id_t in
-    (- reg_set.(x'))
+    (- truncate freg_set.(x'))
   | FMovD id_t -> int_of_id_t id_t
   | FAddD (x, y) ->
     let x' = int_of_id_t x in
@@ -205,7 +201,8 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (freg_set : floa
     print_int v; print_newline (); 0
   | CallDir (Id.L ("min_caml_print_newline"), _, _) ->
     print_newline (); 0
-  | CallDir (Id.L ("min_caml_truncate"), _, [farg]) -> raise (Un_implemented_instruction "min_caml_truncate is not implemented.")
+  | CallDir (Id.L ("min_caml_truncate"), _, [farg]) ->
+    reg_set.(int_of_id_t farg)
   | CallDir (Id.L ("min_caml_create_array"), _, _ ) -> raise (Un_implemented_instruction "min_caml_create array is not implemented.")
   | CallDir (name, args, _) ->
     (* fundef.args: 仮引数 args: 実引数 *)
