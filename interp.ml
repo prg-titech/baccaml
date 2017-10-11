@@ -18,8 +18,8 @@ let int_of_id_t (id : Id.t) : int =
 let float_of_id_t id =
   let splitted = Str.split (Str.regexp_string ".") id in
   match List.nth splitted 1 with
-   | num -> float_of_string num
-   | exception _ -> float_of_string (Str.string_after (List.hd splitted) 2)
+  | num -> float_of_string num
+  | exception _ -> float_of_string (Str.string_after (List.hd splitted) 2)
 
 let int_of_id_or_imm = function
   | V (id_t) -> int_of_id_t id_t
