@@ -64,10 +64,15 @@ let rec interp (program : prog) (instruction : Asm.t) (reg_set : int array) (mem
     let res = interp' program exp reg_set mem in
     Logger.debug ("Ans " ^ (string_of_int res));
     res
+  | Let (("min_caml_heap", _), exp, body) ->
+    let res = interp' program exp reg_set mem in
+    Logger.debug(Printf.sprintf "Let (id: min_caml_hp, reg_num: %d, res: %d)" (Array.length reg_set - 1) res);
+    reg_set.(Array.length reg_set - 1) <- res;
+    interp program body reg_set mem
   | Let ((id, _), exp, body) ->
     let reg_num = int_of_id_t id in
     let res = interp' program exp reg_set mem in
-    Logger.debug ("Let " ^ id ^ " " ^ "reg_num: " ^ (string_of_int reg_num) ^ "  " ^ "res:" ^ (string_of_int res));
+    Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
     reg_set.(reg_num) <- res;
     interp program body reg_set mem
 and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array) : 'a =
@@ -85,6 +90,8 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     let r = reg_set.(int_of_id_t s) in
     Logger.debug (Printf.sprintf "SetL (%s: %d)" s r);
     r
+  | Mov ("min_caml_hp") ->
+    Array.length reg_set - 1
   | Mov id_t ->
     let res = reg_set.(int_of_id_t id_t) in
     Logger.debug (Printf.sprintf "Mov (%s: %d)" id_t res);
@@ -105,10 +112,17 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     let res = mem.(m) in
     Logger.debug (Printf.sprintf "Ld (%d: %d)" m res);
     res
+  | St ("min_caml_hp", id_t2, id_or_imm, x) ->
+    let src = reg_set.(heap_pointer) in
+    let m = (int_of_id_t id_t2) + (int_of_id_or_imm id_or_imm) * x in
+    Logger.debug (Printf.sprintf "St (m: %d), res: %d" m src);
+    mem.(m) <- src;
+    0
   | St (id_t1, id_t2, id_or_imm, x) ->
     (* id_t2 + id_or_imm * x の番地に id_t1 を store *)
-    let src = int_of_id_t id_t1 in
+    let src = reg_set.(int_of_id_t id_t1) in
     let m = (int_of_id_t id_t2) + (int_of_id_or_imm id_or_imm) * x in
+    Logger.debug (Printf.sprintf "St (m: %d), res: %d" m src);
     mem.(m) <- src;
     0
   | Comment _ -> 0
@@ -175,21 +189,22 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     let m = (int_of_id_t id_t) + (int_of_id_or_imm id_or_imm) * x in
     mem.(m)
   | StDF (id_t1, id_t2, id_or_imm, x) ->
-    let src = int_of_id_t id_t1 in
+    let src = reg_set.(int_of_id_t id_t1) in
     let m = (int_of_id_t id_t2) + (int_of_id_or_imm id_or_imm) * x in
     mem.(m) <- src;
     0
   | CallCls (name, args, _) ->
     let fundef = lookup_by_id_t program name in
     let reg_set' = make_reg_set reg_set (fundef.args) args in
-    Logger.debug (Printf.sprintf "CallCls (%s)" name);
-    interp program (fundef.body) reg_set' mem
+    let res = interp program (fundef.body) reg_set' mem in
+    Logger.debug (Printf.sprintf "CallCls (name: %s) res: %d" name res);
+    res
   | CallDir (Id.L ("min_caml_print_int"), [arg], _) ->
     let v = reg_set.(int_of_id_t arg) in
     Logger.debug (Printf.sprintf "CallDir min_caml_print_int %d" v);
-    print_int v; print_newline ();
-    0
-  | CallDir (Id.L ("min_caml_print_newline"), _, _) -> print_newline (); 0
+    print_int v; print_newline (); 0
+  | CallDir (Id.L ("min_caml_print_newline"), _, _) ->
+    print_newline (); 0
   | CallDir (Id.L ("min_caml_truncate"), _, [farg]) -> raise (Un_implemented_instruction "min_caml_truncate is not implemented.")
   | CallDir (Id.L ("min_caml_create_array"), _, _ ) -> raise (Un_implemented_instruction "min_caml_create array is not implemented.")
   | CallDir (name, args, _) ->
@@ -201,9 +216,7 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
   | _ -> raise (Un_implemented_instruction "Not implemented.")
 
 let f (prog : prog) : unit =
-  let reg = Array.make 10000 0 in
-  let mem = Array.make 10000 0 in
-  let instructions = match prog with
-    | Prog (_, _, t) -> t
-  in
+  let reg = Array.make register_size 0 in
+  let mem = Array.make register_size 0 in
+  let Prog (_, _, instructions) = prog in
   ignore (interp prog instructions reg mem)
