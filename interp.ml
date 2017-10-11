@@ -48,7 +48,7 @@ let rec lookup_by_id_t (prog : prog) (name : Id.t) : fundef =
       Logger.error (Printf.sprintf "CallCls %s" name); raise e
 
 (* 仮引数のレジスタに実引数がしまわれている reg_set を作る *)
-let make_reg_set (reg_set : int array) (args_tmp : Id.t list) (args_real : Id.t list) : int array =
+let make_reg_set (reg_set : 'a array) (args_tmp : Id.t list) (args_real : Id.t list) : 'a array =
   let regs_tmp = List.map int_of_id_t args_tmp in
   let regs_real = List.map int_of_id_t args_real in
   let arr = Array.make 10000 0 in
@@ -58,24 +58,24 @@ let make_reg_set (reg_set : int array) (args_tmp : Id.t list) (args_real : Id.t 
       (ListUtil.zip regs_tmp regs_real));
   arr
 
-let rec interp (program : prog) (instruction : Asm.t) (reg_set : int array) (mem : int array) : 'a =
+let rec interp (program : prog) (instruction : Asm.t) (reg_set : int array) (freg_set : float array) (mem : int array) : 'a =
   match instruction with
   | Ans exp ->
-    let res = interp' program exp reg_set mem in
+    let res = interp' program exp reg_set freg_set mem in
     Logger.debug ("Ans " ^ (string_of_int res));
     res
   | Let (("min_caml_heap", _), exp, body) ->
-    let res = interp' program exp reg_set mem in
+    let res = interp' program exp reg_set freg_set mem in
     Logger.debug(Printf.sprintf "Let (id: min_caml_hp, reg_num: %d, res: %d)" (Array.length reg_set - 1) res);
     reg_set.(Array.length reg_set - 1) <- res;
-    interp program body reg_set mem
+    interp program body reg_set freg_set mem
   | Let ((id, _), exp, body) ->
     let reg_num = int_of_id_t id in
-    let res = interp' program exp reg_set mem in
+    let res = interp' program exp reg_set freg_set mem in
     Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
     reg_set.(reg_num) <- res;
-    interp program body reg_set mem
-and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array) : 'a =
+    interp program body reg_set freg_set mem
+and interp' (program : prog) (exp' : exp) (reg_set : int array) (freg_set : float array) (mem : int array) : 'a =
   match exp' with
   | Nop ->
     0
@@ -151,40 +151,40 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     let r2 = reg_set.(int_of_id_or_imm id_or_imm) in
     Logger.debug ("IfEq " ^ (string_of_int r1) ^ " " ^ (string_of_int r2));
     if r1 = r2 then
-      interp program t1 reg_set mem
+      interp program t1 reg_set freg_set mem
     else
-      interp program t2 reg_set mem
+      interp program t2 reg_set freg_set mem
   | IfLE (id, id_or_imm, t1, t2) ->
     let r1 = reg_set.(int_of_id_t id) in
     let r2 = reg_set.(int_of_id_or_imm id_or_imm) in
     Logger.debug ("IfLE " ^ id ^ (string_of_id_or_imm id_or_imm) ^ "r1:" ^ (string_of_int r1) ^ " r2:" ^ (string_of_int r2));
     if r1 <= r2 then
-      interp program t1 reg_set mem
+      interp program t1 reg_set freg_set mem
     else
-      interp program t2 reg_set mem
+      interp program t2 reg_set freg_set mem
   | IfGE (id, id_or_imm, t1, t2) ->
     let r1 = reg_set.(int_of_id_t id) in
     let r2 = reg_set.(int_of_id_or_imm id_or_imm) in
     Logger.debug ("IfGE" ^ (string_of_int r1) ^ " " ^ (string_of_int r2));
     if r1 >= r2 then
-      interp program t1 reg_set mem
+      interp program t1 reg_set freg_set mem
     else
-      interp program t2 reg_set mem
+      interp program t2 reg_set freg_set mem
   | IfFEq (id1, id2, t1, t2) ->
     let r1 = reg_set.(int_of_id_t id1) in
     let r2 = reg_set.(int_of_id_t id2) in
     Logger.debug ("IfFEq " ^ (string_of_int r1) ^ " " ^ (string_of_int r2));
     if r1 = r2 then
-      interp program t1 reg_set mem
+      interp program t1 reg_set freg_set mem
     else
-      interp program t2 reg_set mem
+      interp program t2 reg_set freg_set mem
   | IfFLE (id1, id2, t1, t2) ->
     let r1 = reg_set.(int_of_id_t id1) in
     let r2 = reg_set.(int_of_id_t id2) in
     if r1 <= r2 then
-      interp program t1 reg_set mem
+      interp program t1 reg_set freg_set mem
     else
-      interp program t2 reg_set mem
+      interp program t2 reg_set freg_set mem
   | LdDF (id_t, id_or_imm, x) ->
     let m = (int_of_id_t id_t) + (int_of_id_or_imm id_or_imm) * x in
     mem.(m)
@@ -196,7 +196,7 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
   | CallCls (name, args, _) ->
     let fundef = lookup_by_id_t program name in
     let reg_set' = make_reg_set reg_set (fundef.args) args in
-    let res = interp program (fundef.body) reg_set' mem in
+    let res = interp program (fundef.body) reg_set' freg_set mem in
     Logger.debug (Printf.sprintf "CallCls (name: %s) res: %d" name res);
     res
   | CallDir (Id.L ("min_caml_print_int"), [arg], _) ->
@@ -212,11 +212,12 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     let fundef = lookup_by_id_l program name in
     let reg_set' = make_reg_set reg_set (fundef.args) args in
     let Id.L s = name in Logger.debug (Printf.sprintf "CallDir %s" s);
-    interp program (fundef.body) reg_set' mem
+    interp program (fundef.body) reg_set' freg_set mem
   | _ -> raise (Un_implemented_instruction "Not implemented.")
 
 let f (prog : prog) : unit =
   let reg = Array.make register_size 0 in
+  let freg = Array.make register_size 0. in
   let mem = Array.make register_size 0 in
   let Prog (_, _, instructions) = prog in
-  ignore (interp prog instructions reg mem)
+  ignore (interp prog instructions reg freg mem)
