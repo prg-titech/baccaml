@@ -1,0 +1,26 @@
+#!/bin/bash
+
+usage () {
+  echo "Usage: $0 [-d] ..." 1>&2
+  exit 0
+}
+
+for opt in "$@"
+do
+  case "$opt" in
+    '-d' )
+      if [ -z "$2" ]; then
+        exit 0
+      else
+        ./min-caml -interp -debug "$2"
+      fi
+      ;;
+    '-h' )
+      usage
+      ;;
+    * )
+      ./min-caml -interp "$1"
+      ;;
+  esac
+  shift
+done

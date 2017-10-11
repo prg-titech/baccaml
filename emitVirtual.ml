@@ -38,7 +38,7 @@ let rec to_string_type typ =
 let rec to_string_ids ids =
   match ids with
   | [] -> ""
-  | hd :: tl -> hd ^ (to_string_ids tl)
+  | hd :: tl -> hd ^ ", " ^(to_string_ids tl)
 
 
 (* Asm.exp to string *)
@@ -90,7 +90,7 @@ let rec to_string_exp exp =
   | CallCls (x', ids1, ids2) ->
     Printf.sprintf "CallCls (%s, %s, %s)" x' (to_string_ids ids1) (to_string_ids ids2)
   | CallDir (l', ids1, ids2) ->
-    Printf.sprintf "CallCls (%s, %s, %s)" (to_string_idl l') (to_string_ids ids1) (to_string_ids ids2)
+    Printf.sprintf "CallDir (%s, %s, %s)" (to_string_idl l') (to_string_ids ids1) (to_string_ids ids2)
   | Save (x1, x2) ->
     Printf.sprintf "Save (%s, %s)" x1 x2
   | Restore x ->
@@ -100,11 +100,11 @@ let rec to_string_exp exp =
 and to_string_t t =
   match t with
   | Ans (exp) ->
-    Printf.sprintf "Ans (%s)" (to_string_exp exp)
+    Printf.sprintf "\nAns (%s)" (to_string_exp exp)
   | Let (x', exp, t') ->
     match x' with
     | (id', type') ->
-      Printf.sprintf "Let ((%s, %s), %s, %s)" id' (to_string_type type') (to_string_exp exp) (to_string_t t')
+      Printf.sprintf "\nLet ((%s, %s), %s, %s)" id' (to_string_type type') (to_string_exp exp) (to_string_t t')
 
 (* fundef to string *)
 let to_string_fundef fundef' =
@@ -118,18 +118,22 @@ let to_string_fundef fundef' =
     Printf.sprintf "{name = %s; args = %s; fargs = %s; body = %s; ret = %s}" name_str args_str fargs_str body_str ret_str
 
 let rec to_string_floating_point_table lst =
-  match lst with
-  | [] -> ""
-  | hd :: tl ->
-    let (idl, f) = hd in
-    (to_string_idl idl) ^ (Pervasives.string_of_float f) ^ (to_string_floating_point_table lst)
+  let rec loop lst res =
+    match lst with
+    | [] -> res
+    | hd :: tl ->
+      let (idl, f) = hd in
+      let res' = (to_string_idl idl) ^ ", " ^ (Pervasives.string_of_float f) ^  ", " ^ res in
+      loop tl res'
+  in
+  loop lst ""
 
 (* Asm.prog to string *)
 let to_string_prog p =
   match p with
   | Prog (xs, fundefs, t') ->
     let xs' = to_string_floating_point_table xs in
-    let fundefs' = String.concat " " (List.map to_string_fundef fundefs) in
+    let fundefs' = String.concat ", " (List.map to_string_fundef fundefs) in
     let main_exp = to_string_t t' in
     Printf.sprintf "Prog (%s, %s, %s)" xs' fundefs' main_exp
 

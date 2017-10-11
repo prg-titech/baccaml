@@ -77,7 +77,7 @@ let rec fv_exp = function
 and fv = function
   | Ans(exp) -> fv_exp exp
   | Let((x, t), exp, e) ->
-      fv_exp exp @ remove_and_uniq (S.singleton x) (fv e)
+    fv_exp exp @ remove_and_uniq (S.singleton x) (fv e)
 let fv e = remove_and_uniq S.empty (fv e)
 
 let rec concat e1 xt e2 =
