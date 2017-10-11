@@ -24,13 +24,9 @@ let float_of_id_t id =
   | num -> float_of_string num
   | exception _ -> float_of_string (Str.string_after (List.hd splitted) 2)
 
-let int_of_id_or_imm = function
-  | V (id_t) -> int_of_id_t id_t
-  | C (n) -> n
+let int_of_id_or_imm = function V (id_t) -> int_of_id_t id_t | C (n) -> n
 
-let string_of_id_or_imm = function
-  | V (id_t) -> id_t
-  | C (n) -> string_of_int n
+let string_of_id_or_imm = function V (id_t) -> id_t | C (n) -> string_of_int n
 
 let rec lookup_by_id_l (prog : prog) (name : Id.l) : fundef =
   match prog with
