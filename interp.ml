@@ -44,16 +44,18 @@ let rec lookup_by_id_t (prog : prog) (name : Id.t) : fundef =
   | Prog (_, fundefs, _) ->
     try
       List.find (fun fundef -> (to_string_id_l fundef.name) = name) fundefs
-    with Not_found ->
-      Logger.error (Printf.sprintf "CallCls %s" name);
-      raise Not_found
+    with e ->
+      Logger.error (Printf.sprintf "CallCls %s" name); raise e
 
 (* 仮引数のレジスタに実引数がしまわれている reg_set を作る *)
 let make_reg_set (reg_set : int array) (args_tmp : Id.t list) (args_real : Id.t list) : int array =
   let regs_tmp = List.map int_of_id_t args_tmp in
   let regs_real = List.map int_of_id_t args_real in
   let arr = Array.make 10000 0 in
-  let _ = List.map (fun (x, y) -> arr.(x) <- reg_set.(y)) (ListUtil.zip regs_tmp regs_real) in
+  ignore (
+    List.map
+      (fun (x, y) -> arr.(x) <- reg_set.(y))
+      (ListUtil.zip regs_tmp regs_real));
   arr
 
 let rec interp (program : prog) (instruction : Asm.t) (reg_set : int array) (mem : int array) : 'a =
