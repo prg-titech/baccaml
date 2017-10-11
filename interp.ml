@@ -198,7 +198,7 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (freg_set : floa
   | CallDir (Id.L ("min_caml_print_int"), [arg], _) ->
     let v = reg_set.(int_of_id_t arg) in
     Logger.debug (Printf.sprintf "CallDir min_caml_print_int %d" v);
-    print_int v; print_newline (); 0
+    print_int v; 0
   | CallDir (Id.L ("min_caml_print_newline"), _, _) ->
     print_newline (); 0
   | CallDir (Id.L ("min_caml_truncate"), _, [farg]) ->
