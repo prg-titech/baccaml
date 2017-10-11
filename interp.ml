@@ -81,17 +81,18 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     Logger.debug (Printf.sprintf "Neg %d" res);
     (- res)
   | SetL (Id.L (s)) ->
-    Logger.debug ("SetL " ^ (s));
-    int_of_id_t s
+    let r = reg_set.(int_of_id_t s) in
+    Logger.debug (Printf.sprintf "SetL (%s: %d)" s r);
+    r
   | Mov id_t ->
     let res = reg_set.(int_of_id_t id_t) in
-    Logger.debug ("Mov " ^ (string_of_int res));
+    Logger.debug (Printf.sprintf "Mov (%s: %d)" id_t res);
     res
   | Add (id_t, id_or_imm) ->
-    let r1 = int_of_id_t id_t in
-    let r2 = int_of_id_or_imm id_or_imm in
-    Logger.debug ("Add " ^ (string_of_int r1) ^ " " ^ (string_of_int r2));
-    reg_set.(r1) + reg_set.(r2)
+    let r1, r2 = int_of_id_t id_t, int_of_id_or_imm id_or_imm in
+    let v1, v2 = reg_set.(r1), reg_set.(r2) in
+    Logger.debug (Printf.sprintf "Add (%d: %d, %d: %d)" r1 v1 r2 v2);
+    v1 + v2
   | Sub (id_t, id_or_imm) ->
     let r1 = reg_set.(int_of_id_t id_t) in
     let r2 = reg_set.(int_of_id_or_imm id_or_imm) in
@@ -101,7 +102,7 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     (* id_t + id_or_imm * x の番地から load *)
     let m = (int_of_id_t id_t) + (int_of_id_or_imm id_or_imm) * x in
     let res = mem.(m) in
-    Logger.debug (Printf.sprintf "Ld %d" res);
+    Logger.debug (Printf.sprintf "Ld (%d: %d)" m res);
     res
   | St (id_t1, id_t2, id_or_imm, x) ->
     (* id_t2 + id_or_imm * x の番地に id_t1 を store *)
@@ -179,10 +180,9 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     0
   | CallCls (name, args, _) ->
     let fundef = lookup_by_id_t program name in
-    let args' = fundef.args in
-    let body' = fundef.body in
-    let reg_set' = make_reg_set reg_set args args' in
-    interp program body' reg_set' mem
+    let reg_set' = make_reg_set reg_set (fundef.args) args in
+    Logger.debug (Printf.sprintf "CallCls (%s)" name);
+    interp program (fundef.body) reg_set' mem
   | CallDir (Id.L ("min_caml_print_int"), [arg], _) ->
     let v = reg_set.(int_of_id_t arg) in
     Logger.debug (Printf.sprintf "CallDir min_caml_print_int %d" v);
@@ -192,13 +192,11 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
   | CallDir (Id.L ("min_caml_truncate"), _, [farg]) -> raise (Un_implemented_instruction "min_caml_truncate is not implemented.")
   | CallDir (Id.L ("min_caml_create_array"), _, _ ) -> raise (Un_implemented_instruction "min_caml_create array is not implemented.")
   | CallDir (name, args, _) ->
-    (* 仮引数: args' 実引数: args *)
+    (* fundef.args: 仮引数 args: 実引数 *)
     let fundef = lookup_by_id_l program name in
-    let args' = fundef.args in
-    let body' = fundef.body in
-    let reg_set' = make_reg_set reg_set args' args in
+    let reg_set' = make_reg_set reg_set (fundef.args) args in
     let Id.L s = name in Logger.debug (Printf.sprintf "CallDir %s" s);
-    interp program body' reg_set' mem
+    interp program (fundef.body) reg_set' mem
   | _ -> raise (Un_implemented_instruction "Not implemented.")
 
 let f (prog : prog) : unit =
