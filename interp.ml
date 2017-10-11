@@ -3,14 +3,17 @@ open Util
 
 exception Un_implemented_instruction of string
 
+let register_size = 10000
+
+let heap_pointer = register_size - 1
+
 (* TODO: Split して数字を取り出す実装ではなく
  * レジスタ番号を string で与えるように実装を変更する
 *)
-let int_of_id_t (id : Id.t) : int =
-  let splitted = Str.split (Str.regexp_string ".") id in
-  match splitted with
-  | [ "min_caml_hp" ] -> 1000
-  | _ ->
+let int_of_id_t = function
+  | "min_caml_hp" -> heap_pointer
+  | id ->
+    let splitted = Str.split (Str.regexp_string ".") id in
     (match List.nth splitted 1 with
      | num -> int_of_string num
      | exception _ -> int_of_string (Str.string_after (List.hd splitted) 2))
