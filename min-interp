@@ -9,7 +9,11 @@ for opt in "$@"
 do
   case "$opt" in
     '-d' )
-      ./min-caml -interp -debug "$2"
+      if [ -z "$2" ]; then
+        exit 0
+      else
+        ./min-caml -interp -debug "$2"
+      fi
       ;;
     '-h' )
       usage
