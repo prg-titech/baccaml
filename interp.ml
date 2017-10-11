@@ -50,17 +50,12 @@ let rec lookup_by_id_t (prog : prog) (name : Id.t) : fundef =
       raise Not_found
 
 (* 仮引数のレジスタに実引数がしまわれている reg_set を作る *)
-let make_reg_set (reg_set : int array) (argst : Id.t list) (argsr : Id.t list) : int array =
-  let regst = List.map int_of_id_t argst in
-  let regsr = List.map int_of_id_t argsr in
-  let rec set reg = function
-    | [] -> reg
-    | (x, y) :: tl ->
-      let r = reg.(y) in
-      Logger.debug (Printf.sprintf "make_reg_set x: %d y: %d r: %d" x y r);
-      reg.(x) <- r; set reg tl
-  in
-  set reg_set (ListUtil.zip regst regsr)
+let make_reg_set (reg_set : int array) (args_tmp : Id.t list) (args_real : Id.t list) : int array =
+  let regs_tmp = List.map int_of_id_t args_tmp in
+  let regs_real = List.map int_of_id_t args_real in
+  let arr = Array.make 10000 0 in
+  let _ = List.map (fun (x, y) -> arr.(x) <- reg_set.(y)) (ListUtil.zip regs_tmp regs_real) in
+  arr
 
 let rec interp (program : prog) (instruction : Asm.t) (reg_set : int array) (mem : int array) : 'a =
   match instruction with
