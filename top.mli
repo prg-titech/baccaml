@@ -1,2 +1,2 @@
-val string_of_virtual : string -> Asm.prog
-val string_of_interp : string -> unit
+val str_to_interp : string -> unit
+val str_to_virtual : string -> Asm.prog
