@@ -9,7 +9,7 @@ let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *
     if e = e' then e else
       iter (n - 1) e'
 
-let lexbuf outchan l = (* バッファをコンパイルしてチャンネルへ出力する (caml2html: main_lexbuf) *)
+let virtualize l =
   Id.counter := 0;
   Typing.extenv := M.empty;
   let parser' = Parser.exp Lexer.token l in
@@ -17,17 +17,19 @@ let lexbuf outchan l = (* バッファをコンパイルしてチャンネルへ
   let k_normal' = KNormal.f typing' in
   let alpha' = Alpha.f k_normal' in
   let closure' = Closure.f (iter !limit alpha') in
-  let virtual' = Virtual.f closure' in
-  if !is_emit_virtual then
-    EmitVirtual.f outchan virtual'
-  else
-    let simm' = Simm.f virtual' in
-    let reg_alloc' = RegAlloc.f simm' in
-    Emit.f outchan reg_alloc'
+  Virtual.f closure'
 
-let string s = lexbuf stdout (Lexing.from_string s) (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
+let compile outchan l =
+  let virtualized = virtualize l in
+  let simm' = Simm.f virtualized in
+  let reg_alloc' = RegAlloc.f simm' in
+  Emit.f outchan reg_alloc'
 
-let file f = (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file) *)
+(* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
+let string s = compile stdout (Lexing.from_string s)
+
+(* ファイルをコンパイルしてファイルに出力する (caml2html: main_file) *)
+let compile_exec f =
   let inchan = open_in (f ^ ".ml") in
   let outchan =
     if !is_emit_virtual then
@@ -35,21 +37,14 @@ let file f = (* ファイルをコンパイルしてファイルに出力する 
     else
       open_out (f ^ ".s") in
   try
-    lexbuf outchan (Lexing.from_channel inchan);
+    compile outchan (Lexing.from_channel inchan);
     close_in inchan;
     close_out outchan;
   with e -> (close_in inchan; close_out outchan; raise e)
 
 let interp l =
-  Id.counter := 0;
-  Typing.extenv := M.empty;
-  let parser' = Parser.exp Lexer.token l in
-  let typing' = Typing.f parser' in
-  let k_normal' = KNormal.f typing' in
-  let alpha' = Alpha.f k_normal' in
-  let closure' = Closure.f (iter !limit alpha') in
-  let virtual' = Virtual.f closure' in
-  Interp.f virtual'
+  let virtualized = virtualize l in
+  Interp.f virtualized
 
 let interp_exec f =
   let inchan = open_in (f ^ ".ml") in
@@ -70,5 +65,5 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: m
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
      Printf.sprintf "usage: %s [-inline m] [-iter n] [-virtual] [-interp] [-debug]...filenames without \".ml\"..." Sys.argv.(0));
   List.iter
-    (fun f -> if !is_interpreter then interp_exec f else ignore (file f))
+    (fun f -> if !is_interpreter then interp_exec f else ignore (compile_exec f))
     !files
