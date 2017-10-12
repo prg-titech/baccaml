@@ -23,15 +23,15 @@
 .merlin
 
 # Symlink to Architecture-Specific Files
-/asm.ml
-/asm.mli
-/bytemark/Makefile
-/emit.ml
-/libmincaml.S
-/regAlloc.ml
-/shootout/Makefile
-/simm.ml
-/virtual.ml
+#/asm.ml
+#/asm.mli
+#/bytemark/Makefile
+#/emit.ml
+#/libmincaml.S
+#/regAlloc.ml
+#/shootout/Makefile
+#/simm.ml
+#/virtual.ml
 
 # Project Specific Generated Files
 /lexer.ml
