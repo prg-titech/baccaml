@@ -19,7 +19,7 @@ SOURCES = \
 	closure.mli closure.ml asm.mli asm.ml virtual.mli virtual.ml \
 	simm.mli simm.ml regAlloc.mli regAlloc.ml emit.mli emit.ml \
 	emitVirtual.mli emitVirtual.ml logger.ml util.ml interp.mli interp.ml \
-	main.mli main.ml
+	main.mli main.ml top.mli top.ml
 
 TESTS = \
 	print sum-tail gcd sum fib ack even-odd \
