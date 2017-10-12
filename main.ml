@@ -12,18 +12,19 @@ let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *
 let virtualize l =
   Id.counter := 0;
   Typing.extenv := M.empty;
-  let parser' = Parser.exp Lexer.token l in
-  let typing' = Typing.f parser' in
-  let k_normal' = KNormal.f typing' in
-  let alpha' = Alpha.f k_normal' in
-  let closure' = Closure.f (iter !limit alpha') in
-  Virtual.f closure'
+  Parser.exp Lexer.token l
+  |> Typing.f
+  |> KNormal.f
+  |> iter !limit
+  |> Alpha.f
+  |> Closure.f
+  |> Virtual.f
 
 let compile outchan l =
-  let virtualized = virtualize l in
-  let simm' = Simm.f virtualized in
-  let reg_alloc' = RegAlloc.f simm' in
-  Emit.f outchan reg_alloc'
+  virtualize l
+  |> Simm.f
+  |> RegAlloc.f
+  |> Emit.f outchan
 
 (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
 let string s = compile stdout (Lexing.from_string s)
@@ -42,9 +43,7 @@ let compile_exec f =
     close_out outchan;
   with e -> (close_in inchan; close_out outchan; raise e)
 
-let interp l =
-  let virtualized = virtualize l in
-  Interp.f virtualized
+let interp l = virtualize l |> Interp.f
 
 let interp_exec f =
   let inchan = open_in (f ^ ".ml") in
