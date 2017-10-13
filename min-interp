@@ -8,7 +8,7 @@ usage () {
 for opt in "$@"
 do
   case "$opt" in
-    '-d' )
+    '-d' | '-debug' )
       if [ -z "$2" ]; then
         exit 0
       else
