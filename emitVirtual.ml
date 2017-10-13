@@ -9,12 +9,11 @@ let to_string_id_or_imm id_or_imm =
   | V (t) -> t
   | C (i) -> Pervasives.string_of_int i
 
-let rec to_string_type typ =
-  let rec to_string_type_list lst =
-    match lst with
-    | [] -> ""
-    | h :: t -> (to_string_type h) ^ ", " ^ to_string_type_list t
-  in
+let rec to_string_type_list = function
+  | [] -> ""
+  | hd :: tl -> (to_string_type hd) ^ ", " ^ (to_string_type_list tl)
+
+and to_string_type typ =
   match typ with
   | Type.Unit -> "Unit"
   | Type.Bool -> "Bool"
@@ -37,8 +36,8 @@ let rec to_string_type typ =
 
 let rec to_string_ids ids =
   match ids with
-  | [] -> ""
-  | hd :: tl -> hd ^ ", " ^(to_string_ids tl)
+  | [] -> "[]"
+  | _ -> "[" ^ (String.concat ", " ids) ^ "]"
 
 
 (* Asm.exp to string *)
@@ -120,7 +119,7 @@ let to_string_fundef fundef' =
 let rec to_string_floating_point_table lst =
   let rec loop lst res =
     match lst with
-    | [] -> res
+    | [] -> "[" ^ res ^ "]"
     | hd :: tl ->
       let (idl, f) = hd in
       let res' = (to_string_idl idl) ^ ", " ^ (Pervasives.string_of_float f) ^  ", " ^ res in
@@ -133,7 +132,7 @@ let to_string_prog p =
   match p with
   | Prog (xs, fundefs, t') ->
     let xs' = to_string_floating_point_table xs in
-    let fundefs' = String.concat ", " (List.map to_string_fundef fundefs) in
+    let fundefs' = "[" ^ String.concat ", " (List.map to_string_fundef fundefs) ^ "]" in
     let main_exp = to_string_t t' in
     Printf.sprintf "Prog (%s, %s, %s)" xs' fundefs' main_exp
 
