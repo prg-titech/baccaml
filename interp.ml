@@ -6,6 +6,12 @@ exception Un_implemented_instruction of string
 let register_size = 10000
 let heap_pointer = register_size - 1
 
+(* function label for closures *)
+type labels = (Id.l * int) list
+
+(* program for interpreter *)
+type prog_interp = ProgInterp of (Id.l * float) list * fundef list * t * labels
+
 (* TODO: Split して数字を取り出す実装ではなく *)
 (* レジスタ番号を string で与えるように実装を変更する *)
 let int_of_id_t = function
@@ -117,9 +123,7 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     mem.(m) <- src;
     0
   | Comment _ -> 0
-  | FNegD id_t ->
-    let x' = int_of_id_t id_t in
-    (- truncate freg_set.(x'))
+  | FNegD id_t -> (- int_of_id_t id_t)
   | FMovD id_t -> int_of_id_t id_t
   | FAddD (x, y) ->
     let x' = int_of_id_t x in
@@ -206,6 +210,16 @@ and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array
     let Id.L s = name in Logger.debug (Printf.sprintf "CallDir %s" s);
     interp program (fundef.body) reg_set'  mem
   | _ -> raise (Un_implemented_instruction "Not implemented.")
+
+let rec create_labels fundefs i =
+  match fundefs with
+  | [] -> []
+  | fundef :: tl -> (fundef.name, i) :: create_labels tl (i + 1)
+
+let to_prog_interp prog =
+  let Prog (table, fundefs, exp) = prog in
+  let labels =  create_labels fundefs 0 in
+  ProgInterp (table, fundefs, exp, labels)
 
 let f (prog : prog) : unit =
   let reg = Array.make register_size 0 in
