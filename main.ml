@@ -21,10 +21,14 @@ let virtualize l =
   |> Virtual.f
 
 let compile outchan l =
-  virtualize l
-  |> Simm.f
-  |> RegAlloc.f
-  |> Emit.f outchan
+  if !is_emit_virtual then
+    virtualize l
+    |> EmitVirtual.f outchan
+  else
+    virtualize l
+    |> Simm.f
+    |> RegAlloc.f
+    |> Emit.f outchan
 
 (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
 let string s = compile stdout (Lexing.from_string s)
