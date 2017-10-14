@@ -12,13 +12,13 @@ $(RESULT): debug-code top
 clean:: nobackup
 
 SOURCES = \
-	float.c type.ml id.ml m.ml s.ml \
+	util.ml logger.ml float.c type.ml id.ml m.ml s.ml \
 	syntax.ml parser.mly lexer.mll typing.mli typing.ml kNormal.mli kNormal.ml \
 	alpha.mli alpha.ml beta.mli beta.ml assoc.mli assoc.ml \
 	inline.mli inline.ml constFold.mli constFold.ml elim.mli elim.ml \
 	closure.mli closure.ml asm.mli asm.ml virtual.mli virtual.ml \
 	simm.mli simm.ml regAlloc.mli regAlloc.ml emit.mli emit.ml \
-	emitVirtual.mli emitVirtual.ml logger.ml util.ml interp.mli interp.ml \
+	emitVirtual.mli emitVirtual.ml interp.mli interp.ml \
 	main.mli main.ml top.mli top.ml
 
 TESTS = \
