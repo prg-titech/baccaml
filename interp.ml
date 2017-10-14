@@ -33,17 +33,29 @@ let int_of_id_or_imm = function V (id_t) -> int_of_id_t id_t | C (n) -> n
 
 let string_of_id_or_imm = function V (id_t) -> id_t | C (n) -> string_of_int n
 
-let rec lookup_by_id_l (prog : prog_interp) (name : Id.l) : fundef =
+let rec find_label_number label = function
+  | [] -> let Id.L s = label in int_of_id_t s
+  | (l, num) :: tl -> if l = label then num else find_label_number label tl
+
+let rec find_closure prog name reg =
   match prog with
   | ProgInterp (_, fundefs, _, labels) ->
     try
-      List.find (fun (fundef) -> fundef.name = name) fundefs
+      let label_num = find_label_number name labels in
+      reg.(label_num)
     with Not_found ->
       let Id.L s = name in
       Logger.error s;
       raise Not_found
 
-let rec lookup_by_id_t (prog : prog_interp) (name : Id.t) : fundef =
+let rec lookup_by_id_l prog name =
+  let ProgInterp (_, fundefs, _, _) = prog in
+  try
+    List.find (fun fundef -> (fundef.name = name)) fundefs
+  with e ->
+    Logger.error (let Id.L s = name in Printf.sprintf "CallCls %s" s); raise e
+
+let rec lookup_by_id_t prog name =
   let ProgInterp (_, fundefs, _, _) = prog in
   try
     List.find (fun fundef -> (let Id.L s = fundef.name in s) = name) fundefs
@@ -51,7 +63,7 @@ let rec lookup_by_id_t (prog : prog_interp) (name : Id.t) : fundef =
     Logger.error (Printf.sprintf "CallCls %s" name); raise e
 
 (* 仮引数のレジスタに実引数がしまわれている reg_set を作る *)
-let make_reg_set (reg_set : 'a array) (args_tmp : Id.t list) (args_real : Id.t list) : 'a array =
+let make_reg_set reg_set args_tmp args_real =
   let regs_tmp = List.map int_of_id_t args_tmp in
   let regs_real = List.map int_of_id_t args_real in
   let arr = Array.make 10000 0 in
@@ -73,6 +85,7 @@ let rec interp (program : prog_interp) (instruction : Asm.t) (reg_set : int arra
     Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
     reg_set.(reg_num) <- res;
     interp program body reg_set  mem
+
 and interp' (program : prog_interp) (exp' : exp) (reg_set : int array) (mem : int array) : 'a =
   match exp' with
   | Nop ->
@@ -85,11 +98,11 @@ and interp' (program : prog_interp) (exp' : exp) (reg_set : int array) (mem : in
     Logger.debug (Printf.sprintf "Neg %d" res);
     (- res)
   | SetL (Id.L (s)) ->
-    let r = reg_set.(int_of_id_t s) in
-    Logger.debug (Printf.sprintf "SetL (%s: %d)" s r);
-    r
-  | Mov ("min_caml_hp") ->
-    Array.length reg_set - 1
+    let ProgInterp (_, _, _, labels) = program in
+    let res = find_label_number (Id.L (s)) labels in
+    Logger.debug (Printf.sprintf "SetL (%s: %d)" s res);
+    res
+  | Mov ("min_caml_hp") -> heap_pointer
   | Mov id_t ->
     let res = reg_set.(int_of_id_t id_t) in
     Logger.debug (Printf.sprintf "Mov (%s: %d)" id_t res);
@@ -222,7 +235,7 @@ let to_prog_interp prog =
   let labels =  create_labels fundefs 0 in
   ProgInterp (table, fundefs, exp, labels)
 
-let f (prog : prog) : unit =
+let f prog =
   let reg = Array.make register_size 0 in
   let mem = Array.make register_size 0 in
   let prog' = to_prog_interp prog in
