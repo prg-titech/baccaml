@@ -1,7 +1,5 @@
 open Main
 
-let str_of_interp s = interp (Lexing.from_string s)
-
 let emit_virtual str =
   Id.counter := 0;
   Typing.extenv := M.empty;
@@ -15,7 +13,7 @@ let emit_virtual str =
   |> Virtual.f
   |> EmitVirtual.f stdout
 
-let str_of_virtual str =
+let str_to_virtual str =
   Id.counter := 0;
   Typing.extenv := M.empty;
   Lexing.from_string str
@@ -26,3 +24,7 @@ let str_of_virtual str =
   |> Alpha.f
   |> Closure.f
   |> Virtual.f
+
+let str_to_interp s = interp (Lexing.from_string s)
+
+let str_to_prog_interp s = EmitVirtual.g stdout (str_to_virtual s)

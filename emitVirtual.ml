@@ -136,6 +136,18 @@ let to_string_prog p =
     let main_exp = to_string_t t' in
     Printf.sprintf "Prog (%s, %s, %s)" xs' fundefs' main_exp
 
+let to_string_labels labels =
+  List.map (fun (id_l, i) -> to_string_idl id_l ^ ", " ^ string_of_int i) labels
+
+(* Asm.prog -> Interp.ProgInterp *)
+let g oc asm_prog =
+  let Interp.ProgInterp (xs, fundefs, t', labels) = Interp.to_prog_interp asm_prog in
+  let xs' = to_string_floating_point_table xs in
+  let fundefs' = "[" ^ String.concat ", " (List.map to_string_fundef fundefs) ^ "]" in
+  let main_exp = to_string_t t' in
+  let labels' = "(" ^ String.concat "; " (to_string_labels labels) ^ ")" in
+  Printf.fprintf oc "ProgInterp (%s, %s, %s, %s)" xs' fundefs' main_exp labels'
+
 (* entry point *)
 let f oc asm_prog =
   Printf.fprintf oc "%s" (to_string_prog asm_prog)
