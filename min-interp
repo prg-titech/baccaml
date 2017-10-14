@@ -5,6 +5,8 @@ usage () {
   exit 0
 }
 
+[ ! -f ./min-caml ] && make -s
+
 for opt in "$@"
 do
   case "$opt" in
