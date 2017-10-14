@@ -7,6 +7,12 @@ let register_size = 10000
 
 let heap_pointer = register_size / 2
 
+(* function label for closures *)
+type labels = (Id.l * int) list
+
+(* program for interpreter *)
+type prog_interp = ProgInterp of (Id.l * float) list * fundef list * t * labels
+
 (* TODO: Split して数字を取り出す実装ではなく *)
 (* レジスタ番号を string で与えるように実装を変更する *)
 let int_of_id_t = function
@@ -27,9 +33,9 @@ let int_of_id_or_imm = function V (id_t) -> int_of_id_t id_t | C (n) -> n
 
 let string_of_id_or_imm = function V (id_t) -> id_t | C (n) -> string_of_int n
 
-let rec lookup_by_id_l (prog : prog) (name : Id.l) : fundef =
+let rec lookup_by_id_l (prog : prog_interp) (name : Id.l) : fundef =
   match prog with
-  | Prog (_, fundefs, _) ->
+  | ProgInterp (_, fundefs, _, labels) ->
     try
       List.find (fun (fundef) -> fundef.name = name) fundefs
     with Not_found ->
@@ -37,8 +43,8 @@ let rec lookup_by_id_l (prog : prog) (name : Id.l) : fundef =
       Logger.error s;
       raise Not_found
 
-let rec lookup_by_id_t (prog : prog) (name : Id.t) : fundef =
-  let Prog (_, fundefs, _) = prog in
+let rec lookup_by_id_t (prog : prog_interp) (name : Id.t) : fundef =
+  let ProgInterp (_, fundefs, _, _) = prog in
   try
     List.find (fun fundef -> (let Id.L s = fundef.name in s) = name) fundefs
   with e ->
@@ -55,13 +61,7 @@ let make_reg_set (reg_set : 'a array) (args_tmp : Id.t list) (args_real : Id.t l
       (List.zip regs_tmp regs_real));
   arr
 
-(* function label for closures *)
-type labels = (Id.l * int) list
-
-(* program for interpreter *)
-type prog_interp = ProgInterp of (Id.l * float) list * fundef list * t * labels
-
-let rec interp (program : prog) (instruction : Asm.t) (reg_set : int array) (mem : int array) : 'a =
+let rec interp (program : prog_interp) (instruction : Asm.t) (reg_set : int array) (mem : int array) : 'a =
   match instruction with
   | Ans exp ->
     let res = interp' program exp reg_set mem in
@@ -73,7 +73,7 @@ let rec interp (program : prog) (instruction : Asm.t) (reg_set : int array) (mem
     Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
     reg_set.(reg_num) <- res;
     interp program body reg_set  mem
-and interp' (program : prog) (exp' : exp) (reg_set : int array) (mem : int array) : 'a =
+and interp' (program : prog_interp) (exp' : exp) (reg_set : int array) (mem : int array) : 'a =
   match exp' with
   | Nop ->
     0
@@ -225,5 +225,6 @@ let to_prog_interp prog =
 let f (prog : prog) : unit =
   let reg = Array.make register_size 0 in
   let mem = Array.make register_size 0 in
-  let Prog (_, _, instructions) = prog in
-  ignore (interp prog instructions reg mem)
+  let prog' = to_prog_interp prog in
+  let ProgInterp (_, _, instructions, labels) = prog' in
+  ignore (interp prog' instructions reg mem)
