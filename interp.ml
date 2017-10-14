@@ -216,7 +216,8 @@ and interp' (program : prog_interp) (exp' : exp) (reg_set : int array) (mem : in
     print_newline (); 0
   | CallDir (Id.L ("min_caml_truncate"), _, [farg]) ->
     reg_set.(int_of_id_t farg)
-  | CallDir (Id.L ("min_caml_create_array"), _, _ ) -> raise (Un_implemented_instruction "min_caml_create array is not implemented.")
+  | CallDir (Id.L ("min_caml_create_array"), _, _ ) ->
+    raise (Un_implemented_instruction "min_caml_create array is not implemented.")
   | CallDir (name, args, _) ->
     (* fundef.args: 仮引数 args: 実引数 *)
     let fundef = lookup_by_id_l program name in
