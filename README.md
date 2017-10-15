@@ -1,29 +1,21 @@
+# min-caml
+
 An educational compiler for a minimal subset of OCaml, written in
 ~2000 lines of OCaml.  For details, see:
 
-http://esumii.github.io/min-caml/ (Japanese Web page)
-http://esumii.github.io/min-caml/jpaper.pdf (Japanese academic paper)
-http://esumii.github.io/min-caml/index-e.html (English Web page)
-http://esumii.github.io/min-caml/paper.pdf (English academic paper)
+- http://esumii.github.io/min-caml/ (Japanese Web page)
+- http://esumii.github.io/min-caml/jpaper.pdf (Japanese academic paper)
+- http://esumii.github.io/min-caml/index-e.html (English Web page)
+- http://esumii.github.io/min-caml/paper.pdf (English academic paper)
 
-1. Install OCaml (http://caml.inria.fr/) if you haven't
+## Setup
 
-2. Download (and expand) MinCaml, e.g.
-   git clone https://github.com/esumii/min-caml.git
+``` bash
+$ make to_x86
+$ make
+```
 
-3. cd min-caml/
-
-4. Execute ./to_x86 for x86
-   (or ./to_sparc for SPARC, ./to_ppc for PowerPC)
-
-5. make
-
-6. If you like, try the ray tracer
-
-     cd min-rt/ ; make
-
-   though it takes time because of OCaml bytecode (for testing by
-   comparison), not MinCaml
+## FAQ
 
 [FAQ 1] Is there an x86_64 version?
 
@@ -33,6 +25,9 @@ included in this distribution.
 [FAQ 2] Is there a version that emits C code?
 
 [A] See above.
+
+
+## CHANGELOG
 
 [Updates on October 9, 2013]
 
@@ -55,3 +50,4 @@ included in this distribution.
 
 - The register allocator now uses a simpler algorithm.  It omits the
   backtracking (ToSpill and NoSpill) in previous versions.
+
