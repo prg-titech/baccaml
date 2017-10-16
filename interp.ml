@@ -3,17 +3,14 @@ open Util
 
 exception Un_implemented_instruction of string
 
-let register_size = 10000
-
-let heap_pointer = register_size / 2
-
 type labels = (Id.l * int) list (* function label for closures *)
-
 type prog_interp = ProgInterp of (Id.l * float) list * fundef list * t * labels (* prog for interpreter *)
-
 type register = int array
-
 type memory = int array
+
+let register_size = 10000
+let heap_pointer = register_size / 2
+let heap = ref 0
 
 let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
   | "min_caml_hp" -> heap_pointer
@@ -36,17 +33,6 @@ let string_of_id_or_imm = function V (id_t) -> id_t | C (n) -> string_of_int n
 let rec find_label_number label = function
   | [] -> let Id.L s = label in int_of_id_t s
   | (l, num) :: tl -> if l = label then num else find_label_number label tl
-
-let rec find_closure prog name reg =
-  match prog with
-  | ProgInterp (_, fundefs, _, labels) ->
-    try
-      let label_num = find_label_number name labels in
-      reg.(label_num)
-    with Not_found ->
-      let Id.L s = name in
-      Logger.error s;
-      raise Not_found
 
 let rec lookup_by_id_l prog name =
   let ProgInterp (_, fundefs, _, _) = prog in
@@ -115,11 +101,16 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
     let v1 = reg.(r1) in
     Logger.debug (Printf.sprintf "AddImm (reg: %d, val: %n, imm: %d)" r1 v1 n);
     v1 + n
-  | Sub (id_t, id_or_imm) ->
-    let r1 = reg.(int_of_id_t id_t) in
-    let r2 = reg.(int_of_id_or_imm id_or_imm) in
-    Logger.debug ("Sub " ^ (string_of_int r1) ^ " " ^ (string_of_int r2));
-    r1 - r2
+  | Sub (id_t1, V (id_t2)) ->
+    let r1, r2 = int_of_id_t id_t1, int_of_id_t id_t2 in
+    let v1, v2 = reg.(r1), reg.(r2) in
+    Logger.debug (Printf.sprintf "Sub (%s %d: %d, %s %d: %d)" id_t1 r1 v1 id_t2 r2 v2);
+    v1 - v2
+  | Sub (id_t, C (n)) ->
+    let r1 = int_of_id_t id_t in
+    let v1 = reg.(r1) in
+    Logger.debug (Printf.sprintf "SubImm (reg: %d, val: %n, imm: %d)" r1 v1 n);
+    v1 - n
   | Ld (id_t, id_or_imm, x) ->
     (* id_t + id_or_imm * x の番地から load *)
     let m = (int_of_id_t id_t) + (int_of_id_or_imm id_or_imm) * x in
@@ -234,12 +225,12 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
     interp prog (fundef.body) reg'  mem
   | _ -> raise (Un_implemented_instruction "Not implemented.")
 
-let rec create_labels fundefs i =
-  match fundefs with
-  | [] -> []
-  | fundef :: tl -> (fundef.name, i) :: create_labels tl (i + 1)
-
 let to_prog_interp prog =
+  let rec create_labels fundefs i =
+    match fundefs with
+    | [] -> []
+    | fundef :: tl -> (fundef.name, i) :: create_labels tl (i + 1)
+  in
   let Prog (table, fundefs, exp) = prog in
   let labels = create_labels fundefs 0 in
   ProgInterp (table, fundefs, exp, labels)
