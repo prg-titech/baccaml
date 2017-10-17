@@ -8,7 +8,7 @@ type prog_interp = ProgInterp of (Id.l * float) list * fundef list * t * labels 
 type register = int array
 type memory = int array
 
-let register_size = 100
+let register_size = 1000
 let heap_pointer = register_size / 2
 let heap = ref 0
 
