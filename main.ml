@@ -23,7 +23,7 @@ let virtualize l =
 let compile outchan l =
   if !is_emit_virtual then
     virtualize l
-    |> EmitVirtual.f outchan
+    |> EmitVirtual.g outchan
   else
     virtualize l
     |> Simm.f
