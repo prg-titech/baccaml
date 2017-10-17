@@ -10,9 +10,23 @@ An educational compiler for a minimal subset of OCaml, written in
 
 ## Setup
 
+### Build
+
 ``` bash
-$ make to_x86
 $ make
+```
+
+### Test
+
+``` bash
+$ make test
+```
+
+### Interpreter
+
+``` bash
+$ make
+$ ./min-caml -interp <file>
 ```
 
 ## FAQ
