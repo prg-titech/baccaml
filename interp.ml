@@ -8,7 +8,7 @@ type prog_interp = ProgInterp of (Id.l * float) list * fundef list * t * labels 
 type register = int array
 type memory = int array
 
-let register_size = 10000
+let register_size = 100
 let heap_pointer = register_size / 2
 let heap = ref 0
 
@@ -81,16 +81,16 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
   | Nop ->
     0
   | Set n ->
-    Logger.debug (Printf.sprintf "Set %d" n);
+    Logger.debug (Printf.sprintf "Set (%d)" n);
     n
   | Neg n ->
     let res = reg.(int_of_id_t n) in
     Logger.debug (Printf.sprintf "Neg %d" res);
     (- res)
-  | SetL (Id.L (s)) ->
+  | SetL id_l ->
     let ProgInterp (_, _, _, labels) = prog in
-    let res = find_label_number (Id.L (s)) labels in
-    Logger.debug (Printf.sprintf "SetL (%s: %d)" s res);
+    let res = find_label_number id_l labels in
+    Logger.debug (Printf.sprintf "SetL (%s: %d)" (let Id.L s = id_l in s) res);
     res
   | Mov "min_caml_hp" ->
     Logger.debug (Printf.sprintf "Mov (min_caml_hp: %d)" !heap);
@@ -108,13 +108,21 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
     Logger.debug (Printf.sprintf "Mov (id_t: %s, regnum: %d, res: %d)" id_t regnum res);
     res
   | Add (id_t1, V (id_t2)) ->
-    let r1 = match id_t1 with "min_caml_hp" -> !heap | _ -> int_of_id_t id_t1 in
+    let r1 =
+      match id_t1 with
+      | "min_caml_hp" -> !heap
+      | _ -> int_of_id_t id_t1
+    in
     let r2 = int_of_id_t id_t2 in
     let res = reg.(r1) + reg.(r2) in
     Logger.debug (Printf.sprintf "Add (r1: %d, r2: %d, res: %d)" r1 r2 res);
     res
   | Add (id_t, C n) ->
-    let r1 = match id_t with "min_caml_hp" -> !heap | _ -> int_of_id_t id_t in
+    let r1 =
+      match id_t with
+      | "min_caml_hp" -> !heap
+      | _ -> int_of_id_t id_t
+    in
     let res = reg.(r1) + n in
     Logger.debug (Printf.sprintf "AddImm (r1: %d, imm: %d, res: %d)" r1 n res);
     res
@@ -131,16 +139,31 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
     res
   | Ld (id_t, id_or_imm, x) ->
     (* id_t + id_or_imm * x の番地から load *)
-    let dest = match id_t with "min_caml_hp" -> !heap | _ -> int_of_id_t id_t in
-    let offset = (int_of_id_or_imm id_or_imm) * x in
+    let dest =
+      match id_t with
+      | "min_caml_hp" ->
+        !heap
+      | _ -> int_of_id_t id_t
+    in
+    let offset =
+      (match id_or_imm with
+       | V "min_caml_hp" ->
+         Logger.debug ("Ld offset: min_caml_hp"); !heap
+       | V id_t -> int_of_id_t id_t
+       | C n -> n) * x
+    in
     let res = mem.(dest + offset) in
-    Logger.debug (Printf.sprintf "Ld (%d: %d)" (dest + offset) res);
+    Logger.debug (Printf.sprintf "Ld (dest: %d, offset: %d, res: %d)" dest offset res);
     res
   | St (id_t1, id_t2, id_or_imm, x) ->
     (* id_t2 + id_or_imm * x の番地に id_t1 を store *)
     let src = reg.(int_of_id_t id_t1) in
     let dest = reg.(int_of_id_t id_t2) in
-    let offset = (int_of_id_or_imm id_or_imm) * x in
+    let offset = (match id_or_imm with
+        | V "min_caml_hp" -> !heap
+        | V id_t -> int_of_id_t id_t
+        | C n -> n) * x
+    in
     let m = dest + offset in
     Logger.debug (Printf.sprintf "St (dest: %d, offset: %d, m: %d), res: %d" dest offset m src);
     mem.(m) <- src;
