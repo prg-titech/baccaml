@@ -168,24 +168,6 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
     mem.(m) <- src;
     0
   | Comment _ -> 0
-  | FNegD id_t -> (- int_of_id_t id_t)
-  | FMovD id_t -> int_of_id_t id_t
-  | FAddD (x, y) ->
-    let x' = int_of_id_t x in
-    let y' = int_of_id_t x in
-    reg.(x') + reg.(y')
-  | FSubD (x, y) ->
-    let x' = int_of_id_t x in
-    let y' = int_of_id_t x in
-    reg.(x') - reg.(y')
-  | FMulD (x, y) ->
-    let x' = int_of_id_t x in
-    let y' = int_of_id_t x in
-    reg.(x') * reg.(y')
-  | FDivD (x, y) ->
-    let x' = int_of_id_t x in
-    let y' = int_of_id_t x in
-    reg.(x') / reg.(y')
   | IfEq (id1, id_or_imm, t1, t2) ->
     let r1 = reg.(int_of_id_t id1) in
     let r2 = reg.(int_of_id_or_imm id_or_imm) in
@@ -218,21 +200,6 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
       interp prog t1 reg  mem
     else
       interp prog t2 reg  mem
-  | IfFLE (id1, id2, t1, t2) ->
-    let r1 = reg.(int_of_id_t id1) in
-    let r2 = reg.(int_of_id_t id2) in
-    if r1 <= r2 then
-      interp prog t1 reg  mem
-    else
-      interp prog t2 reg  mem
-  | LdDF (id_t, id_or_imm, x) ->
-    let m = (int_of_id_t id_t) + (int_of_id_or_imm id_or_imm) * x in
-    mem.(m)
-  | StDF (id_t1, id_t2, id_or_imm, x) ->
-    let src = reg.(int_of_id_t id_t1) in
-    let m = (int_of_id_t id_t2) + (int_of_id_or_imm id_or_imm) * x in
-    mem.(m) <- src;
-    0
   | CallCls (name, args, _) ->
     let addr = reg.(int_of_id_t name) in
     let num = mem.(addr) in
@@ -255,7 +222,7 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
   | CallDir (Id.L ("min_caml_print_newline"), _, _) ->
     print_newline (); 0
   | CallDir (Id.L ("min_caml_truncate"), _, [farg]) ->
-    reg.(int_of_id_t farg)
+    raise (Un_implemented_instruction "min_caml_truncate is not implemented.")
   | CallDir (Id.L ("min_caml_create_array"), _, _ ) ->
     raise (Un_implemented_instruction "min_caml_create array is not implemented.")
   | CallDir (name, args, _) ->
