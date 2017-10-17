@@ -141,8 +141,7 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
     (* id_t + id_or_imm * x の番地から load *)
     let dest =
       match id_t with
-      | "min_caml_hp" ->
-        !heap
+      | "min_caml_hp" -> !heap
       | _ -> int_of_id_t id_t
     in
     let offset =
@@ -152,7 +151,7 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
        | V id_t -> int_of_id_t id_t
        | C n -> n) * x
     in
-    let res = mem.(dest + offset) in
+    let res = mem.(offset) in
     Logger.debug (Printf.sprintf "Ld (dest: %d, offset: %d, res: %d)" dest offset res);
     res
   | St (id_t1, id_t2, id_or_imm, x) ->
