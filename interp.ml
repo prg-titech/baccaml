@@ -94,8 +94,9 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
     Logger.debug (Printf.sprintf "SetL (%s: %d)" (let Id.L s = id_l in s) res);
     res
   | Mov "min_caml_hp" ->
-    Logger.debug (Printf.sprintf "Mov (min_caml_hp: %d)" !heap_pointer);
-    heap.(!heap_pointer)
+    let res = heap.(!heap_pointer) in
+    Logger.debug (Printf.sprintf "Mov (min_caml_hp: %d, res: %d)" !heap_pointer res);
+    res
   | Mov id_t ->
     let ProgInterp (_, _, _, labels) = prog in
     let regnum =
