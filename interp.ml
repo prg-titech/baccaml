@@ -68,6 +68,7 @@ let rec interp (prog : prog_interp) (instruction : Asm.t) (reg : register) (mem 
     let res = interp' prog exp reg mem in
     Logger.debug(Printf.sprintf "Let (id: min_caml_hp, reg_num: %d, res: %d)" !heap_pointer res);
     heap.(!heap_pointer) <- res;
+    heap_pointer := res;
     interp prog body reg mem
   | Let ((id, _), exp, body) ->
     let reg_num = int_of_id_t id in
@@ -146,8 +147,6 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
     in
     let offset =
       (match id_or_imm with
-       | V "min_caml_hp" ->
-         Logger.debug ("Ld offset: min_caml_hp"); !heap_pointer
        | V id_t -> int_of_id_t id_t
        | C n -> n) * x
     in
