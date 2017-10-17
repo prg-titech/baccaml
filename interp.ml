@@ -66,7 +66,7 @@ let rec interp (prog : prog_interp) (instruction : Asm.t) (reg : register) (mem 
     res
   | Let (("min_caml_hp", _), exp, body) ->
     let res = interp' prog exp reg mem in
-    Logger.debug(Printf.sprintf "Let (id: min_caml_hp, res: %d)" res);
+    Logger.debug(Printf.sprintf "Let (id: min_caml_hp, reg_num: %d, res: %d)" !heap res);
     heap := res;
     interp prog body reg mem
   | Let ((id, _), exp, body) ->
@@ -244,7 +244,7 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
         Logger.error (Printf.sprintf "num: %d" num);
         raise Not_found
     in
-    Logger.debug (Printf.sprintf "CallCls (name: %s, mem_num: %d)" name num);
+    Logger.debug (Printf.sprintf "CallCls (name: %s, addr: %d, mem_num: %d)" name addr num);
     let fundef = lookup_by_id_l prog id_l in
     let reg' = make_reg reg (fundef.args) args in
     interp prog (fundef.body) reg' mem
