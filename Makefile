@@ -29,9 +29,36 @@ TESTS = \
 	inprod inprod-rec inprod-loop matmul matmul-flat \
 	manyargs fib-tail
 
+INTERP_TESTS = \
+	print sum-tail gcd sum even-odd \
+	adder cls-rec cls-bug cls-reg-bug \
+	shuffle spill spill2 spill3 join-stack join-stack2 join-stack3 \
+	manyargs fib-tail
+
+UNPASSED_TESTS = \
+	fib ack funcomp cls-bug2 join-reg join-reg2 non-tail-if non-tail-if2 \
+	inprod inprod-rec inprod-loop matmul matmul-flat
+
 PACKS = str ounit
 
 test: $(TESTS:%=test/%.cmp)
+
+exec:
+	@for target in $(INTERP_TESTS); do\
+	  echo "\033[35mTEST $$target\033[0m";\
+	  ./min-caml -interp "test/$$target";\
+	  echo "";\
+	  echo "\033[33mEXECUTED $$target\033[0m\n";\
+	done
+
+exec_unpass:
+	@for target in $(UNPASSED_TESTS); do\
+	  echo "\033[35mTEST $$target\033[0m";\
+	  ./min-caml -interp "test/$$target";\
+	  echo "";\
+	  echo "\033[33mEXECUTED $$target\033[0m\n";\
+	done
+
 
 .PRECIOUS: test/%.s test/% test/%.res test/%.ans test/%.cmp
 TRASH = $(TESTS:%=test/%.s) $(TESTS:%=test/%) $(TESTS:%=test/%.res) $(TESTS:%=test/%.ans) $(TESTS:%=test/%.cmp)

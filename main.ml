@@ -50,7 +50,8 @@ let compile_exec f =
 let interp l = virtualize l |> Interp.f
 
 let interp_exec f =
-  let inchan = open_in (f ^ ".ml") in
+  let file = if String.contains f '.' then f else f ^ ".ml" in
+  let inchan = open_in file in
   try
     interp (Lexing.from_channel inchan);
     close_in inchan;
