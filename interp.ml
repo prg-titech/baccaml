@@ -118,12 +118,12 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
      | "min_caml_hp" ->
        let r1 = !heap_pointer in
        let res = r1 + n in
-       Logger.debug (Printf.sprintf "Add (r1: %d, r2: %d, res: %d)" r1 n res);
+       Logger.debug (Printf.sprintf "AddImm (r1: %d, r2: %d, res: %d)" r1 n res);
        res
      | _ ->
        let r1 = int_of_id_t id_t in
        let res = reg.(r1) + n in
-       Logger.debug (Printf.sprintf "Add (r1: %d, r2: %d, res: %d)" r1 n res);
+       Logger.debug (Printf.sprintf "AddImm (r1: %d, r2: %d, res: %d)" r1 n res);
        res)
   | Sub (id_t1, V (id_t2)) ->
     let r1 = match id_t1 with "min_caml_hp" -> !heap_pointer | _ -> int_of_id_t id_t1 in
@@ -161,7 +161,7 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
         | C n -> n) * x
     in
     let m = dest + offset in
-    Logger.debug (Printf.sprintf "St (dest: %d, offset: %d, m: %d), res: %d" dest offset m src);
+    Logger.debug (Printf.sprintf "St (id_t1: %s, id_t2: %s, dest: %d, offset: %d, m: %d), res: %d" id_t1 id_t2 dest offset m src);
     mem.(m) <- src;
     0
   | Comment _ -> 0
