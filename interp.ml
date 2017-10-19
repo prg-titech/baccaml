@@ -100,24 +100,31 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
     Logger.debug (Printf.sprintf "Mov (id_t: %s, regnum: %d, res: %d)" id_t regnum res);
     res
   | Add (id_t1, V (id_t2)) ->
-    let r1 =
-      match id_t1 with
-      | "min_caml_hp" -> !heap_pointer
-      | _ -> int_of_id_t id_t1
-    in
-    let r2 = int_of_id_t id_t2 in
-    let res = reg.(r1) + reg.(r2) in
-    Logger.debug (Printf.sprintf "Add (r1: %d, r2: %d, res: %d)" r1 r2 res);
-    res
+    (match id_t1 with
+     | "min_caml_hp" ->
+       let r1 = !heap_pointer in
+       let r2 = int_of_id_t id_t2 in
+       let res = r1 + reg.(r2) in
+       Logger.debug (Printf.sprintf "Add (r1: %d, r2: %d, res: %d)" r1 r2 res);
+       res
+     | _ ->
+       let r1 = int_of_id_t id_t1 in
+       let r2 = int_of_id_t id_t2 in
+       let res = reg.(r1) + reg.(r2) in
+       Logger.debug (Printf.sprintf "Add (r1: %d, r2: %d, res: %d)" r1 r2 res);
+       res)
   | Add (id_t, C n) ->
-    let r1 =
-      match id_t with
-      | "min_caml_hp" -> !heap_pointer
-      | _ -> int_of_id_t id_t
-    in
-    let res = reg.(r1) + n in
-    Logger.debug (Printf.sprintf "AddImm (r1: %d, imm: %d, res: %d)" r1 n res);
-    res
+    (match id_t with
+     | "min_caml_hp" ->
+       let r1 = !heap_pointer in
+       let res = r1 + n in
+       Logger.debug (Printf.sprintf "Add (r1: %d, r2: %d, res: %d)" r1 n res);
+       res
+     | _ ->
+       let r1 = int_of_id_t id_t in
+       let res = reg.(r1) + n in
+       Logger.debug (Printf.sprintf "Add (r1: %d, r2: %d, res: %d)" r1 n res);
+       res)
   | Sub (id_t1, V (id_t2)) ->
     let r1 = match id_t1 with "min_caml_hp" -> !heap_pointer | _ -> int_of_id_t id_t1 in
     let r2 = int_of_id_t id_t2 in
