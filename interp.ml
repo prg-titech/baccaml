@@ -10,7 +10,6 @@ type memory = int array
 
 let register_size = 1000
 let heap_pointer = ref 0
-let heap = Array.make register_size 0
 
 let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
   | "min_caml_hp" -> !heap_pointer
@@ -67,7 +66,6 @@ let rec interp (prog : prog_interp) (instruction : Asm.t) (reg : register) (mem 
   | Let (("min_caml_hp", _), exp, body) ->
     let res = interp' prog exp reg mem in
     Logger.debug(Printf.sprintf "Let (id: min_caml_hp, reg_num: %d, res: %d)" !heap_pointer res);
-    heap.(!heap_pointer) <- res;
     heap_pointer := res;
     interp prog body reg mem
   | Let ((id, _), exp, body) ->
@@ -94,18 +92,10 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
     Logger.debug (Printf.sprintf "SetL (%s: %d)" (let Id.L s = id_l in s) res);
     res
   | Mov "min_caml_hp" ->
-    let res = heap.(!heap_pointer) in
-    Logger.debug (Printf.sprintf "Mov (min_caml_hp: %d, res: %d)" !heap_pointer res);
-    res
+    Logger.debug (Printf.sprintf "Mov (min_caml_hp: %d)" !heap_pointer);
+    !heap_pointer
   | Mov id_t ->
-    let ProgInterp (_, _, _, labels) = prog in
-    let regnum =
-      try
-        let (_, n) = List.find (fun (name, i) -> let Id.L (s) = name in s = id_t) labels in
-        n
-      with
-        Not_found -> int_of_id_t id_t
-    in
+    let regnum = int_of_id_t id_t in
     let res = reg.(regnum) in
     Logger.debug (Printf.sprintf "Mov (id_t: %s, regnum: %d, res: %d)" id_t regnum res);
     res
