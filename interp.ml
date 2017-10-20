@@ -126,16 +126,31 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
        Logger.debug (Printf.sprintf "AddImm (r1: %d, r2: %d, res: %d)" r1 n res);
        res)
   | Sub (id_t1, V (id_t2)) ->
-    let r1 = match id_t1 with "min_caml_hp" -> !heap_pointer | _ -> int_of_id_t id_t1 in
-    let r2 = int_of_id_t id_t2 in
-    let res = reg.(r1) - reg.(r2) in
-    Logger.debug (Printf.sprintf "Sub (r1: %d, r2: %d, res: %d)" r1 r2 res);
-    res
+    (match id_t1 with
+       "min_caml_hp" ->
+       let r1 = !heap_pointer in
+       let r2 = reg.(int_of_id_t id_t2) in
+       let res = r1 - r2 in
+       Logger.debug (Printf.sprintf "Sub (r1: %d, r2: %d, res: %d)" r1 r2 res);
+       res
+     | _ ->
+       let r1 = int_of_id_t id_t1 in
+       let r2 = int_of_id_t id_t2 in
+       let res = reg.(r1) - reg.(r2) in
+       Logger.debug (Printf.sprintf "Sub (r1: %d, r2: %d, res: %d)" r1 r2 res);
+       res)
   | Sub (id_t, C (n)) ->
-    let r1 = match id_t with "min_caml_hp" -> !heap_pointer | _ -> int_of_id_t id_t in
-    let res = reg.(r1) - n in
-    Logger.debug (Printf.sprintf "SubImm (r1: %d, imm: %d, res: %d)" r1 n res);
-    res
+    (match id_t with
+       "min_caml_hp" ->
+       let r1 = !heap_pointer in
+       let res = r1 - n in
+       Logger.debug (Printf.sprintf "SubImm (r1: %d, r2: %d, res: %d)" r1 n res);
+       res
+     | _ ->
+       let r1 = int_of_id_t id_t in
+       let res = reg.(r1) - n in
+       Logger.debug (Printf.sprintf "SubImm (r1: %d, r2: %d, res: %d)" r1 n res);
+       res)
   | Ld (id_t, id_or_imm, x) ->
     (* id_t + id_or_imm * x の番地から load *)
     let dest =
@@ -153,8 +168,8 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
     res
   | St (id_t1, id_t2, id_or_imm, x) ->
     (* id_t2 + id_or_imm * x の番地に id_t1 を store *)
-    let src = reg.(int_of_id_t id_t1) in
-    let dest = reg.(int_of_id_t id_t2) in
+    let src = match id_t1 with "min-caml-hp" -> !heap_pointer | _ -> reg.(int_of_id_t id_t1) in
+    let dest = match id_t1 with "min-caml-hp" -> !heap_pointer | _ -> reg.(int_of_id_t id_t2) in
     let offset = (match id_or_imm with
         | V "min_caml_hp" -> !heap_pointer
         | V id_t -> int_of_id_t id_t
@@ -166,7 +181,7 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
     0
   | Comment _ -> 0
   | IfEq (id1, id_or_imm, t1, t2) ->
-    let r1 = reg.(int_of_id_t id1) in
+    let r1 = match id1 with "min_caml_hp" -> !heap_pointer | _ -> reg.(int_of_id_t id1) in
     let r2 = reg.(int_of_id_or_imm id_or_imm) in
     Logger.debug (Printf.sprintf "IfEq (id1: %s, id2: %s, t1: %d, t2: %d)" id1 (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 = r2 then
@@ -174,7 +189,7 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
     else
       interp prog t2 reg  mem
   | IfLE (id, id_or_imm, t1, t2) ->
-    let r1 = reg.(int_of_id_t id) in
+    let r1 = match id with "min_caml_hp" -> !heap_pointer | _ -> reg.(int_of_id_t id) in
     let r2 = reg.(int_of_id_or_imm id_or_imm) in
     Logger.debug (Printf.sprintf "IfLE (id: %s, id_or_imm: %s, t1: %d, t2: %d)" id (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 <= r2 then
@@ -182,24 +197,16 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
     else
       interp prog t2 reg  mem
   | IfGE (id, id_or_imm, t1, t2) ->
-    let r1 = reg.(int_of_id_t id) in
+    let r1 = match id with "min_caml_hp" -> !heap_pointer | _ -> reg.(int_of_id_t id) in
     let r2 = reg.(int_of_id_or_imm id_or_imm) in
     Logger.debug (Printf.sprintf "IfGE (id1: %s, id2: %s, t1: %d, t2: %d)" id (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 >= r2 then
       interp prog t1 reg  mem
     else
       interp prog t2 reg  mem
-  | IfFEq (id1, id2, t1, t2) ->
-    let r1 = reg.(int_of_id_t id1) in
-    let r2 = reg.(int_of_id_t id2) in
-    Logger.debug (Printf.sprintf "IfFEq (id1: %s id2: %s t1: %d, t2: %d)" id1 id2 r1 r2);
-    if r1 = r2 then
-      interp prog t1 reg  mem
-    else
-      interp prog t2 reg  mem
   | CallCls (name, args, _) ->
-    let addr = reg.(int_of_id_t name) in
-    let num = mem.(addr) in
+    let address = reg.(int_of_id_t name) in
+    let num = mem.(address) in
     let ProgInterp (_, _, _, labels) = prog in
     let (id_l, _) =
       try
@@ -208,7 +215,7 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
         Logger.error (Printf.sprintf "num: %d" num);
         raise Not_found
     in
-    Logger.debug (Printf.sprintf "CallCls (name: %s, addr: %d, mem_num: %d)" name addr num);
+    Logger.debug (Printf.sprintf "CallCls (name: %s, address: %d, mem_num: %d)" name address num);
     let fundef = lookup_by_id_l prog id_l in
     let reg' = make_reg reg (fundef.args) args in
     interp prog (fundef.body) reg' mem
