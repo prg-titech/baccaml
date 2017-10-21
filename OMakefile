@@ -46,5 +46,5 @@ OCamlGeneratedFiles(lexer.ml parser.mli parser.ml)
 clean:
   rm -f \
      $(filter-proper-targets $(glob $(addsuffix .*, $(FILES)))) \
-     $(PROGRAM).run $(PROGRAM).opt && \
+     $(PROGRAM).run $(PROGRAM).opt $(PROGRAM) && \
      make clean -s
