@@ -24,6 +24,7 @@ FILES[] =
 	virtual
 	interp
 	emitVirtual
+	interpMain
 
 PROGRAM = min-camli
 USE_OCAMLFIND = true
