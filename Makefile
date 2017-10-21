@@ -29,7 +29,7 @@ TESTS = \
 	inprod inprod-rec inprod-loop matmul matmul-flat \
 	manyargs fib-tail array
 
-PACKS = str ounit
+PACKS = ounit
 
 test: $(TESTS:%=test/%.cmp)
 

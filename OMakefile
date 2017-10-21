@@ -31,7 +31,6 @@ PROGRAM = min-camli
 USE_OCAMLFIND = true
 
 OCAMLPACKS[] =
-	str
 	ounit
 
 # OCAML_LIBS +=
