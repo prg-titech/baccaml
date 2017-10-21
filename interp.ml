@@ -252,4 +252,11 @@ let f prog =
   let mem = Array.make register_size 0 in
   let prog' = to_prog_with_label prog in
   let ProgWithLabel (_, _, instructions, labels) = prog' in
-  ignore (interp prog' instructions reg mem)
+  ignore (interp prog' instructions reg mem);
+  match !Logger.log_level with
+  | Logger.Debug ->
+    print_string "reg: "; List.print_list print_int (Array.to_list reg);
+    print_newline ();
+    print_string "mem: "; List.print_list print_int (Array.to_list mem);
+  | _ ->
+    ()
