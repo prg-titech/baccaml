@@ -1,6 +1,7 @@
-.PHONY: all clean
+.PHONY: all clean test
 
 SRCDIR=$(dir .)
+TESTDIR=$(dir ./test)
 
 FILES[] =
 	util
@@ -27,6 +28,37 @@ FILES[] =
 	emitVirtual
 	interpMain
 
+TESTS[] =
+	print
+	sum-tail
+	gcd
+	sum
+	#fib
+	#ack
+	even-odd
+	adder
+	#funcomp
+	cls-rec
+	cls-bug
+	cls-bug2
+	cls-reg-bug
+	shuffle
+	spill
+	spill2
+	spill3
+	join-stack
+	join-stack2
+	join-stack3
+	join-reg
+	join-reg2
+	#non-tail-if
+	non-tail-if2
+	#inprod
+	#inprod-rec
+	#inprod-loop
+	#matmul
+	#matmul-flat
+
 PROGRAM = min-camli
 USE_OCAMLFIND = true
 
@@ -41,6 +73,15 @@ OCAMLPACKS[] =
 OCamlGeneratedFiles(lexer.ml parser.mli parser.ml)
 
 .DEFAULT: $(OCamlProgram $(PROGRAM), $(FILES))
+
+.PHONY: test
+test:
+	foreach(t, $(TESTS)):
+		echo ""
+		echo "[TEST]=============== $t =========="
+		./$(PROGRAM) test/$(t)
+		echo ""
+		echo "[EXECUTED]=========== $t =========="
 
 .PHONY: clean
 clean:
