@@ -62,7 +62,7 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: m
   Arg.parse
     [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
      ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated");
-     ("-virtual", Arg.Unit(fun _ -> is_emit_virtual := true), "emit virtual machine code");
+     ("-dump", Arg.Unit(fun _ -> is_emit_virtual := true), "emit virtual machine code");
      ("-interp", Arg.Unit(fun _ -> is_interpreter := true), "interpreter mode");
      ("-debug", Arg.Unit(fun _ -> Logger.log_level := Logger.Debug), "print debug messages")]
     (fun s -> files := !files @ [s])
