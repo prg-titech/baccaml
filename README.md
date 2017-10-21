@@ -24,22 +24,10 @@ $ make test
 
 ### Interpreter
 
-``` bash
-$ make
-$ ./min-caml -interp <file>
+```bash
+$ omake
+$ ./min-camli <target>
 ```
-
-## FAQ
-
-[FAQ 1] Is there an x86_64 version?
-
-[A] There is, but it is left as an exercise for students and _not_
-included in this distribution.
-
-[FAQ 2] Is there a version that emits C code?
-
-[A] See above.
-
 
 ## CHANGELOG
 

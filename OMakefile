@@ -1,0 +1,49 @@
+.PHONY: all install clean
+
+FILES[] =
+	util
+	logger
+	type
+	id
+	m
+	s
+	syntax
+	parser
+	lexer
+	typing
+	kNormal
+	alpha
+	beta
+	assoc
+	inline
+	constFold
+	assoc
+	elim
+	closure
+	asm
+	virtual
+	interp
+	emitVirtual
+
+PROGRAM = min-camli
+USE_OCAMLFIND = true
+
+OCAMLPACKS[] =
+	str
+	ounit
+
+# OCAML_LIBS +=
+# OCAML_CLIBS +=
+# OCAML_OTHER_LIBS +=
+# OCAML_LIB_FLAGS +=
+
+OCamlGeneratedFiles(lexer.ml parser.mli parser.ml)
+
+.DEFAULT: $(OCamlProgram $(PROGRAM), $(FILES))
+
+.PHONY: clean
+clean:
+  rm -f \
+     $(filter-proper-targets $(glob $(addsuffix .*, $(FILES)))) \
+     $(PROGRAM).run $(PROGRAM).opt && \
+     make clean -s

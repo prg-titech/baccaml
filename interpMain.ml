@@ -19,34 +19,17 @@ let virtualize l =
   |> Closure.f
   |> Virtual.f
 
-let compile outchan l =
-  if !is_emit_virtual then
-    virtualize l
-    |> EmitVirtual.g outchan
-  else
-    virtualize l
-    |> Simm.f
-    |> RegAlloc.f
-    |> Emit.f outchan
+let interp l = virtualize l |> Interp.f
 
-(* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
-let string s = compile stdout (Lexing.from_string s)
-
-(* ファイルをコンパイルしてファイルに出力する (caml2html: main_file) *)
-let compile_exec f =
-  let inchan = open_in (f ^ ".ml") in
-  let outchan =
-    if !is_emit_virtual then
-      open_out (f ^ ".dump")
-    else
-      open_out (f ^ ".s") in
+let interp_exec f =
+  let file = if String.contains f '.' then f else f ^ ".ml" in
+  let inchan = open_in file in
   try
-    compile outchan (Lexing.from_channel inchan);
+    interp (Lexing.from_channel inchan);
     close_in inchan;
-    close_out outchan;
-  with e -> (close_in inchan; close_out outchan; raise e)
+  with e -> (close_in inchan; raise e)
 
-let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
+let () =
   let files = ref [] in
   Arg.parse
     [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
@@ -55,7 +38,7 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: m
      ("-debug", Arg.Unit(fun _ -> Logger.log_level := Logger.Debug), "print debug messages")]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
-     Printf.sprintf "usage: %s [-inline m] [-iter n] [-virtual] [-interp] [-debug]...filenames without \".ml\"..." Sys.argv.(0));
+     Printf.sprintf "usage: %s [-inline m] [-iter n] [-virtual] [-debug]...filenames without \".ml\"..." Sys.argv.(0));
   List.iter
-    (fun f -> ignore (compile_exec f))
+    (fun f -> interp_exec f)
     !files
