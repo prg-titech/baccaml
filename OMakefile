@@ -1,4 +1,6 @@
-.PHONY: all install clean
+.PHONY: all clean
+
+SRCDIR=$(dir .)
 
 FILES[] =
 	util
@@ -17,7 +19,6 @@ FILES[] =
 	assoc
 	inline
 	constFold
-	assoc
 	elim
 	closure
 	asm
