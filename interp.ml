@@ -159,7 +159,7 @@ and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory
     (* id_t + id_or_imm * x の番地から load *)
     let dest = match id_t with
       | "min_caml_hp" -> !heap_pointer
-      | _ -> reg.(int_of_id_t id_t)
+      | _ -> int_of_id_t id_t
     in
     let offset = (match id_or_imm with
        | V id_t -> reg.(int_of_id_t id_t)
@@ -176,7 +176,7 @@ and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory
     in
     let dest = match id_t1 with
         "min_caml_hp" -> !heap_pointer
-      | _ -> reg.(int_of_id_t id_t2)
+      | _ -> int_of_id_t id_t2
     in
     let offset = (match id_or_imm with
         | V "min_caml_hp" -> !heap_pointer
