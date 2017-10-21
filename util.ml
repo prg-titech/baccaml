@@ -15,9 +15,9 @@ module ListUtil = struct
     in
     print_string "[";
     print_elements lst;
-    print_string "]";;
+    print_string "]"
 
-  let list_to_string s =
+  let to_string s =
     let rec loop s n =
       match s with
         [] -> String.make n '?'
@@ -37,7 +37,7 @@ module ArrayUtil = struct
     in
     print_string "[|";
     print_elements (Array.to_list arr);
-    print_string "|]";;
+    print_string "|]"
 end
 
 module StringUtil = struct
