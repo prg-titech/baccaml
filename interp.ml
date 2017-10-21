@@ -157,26 +157,30 @@ and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory
        res)
   | Ld (id_t, id_or_imm, x) ->
     (* id_t + id_or_imm * x の番地から load *)
-    let dest =
-      match id_t with
+    let dest = match id_t with
       | "min_caml_hp" -> !heap_pointer
-      | _ -> int_of_id_t id_t
+      | _ -> reg.(int_of_id_t id_t)
     in
-    let offset =
-      (match id_or_imm with
-       | V id_t -> int_of_id_t id_t
+    let offset = (match id_or_imm with
+       | V id_t -> reg.(int_of_id_t id_t)
        | C n -> n) * x
     in
-    let res = mem.(offset) in
+    let res = mem.(dest + offset) in
     Logger.debug (Printf.sprintf "Ld (dest: %d, offset: %d, res: %d)" dest offset res);
     res
   | St (id_t1, id_t2, id_or_imm, x) ->
     (* id_t2 + id_or_imm * x の番地に id_t1 を store *)
-    let src = match id_t1 with "min-caml-hp" -> !heap_pointer | _ -> reg.(int_of_id_t id_t1) in
-    let dest = match id_t1 with "min-caml-hp" -> !heap_pointer | _ -> reg.(int_of_id_t id_t2) in
+    let src =  match id_t1 with
+        "min_caml_hp" -> !heap_pointer
+      | _ -> reg.(int_of_id_t id_t1)
+    in
+    let dest = match id_t1 with
+        "min_caml_hp" -> !heap_pointer
+      | _ -> reg.(int_of_id_t id_t2)
+    in
     let offset = (match id_or_imm with
         | V "min_caml_hp" -> !heap_pointer
-        | V id_t -> int_of_id_t id_t
+        | V id_t -> reg.(int_of_id_t id_t)
         | C n -> n) * x
     in
     let m = dest + offset in
