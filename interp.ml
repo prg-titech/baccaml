@@ -63,16 +63,20 @@ let rec interp (prog : prog_with_label) (instruction : Asm.t) (reg : register) (
     let res = interp' prog exp reg mem in
     Logger.debug (Printf.sprintf "Ans (%d)" res);
     res
-  | Let (("min_caml_hp", _), exp, body) ->
-    let res = interp' prog exp reg mem in
-    Logger.debug(Printf.sprintf "Let (id: min_caml_hp, reg_num: %d, res: %d)" !heap_pointer res);
-    heap_pointer := res;
+  | Let ((id, _), CallDir (Id.L ("min_caml_create_array"), arg1 :: arg2 :: [], _), body) ->
+    let reg_num = int_of_id_t id in
+    let size = reg.(int_of_id_t arg1) in
+    let init = reg.(int_of_id_t arg2) in
+    Logger.debug (Printf.sprintf "Let (id: %s, reg_num: %d, min_caml_create_array, size: %d, init: %d)" id reg_num size init);
+    for i = 0 to size do
+      mem.(reg_num + i) <- init
+    done;
     interp prog body reg mem
   | Let ((id, _), exp, body) ->
     let reg_num = int_of_id_t id in
     let res = interp' prog exp reg mem in
     Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
-    reg.(reg_num) <- res;
+    if id = "min_caml_hp" then heap_pointer := res else reg.(reg_num) <- res;
     interp prog body reg  mem
 
 and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory) : 'a =
@@ -227,8 +231,6 @@ and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory
     print_newline (); 0
   | CallDir (Id.L ("min_caml_truncate"), _, [farg]) ->
     raise (Un_implemented_instruction "min_caml_truncate is not implemented.")
-  | CallDir (Id.L ("min_caml_create_array"), _, _ ) ->
-    raise (Un_implemented_instruction "min_caml_create array is not implemented.")
   | CallDir (name, args, _) ->
     (* fundef.args: 仮引数 args: 実引数 *)
     let fundef = lookup_by_id_l prog name in
