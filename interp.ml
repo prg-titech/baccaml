@@ -68,7 +68,7 @@ let rec interp (prog : prog_with_label) (instruction : Asm.t) (reg : register) (
     let size = reg.(int_of_id_t arg1) in
     let init = reg.(int_of_id_t arg2) in
     Logger.debug (Printf.sprintf "Let (id: %s, reg_num: %d, min_caml_create_array, size: %d, init: %d)" id reg_num size init);
-    for i = 0 to size do
+    for i = 0 to (size - 1) * 4 do
       mem.(reg_num + i) <- init
     done;
     interp prog body reg mem
@@ -162,8 +162,8 @@ and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory
       | _ -> int_of_id_t id_t
     in
     let offset = (match id_or_imm with
-       | V id_t -> reg.(int_of_id_t id_t)
-       | C n -> n) * x
+        | V id_t -> reg.(int_of_id_t id_t)
+        | C n -> n) * x
     in
     let res = mem.(dest + offset) in
     Logger.debug (Printf.sprintf "Ld (dest: %d, offset: %d, res: %d)" dest offset res);
