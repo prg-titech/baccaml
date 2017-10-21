@@ -50,7 +50,7 @@ module StringUtil = struct
 
   let string_after s n = String.sub s n (String.length s - n)
 
-  let split str chr =
+  let after_of str chr =
     let index = ref 0 in
     for i = 0 to (String.length str - 1) do
       if (String.get str i) = chr then index := i;

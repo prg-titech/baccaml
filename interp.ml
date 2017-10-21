@@ -15,9 +15,9 @@ let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装
   | "min_caml_hp" -> !heap_pointer
   | id ->
     try
-      int_of_string (String.split id '.')
+      int_of_string (String.after_of id '.')
     with _ ->
-      int_of_string (String.split id 'u')
+      int_of_string (String.after_of id 'u')
 
 let int_of_id_or_imm = function V (id_t) -> int_of_id_t id_t | C (n) -> n
 
