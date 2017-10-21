@@ -9,9 +9,11 @@ let to_string_id_or_imm id_or_imm =
   | V (t) -> t
   | C (i) -> Pervasives.string_of_int i
 
-let rec to_string_type_list = function
-  | [] -> ""
-  | hd :: tl -> (to_string_type hd) ^ ", " ^ (to_string_type_list tl)
+let rec to_string_type_list lst =
+  let rec loop = function
+    | [] -> ""
+    | hd :: tl -> (to_string_type hd) ^ ", " ^ (to_string_type_list tl)
+  in "[" ^ (loop lst) ^ "]"
 
 and to_string_type typ =
   match typ with
