@@ -17,8 +17,8 @@ SOURCES = \
 	alpha.mli alpha.ml beta.mli beta.ml assoc.mli assoc.ml \
 	inline.mli inline.ml constFold.mli constFold.ml elim.mli elim.ml \
 	closure.mli closure.ml asm.mli asm.ml virtual.mli virtual.ml \
-	simm.mli simm.ml regAlloc.mli regAlloc.ml emit.mli emit.ml \
-	interp.mli interp.ml emitVirtual.mli emitVirtual.ml \
+	interp.mli interp.ml simm.mli simm.ml regAlloc.mli regAlloc.ml emit.mli emit.ml \
+	emitVirtual.mli emitVirtual.ml interpMain.ml \
 	main.mli main.ml top.mli top.ml
 
 TESTS = \
