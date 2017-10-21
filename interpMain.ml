@@ -29,7 +29,7 @@ let interp_exec f =
     close_in inchan;
   with e -> (close_in inchan; raise e)
 
-let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
+let () =
   let files = ref [] in
   Arg.parse
     [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
@@ -38,7 +38,7 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: m
      ("-debug", Arg.Unit(fun _ -> Logger.log_level := Logger.Debug), "print debug messages")]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
-     Printf.sprintf "usage: %s [-inline m] [-iter n] [-virtual] [-interp] [-debug]...filenames without \".ml\"..." Sys.argv.(0));
+     Printf.sprintf "usage: %s [-inline m] [-iter n] [-virtual] [-debug]...filenames without \".ml\"..." Sys.argv.(0));
   List.iter
     (fun f -> interp_exec f)
     !files
