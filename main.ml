@@ -23,7 +23,7 @@ let virtualize l =
 let compile outchan l =
   if !is_emit_virtual then
     virtualize l
-    |> EmitVirtual.f outchan
+    |> EmitVirtual.g outchan
   else
     virtualize l
     |> Simm.f
@@ -50,7 +50,8 @@ let compile_exec f =
 let interp l = virtualize l |> Interp.f
 
 let interp_exec f =
-  let inchan = open_in (f ^ ".ml") in
+  let file = if String.contains f '.' then f else f ^ ".ml" in
+  let inchan = open_in file in
   try
     interp (Lexing.from_channel inchan);
     close_in inchan;

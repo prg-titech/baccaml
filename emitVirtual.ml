@@ -9,9 +9,11 @@ let to_string_id_or_imm id_or_imm =
   | V (t) -> t
   | C (i) -> Pervasives.string_of_int i
 
-let rec to_string_type_list = function
-  | [] -> ""
-  | hd :: tl -> (to_string_type hd) ^ ", " ^ (to_string_type_list tl)
+let rec to_string_type_list lst =
+  let rec loop = function
+    | [] -> ""
+    | hd :: tl -> (to_string_type hd) ^ ", " ^ (to_string_type_list tl)
+  in "[" ^ (loop lst) ^ "]"
 
 and to_string_type typ =
   match typ with
@@ -99,11 +101,11 @@ let rec to_string_exp exp =
 and to_string_t t =
   match t with
   | Ans (exp) ->
-    Printf.sprintf "\nAns (%s)" (to_string_exp exp)
+    Printf.sprintf "\n  Ans (%s)" (to_string_exp exp)
   | Let (x', exp, t') ->
     match x' with
     | (id', type') ->
-      Printf.sprintf "\nLet ((%s, %s), %s, %s)" id' (to_string_type type') (to_string_exp exp) (to_string_t t')
+      Printf.sprintf "\n  Let ((%s, %s), %s, %s)" id' (to_string_type type') (to_string_exp exp) (to_string_t t')
 
 (* fundef to string *)
 let to_string_fundef fundef' =
@@ -114,7 +116,7 @@ let to_string_fundef fundef' =
     let fargs_str = to_string_ids f in
     let body_str = to_string_t b in
     let ret_str = to_string_type r in
-    Printf.sprintf "{name = %s; args = %s; fargs = %s; body = %s; ret = %s}" name_str args_str fargs_str body_str ret_str
+    Printf.sprintf "\n{name = %s; args = %s; fargs = %s; body = %s; ret = %s}" name_str args_str fargs_str body_str ret_str
 
 let rec to_string_floating_point_table lst =
   let rec loop lst res =
@@ -141,12 +143,12 @@ let to_string_labels labels =
 
 (* Asm.prog -> Interp.ProgInterp *)
 let g oc asm_prog =
-  let Interp.ProgInterp (xs, fundefs, t', labels) = Interp.to_prog_interp asm_prog in
+  let Interp.ProgWithLabel (xs, fundefs, t', labels) = Interp.to_prog_with_label asm_prog in
   let xs' = to_string_floating_point_table xs in
   let fundefs' = "[" ^ String.concat ", " (List.map to_string_fundef fundefs) ^ "]" in
   let main_exp = to_string_t t' in
   let labels' = "(" ^ String.concat "; " (to_string_labels labels) ^ ")" in
-  Printf.fprintf oc "ProgInterp (%s, %s, %s, %s)" xs' fundefs' main_exp labels'
+  Printf.fprintf oc "ProgInterp (table = %s, fundefs = %s,\n main_exp = %s,\n labels = %s)" xs' fundefs' main_exp labels'
 
 (* entry point *)
 let f oc asm_prog =
