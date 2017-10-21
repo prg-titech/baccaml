@@ -4,7 +4,7 @@ open Util
 exception Un_implemented_instruction of string
 
 type labels = (Id.l * int) list (* function label for closures *)
-type prog_interp = ProgInterp of (Id.l * float) list * fundef list * t * labels (* prog for interpreter *)
+type prog_with_label = ProgWithLabel of (Id.l * float) list * fundef list * t * labels (* prog for interpreter *)
 type register = int array
 type memory = int array
 
@@ -34,14 +34,14 @@ let rec find_label_number label = function
   | (l, num) :: tl -> if l = label then num else find_label_number label tl
 
 let rec lookup_by_id_l prog name =
-  let ProgInterp (_, fundefs, _, _) = prog in
+  let ProgWithLabel (_, fundefs, _, _) = prog in
   try
     List.find (fun fundef -> (fundef.name = name)) fundefs
   with e ->
     Logger.error (let Id.L s = name in Printf.sprintf "CallCls %s" s); raise e
 
 let rec lookup_by_id_t prog name =
-  let ProgInterp (_, fundefs, _, _) = prog in
+  let ProgWithLabel (_, fundefs, _, _) = prog in
   try
     List.find (fun fundef -> (let Id.L s = fundef.name in s) = name) fundefs
   with e ->
@@ -57,7 +57,7 @@ let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数が
       (List.zip regs_tmp regs_real));
   arr
 
-let rec interp (prog : prog_interp) (instruction : Asm.t) (reg : register) (mem : memory) : 'a =
+let rec interp (prog : prog_with_label) (instruction : Asm.t) (reg : register) (mem : memory) : 'a =
   match instruction with
   | Ans exp ->
     let res = interp' prog exp reg mem in
@@ -75,7 +75,7 @@ let rec interp (prog : prog_interp) (instruction : Asm.t) (reg : register) (mem 
     reg.(reg_num) <- res;
     interp prog body reg  mem
 
-and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 'a =
+and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory) : 'a =
   match exp' with
   | Nop ->
     0
@@ -87,7 +87,7 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
     Logger.debug (Printf.sprintf "Neg %d" res);
     (- res)
   | SetL id_l ->
-    let ProgInterp (_, _, _, labels) = prog in
+    let ProgWithLabel (_, _, _, labels) = prog in
     let res = find_label_number id_l labels in
     Logger.debug (Printf.sprintf "SetL (%s: %d)" (let Id.L s = id_l in s) res);
     res
@@ -207,7 +207,7 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
   | CallCls (name, args, _) ->
     let address = reg.(int_of_id_t name) in
     let num = mem.(address) in
-    let ProgInterp (_, _, _, labels) = prog in
+    let ProgWithLabel (_, _, _, labels) = prog in
     let (id_l, _) =
       try
         List.find (fun (id_l, n) -> n = num) labels
@@ -237,7 +237,7 @@ and interp' (prog : prog_interp) (exp' : exp) (reg : register) (mem : memory) : 
     interp prog (fundef.body) reg'  mem
   | _ -> raise (Un_implemented_instruction "Not implemented.")
 
-let to_prog_interp prog =
+let to_prog_with_label prog =
   let rec create_labels fundefs i =
     match fundefs with
     | [] -> []
@@ -245,11 +245,11 @@ let to_prog_interp prog =
   in
   let Prog (table, fundefs, exp) = prog in
   let labels = create_labels fundefs 0 in
-  ProgInterp (table, fundefs, exp, labels)
+  ProgWithLabel (table, fundefs, exp, labels)
 
 let f prog =
   let reg = Array.make register_size 0 in
   let mem = Array.make register_size 0 in
-  let prog' = to_prog_interp prog in
-  let ProgInterp (_, _, instructions, labels) = prog' in
+  let prog' = to_prog_with_label prog in
+  let ProgWithLabel (_, _, instructions, labels) = prog' in
   ignore (interp prog' instructions reg mem)
