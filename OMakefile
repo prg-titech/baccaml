@@ -51,13 +51,15 @@ TESTS[] =
 	join-stack3
 	join-reg
 	join-reg2
-	#non-tail-if
 	non-tail-if2
-	#inprod
-	#inprod-rec
-	#inprod-loop
-	#matmul
-	#matmul-flat
+
+UNSUPPORTED[] =
+	non-tail-if
+	inprod
+	inprod-loop
+	inprod-rec
+	matmul
+	matmul-flat
 
 PROGRAM = min-camli
 USE_OCAMLFIND = true
@@ -78,10 +80,11 @@ OCamlGeneratedFiles(lexer.ml parser.mli parser.ml)
 test:
 	foreach(t, $(TESTS)):
 		echo ""
-		echo "[TEST]=============== $t =========="
+		echo "=========== $t =========="
+		echo "[TEST]"
 		./$(PROGRAM) test/$(t)
 		echo ""
-		echo "[EXECUTED]=========== $t =========="
+		echo "[EXECUTED]"
 
 .PHONY: clean
 clean:
