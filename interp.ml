@@ -14,10 +14,10 @@ let heap_pointer = ref 0
 let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
   | "min_caml_hp" -> !heap_pointer
   | id ->
-    let splitted = Str.split (Str.regexp_string ".") id in
-    (match List.nth splitted 1 with
-     | num -> int_of_string num
-     | exception _ -> int_of_string (Str.string_after (List.hd splitted) 2))
+    try
+      int_of_string (String.split id '.')
+    with _ ->
+      int_of_string (String.split id 'u')
 
 let float_of_id_t id =
   let splitted = Str.split (Str.regexp_string ".") id in

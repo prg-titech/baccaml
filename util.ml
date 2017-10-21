@@ -47,6 +47,15 @@ module StringUtil = struct
       else (String.get str i) :: (loop (i + 1) limit)
     in
     loop 0 (String.length str)
+
+  let string_after s n = String.sub s n (String.length s - n)
+
+  let split str chr =
+    let index = ref 0 in
+    for i = 0 to (String.length str - 1) do
+      if (String.get str i) = chr then index := i;
+    done;
+    string_after str (!index + 1)
 end
 
 module List = struct
