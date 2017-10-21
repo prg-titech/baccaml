@@ -19,12 +19,6 @@ let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装
     with _ ->
       int_of_string (String.split id 'u')
 
-let float_of_id_t id =
-  let splitted = Str.split (Str.regexp_string ".") id in
-  match List.nth splitted 1 with
-  | num -> float_of_string num
-  | exception _ -> float_of_string (Str.string_after (List.hd splitted) 2)
-
 let int_of_id_or_imm = function V (id_t) -> int_of_id_t id_t | C (n) -> n
 
 let string_of_id_or_imm = function V (id_t) -> id_t | C (n) -> string_of_int n
