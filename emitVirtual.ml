@@ -47,7 +47,7 @@ let rec to_string_exp exp =
   match exp with
   | Nop -> "Nop"
   | Set (i) -> Printf.sprintf "Set (%d)" i
-  | SetL (l) -> Printf.sprintf "SetL (%s)" (to_string_idl l)
+  | SetL (l) -> Printf.sprintf "SetL (Id.L (%s))" (to_string_idl l)
   | Mov (x')-> Printf.sprintf "Mov (%s)" x'
   | Neg (x')-> Printf.sprintf "Neg (%s)" x'
   | Add (x', y') -> Printf.sprintf "Add (%s, %s)" x' (to_string_id_or_imm y')
@@ -91,7 +91,7 @@ let rec to_string_exp exp =
   | CallCls (x', ids1, ids2) ->
     Printf.sprintf "CallCls (%s, %s, %s)" x' (to_string_ids ids1) (to_string_ids ids2)
   | CallDir (l', ids1, ids2) ->
-    Printf.sprintf "CallDir (%s, %s, %s)" (to_string_idl l') (to_string_ids ids1) (to_string_ids ids2)
+    Printf.sprintf "CallDir (Id.L (%s), %s, %s)" (to_string_idl l') (to_string_ids ids1) (to_string_ids ids2)
   | Save (x1, x2) ->
     Printf.sprintf "Save (%s, %s)" x1 x2
   | Restore x ->
@@ -139,7 +139,7 @@ let to_string_prog p =
     Printf.sprintf "Prog (%s, %s, %s)" xs' fundefs' main_exp
 
 let to_string_labels labels =
-  List.map (fun (id_l, i) -> to_string_idl id_l ^ ", " ^ string_of_int i) labels
+  List.map (fun (id_l, i) -> Printf.sprintf "Id.L (%s), %d" (let Id.L s = id_l in s) i) labels
 
 (* Asm.prog -> Interp.ProgInterp *)
 let g oc asm_prog =
