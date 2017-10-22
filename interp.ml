@@ -59,20 +59,26 @@ let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : register) (mem : 
     Logger.debug (Printf.sprintf "Ans (%d)" res);
     res
   | Let ((id, _), CallDir (Id.L ("min_caml_create_array"), arg1 :: arg2 :: [], _), t) ->
-    let reg_num = int_of_id_t id in
+    let num = reg.(int_of_id_t id) in
     let size = reg.(int_of_id_t arg1) in
     let init = reg.(int_of_id_t arg2) in
-    Logger.debug (Printf.sprintf "Let (id: %s, reg_num: %d, min_caml_create_array, size: %d, init: %d)" id reg_num size init);
+    Logger.debug (Printf.sprintf "Let (id: %s, num: %d, min_caml_create_array, size: %d, init: %d)" id num size init);
     for i = 0 to (size - 1) * 4 do
-      mem.(reg_num + i) <- init
+      mem.(num + i) <- init;
     done;
     interp prog t reg mem
   | Let ((id, _), exp, t) ->
-    let reg_num = int_of_id_t id in
-    let res = interp' prog exp reg mem in
-    Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
-    if id = "min_caml_hp" then heap_pointer := res else reg.(reg_num) <- res;
-    interp prog t reg mem
+    if id = "min_caml_hp" then
+      let res = interp' prog exp reg mem in
+      Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id !heap_pointer res);
+      heap_pointer := res;
+      interp prog t reg mem
+    else
+      let reg_num = int_of_id_t id in
+      let res = interp' prog exp reg mem in
+      Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
+      reg.(reg_num) <- res;
+      interp prog t reg mem
 
 and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory) : 'a =
   match exp' with
