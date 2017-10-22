@@ -1,7 +1,7 @@
 #!/bin/bash
 
-make -s
-omake -s 
+make --silent test
+omake 
 
 for file in $(find ./test -maxdepth 1 -name '*.ml' -type f); do
   printf "\n\e[33m[TEST] ${file}\e[m\n"
