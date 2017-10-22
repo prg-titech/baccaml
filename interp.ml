@@ -63,7 +63,7 @@ let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : register) (mem : 
     let size = reg.(int_of_id_t arg1) in
     let init = reg.(int_of_id_t arg2) in
     Logger.debug (Printf.sprintf "Let (id: %s, num: %d, min_caml_create_array, size: %d, init: %d)" id num size init);
-    for i = 0 to (size - 1) * 4 do
+    for i = 0 to (size - 1) do
       mem.(num + i) <- init;
     done;
     interp prog t reg mem
@@ -165,7 +165,7 @@ and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory
     in
     let offset = (match id_or_imm with
         | V id_t -> reg.(int_of_id_t id_t)
-        | C n -> n) * x
+        | C n -> n) * x / 4
     in
     let res = mem.(dest + offset) in
     Logger.debug (Printf.sprintf "Ld (id_t: %s, dest: %d, offset: %d, m: %d, res: %d)" id_t dest offset (dest + offset) res);
@@ -183,7 +183,7 @@ and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory
     let offset = (match id_or_imm with
         | V "min_caml_hp" -> !heap_pointer
         | V id_t -> reg.(int_of_id_t id_t)
-        | C n -> n) * x
+        | C n -> n) * x / 4
     in
     let m = dest + offset in
     Logger.debug (Printf.sprintf "St (id_t1: %s, id_t2: %s, dest: %d, offset: %d, m: %d), res: %d" id_t1 id_t2 dest offset m src);
