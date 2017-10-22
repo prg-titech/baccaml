@@ -20,6 +20,7 @@ $ make
 
 ``` bash
 $ make test
+$ ./<target>
 ```
 
 ### Interpreter
@@ -27,6 +28,12 @@ $ make test
 ```bash
 $ omake
 $ ./min-camli <target>
+```
+
+## Run
+
+```bash
+$ ./bin/runtest
 ```
 
 ## CHANGELOG
