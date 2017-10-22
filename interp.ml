@@ -44,20 +44,20 @@ let rec lookup_by_id_t prog name =
 let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数がしまわれている reg を作る *)
   let regs_tmp = List.map int_of_id_t args_tmp in
   let regs_real = List.map int_of_id_t args_real in
-  let arr = Array.make 10000 0 in
+  let arr = Array.make register_size 0 in
   ignore (
     List.map
       (fun (x, y) -> arr.(x) <- reg.(y))
       (List.zip regs_tmp regs_real));
   arr
 
-let rec interp (prog : prog_with_label) (instruction : Asm.t) (reg : register) (mem : memory) : 'a =
-  match instruction with
+let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : register) (mem : memory) : 'a =
+  match instr with
   | Ans exp ->
     let res = interp' prog exp reg mem in
     Logger.debug (Printf.sprintf "Ans (%d)" res);
     res
-  | Let ((id, _), CallDir (Id.L ("min_caml_create_array"), arg1 :: arg2 :: [], _), body) ->
+  | Let ((id, _), CallDir (Id.L ("min_caml_create_array"), arg1 :: arg2 :: [], _), t) ->
     let reg_num = int_of_id_t id in
     let size = reg.(int_of_id_t arg1) in
     let init = reg.(int_of_id_t arg2) in
@@ -65,13 +65,13 @@ let rec interp (prog : prog_with_label) (instruction : Asm.t) (reg : register) (
     for i = 0 to (size - 1) * 4 do
       mem.(reg_num + i) <- init
     done;
-    interp prog body reg mem
-  | Let ((id, _), exp, body) ->
+    interp prog t reg mem
+  | Let ((id, _), exp, t) ->
     let reg_num = int_of_id_t id in
     let res = interp' prog exp reg mem in
     Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
     if id = "min_caml_hp" then heap_pointer := res else reg.(reg_num) <- res;
-    interp prog body reg  mem
+    interp prog t reg mem
 
 and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory) : 'a =
   match exp' with
