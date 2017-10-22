@@ -33,8 +33,8 @@ TESTS[] =
 	sum-tail
 	gcd
 	sum
-	#fib
-	#ack
+	fib
+	ack
 	even-odd
 	adder
 	#funcomp
@@ -52,6 +52,7 @@ TESTS[] =
 	join-reg
 	join-reg2
 	non-tail-if2
+	array
 
 UNSUPPORTED[] =
 	non-tail-if
@@ -78,11 +79,15 @@ OCamlGeneratedFiles(lexer.ml parser.mli parser.ml)
 
 .PHONY: test
 test:
+	make -s test
 	foreach(t, $(TESTS)):
 		echo ""
 		echo "=========== $t =========="
 		echo "[TEST]"
+		echo ""
 		./$(PROGRAM) test/$(t)
+		echo ""
+		./test/$(t)
 		echo ""
 		echo "[EXECUTED]"
 
