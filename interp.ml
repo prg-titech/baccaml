@@ -76,6 +76,7 @@ let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : register) (mem : 
 and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory) : 'a =
   match exp' with
   | Nop ->
+    Logger.debug ("Nop");
     0
   | Set n ->
     Logger.debug (Printf.sprintf "Set (%d)" n);
@@ -160,7 +161,7 @@ and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory
         | C n -> n) * x
     in
     let res = mem.(dest + offset) in
-    Logger.debug (Printf.sprintf "Ld (dest: %d, offset: %d, res: %d)" dest offset res);
+    Logger.debug (Printf.sprintf "Ld (id_t: %s, dest: %d, offset: %d, m: %d, res: %d)" id_t dest offset (dest + offset) res);
     res
   | St (id_t1, id_t2, id_or_imm, x) ->
     (* id_t2 + id_or_imm * x の番地に id_t1 を store *)
