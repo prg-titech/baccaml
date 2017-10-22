@@ -9,7 +9,7 @@ type prog_with_label = ProgWithLabel of (Id.l * float) list * fundef list * t * 
 type register = int array
 type memory = int array
 
-let register_size = 1000
+let register_size = 256
 let heap_pointer = ref 0
 
 let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
