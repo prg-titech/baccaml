@@ -2,6 +2,7 @@ open Asm
 open Util
 
 exception Un_implemented_instruction of string
+exception Un_supported of string
 
 type labels = (Id.l * int) list (* function label for closures *)
 type prog_with_label = ProgWithLabel of (Id.l * float) list * fundef list * t * labels (* prog for interpreter *)
@@ -12,7 +13,7 @@ let register_size = 1000
 let heap_pointer = ref 0
 
 let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
-  | "min_caml_hp" -> !heap_pointer
+  | "min_caml_hp" -> raise (Un_supported ("int_of_id_t min_caml_hp is not supported."))
   | id ->
     try
       int_of_string (String.after_of id '.')
