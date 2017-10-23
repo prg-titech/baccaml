@@ -40,8 +40,8 @@ let interp_exec f =
   with e ->
     close_in inchan;
     (match outchan with
-       | Some (out) -> close_out out
-       | None -> ());
+     | Some (out) -> close_out out
+     | None -> ());
     raise e
 
 let () =
@@ -52,7 +52,7 @@ let () =
      ("-dump", Arg.Unit(fun _ -> is_emit_virtual := true), "emit virtual machine code");
      ("-debug", Arg.Unit(fun _ -> Logger.log_level := Logger.Debug), "print debug messages")]
     (fun s -> files := !files @ [s])
-    ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
+    ("Min-Caml Interpreter (C) Yusuke Izawa\n" ^
      Printf.sprintf "usage: %s [-inline m] [-iter n] [-virtual] [-debug]...filenames without \".ml\"..." Sys.argv.(0));
   List.iter
     (fun f -> interp_exec f)
