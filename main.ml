@@ -41,11 +41,10 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: m
   let files = ref [] in
   Arg.parse
     [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
-     ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated");
-     ("-debug", Arg.Unit(fun _ -> Logger.log_level := Logger.Debug), "print debug messages")]
+     ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated");]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
-     Printf.sprintf "usage: %s [-inline m] [-iter n] [-virtual] [-interp] [-debug]...filenames without \".ml\"..." Sys.argv.(0));
+     Printf.sprintf "usage: %s [-inline m] [-iter n] ...filenames without \".ml\"..." Sys.argv.(0));
   List.iter
     (fun f -> ignore (compile_exec f))
     !files
