@@ -85,6 +85,8 @@ matmul-flat \
 manyargs \
 fib-tail \
 array \
+array2 \
+float \
 tuple
 
 ifeq ($(PROJECT), interpreter)
