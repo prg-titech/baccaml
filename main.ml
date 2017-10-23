@@ -1,5 +1,4 @@
 let limit = ref 1000
-let is_emit_virtual = ref false
 
 let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
@@ -20,14 +19,10 @@ let virtualize l =
   |> Virtual.f
 
 let compile outchan l =
-  if !is_emit_virtual then
-    virtualize l
-    |> EmitVirtual.g outchan
-  else
-    virtualize l
-    |> Simm.f
-    |> RegAlloc.f
-    |> Emit.f outchan
+  virtualize l
+  |> Simm.f
+  |> RegAlloc.f
+  |> Emit.f outchan
 
 (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
 let string s = compile stdout (Lexing.from_string s)
@@ -35,11 +30,7 @@ let string s = compile stdout (Lexing.from_string s)
 (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file) *)
 let compile_exec f =
   let inchan = open_in (f ^ ".ml") in
-  let outchan =
-    if !is_emit_virtual then
-      open_out (f ^ ".dump")
-    else
-      open_out (f ^ ".s") in
+  let outchan = open_out (f ^ ".s") in
   try
     compile outchan (Lexing.from_channel inchan);
     close_in inchan;
@@ -51,7 +42,6 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: m
   Arg.parse
     [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
      ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated");
-     ("-dump", Arg.Unit(fun _ -> is_emit_virtual := true), "emit virtual machine code");
      ("-debug", Arg.Unit(fun _ -> Logger.log_level := Logger.Debug), "print debug messages")]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^

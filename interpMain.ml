@@ -22,12 +22,27 @@ let virtualize l =
 let interp l = virtualize l |> Interp.f
 
 let interp_exec f =
-  let file = if String.contains f '.' then f else f ^ ".ml" in
-  let inchan = open_in file in
+  let inchan = open_in (f ^ ".ml") in
+  let outchan =
+    if !is_emit_virtual then
+      Some (open_out (f ^ ".dump"))
+    else
+      None
+  in
   try
-    interp (Lexing.from_channel inchan);
+    (match outchan with
+     | Some (out) ->
+       EmitVirtual.g out (virtualize (Lexing.from_channel inchan));
+       close_out out
+     | None ->
+       interp (Lexing.from_channel inchan));
     close_in inchan;
-  with e -> (close_in inchan; raise e)
+  with e ->
+    close_in inchan;
+    (match outchan with
+       | Some (out) -> close_out out
+       | None -> ());
+    raise e
 
 let () =
   let files = ref [] in

@@ -48,6 +48,10 @@ regAlloc.ml \
 emit.mli \
 emit.ml
 
+SOURCES_TOP = \
+top.ml \
+top.mli
+
 TESTS = \
 print \
 sum-tail \
@@ -85,10 +89,10 @@ tuple
 
 ifeq ($(PROJECT), interpreter)
   RESULT = $(INTERPRETER)
-  SOURCES = $(SOURCES_LIB) interp.ml interp.mli interpMain.ml
+  SOURCES = $(SOURCES_LIB) interp.ml interp.mli emitVirtual.mli emitVirtual.ml interpMain.ml $(SOURCES_TOP)
 else
   RESULT = $(COMPILER)
-  SOURCES = $(SOURCES_LIB) interp.mli interp.ml emitVirtual.mli emitVirtual.ml main.mli main.ml
+  SOURCES = $(SOURCES_LIB) main.mli main.ml
 endif
 
 default: debug-code top

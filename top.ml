@@ -1,5 +1,3 @@
-open Main
-
 let emit_virtual str =
   Id.counter := 0;
   Typing.extenv := M.empty;
@@ -7,7 +5,7 @@ let emit_virtual str =
   |> Parser.exp Lexer.token
   |> Typing.f
   |> KNormal.f
-  |> iter !limit
+  |> InterpMain.iter !InterpMain.limit
   |> Alpha.f
   |> Closure.f
   |> Virtual.f
@@ -20,7 +18,7 @@ let str_to_virtual str =
   |> Parser.exp Lexer.token
   |> Typing.f
   |> KNormal.f
-  |> iter !limit
+  |> InterpMain.iter !InterpMain.limit
   |> Alpha.f
   |> Closure.f
   |> Virtual.f
