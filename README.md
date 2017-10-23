@@ -26,7 +26,7 @@ $ ./<target>
 ### Interpreter
 
 ```bash
-$ omake
+$ make interp
 $ ./min-camli <target>
 ```
 
