@@ -48,7 +48,9 @@ let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数が
   let arr = Array.make register_size 0 in
   ignore (
     List.map
-      (fun (x, y) -> arr.(x) <- reg.(y))
+      (fun (x, y) ->
+         Logger.debug (Printf.sprintf "make_reg (tmp_address: %d <- real_address: %d, value: %d)" x y reg.(y));
+         arr.(x) <- reg.(y))
       (List.zip regs_tmp regs_real));
   arr
 
