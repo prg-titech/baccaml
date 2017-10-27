@@ -33,7 +33,7 @@ $ ./min-camli <target>
 ## Run
 
 ```bash
-$ ./bin/runtest
+$ ./bin/test
 ```
 
 ## CHANGELOG
