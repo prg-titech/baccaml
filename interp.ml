@@ -28,6 +28,15 @@ let rec find_label_number label = function
   | [] -> let Id.L s = label in int_of_id_t s
   | (l, num) :: tl -> if l = label then num else find_label_number label tl
 
+let rec find_label prog num =
+  let ProgWithLabel (_, _, _, labels) = prog in
+  try
+    let (id, _) = (List.find (fun (id_l, n) -> n = num) labels) in id
+  with
+    Not_found ->
+    Logger.error (Printf.sprintf "num: %d" num);
+    raise Not_found
+
 let rec lookup_by_id_l prog name =
   let ProgWithLabel (_, fundefs, _, _) = prog in
   try
@@ -207,20 +216,14 @@ and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory
       interp prog t1 reg  mem
     else
       interp prog t2 reg  mem
-  | CallCls (name, args, _) ->
-    let address = reg.(int_of_id_t name) in
-    let num = mem.(address) in
-    let ProgWithLabel (_, _, _, labels) = prog in
-    let (id_l, _) =
-      try
-        List.find (fun (id_l, n) -> n = num) labels
-      with Not_found ->
-        Logger.error (Printf.sprintf "num: %d" num);
-        raise Not_found
-    in
-    Logger.debug (Printf.sprintf "CallCls (name: %s, address: %d, mem_num: %d)" name address num);
-    let fundef = lookup_by_id_l prog id_l in
+  | CallCls (id_t, args, _) ->
+    let r1 = reg.(int_of_id_t id_t) in
+    let m1 = mem.(r1) in
+    let Id.L id = find_label prog m1 in
+    Logger.debug (Printf.sprintf "CallCls (id_t: %s, r1: %d, r2: %d, id_l: %s)" id_t r1 m1 id);
+    let fundef = lookup_by_id_l prog (Id.L (id)) in
     let reg' = make_reg reg (fundef.args) args in
+    reg'.(int_of_id_t id) <- r1;
     interp prog (fundef.body) reg' mem
   | CallDir (Id.L ("min_caml_print_int"), [arg], _) ->
     let v = reg.(int_of_id_t arg) in
