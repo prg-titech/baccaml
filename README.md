@@ -1,12 +1,17 @@
 # min-caml
 
-An educational compiler for a minimal subset of OCaml, written in
+An educational compiler and interpreter for a minimal subset of OCaml, written in
 ~2000 lines of OCaml.  For details, see:
 
 - http://esumii.github.io/min-caml/ (Japanese Web page)
 - http://esumii.github.io/min-caml/jpaper.pdf (Japanese academic paper)
 - http://esumii.github.io/min-caml/index-e.html (English Web page)
 - http://esumii.github.io/min-caml/paper.pdf (English academic paper)
+
+## Branches
+
+- master (stable)
+- develop (development)
 
 ## Setup
 
