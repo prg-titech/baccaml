@@ -60,15 +60,6 @@ let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : register) (mem : 
     let res = interp' prog exp reg mem in
     Logger.debug (Printf.sprintf "Ans (%d)" res);
     res
-  | Let ((id, _), CallDir (Id.L ("min_caml_create_array"), arg1 :: arg2 :: [], _), t) ->
-    let num = reg.(int_of_id_t id) in
-    let size = reg.(int_of_id_t arg1) in
-    let init = reg.(int_of_id_t arg2) in
-    Logger.debug (Printf.sprintf "Let (id: %s, num: %d, min_caml_create_array, size: %d, init: %d)" id num size init);
-    for i = 0 to (size - 1) do
-      mem.(num + i) <- init;
-    done;
-    interp prog t reg mem
   | Let ((id, _), exp, t) ->
     if id = "min_caml_hp" then
       let res = interp' prog exp reg mem in
@@ -167,7 +158,7 @@ and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory
     in
     let offset = (match id_or_imm with
         | V id_t -> reg.(int_of_id_t id_t)
-        | C n -> n) * x / 4
+        | C n -> n) * x
     in
     let res = mem.(dest + offset) in
     Logger.debug (Printf.sprintf "Ld (id_t: %s, dest: %d, offset: %d, m: %d, res: %d)" id_t dest offset (dest + offset) res);
@@ -185,7 +176,7 @@ and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory
     let offset = (match id_or_imm with
         | V "min_caml_hp" -> !heap_pointer
         | V id_t -> reg.(int_of_id_t id_t)
-        | C n -> n) * x / 4
+        | C n -> n) * x
     in
     let m = dest + offset in
     Logger.debug (Printf.sprintf "St (id_t1: %s, id_t2: %s, dest: %d, offset: %d, m: %d), res: %d" id_t1 id_t2 dest offset m src);
@@ -239,6 +230,16 @@ and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory
     print_newline (); 0
   | CallDir (Id.L ("min_caml_truncate"), _, [farg]) ->
     raise (Un_implemented_instruction "min_caml_truncate is not implemented.")
+  | CallDir (Id.L ("min_caml_create_array"), arg1 :: arg2 :: [], _) ->
+    let size = reg.(int_of_id_t arg1) in
+    let init = reg.(int_of_id_t arg2) in
+    let a = !heap_pointer in
+    heap_pointer := !heap_pointer + (size * 4);
+    for i = 0 to (size * 4) do
+      if i mod 4 = 0 then mem.(a + i) <- init;
+    done;
+    Logger.debug (Printf.sprintf "CallDir (min_caml_create_array, arg1: %d, arg2: %d)" size init);
+    a
   | CallDir (name, args, _) ->
     (* fundef.args: 仮引数 args: 実引数 *)
     let fundef = lookup_by_id_l prog name in
