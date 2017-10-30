@@ -66,23 +66,23 @@ let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数が
 let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : register) (mem : memory) : 'a =
   match instr with
   | Ans exp ->
-    let res = interp' prog exp reg mem in
+    let res = eval_exp prog exp reg mem in
     Logger.debug (Printf.sprintf "Ans (%d)" res);
     res
   | Let ((id, _), exp, t) ->
     if id = "min_caml_hp" then
-      let res = interp' prog exp reg mem in
+      let res = eval_exp prog exp reg mem in
       Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id !heap_pointer res);
       heap_pointer := res;
       interp prog t reg mem
     else
       let reg_num = int_of_id_t id in
-      let res = interp' prog exp reg mem in
+      let res = eval_exp prog exp reg mem in
       Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
       reg.(reg_num) <- res;
       interp prog t reg mem
 
-and interp' (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory) : 'a =
+and eval_exp (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory) : 'a =
   match exp' with
   | Nop ->
     Logger.debug ("Nop");
