@@ -1,7 +1,5 @@
 #!/bin/bash
 
-printf "[\e[33mmin-caml\e[m] make clean\n"
-make clean &>/dev/null
 printf "[\e[33mmin-caml\e[m] make\n"
 make &>/dev/null
 printf "[\e[33mmin-caml\e[m] make test\n"
