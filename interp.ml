@@ -55,12 +55,11 @@ let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数が
   let regs_tmp = List.map int_of_id_t args_tmp in
   let regs_real = List.map int_of_id_t args_real in
   let arr = Array.make register_size 0 in
-  ignore (
-    List.map
-      (fun (x, y) ->
-         Logger.debug (Printf.sprintf "make_reg (tmp_address: %d <- real_address: %d, value: %d)" x y reg.(y));
-         arr.(x) <- reg.(y))
-      (List.zip regs_tmp regs_real));
+  List.iter
+    (fun (x, y) ->
+       Logger.debug (Printf.sprintf "make_reg (tmp_address: %d <- real_address: %d, value: %d)" x y reg.(y));
+       arr.(x) <- reg.(y))
+    (List.zip regs_tmp regs_real);
   arr
 
 let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : register) (mem : memory) : 'a =
