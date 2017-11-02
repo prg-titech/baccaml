@@ -237,8 +237,8 @@ and eval_exp (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memor
     let init = reg.(int_of_id_t arg2) in
     let a = !heap in
     heap := !heap + (size * 4);
-    for i = 0 to (size * 4) do
-      if i mod 4 = 0 then mem.(a + i) <- init;
+    for i = 0 to size do
+      mem.(a + i * 4) <- init
     done;
     Logger.debug (Printf.sprintf "CallDir (min_caml_create_array, arg1: %d, arg2: %d)" size init);
     a
