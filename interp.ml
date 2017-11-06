@@ -12,6 +12,7 @@ type memory = int array
 let register_size = 128
 let heap = ref 0
 
+
 let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
   | "min_caml_hp" -> raise (Un_supported ("int_of_id_t min_caml_hp is not supported."))
   | id ->
@@ -20,13 +21,21 @@ let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装
     with _ ->
       int_of_string (String.after_of id 'u')
 
-let int_of_id_or_imm = function V (id_t) -> int_of_id_t id_t | C (n) -> n
 
-let string_of_id_or_imm = function V (id_t) -> id_t | C (n) -> string_of_int n
+let int_of_id_or_imm = function
+    V (id_t) -> int_of_id_t id_t
+  | C (n) -> n
+
+
+let string_of_id_or_imm = function
+    V (id_t) -> id_t
+  | C (n) -> string_of_int n
+
 
 let rec find_label_number label = function
   | [] -> let Id.L s = label in int_of_id_t s
   | (l, num) :: tl -> if l = label then num else find_label_number label tl
+
 
 let rec find_label prog num =
   let ProgWithLabel (_, _, _, labels) = prog in
@@ -37,6 +46,7 @@ let rec find_label prog num =
     Logger.error (Printf.sprintf "num: %d" num);
     raise Not_found
 
+
 let rec lookup_by_id_l prog name =
   let ProgWithLabel (_, fundefs, _, _) = prog in
   try
@@ -44,12 +54,25 @@ let rec lookup_by_id_l prog name =
   with e ->
     Logger.error (let Id.L s = name in Printf.sprintf "CallCls %s" s); raise e
 
+
 let rec lookup_by_id_t prog name =
   let ProgWithLabel (_, fundefs, _, _) = prog in
   try
     List.find (fun fundef -> (let Id.L s = fundef.name in s) = name) fundefs
   with e ->
     Logger.error (Printf.sprintf "CallCls %s" name); raise e
+
+
+let to_prog_with_label prog =
+  let rec create_labels fundefs i =
+    match fundefs with
+    | [] -> []
+    | fundef :: tl -> (fundef.name, i) :: create_labels tl (i + 1)
+  in
+  let Prog (table, fundefs, exp) = prog in
+  let labels = create_labels fundefs 0 in
+  ProgWithLabel (table, fundefs, exp, labels)
+
 
 let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数がしまわれている reg を作る *)
   let regs_tmp = List.map int_of_id_t args_tmp in
@@ -61,6 +84,7 @@ let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数が
        arr.(x) <- reg.(y))
     (List.zip regs_tmp regs_real);
   arr
+
 
 let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : register) (mem : memory) : 'a =
   match instr with
@@ -80,6 +104,7 @@ let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : register) (mem : 
       Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
       reg.(reg_num) <- res;
       interp prog t reg mem
+
 
 and eval_exp (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory) : 'a =
   match exp' with
@@ -250,15 +275,6 @@ and eval_exp (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memor
     interp prog (fundef.body) reg'  mem
   | _ -> raise (Un_implemented_instruction "Not implemented.")
 
-let to_prog_with_label prog =
-  let rec create_labels fundefs i =
-    match fundefs with
-    | [] -> []
-    | fundef :: tl -> (fundef.name, i) :: create_labels tl (i + 1)
-  in
-  let Prog (table, fundefs, exp) = prog in
-  let labels = create_labels fundefs 0 in
-  ProgWithLabel (table, fundefs, exp, labels)
 
 let f prog =
   let reg = Array.make register_size 0 in
