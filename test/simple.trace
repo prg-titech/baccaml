@@ -1,0 +1,28 @@
+Set Ti1.16 2
+Set Ti2.17 4
+Jump f.13 T1.16 Ti2.17
+Jump min_caml_print_int Ti3.18
+ret
+
+f.13: (x.14, acc.15)
+Set Ti4.19 0
+IfLE x.14 Ti4.19
+JumpIf L.??
+Mov 00 acc.15
+ret
+
+L.1
+Set Ti4.20 1
+IfEq x.14 Ti5.20
+JumpIf L.2
+Set Ti6.24 1
+Sub Ti7.25 x.14 Ti6.24
+Set Ti8.26 1
+Add Ti9.27 acc.15 Ti8.26
+Jump f.13 Ti7.25 Ti9.27
+
+L.2
+Set Ti10.21 1
+Sub Ti11.22 x.14 Ti10.21
+Add Ti12.23 acc.15 acc.a5
+Jump f.13 Ti11.22 Ti12.23

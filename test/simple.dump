@@ -1,0 +1,22 @@
+ProgInterp (table = [], fundefs = [
+{name = f.13; args = [x.14, acc.15]; fargs = []; body = 
+  Let ((Ti4.19, Int), Set (0), 
+  Ans (IfLE (x.14, Ti4.19, 
+  Ans (Mov (acc.15)), 
+  Let ((Ti5.20, Int), Set (1), 
+  Ans (IfEq (x.14, Ti5.20, 
+  Let ((Ti6.24, Int), Set (1), 
+  Let ((Ti7.25, Int), Sub (x.14, Ti6.24), 
+  Let ((Ti8.26, Int), Set (1), 
+  Let ((Ti9.27, Int), Add (acc.15, Ti8.26), 
+  Ans (CallDir (Id.L (f.13), [Ti7.25, Ti9.27], [])))))), 
+  Let ((Ti10.21, Int), Set (1), 
+  Let ((Ti11.22, Int), Sub (x.14, Ti10.21), 
+  Let ((Ti12.23, Int), Add (acc.15, acc.15), 
+  Ans (CallDir (Id.L (f.13), [Ti11.22, Ti12.23], []))))))))))); ret = Int}],
+ main_exp = 
+  Let ((Ti1.16, Int), Set (2), 
+  Let ((Ti2.17, Int), Set (4), 
+  Let ((Ti3.18, Int), CallDir (Id.L (f.13), [Ti1.16, Ti2.17], []), 
+  Ans (CallDir (Id.L (min_caml_print_int), [Ti3.18], []))))),
+ labels = (Id.L (f.13), 0))
