@@ -7,8 +7,8 @@ ret
 f.13: (x.14, acc.15)
 Set Ti4.19 0
 IfLE x.14 Ti4.19
-JumpIf L.??
-Mov 00 acc.15
+JumpIf L.1
+Mov eax acc.15
 ret
 
 L.1
