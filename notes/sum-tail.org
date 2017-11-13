@@ -1,0 +1,50 @@
+#+BEGIN_SRC ocaml
+let rec sum acc x =
+  if x <= 0 then acc else
+  sum (acc + x) (x - 1) in
+print_int (sum 0 10000)
+#+END_SRC
+
+上のソースを仮想機械言語にコンパイルする。すると、以下のようになる。
+
+#+BEGIN_SRC ocaml
+ProgInterp (table = [], fundefs = [
+{name = sum.8; args = [acc.9, x.10]; fargs = []; body =
+  Let ((Ti4.14, Int), Set (0),
+  Ans (IfLE (x.10, Ti4.14,
+  Ans (Mov (acc.9)),
+  Let ((Ti5.15, Int), Add (acc.9, x.10),
+  Let ((Ti6.16, Int), Set (1),
+  Let ((Ti7.17, Int), Sub (x.10, Ti6.16),
+  Ans (CallDir (Id.L (sum.8), [Ti5.15, Ti7.17], [])))))))); ret = Int}],
+ main_exp =
+  Let ((Ti1.11, Int), Set (0),
+  Let ((Ti2.12, Int), Set (10000),
+  Let ((Ti3.13, Int), CallDir (Id.L (sum.8), [Ti1.11, Ti2.12], []),
+  Ans (CallDir (Id.L (min_caml_print_int), [Ti3.13], []))))),
+ labels = (Id.L (sum.8), 0))
+#+END_SRC
+
+インタプリタはこの仮想機械言語のソースコードを実行する。
+
+profiling して hotspot が sum (acc + x) (x - 1) と分かったとする。
+分かった後、トレースを取る。
+
+#+BEGIN_SRC ocaml
+Let ((Ti4.14, Int), Set (0),
+Ans (IfLE (x.10, Ti4.14,
+Let ((Ti5.15, Int), Add (acc.9, x.10),
+Let ((Ti6.16, Int), Set (1),
+Let ((Ti7.17, Int), Sub (x.10, Ti6.16),
+Ans (CallDir (Id.L (sum.8), [Ti5.15, Ti7.17], [])))))))); ret = Int}],
+#+END_SRC
+
+トレースを取ったら、red パラメータに sum の引数を指定したので、その情報を元に最適化する。
+red は結果を得るために必要な変数なので残すという戦略。
+
+#+BEGIN_SRC ocaml
+Ans (IfLE (x.10 0)
+    Let ((Ti5.15, Int)), Add (acc.9 x.10),
+    Let (Ti7.17, Int), Sub (x,10, 1),
+    Ans (CallDir (Id.L (sum.8), [Ti5.15, Ti7.17], [])))))))); ret = Int}])
+#+END_SRC
