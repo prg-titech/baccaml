@@ -48,3 +48,5 @@ Ans (IfLE (x.10 0)
     Let (Ti7.17, Int), Sub (x,10, 1),
     Ans (CallDir (Id.L (sum.8), [Ti5.15, Ti7.17], [])))))))); ret = Int}])
 #+END_SRC
+
+そして、得られた最適化済みトレースをネイティブコードにコンパイルする。
