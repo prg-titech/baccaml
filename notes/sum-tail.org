@@ -27,8 +27,11 @@ ProgInterp (table = [], fundefs = [
 
 インタプリタはこの仮想機械言語のソースコードを実行する。
 
-profiling して hotspot が sum (acc + x) (x - 1) と分かったとする。
-分かった後、トレースを取る。
+profiling して hotspot が
+#+BEGIN_SRC ocaml
+sum (acc + x) (x - 1)
+#+END_SRC
+と分かったとする。すると、Tracing JIT Compiler は hotspot のトレースを取る。
 
 #+BEGIN_SRC ocaml
 Let ((Ti4.14, Int), Set (0),
@@ -40,7 +43,7 @@ Ans (CallDir (Id.L (sum.8), [Ti5.15, Ti7.17], [])))))))); ret = Int}],
 #+END_SRC
 
 トレースを取ったら、red パラメータに sum の引数を指定したので、その情報を元に最適化する。
-red は結果を得るために必要な変数なので残すという戦略。
+ここで、red は結果を得るために必要な変数であるから残すという戦略を取る。
 
 #+BEGIN_SRC ocaml
 Ans (IfLE (x.10 0)
