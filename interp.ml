@@ -9,7 +9,7 @@ type prog_with_label = ProgWithLabel of (Id.l * float) list * fundef list * t * 
 type register = int array
 type memory = int array
 
-let register_size = 128
+let register_size = 10000
 let heap = ref 0
 
 
