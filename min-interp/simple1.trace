@@ -36,3 +36,12 @@ Let ((target.72, Int), Ld (bytecode.40, Ti30.71 4),
 Ans (GuardIfLE (a.42, Ti31.73))
 Ans (CallDir (Id.L (interpret.39), [bytecode.40, target.72, a.42], []))))))))))),
 }
+
+(* さらに最適化を行う *)
+(* Let ((target.72, Int), Ld (bytecode.40, Ti30.71 4) == 0 *)
+
+(* DEC_R*)
+Let ((Ti27.79, Int), Sub (a.42, 1)),
+(* JUMP_IF *)
+Ans (GuardIfLE (a.42, Ti31.73))
+Ans (CallDir (Id.L (interpret.39), [bytecode.40, 0, a.42], []))))))))))),
