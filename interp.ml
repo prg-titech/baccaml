@@ -218,7 +218,10 @@ and eval_exp (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memor
   | Comment _ -> 0
   | IfEq (id1, id_or_imm, t1, t2) ->
     let r1 = match id1 with "min_caml_hp" -> !heap | _ -> reg.(int_of_id_t id1) in
-    let r2 = reg.(int_of_id_or_imm id_or_imm) in
+    let r2 = match id_or_imm with
+        V (id_t) -> reg.(int_of_id_t id_t)
+      | C (i) -> i
+    in
     Logger.debug (Printf.sprintf "IfEq (id1: %s, id2: %s, t1: %d, t2: %d)" id1 (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 = r2 then
       interp prog t1 reg  mem
@@ -226,7 +229,10 @@ and eval_exp (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memor
       interp prog t2 reg  mem
   | IfLE (id, id_or_imm, t1, t2) ->
     let r1 = match id with "min_caml_hp" -> !heap | _ -> reg.(int_of_id_t id) in
-    let r2 = reg.(int_of_id_or_imm id_or_imm) in
+    let r2 = match id_or_imm with
+        V (id_t) -> reg.(int_of_id_t id_t)
+      | C (i) -> i
+    in
     Logger.debug (Printf.sprintf "IfLE (id: %s, id_or_imm: %s, t1: %d, t2: %d)" id (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 <= r2 then
       interp prog t1 reg  mem
@@ -234,7 +240,10 @@ and eval_exp (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memor
       interp prog t2 reg  mem
   | IfGE (id, id_or_imm, t1, t2) ->
     let r1 = match id with "min_caml_hp" -> !heap | _ -> reg.(int_of_id_t id) in
-    let r2 = reg.(int_of_id_or_imm id_or_imm) in
+    let r2 = match id_or_imm with
+        V (id_t) -> reg.(int_of_id_t id_t)
+      | C (i) -> i
+    in
     Logger.debug (Printf.sprintf "IfGE (id1: %s, id2: %s, t1: %d, t2: %d)" id (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 >= r2 then
       interp prog t1 reg  mem
