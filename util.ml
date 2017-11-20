@@ -56,6 +56,14 @@ module StringUtil = struct
       if (String.get str i) = chr then index := i;
     done;
     string_after str (!index + 1)
+
+  let contains str1 str2 =
+    let re = Str.regexp_string str2 in
+    try
+      ignore (Str.search_forward re str1 0); true
+    with Not_found ->
+      false
+
 end
 
 module List = struct
