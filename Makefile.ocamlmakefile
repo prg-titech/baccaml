@@ -8,6 +8,8 @@ OCAMLLDFLAGS = -warn-error -31
 COMPILER = min-caml
 INTERPRETER = min-camli
 
+PACKS = str
+
 SOURCES_LIB = \
 util.ml \
 logger.ml \
