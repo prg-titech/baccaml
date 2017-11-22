@@ -28,60 +28,61 @@ let name_of_id_t str =
 let is_green id_t greens =
   List.mem (name_of_id_t id_t) greens
 
-let rec jit
-          (prog : prog)
-          (instr : t)
-          (reg : value array)
-          (mem : value array) : t =
+let rec jitcompile
+    (instr : t)
+    (reg : value array)
+    (mem : value array) : t =
   match instr with
+  | Ans exp as e -> e
   | Let ((dest, typ), Add (id_t1, id_or_imm), body) ->
-     let r1 = reg.(int_of_id_t id_t1) in
-     let r2 = match id_or_imm with
-       | V (id_t) -> reg.(int_of_id_t id_t)
-       | C (n) -> Red (n)
-     in
-     (match r1, r2 with
-      | Green (n1), Green (n2) ->
-         let res = n1 + n2 in
-         reg.(int_of_id_t dest) <- Green (res);
-         jit prog body reg mem
-      | _ ->
-         Let ((dest, typ), Add ((id_t1), id_or_imm), jit prog body reg mem)
-     )
+    let r1 = reg.(int_of_id_t id_t1) in
+    let r2 = match id_or_imm with
+      | V (id_t) -> reg.(int_of_id_t id_t)
+      | C (n) -> Red (n)
+    in
+    (match r1, r2 with
+     | Green _, _ | _, Green _ ->
+       let n1, n2 = value_of r1, value_of r2 in
+       let res = n1 + n2 in
+       reg.(int_of_id_t dest) <- Green (res);
+       jitcompile body reg mem
+     | _ ->
+       Let ((dest, typ), Add ((id_t1), id_or_imm), jitcompile body reg mem)
+    )
   | Let ((dest, typ), Sub (id_t1, id_or_imm), body) ->
-     let r1 = reg.(int_of_id_t id_t1) in
-     let r2 = match id_or_imm with
-       | V (id_t) -> reg.(int_of_id_t id_t)
-       | C (n)-> Red (n)
-     in
-     (match r1, r2 with
-      | Green (n1), Green (n2) ->
-         let res = n1 - n2 in
-         reg.(int_of_id_t dest) <- Green (res);
-         jit prog body reg mem
-      | _ ->
-         Let ((dest, typ), Sub (id_t1, id_or_imm), jit prog body reg mem)
-     )
+    let r1 = reg.(int_of_id_t id_t1) in
+    let r2 = match id_or_imm with
+      | V (id_t) -> reg.(int_of_id_t id_t)
+      | C (n)-> Red (n)
+    in
+    (match r1, r2 with
+     | Green _, _ | _, Green _ ->
+       let n1, n2 = value_of r1, value_of r2 in
+       let res = n1 - n2 in
+       reg.(int_of_id_t dest) <- Green (res);
+       jitcompile body reg mem
+     | _ ->
+       Let ((dest, typ), Sub (id_t1, id_or_imm), jitcompile body reg mem)
+    )
   | Let ((dest, typ), Ld (id_t, id_or_imm, x), body) ->
-     let destld = reg.(int_of_id_t id_t) in
-     let offsetld = (match id_or_imm with
-                     | V (id_t) ->
-                        (match reg.(int_of_id_t id_t) with
-                         | Green (n1) -> Green (n1 * x)
-                         | Red (n1) -> Red (n1 * x)
-                        )
-                     | C (n) -> Red (n * x))
-     in
-     (match destld, offsetld with
-      | Green (v1), Green (v2) ->
-         let res = mem.(v1 + v2) in
-         reg.(int_of_id_t dest) <- res;
-         jit prog body reg mem
-      | _ ->
-         Let ((dest, typ), Ld (id_t, id_or_imm, x), jit prog body reg mem)
-     )
-  | Let ((dest, typ), op, body) ->
-     Let ((dest, typ), op, jit prog body reg mem)
+    let destld = reg.(int_of_id_t id_t) in
+    let offsetld = (match id_or_imm with
+        | V (id_t) ->
+          (match reg.(int_of_id_t id_t) with
+           | Green (n1) -> Green (n1 * x)
+           | Red (n1) -> Red (n1 * x)
+          )
+        | C (n) -> Red (n * x))
+    in
+    (match destld, offsetld with
+     | Green _, _ | _, Green _ ->
+       let v1, v2 = value_of destld, value_of offsetld in
+       let res = mem.(v1 + v2) in
+       reg.(int_of_id_t dest) <- res;
+       jitcompile body reg mem
+     | _ ->
+       Let ((dest, typ), Ld (id_t, id_or_imm, x), jitcompile body reg mem)
+    )
   | _ ->
-     failwith "Not supported."
+    failwith "Not supported."
 
