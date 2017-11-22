@@ -43,7 +43,7 @@ and jitcompile_instr (e : exp) (reg : value array) (mem : value array) : jit_res
   match e with
   | Set n ->
     Specialized (Green n)
-  | Add (id_t1, id_or_imm) ->
+  | Add (id_t1, id_or_imm) as exp ->
     let r1 = reg.(int_of_id_t id_t1) in
     let r2 = match id_or_imm with
       | V (id_t) ->
@@ -51,19 +51,19 @@ and jitcompile_instr (e : exp) (reg : value array) (mem : value array) : jit_res
       | C (n) ->
         (match r1 with
          | Green _ -> Green (n)
-         | Red _ -> Red n)
+         | Red _ -> Red (n))
     in
     (match r1, r2 with
      | Green (n1), Green (n2) ->
        Specialized (Green (n1 + n2))
      | _ ->
-       Not_specialised (Add (id_t1, id_or_imm)))
+       Not_specialised (exp))
   | Sub (id_t1, id_or_imm) as exp ->
     let r1 = reg.(int_of_id_t id_t1) in
     let r2 = match id_or_imm with
       | V (id_t) ->
         reg.(int_of_id_t id_t)
-      | C (n)->
+      | C (n) ->
         (match r1 with
          | Green _ -> Green n
          | Red _ -> Red n)
@@ -73,7 +73,7 @@ and jitcompile_instr (e : exp) (reg : value array) (mem : value array) : jit_res
        Specialized (Green (n1 - n2))
      | _ ->
        Not_specialised (exp))
-  | Ld (id_t, id_or_imm, x) ->
+  | Ld (id_t, id_or_imm, x) as exp ->
     let destld = reg.(int_of_id_t id_t) in
     let offsetld =
       (match id_or_imm with
@@ -86,11 +86,11 @@ and jitcompile_instr (e : exp) (reg : value array) (mem : value array) : jit_res
     (match destld, offsetld with
      | Green (n1), Green (n2) ->
        (match mem.(n1 + n2) with
-        | Green n as value -> Specialized value
-        | Red n -> Not_specialised (Ld (id_t, id_or_imm, x))
+        | Green n as value -> Specialized (value)
+        | Red n -> Not_specialised (exp)
        )
      | _ ->
-       Not_specialised (Ld (id_t, id_or_imm, x)))
+       Not_specialised exp)
   | St (dest, src, offset, x) as exp ->
     let dest', src' = reg.(int_of_id_t dest), reg.(int_of_id_t src) in
     let offset' = match offset with
@@ -99,16 +99,14 @@ and jitcompile_instr (e : exp) (reg : value array) (mem : value array) : jit_res
       | C (n) ->
         (match dest', src' with
          | Green _, Green _ -> Green (n * x)
-         | _ -> Red (n * x)
-        )
+         | _ -> Red (n * x))
     in
     (match dest', src', offset' with
      | Green (v1), Green (v2), Green (v3) ->
        mem.(v2 + v3) <- Green (v1);
        Specialized (Green (0))
      | _ ->
-       Not_specialised (exp)
-    )
+       Not_specialised (exp))
   | _ ->
     failwith "Not supported."
 
