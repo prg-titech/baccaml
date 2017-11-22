@@ -41,29 +41,38 @@ let rec jitcompile (instr : t) (reg : value array) (mem : value array) : t =
 
 and jitcompile_instr (e : exp) (reg : value array) (mem : value array) : jit_result =
   match e with
+  | Set n ->
+    Specialized (Green n)
   | Add (id_t1, id_or_imm) ->
     let r1 = reg.(int_of_id_t id_t1) in
     let r2 = match id_or_imm with
-      | V (id_t) -> reg.(int_of_id_t id_t)
-      | C (n) -> 
+      | V (id_t) ->
+        reg.(int_of_id_t id_t)
+      | C (n) ->
         (match r1 with
          | Green _ -> Green (n)
          | Red _ -> Red n)
     in
     (match r1, r2 with
-     | Green (n1), Green (n2) -> 
+     | Green (n1), Green (n2) ->
        Specialized (Green (n1 + n2))
-     | _ -> 
+     | _ ->
        Not_specialised (Add (id_t1, id_or_imm)))
-  | Sub (id_t1, id_or_imm) ->
+  | Sub (id_t1, id_or_imm) as exp ->
     let r1 = reg.(int_of_id_t id_t1) in
     let r2 = match id_or_imm with
-      | V (id_t) -> reg.(int_of_id_t id_t)
-      | C (n)-> Red (n)
+      | V (id_t) ->
+        reg.(int_of_id_t id_t)
+      | C (n)->
+        (match r1 with
+         | Green _ -> Green n
+         | Red _ -> Red n)
     in
     (match r1, r2 with
-     | Green (n1), Green (n2) -> Specialized (Green (n1 - n2))
-     | _ -> Not_specialised (Sub (id_t1, id_or_imm)))
+     | Green (n1), Green (n2) ->
+       Specialized (Green (n1 - n2))
+     | _ ->
+       Not_specialised (exp))
   | Ld (id_t, id_or_imm, x) ->
     let destld = reg.(int_of_id_t id_t) in
     let offsetld =
@@ -82,6 +91,24 @@ and jitcompile_instr (e : exp) (reg : value array) (mem : value array) : jit_res
        )
      | _ ->
        Not_specialised (Ld (id_t, id_or_imm, x)))
+  | St (dest, src, offset, x) as exp ->
+    let dest', src' = reg.(int_of_id_t dest), reg.(int_of_id_t src) in
+    let offset' = match offset with
+      | V (id_t) ->
+        reg.(int_of_id_t id_t)
+      | C (n) ->
+        (match dest', src' with
+         | Green _, Green _ -> Green (n * x)
+         | _ -> Red (n * x)
+        )
+    in
+    (match dest', src', offset' with
+     | Green (v1), Green (v2), Green (v3) ->
+       mem.(v2 + v3) <- Green (v1);
+       Specialized (Green (0))
+     | _ ->
+       Not_specialised (exp)
+    )
   | _ ->
     failwith "Not supported."
 
