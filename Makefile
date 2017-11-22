@@ -4,7 +4,7 @@ default: compiler interp
 
 OCAMLMAKEFILE = Makefile.ocamlmakefile
 
-JITFILES= util.ml s.ml id.ml type.ml jit.ml jitTest.ml
+JITFILES= util.ml type.ml id.ml m.ml s.ml asm.mli asm.ml jit.ml jitTest.ml
 
 JITTESTPROGRAM = jitTest
 
@@ -16,6 +16,7 @@ interp:
 
 clean:
 	$(MAKE) -f $(OCAMLMAKEFILE) clean
+	rm -f $(JITTESTPROGRAM)
 
 .PHONY: test
 test: compiler
@@ -24,4 +25,4 @@ test: compiler
 .PHONY: jitcheck
 jitcheck:
 	ocamlfind ocamlc -package ounit,str -linkpkg -o $(JITTESTPROGRAM) $(JITFILES)
-	./$(JITTESTPROGRAM) && rm -f $(JITTESTPROGRAM)
+	./$(JITTESTPROGRAM)
