@@ -28,18 +28,18 @@ let value_of = function
 let name_of_id_t str =
   List.hd (Str.split (Str.regexp_string ".") str)
 
-let rec jitcompile (instr : t) (reg : value array) (mem : value array) : t =
+let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array) : t =
   match instr with
   | Ans exp as e -> e
   | Let ((dest, typ), instr, body) ->
-    (match jitcompile_instr instr reg mem with
+    (match jitcompile_instr p instr reg mem with
      | Specialized v ->
        reg.(int_of_id_t dest) <- v;
-       jitcompile body reg mem
+       jitcompile p body reg mem
      | Not_specialised e ->
-       Let ((dest, typ), e, jitcompile body reg mem))
+       Let ((dest, typ), e, jitcompile p body reg mem))
 
-and jitcompile_instr (e : exp) (reg : value array) (mem : value array) : jit_result =
+and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array) : jit_result =
   match e with
   | Set n ->
     Specialized (Green n)

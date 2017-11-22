@@ -15,7 +15,7 @@ let _ = run_test_tt_main begin
         let mem = Array.make 100 (Red (0)) in
         reg.(41) <- Green (1);
         reg.(42) <- Red (100);
-        let res = jitcompile instr reg mem in
+        let res = jitcompile (Prog ([], [], instr)) instr reg mem in
         assert_equal (value_of reg.(81)) 2;
         assert_equal res (Let (("Ti22.83", Type.Int), Add ("a.42", C (1)),
                                Ans (Mov ("a.42"))))
@@ -31,7 +31,7 @@ let _ = run_test_tt_main begin
         let mem = Array.make 100 (Red (0)) in
         reg.(41) <- Green (1);
         reg.(42) <- Red (100);
-        let res = jitcompile instr reg mem in
+        let res = jitcompile (Prog ([], [], instr)) instr reg mem in
         assert_equal (value_of reg.(77)) 2;
         assert_equal res (Let (("Ti27.39", Type.Int), Sub ("a.42", C (1)),
                                Ans (Mov ("a.42"))))
