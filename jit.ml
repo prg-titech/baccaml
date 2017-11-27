@@ -33,7 +33,8 @@ let rec get_body_by_id_l prog name =
   List.find (fun fundef -> fundef.name = name) fundefs
 
 let rec unroll argsr argst dest funbody contbody =
-  let rec loop argsr argst = match argsr, argst with
+  let rec loop argsr argst =
+    match argsr, argst with
     | [], [] ->
       funbody
     | hdr :: tlr, hdt :: tlt ->
