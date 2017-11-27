@@ -45,7 +45,8 @@ let _ = run_test_tt_main begin
           Let (("Ti1.13", Int), Set (30),
                Let (("Ti2.14", Int), Set (10),
                     Let (("Ti4.16", Int), CallDir (Id.L ("f.9"), ["Ti1.13"; "Ti2.14"], []),
-                         Ans (Mov ("Ti4.16")))))
+                         Let (("Ti.17", Int), Sub ("Ti5.27", C (1)),
+                              Ans (Mov ("Ti4.16"))))))
         in
         let fundef =
           { name = Id.L "f.9"
@@ -67,7 +68,8 @@ let _ = run_test_tt_main begin
                                Let (("a.11", Int), Mov ("Ti2.14"),
                                     Let (("Ti5.27", Int), Add ("n.10", V "a.11"),
                                          Let (("Ti4.16", Int),  Mov ("Ti5.27"),
-                                              Ans (Mov ("Ti4.16")))))));
+                                              Let (("Ti.17", Int), Sub ("Ti5.27", C (1)),
+                                                   Ans (Mov ("Ti4.16"))))))));
       end;
     ]
   end

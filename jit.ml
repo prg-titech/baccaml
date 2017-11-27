@@ -53,7 +53,7 @@ let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array
      let fundef = get_body_by_id_l p id_l in
      let funbody = fundef.body in
      let argst = fundef.args in
-     unroll argsr argst dest funbody contbody
+     unroll argsr argst dest funbody (jitcompile p contbody reg mem)
   | Let ((dest, typ), instr, body) ->
     (match jitcompile_instr p instr reg mem with
      | Specialized v ->
