@@ -4,12 +4,12 @@ open Util
 exception Un_supported of string
 
 type value =
-  Red of int
-| Green of int
+    Red of int
+  | Green of int
 
 type jit_result =
-  Specialized of value
-| Not_specialised of exp
+    Specialized of value
+  | Not_specialised of exp
 
 let int_of_id_t id =
   try
@@ -28,9 +28,27 @@ let value_of = function
 let name_of_id_t str =
   List.hd (Str.split (Str.regexp_string ".") str)
 
+let rec get_body_by_id_l prog name =
+  let Prog (_, fundefs, _) = prog in
+  List.find (fun fundef -> fundef.name = name) fundefs
+
+let rec unroll name argsr argst body =
+  let rec loop argsr argst = match argsr, argst with
+    | [], [] ->
+      body
+    | hdr :: tlr, hdt :: tlt ->
+      Let ((hdt, Type.Int), Mov (hdr), (loop tlr tlt))
+  in
+  loop argsr argst
+
 let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array) : t =
   match instr with
   | Ans exp as e -> e
+  | Let ((dest, typ), CallDir (name, argsr, _), body) ->
+    let f = get_body_by_id_l p name in
+    let b = f.body in
+    let argst = f.args in
+    unroll name argsr argst b
   | Let ((dest, typ), instr, body) ->
     (match jitcompile_instr p instr reg mem with
      | Specialized v ->
@@ -43,6 +61,11 @@ and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array
   match e with
   | Set n ->
     Specialized (Green n)
+  | Mov id_t as exp ->
+    let r = reg.(int_of_id_t id_t) in
+    (match r with
+     | Green (n) -> Specialized (Green (n))
+     | Red (n) -> Not_specialised (exp))
   | Add (id_t1, id_or_imm) as exp ->
     let r1 = reg.(int_of_id_t id_t1) in
     let r2 = match id_or_imm with
@@ -107,7 +130,5 @@ and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array
        Specialized (Green (0))
      | _ ->
        Not_specialised (exp))
-  | CallDir (name, args, _) ->
-    failwith "CallDir is not supported."
   | _ ->
     failwith "Not supported."
