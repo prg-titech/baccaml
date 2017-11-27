@@ -66,7 +66,8 @@ let _ = run_test_tt_main begin
         assert_equal res (Let (("n.10", Int), Mov ("Ti1.13"),
                                Let (("a.11", Int), Mov ("Ti2.14"),
                                     Let (("Ti5.27", Int), Add ("n.10", V "a.11"),
-                                         Ans (Mov ("Ti5.27"))))));
+                                         Let (("Ti4.16", Int),  Mov ("Ti5.27"),
+                                              Ans (Mov ("Ti4.16")))))));
       end;
     ]
   end

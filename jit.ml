@@ -32,23 +32,28 @@ let rec get_body_by_id_l prog name =
   let Prog (_, fundefs, _) = prog in
   List.find (fun fundef -> fundef.name = name) fundefs
 
-let rec unroll name argsr argst body =
+let rec unroll argsr argst dest funbody contbody =
   let rec loop argsr argst = match argsr, argst with
     | [], [] ->
-      body
+      funbody
     | hdr :: tlr, hdt :: tlt ->
       Let ((hdt, Type.Int), Mov (hdr), (loop tlr tlt))
   in
-  loop argsr argst
+  let rec add_cont_proc id_t instr =
+    match instr with
+    | Let (a, e, t) -> Let (a, e, add_cont_proc id_t t)
+    | Ans e -> Let ((id_t, Type.Int), e, contbody)
+  in
+  add_cont_proc dest (loop argsr argst)
 
 let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array) : t =
   match instr with
   | Ans exp as e -> e
-  | Let ((dest, typ), CallDir (name, argsr, _), body) ->
-    let f = get_body_by_id_l p name in
-    let b = f.body in
-    let argst = f.args in
-    unroll name argsr argst b
+  | Let ((dest, typ), CallDir (id_l, argsr, _), contbody) ->
+     let fundef = get_body_by_id_l p id_l in
+     let funbody = fundef.body in
+     let argst = fundef.args in
+     unroll argsr argst dest funbody contbody
   | Let ((dest, typ), instr, body) ->
     (match jitcompile_instr p instr reg mem with
      | Specialized v ->
