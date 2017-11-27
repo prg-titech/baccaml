@@ -4,12 +4,16 @@ open Util
 exception Un_supported of string
 
 type value =
-    Red of int
+  | Red of int
   | Green of int
 
 type jit_result =
-    Specialized of value
+  | Specialized of value
   | Not_specialised of exp
+
+type jit_branch_result =
+  | Selected of t
+  | Not_selected of exp
 
 let int_of_id_t id =
   try
@@ -51,7 +55,10 @@ let rec unroll argsr argst dest funbody contbody =
 
 let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array) : t =
   match instr with
-  | Ans exp as e -> e
+  | Ans exp ->
+     (match jitcompile_branch p exp reg mem with
+      | Selected (instr) -> jitcompile p instr reg mem
+      | Not_selected (x) -> Ans (x))
   | Let ((dest, typ), CallDir (id_l, argsr, _), contbody) ->
      let fundef = get_body_by_id_l p id_l in
      let funbody = fundef.body in
@@ -64,6 +71,31 @@ let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array
        jitcompile p body reg mem
      | Not_specialised e ->
        Let ((dest, typ), e, jitcompile p body reg mem))
+
+and jitcompile_branch (p : prog) (e : exp) (reg : value array) (mem : value array) : jit_branch_result =
+  match e with
+  | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) ->
+     let r1 = reg.(int_of_id_t id_t) in
+     let r2 = match id_or_imm with
+       | V (id) -> reg.(int_of_id_t id)
+       | C (n) -> (match r1 with Green _ -> Green (n) | Red _ -> Red (n))
+     in
+     (match r1, r2 with
+      | Green (n1), Green (n2) ->
+         (match e with
+          | IfEq _ ->
+             if n1 = n2 then Selected (t1)
+             else Selected (t2)
+          | IfLE _ ->
+             if n1 <= n2 then Selected (t1)
+             else Selected (t2)
+          | IfGE _ ->
+             if n1 >= n2 then Selected (t1)
+             else Selected (t2)
+          | _ ->
+             failwith "Only IfEq, IfLE and IfGE should be come here.")
+      | _ -> Not_selected (e))
+  | _ -> Not_selected (e)
 
 and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array) : jit_result =
   match e with
