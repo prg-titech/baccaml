@@ -38,7 +38,9 @@ let rec unroll argsr argst dest funbody contbody =
     | [], [] ->
       funbody
     | hdr :: tlr, hdt :: tlt ->
-      Let ((hdt, Type.Int), Mov (hdr), (loop tlr tlt))
+       Let ((hdt, Type.Int), Mov (hdr), (loop tlr tlt))
+    | _ ->
+       failwith "Un matched pattern."
   in
   let rec add_cont_proc id_t instr =
     match instr with
