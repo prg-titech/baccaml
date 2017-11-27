@@ -3,19 +3,19 @@ open Util
 
 exception Un_supported of string
 
-type value = Red of int
-           | Green of int
+type value =
+  Red of int
+| Green of int
 
-type jit_result = Specialized of value
-                | Not_specialised of exp
+type jit_result =
+  Specialized of value
+| Not_specialised of exp
 
-let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
-  | "min_caml_hp" -> raise (Un_supported ("int_of_id_t min_caml_hp is not supported."))
-  | id ->
-    try
-      int_of_string (String.after_of id '.')
-    with _ ->
-      int_of_string (String.after_of id 'u')
+let int_of_id_t id =
+  try
+    int_of_string (String.after_of id '.')
+  with _ ->
+    int_of_string (String.after_of id 'u')
 
 let int_of_id_or_imm = function
   | V (id_t) -> int_of_id_t id_t
@@ -107,6 +107,7 @@ and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array
        Specialized (Green (0))
      | _ ->
        Not_specialised (exp))
+  | CallDir (name, args, _) ->
+    failwith "CallDir is not supported."
   | _ ->
     failwith "Not supported."
-
