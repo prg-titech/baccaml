@@ -71,5 +71,21 @@ let _ = run_test_tt_main begin
                                               Let (("Ti.17", Int), Sub ("Ti5.27", C (1)),
                                                    Ans (Mov ("Ti4.16"))))))));
       end;
+      "test 4" >::
+      begin fun () ->
+      let instr =
+        Ans(IfEq("Ti1.1", V ("Ti2.2"),
+                 Let (("Ti3.3", Int), Mov ("Ti4.4"), Ans (CallDir (Id.L ("min_caml_print_int"), ["Ti4.4"], []))),
+                 Ans (Mov ("Ti5.5"))
+           ))
+      in
+      let prog = Prog ([], [], instr) in
+      let reg = Array.make 100 (Red (0)) in
+      let mem = Array.make 100 (Red (0)) in
+      reg.(1) <- Green (1);
+      reg.(2) <- Green (2);
+      let res = jitcompile prog instr reg mem in
+      assert_equal res (Ans (Mov ("Ti5.5")))
+      end
     ]
   end
