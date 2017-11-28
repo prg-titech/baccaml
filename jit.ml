@@ -109,12 +109,8 @@ and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array
   | Add (id_t1, id_or_imm) as exp ->
     let r1 = reg.(int_of_id_t id_t1) in
     let r2 = match id_or_imm with
-      | V (id_t) ->
-        reg.(int_of_id_t id_t)
-      | C (n) ->
-        (match r1 with
-         | Green _ -> Green (n)
-         | Red _ -> Red (n))
+      | V (id_t) -> reg.(int_of_id_t id_t)
+      | C (n) -> Green (n)
     in
     (match r1, r2 with
      | Green (n1), Green (n2) ->
@@ -124,12 +120,8 @@ and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array
   | Sub (id_t1, id_or_imm) as exp ->
     let r1 = reg.(int_of_id_t id_t1) in
     let r2 = match id_or_imm with
-      | V (id_t) ->
-        reg.(int_of_id_t id_t)
-      | C (n) ->
-        (match r1 with
-         | Green _ -> Green n
-         | Red _ -> Red n)
+      | V (id_t) -> reg.(int_of_id_t id_t)
+      | C (n) -> Green (n)
     in
     (match r1, r2 with
      | Green (n1), Green (n2) ->
@@ -144,7 +136,7 @@ and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array
          (match reg.(int_of_id_t id_t) with
           | Green (n1) -> Green (n1 * x)
           | Red (n1) -> Red (n1 * x))
-       | C (n) -> Red (n * x))
+       | C (n) -> Green (n * x))
     in
     (match destld, offsetld with
      | Green (n1), Green (n2) ->
@@ -157,12 +149,8 @@ and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array
   | St (dest, src, offset, x) as exp ->
     let dest', src' = reg.(int_of_id_t dest), reg.(int_of_id_t src) in
     let offset' = match offset with
-      | V (id_t) ->
-        reg.(int_of_id_t id_t)
-      | C (n) ->
-        (match dest', src' with
-         | Green _, Green _ -> Green (n * x)
-         | _ -> Red (n * x))
+      | V (id_t) -> reg.(int_of_id_t id_t)
+      | C (n) -> Green (n * x)
     in
     (match dest', src', offset' with
      | Green (v1), Green (v2), Green (v3) ->
