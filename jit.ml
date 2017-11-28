@@ -78,7 +78,7 @@ and jitcompile_branch (p : prog) (e : exp) (reg : value array) (mem : value arra
      let r1 = reg.(int_of_id_t id_t) in
      let r2 = match id_or_imm with
        | V (id) -> reg.(int_of_id_t id)
-       | C (n) -> (match r1 with Green _ -> Green (n) | Red _ -> Red (n))
+       | C (n) -> Green (n)
      in
      (match r1, r2 with
       | Green (n1), Green (n2) ->
