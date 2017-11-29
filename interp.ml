@@ -1,8 +1,8 @@
 open Asm
 open Util
+open JitUtil
 
 exception Un_implemented_instruction of string
-exception Un_supported of string
 
 type labels = (Id.l * int) list (* function label for closures *)
 type prog_with_label = ProgWithLabel of (Id.l * float) list * fundef list * t * labels (* prog for interpreter *)
@@ -11,26 +11,6 @@ type memory = int array
 
 let register_size = 1000000
 let heap = ref 0
-
-
-let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
-  | "min_caml_hp" -> raise (Un_supported ("int_of_id_t min_caml_hp is not supported."))
-  | id ->
-    try
-      int_of_string (String.after_of id '.')
-    with _ ->
-      int_of_string (String.after_of id 'u')
-
-
-let int_of_id_or_imm = function
-    V (id_t) -> int_of_id_t id_t
-  | C (n) -> n
-
-
-let string_of_id_or_imm = function
-    V (id_t) -> id_t
-  | C (n) -> string_of_int n
-
 
 let rec find_label_number label = function
   | [] -> let Id.L s = label in int_of_id_t s

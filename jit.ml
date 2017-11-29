@@ -1,5 +1,6 @@
 open Asm
 open Util
+open JitUtil
 
 exception Un_supported of string
 
@@ -14,16 +15,6 @@ type jit_result =
 type jit_branch_result =
   | Selected of t
   | Not_selected of exp
-
-let int_of_id_t id =
-  try
-    int_of_string (String.after_of id '.')
-  with _ ->
-    int_of_string (String.after_of id 'u')
-
-let int_of_id_or_imm = function
-  | V (id_t) -> int_of_id_t id_t
-  | C (n) -> n
 
 let value_of = function
   | Red (n) -> n

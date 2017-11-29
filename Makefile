@@ -4,7 +4,7 @@ default: compiler interp
 
 OCAMLMAKEFILE = Makefile.ocamlmakefile
 
-JITFILES= util.ml type.ml id.ml m.ml s.ml asm.mli asm.ml jit.ml jitTest.ml
+JITFILES= util.ml type.ml id.ml m.ml s.ml asm.mli asm.ml jitUtil.ml jit.ml jitTest.ml
 
 JITTESTPROGRAM = jitTest
 
