@@ -36,7 +36,7 @@ let interp_exec f =
        EmitVirtual.g out (virtualize (Lexing.from_channel inchan));
        close_out out
      | None ->
-       interp (Lexing.from_channel inchan));
+       ignore (interp (Lexing.from_channel inchan)));
     close_in inchan;
   with e ->
     close_in inchan;

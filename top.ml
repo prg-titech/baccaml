@@ -23,6 +23,6 @@ let str_to_virtual str =
   |> Closure.f
   |> Virtual.f
 
-let str_to_interp s = InterpMain.interp (Lexing.from_string s)
+let str_to_interp s = ignore (InterpMain.interp (Lexing.from_string s))
 
 let str_to_prog_interp s = EmitVirtual.g stdout (str_to_virtual s)
