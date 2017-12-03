@@ -8,7 +8,7 @@ JITFILES= util.ml type.ml id.ml m.ml s.ml asm.mli asm.ml jitUtil.ml jit.ml jitTe
 
 INTERPFILES = util.ml logger.ml type.ml id.ml m.ml s.ml asm.mli asm.ml jitUtil.ml interp.mli interp.ml interpTest.ml
 
-JITTESTPROGRAM = jitTest
+JITTEST = jitTest
 
 INTERPTEST = interpTest
 
@@ -20,7 +20,7 @@ interp:
 
 clean:
 	$(MAKE) -f $(OCAMLMAKEFILE) clean
-	rm -f $(JITTESTPROGRAM)
+	rm -f $(JITTESTPROGRAM) $(INTERPTEST)
 
 .PHONY: test
 test: compiler
@@ -28,10 +28,13 @@ test: compiler
 
 .PHONY: jitcheck
 jitcheck:
-	ocamlfind ocamlc -package ounit,str -linkpkg -o $(JITTESTPROGRAM) $(JITFILES)
-	./$(JITTESTPROGRAM)
+	ocamlfind ocamlc -package ounit,str -linkpkg -o $(JITTEST) $(JITFILES)
+	./$(JITTEST); rm -f $(JITTEST)
 
 .PHONY: interpcheck
 interpcheck:
 	ocamlfind ocamlc -package ounit,str -linkpkg -o $(INTERPTEST) $(INTERPFILES)
-	./$(INTERPTEST)
+	./$(INTERPTEST); rm -f $(INTERPTEST)
+
+.PHONY: allcheck
+allckeck: jitcheck interpcheck
