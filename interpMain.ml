@@ -18,7 +18,6 @@ let virtualize l =
   |> Alpha.f
   |> Closure.f
   |> Virtual.f
-  |> Simm.f
 
 let interp l = virtualize l |> Interp.f
 
