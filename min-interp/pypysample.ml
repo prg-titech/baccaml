@@ -1,53 +1,46 @@
-let jump_if_a = 0 in
-let mov_a_r = 1 in
-let mov_r_a = 2 in
-let add_r_to_a = 3 in
-let decr_a = 4 in
-let return_a = 5 in
-
-let rec interpret bytecode pc a =
-  let regs = Array.make 256 0 in
+let rec interpret bytecode pc a regs =
   let opcode = bytecode.(pc) in
-  if opcode = jump_if_a then
+  if opcode = 0 then
     let target = bytecode.(pc + 1) in
-    if a > 1 then
-      interpret bytecode target a
+    if a > 0 then
+      interpret bytecode target a regs
     else
-      interpret bytecode (pc + 2) a
-  else if opcode = mov_a_r then
+      interpret bytecode (pc + 2) a regs
+  else if opcode = 1 then
     let n = bytecode.(pc + 1) in
     regs.(n) <- a;
-    interpret bytecode (pc + 2) a
-  else if opcode = mov_r_a then
+    interpret bytecode (pc + 2) a regs
+  else if opcode = 2 then
     let n = bytecode.(pc + 1) in
-    interpret bytecode (pc + 2) (regs.(n))
-  else if opcode = add_r_to_a then
+    interpret bytecode (pc + 2) (regs.(n)) regs
+  else if opcode = 3 then
     let n = bytecode.(pc + 1) in
-    interpret bytecode (pc + 2) (a + regs.(n))
-  else if opcode = decr_a then
-    interpret bytecode (pc + 1) (a - 1)
-  else if opcode = return_a then
+    interpret bytecode (pc + 2) (a + regs.(n)) regs
+  else if opcode = 4 then
+    interpret bytecode (pc + 1) (a - 1) regs
+  else if opcode = 5 then
     a
   else
     -1
 in
 let bytecode = Array.make 100 0 in
-bytecode.(0) <- mov_a_r; bytecode.(1) <- 0;
-bytecode.(2) <- mov_a_r; bytecode.(3) <- 1;
+let regs = Array.make 256 0 in
+bytecode.(0) <- 1; bytecode.(1) <- 0;
+bytecode.(2) <- 1; bytecode.(3) <- 1;
 
 (* 4: *)
-bytecode.(4) <- mov_r_a; bytecode.(5) <- 0;
-bytecode.(6) <- decr_a;
-bytecode.(7) <- mov_a_r; bytecode.(8) <- 0;
+bytecode.(4) <- 2; bytecode.(5) <- 0;
+bytecode.(6) <- 4;
+bytecode.(7) <- 1; bytecode.(8) <- 0;
 
-bytecode.(9) <- mov_r_a; bytecode.(10) <- 2;
-bytecode.(11) <- add_r_to_a; bytecode.(12) <- 1;
-bytecode.(13) <- mov_a_r; bytecode.(14) <- 2;
+bytecode.(9) <- 2; bytecode.(10) <- 2;
+bytecode.(11) <- 3; bytecode.(12) <- 1;
+bytecode.(13) <- 1; bytecode.(14) <- 2;
 
-bytecode.(15) <- mov_r_a; bytecode.(16) <- 0;
-bytecode.(17) <- jump_if_a; bytecode.(18) <- 4;
+bytecode.(15) <- 2; bytecode.(16) <- 0;
+bytecode.(17) <- 0; bytecode.(18) <- 4;
 
-bytecode.(19) <- mov_r_a; bytecode.(20) <- 2;
-bytecode.(21) <- return_a;
+bytecode.(19) <- 2; bytecode.(20) <- 2;
+bytecode.(21) <- 5;
 
-print_int (interpret bytecode 0 0)
+print_int (interpret bytecode 0 10 regs)
