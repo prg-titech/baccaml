@@ -20,7 +20,7 @@ interp:
 
 clean:
 	$(MAKE) -f $(OCAMLMAKEFILE) clean
-	rm -f $(JITTESTPROGRAM) $(INTERPTEST)
+	rm -f $(JITTEST) $(INTERPTEST)
 
 .PHONY: test
 test: compiler
