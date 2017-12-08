@@ -19,8 +19,9 @@ interp:
 	$(MAKE) -f $(OCAMLMAKEFILE) PROJECT=interpreter
 
 clean:
-	$(MAKE) -f $(OCAMLMAKEFILE) clean
-	rm -f $(JITTEST) $(INTERPTEST) $(PYPYSAMPLETEST) $(PYPYSAMPLETEST).top
+	$(MAKE) -f $(OCAMLMAKEFILE) clean PROJECT=compiler -s
+	$(MAKE) -f $(OCAMLMAKEFILE) clean PROJECT=interpreter -s
+	@rm -f $(JITTEST) $(INTERPTEST) $(PYPYSAMPLETEST) $(PYPYSAMPLETEST).top 2>/dev/null
 
 .PHONY: example
 example: compiler
