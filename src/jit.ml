@@ -229,14 +229,11 @@ and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array
     failwith "Not supported."
 
 let exec_jitcompile p t reg mem =
-  let jit_args = { trace_name = "test_trace.1000"; reds = ["a.109"] } in
+  let jit_args = { trace_name = "test_trace.1000"; reds = ["a.109"; "regs.110"] } in
   let res = jitcompile p t reg mem jit_args in
-  let trace =
-    { name = Id.L (jit_args.trace_name)
-    ; args = jit_args.reds
-    ; fargs = []
-    ; body = res
-    ; ret = Type.Int
-    }
-  in
-  Prog ([], trace :: [], Ans (CallDir (Id.L (jit_args.trace_name), jit_args.reds, [])))
+  { name = Id.L (jit_args.trace_name)
+  ; args = jit_args.reds
+  ; fargs = []
+  ; body = res
+  ; ret = Type.Int
+  }

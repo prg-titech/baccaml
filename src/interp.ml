@@ -4,10 +4,11 @@ open JitUtil
 
 exception Un_implemented_instruction of string
 
-type labels = (Id.l * int) list (* function label for closures *)
-type prog_with_label = ProgWithLabel of (Id.l * float) list * fundef list * t * labels (* prog for interpreter *)
-type register = int array
-type memory = int array
+type labels = (* function label for closures *)
+  (Id.l * int) list
+
+type prog_with_label = (* prog for interpreter *)
+    ProgWithLabel of (Id.l * float) list * fundef list * t * labels
 
 let register_size = 1000000
 let heap = ref 0
@@ -59,18 +60,17 @@ let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数が
   let regs_real = List.map int_of_id_t args_real in
   let arr = Array.make register_size 0 in
   List.iter
-    (fun (x, y) ->
-       Logger.debug (Printf.sprintf "make_reg (tmp_address: %d <- real_address: %d, value: %d)" x y reg.(y));
-       arr.(x) <- reg.(y))
+    (fun (x, y) -> arr.(x) <- reg.(y))
     (List.zip regs_tmp regs_real);
   arr
 
+let is_first_enter = ref true
 
-let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : register) (mem : memory) : 'a =
+let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : int array) (mem : int array) : 'a =
   match instr with
   | Ans exp ->
     let res = eval_exp prog exp reg mem in
-    Logger.debug (Printf.sprintf "Ans (%d)" res);
+    (* Logger.debug (Printf.sprintf "Ans (%d)" res); *)
     res
   | Let ((id, _), exp, t) ->
     if id = "min_caml_hp" then
@@ -86,7 +86,7 @@ let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : register) (mem : 
       interp prog t reg mem
 
 
-and eval_exp (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memory) : 'a =
+and eval_exp (prog : prog_with_label) (exp' : exp) (reg : int array) (mem : int array) : 'a =
   match exp' with
   | Nop ->
     Logger.debug ("Nop");
@@ -261,7 +261,16 @@ and eval_exp (prog : prog_with_label) (exp' : exp) (reg : register) (mem : memor
     let fundef = lookup_by_id_l prog name in
     let reg' = make_reg reg (fundef.args) args in
     let Id.L s = name in Logger.debug (Printf.sprintf "CallDir %s" s);
-    interp prog (fundef.body) reg'  mem
+    Logger.debug (string_of_int (reg.(109)));
+    (match reg.(108), !is_first_enter with
+     | 4, true ->
+       is_first_enter := false;
+       interp prog (fundef.body) reg' mem
+     | 4, false ->
+       interp prog (Ans (CallDir (Id.L ("test_trace.1000"), ["a.109"; "regs.110"], []))) reg' mem
+     | _ ->
+      interp prog (fundef.body) reg' mem
+    )
   | _ -> raise (Un_implemented_instruction "Not implemented.")
 
 

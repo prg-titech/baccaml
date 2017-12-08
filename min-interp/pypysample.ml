@@ -43,4 +43,4 @@ bytecode.(17) <- 0; bytecode.(18) <- 4;
 bytecode.(19) <- 2; bytecode.(20) <- 2;
 bytecode.(21) <- 5;
 
-print_int (interpret bytecode 0 10 regs)
+print_int (interpret bytecode 0 100 regs)

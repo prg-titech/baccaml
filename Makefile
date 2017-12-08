@@ -32,7 +32,8 @@ clean:
 	@for case in $(TESTCASES); do \
 	  rm -f $$case.byte; \
 	done
-	@rm -f min-caml{,.top} min-camli
+	@rm -f min-caml{,.top,i,i.top}
+	ocamlbuild -clean
 
 .PHONY: test
 test:
@@ -40,4 +41,3 @@ test:
 	  ocamlbuild -Is src,test -pkgs $(PACKS) test/$$case.byte; \
 	  ./$$case.byte; \
 	done
-	@rm -f min-camli

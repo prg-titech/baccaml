@@ -26,11 +26,10 @@ let _ = run_test_tt_main begin
     "tracing jit test" >::: [
       "test 1" >::
       begin fun () ->
-        Logger.log_level := Logger.Debug;
         let ic = open_in (dir ^ "pypysample.ml") in
         let lexbuf = Lexing.from_channel ic in
         let prog = virtualize lexbuf in
-        let Prog (_, [fundef], _) = prog in
+        let Prog (_, [fundef], main) = prog in
         let instr = fundef.body in
         let reg = Array.make 1000 (Red 0) in
         let mem = Array.make 1000 (Red 0) in
@@ -60,9 +59,16 @@ let _ = run_test_tt_main begin
         mem.(19 * 4) <- Green (2);
         mem.(20 * 4) <- Green (2);
         mem.(21 * 4) <- Green (5);
-        mem.(100 * 4) <- Red (10);
+        mem.(100 * 4) <- Green (10);
         let trace = exec_jitcompile prog instr reg mem in
-        print_string (EmitVirtual.to_string_prog trace);
+        let prog' = Prog ([], fundef :: trace :: [], main) in
+        Logger.log_level := Logger.Debug;
+        let _ = Interp.interp
+          (Interp.to_prog_with_label prog')
+          main
+          (Array.make 10000 0)
+          (Array.make 10000 0)
+        in
         ()
       end
     ]
