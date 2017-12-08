@@ -48,9 +48,9 @@
 /min-rt/*.cmp
 /min-rt/*.sld_
 /min-rt/*.cmp
-/test/*
-!/test/*.ml*.v
-/test/*dSYM/
+/example/*
+!/example/*.ml*.v
+/example/*dSYM/
 
 # Build
 min-caml

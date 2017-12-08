@@ -54,7 +54,7 @@ SOURCES_TOP = \
 top.ml \
 top.mli
 
-TESTS = \
+EXAMPLES = \
 print \
 sum-tail \
 gcd \
@@ -110,20 +110,20 @@ clean:: nobackup
 	@rm -f $(INTERPRETER) $(INTERPRETER).top $(INTERPRETER).opt
 	@rm -f $(COMPILER) $(COMPILER).top $(COMPILER).opt
 
-test: $(TESTS:%=test/%.cmp)
+example: $(EXAMPLES:%=example/%.cmp)
 
-.PRECIOUS: test/%.s test/% test/%.res test/%.ans test/%.cmp
-TRASH = $(TESTS:%=test/%.s) $(TESTS:%=test/%) $(TESTS:%=test/%.res) $(TESTS:%=test/%.ans) $(TESTS:%=test/%.cmp)
+.PRECIOUS: example/%.s example/% example/%.res example/%.ans example/%.cmp
+TRASH = $(EXAMPLES:%=example/%.s) $(EXAMPLES:%=example/%) $(EXAMPLES:%=example/%.res) $(EXAMPLES:%=example/%.ans) $(EXAMPLES:%=example/%.cmp)
 
-test/%.s: $(RESULT) test/%.ml
-	./$(RESULT) test/$*
-test/%: test/%.s libmincaml.S stub.c
+example/%.s: $(RESULT) example/%.ml
+	./$(RESULT) example/$*
+example/%: example/%.s libmincaml.S stub.c
 	$(CC) $(CFLAGS) -m32 $^ -lm -o $@
-test/%.res: test/%
+example/%.res: example/%
 	$< > $@
-test/%.ans: test/%.ml
+example/%.ans: example/%.ml
 	ocaml $< > $@
-test/%.cmp: test/%.res test/%.ans
+example/%.cmp: example/%.res example/%.ans
 	diff $^ > $@
 
 -include OCamlMakefile

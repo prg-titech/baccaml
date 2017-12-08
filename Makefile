@@ -1,6 +1,6 @@
 default: compiler interp
 
-.all: compiler interp clean compilertest test
+.all: compiler interp clean example test
 
 OCAMLMAKEFILE = Makefile.ocamlmakefile
 
@@ -22,9 +22,9 @@ clean:
 	$(MAKE) -f $(OCAMLMAKEFILE) clean
 	rm -f $(JITTEST) $(INTERPTEST) $(PYPYSAMPLETEST) $(PYPYSAMPLETEST).top
 
-.PHONY: compilertest
-compilertest: compiler
-	$(MAKE) -f $(OCAMLMAKEFILE) test
+.PHONY: example
+example: compiler
+	$(MAKE) -f $(OCAMLMAKEFILE) RESULT=min-caml example
 
 .PHONY: jittest
 jittest:
