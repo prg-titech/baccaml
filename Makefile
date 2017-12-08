@@ -11,13 +11,9 @@ PACKS = ounit,str
 .PHONY: subdirs $(SUBDIRS)
 
 compiler:
-	@cd src; $(MAKE); $(MAKE) clean
-
-subdirs: $(SUBDIRS)
-
-$(SUBDIRS):
-	$(MAKE) -C $@
-	@mv src/min-caml{,.top} .
+	ocamlbuild src/float.o
+	ocamlbuild -Is src,test -pkg str -lflags -custom,src/float.o src/main.byte
+	@mv main.byte min-caml
 
 .PHONY: interp
 interp:
