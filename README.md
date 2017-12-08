@@ -35,12 +35,6 @@ $ make interp
 $ ./min-camli <target>
 ```
 
-## Run
-
-```bash
-$ ./bin/test
-```
-
 ## CHANGELOG
 
 [Updates on October 9, 2013]
