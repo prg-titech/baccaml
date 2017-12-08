@@ -26,6 +26,7 @@ interp:
 	mv interpMain.byte min-camli
 
 clean:
+	@cd src && $(MAKE) clean
 	@for dir in $(SUBDIRS); do \
 	  rm -f $$dir/{*.o,*.cmi,*.cmo}; \
 	done
@@ -41,3 +42,7 @@ test:
 	  ./$$case.byte; \
 	done
 	@rm -f min-camli
+
+.PHONY: example
+example:
+	$(MAKE) -f src/Makefile example

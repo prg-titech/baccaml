@@ -34,9 +34,9 @@
 #/virtual.ml
 
 # Project Specific Generated Files
-/lexer.ml
-/parser.ml
-/parser.mli
+src/lexer.ml
+src/parser.ml
+src/parser.mli
 
 /min-rt/ppmdiff
 /min-rt/raytrace
