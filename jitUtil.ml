@@ -1,3 +1,4 @@
+open Asm
 open Util
 
 exception Not_supported of string
@@ -14,8 +15,13 @@ let int_of_id_or_imm = function
     Asm.V (id_t) -> int_of_id_t id_t
   | Asm.C (n) -> n
 
-
 let string_of_id_or_imm = function
     Asm.V (id_t) -> id_t
   | Asm.C (n) -> string_of_int n
 
+let rec get_body_by_id_l prog name =
+  let Asm.Prog (_, fundefs, _) = prog in
+  try
+    List.find (fun fundef -> fundef.name = name) fundefs
+  with
+  | _ -> failwith "Unknown"

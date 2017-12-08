@@ -37,8 +37,6 @@
 /lexer.ml
 /parser.ml
 /parser.mli
-/min-caml
-/min-caml.top
 
 /min-rt/ppmdiff
 /min-rt/raytrace
@@ -55,6 +53,7 @@
 /test/*dSYM/
 
 # Build
+min-caml
 min-camli
-min-camli.top
-jitTest
+*.top
+*Test

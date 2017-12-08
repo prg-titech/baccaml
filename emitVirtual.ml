@@ -52,7 +52,7 @@ let rec to_string_exp exp =
   | Neg (x')-> Printf.sprintf "Neg (%s)" x'
   | Add (x', y') -> Printf.sprintf "Add (%s, %s)" x' (to_string_id_or_imm y')
   | Sub (x', y') -> Printf.sprintf "Sub (%s, %s)" x' (to_string_id_or_imm y')
-  | Ld (x', y', i) -> Printf.sprintf "Ld (%s, %s %d)" x' (to_string_id_or_imm y') i
+  | Ld (x', y', i) -> Printf.sprintf "Ld (%s, %s, %d)" x' (to_string_id_or_imm y') i
   | St (x1, x2, y', i) -> Printf.sprintf "St (%s, %s, %s, %d)" x1 x2 (to_string_id_or_imm y') i
   | FMovD (x') -> Printf.sprintf "FMovd (%s)" x'
   | FNegD (x') -> Printf.sprintf "FNegD (%s)" x'

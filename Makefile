@@ -1,40 +1,44 @@
 default: compiler interp
 
-.all: compiler interp clean test
+.all: compiler interp clean compilertest test
 
 OCAMLMAKEFILE = Makefile.ocamlmakefile
 
 JITFILES= util.ml type.ml id.ml m.ml s.ml asm.mli asm.ml jitUtil.ml jit.ml jitTest.ml
-
 INTERPFILES = util.ml logger.ml type.ml id.ml m.ml s.ml asm.mli asm.ml jitUtil.ml interp.mli interp.ml interpTest.ml
 
 JITTEST = jitTest
-
 INTERPTEST = interpTest
+PYPYSAMPLETEST = pypysampleTest
+
 
 compiler:
-	$(MAKE) -f $(OCAMLMAKEFILE)
+	$(MAKE) -f $(OCAMLMAKEFILE) PROJECT=compiler
 
 interp:
 	$(MAKE) -f $(OCAMLMAKEFILE) PROJECT=interpreter
 
 clean:
 	$(MAKE) -f $(OCAMLMAKEFILE) clean
-	rm -f $(JITTEST) $(INTERPTEST)
+	rm -f $(JITTEST) $(INTERPTEST) $(PYPYSAMPLETEST) $(PYPYSAMPLETEST).top
 
-.PHONY: test
-test: compiler
+.PHONY: compilertest
+compilertest: compiler
 	$(MAKE) -f $(OCAMLMAKEFILE) test
 
-.PHONY: jitcheck
-jitcheck:
+.PHONY: jittest
+jittest:
 	ocamlfind ocamlc -package ounit,str -linkpkg -o $(JITTEST) $(JITFILES)
-	./$(JITTEST); rm -f $(JITTEST)
+	./$(JITTEST)
 
-.PHONY: interpcheck
-interpcheck:
+.PHONY: intertest
+interptest:
 	ocamlfind ocamlc -package ounit,str -linkpkg -o $(INTERPTEST) $(INTERPFILES)
-	./$(INTERPTEST); rm -f $(INTERPTEST)
+	./$(INTERPTEST)
 
-.PHONY: allcheck
-allckeck: jitcheck interpcheck
+.PHONY: pypysampletest
+pypysampletest:
+	$(MAKE) -f $(OCAMLMAKEFILE) PROJECT=trace PROGRAM=$(PYPYSAMPLETEST)
+	./$(PYPYSAMPLETEST)
+
+test: jittest interptest pypysampletest
