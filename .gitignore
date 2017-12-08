@@ -57,3 +57,4 @@ min-caml
 min-camli
 *.top
 *Test
+*.byte
