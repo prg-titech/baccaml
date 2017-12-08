@@ -1,0 +1,6 @@
+S ../src/
+B ../_build/
+B ../_build/src
+B ../_build/test
+
+PKG ounit
