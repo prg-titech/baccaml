@@ -2,8 +2,6 @@ default: compiler interp
 
 .all: compiler interp clean example test
 
-OCAMLMAKEFILE = Makefile.ocamlmakefile
-
 SUBDIRS = src
 
 TESTCASES = jitTest interpTest pypysampleTest
@@ -12,7 +10,8 @@ PACKS = ounit,str
 
 .PHONY: subdirs $(SUBDIRS)
 
-compiler: subdirs
+compiler:
+	@cd src; $(MAKE); $(MAKE) clean
 
 subdirs: $(SUBDIRS)
 
@@ -33,7 +32,7 @@ clean:
 	@for case in $(TESTCASES); do \
 	  rm -f $$case.byte; \
 	done
-	@rm -f min-caml{,.top}
+	@rm -f min-caml{,.top} min-camli
 
 .PHONY: test
 test:
@@ -42,7 +41,3 @@ test:
 	  ./$$case.byte; \
 	done
 	@rm -f min-camli
-
-.PHONY: example
-example:
-	$(MAKE) -f src/Makefile example
