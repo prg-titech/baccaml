@@ -91,24 +91,12 @@ array2 \
 float \
 tuple
 
-ifeq ($(PROJECT), interpreter)
-  RESULT = $(INTERPRETER)
-  SOURCES = $(SOURCES_LIB) jitUtil.ml jit.ml interp.ml interp.mli emitVirtual.mli emitVirtual.ml interpMain.ml $(SOURCES_TOP)
-endif
-ifeq ($(PROJECT), compiler)
-  RESULT = $(COMPILER)
-  SOURCES = $(SOURCES_LIB) main.mli main.ml
-endif
-ifeq ($(PROJECT), trace)
-  RESULT = $(PROGRAM)
-  SOURCES = $(SOURCES_LIB) jitUtil.ml jit.ml interp.ml interp.mli emitVirtual.mli emitVirtual.ml pypysampleTest.ml
-endif
+RESULT = $(COMPILER)
+SOURCES = $(SOURCES_LIB) jitUtil.ml jit.ml interp.ml main.mli main.ml
 
 default: debug-code top
 
 clean:: nobackup
-	@rm -f $(INTERPRETER) $(INTERPRETER).top $(INTERPRETER).opt
-	@rm -f $(COMPILER) $(COMPILER).top $(COMPILER).opt
 
 example: $(EXAMPLES:%=example/%.cmp)
 

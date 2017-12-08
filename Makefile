@@ -4,42 +4,40 @@ default: compiler interp
 
 OCAMLMAKEFILE = Makefile.ocamlmakefile
 
-JITFILES= util.ml type.ml id.ml m.ml s.ml asm.mli asm.ml jitUtil.ml jit.ml jitTest.ml
-INTERPFILES = util.ml logger.ml type.ml id.ml m.ml s.ml asm.mli asm.ml jitUtil.ml interp.mli interp.ml interpTest.ml
+SUBDIRS = src
 
-JITTEST = jitTest
-INTERPTEST = interpTest
-PYPYSAMPLETEST = pypysampleTest
+TESTCASES = jitTest interpTest pypysampleTest
 
+PACKS = ounit,str
 
-compiler:
-	$(MAKE) -f $(OCAMLMAKEFILE) PROJECT=compiler
+.PHONY: subdirs $(SUBDIRS)
 
+compiler: subdirs
+
+subdirs: $(SUBDIRS)
+
+$(SUBDIRS):
+	$(MAKE) -C $@
+	@mv src/min-caml{,.top} .
+
+.PHONY: interp
 interp:
-	$(MAKE) -f $(OCAMLMAKEFILE) PROJECT=interpreter
+	ocamlbuild -Is src,test -pkgs $(PACKS) src/interpMain.byte
+	mv interpMain.byte min-camli
 
 clean:
-	$(MAKE) -f $(OCAMLMAKEFILE) clean PROJECT=compiler -s
-	$(MAKE) -f $(OCAMLMAKEFILE) clean PROJECT=interpreter -s
-	@rm -f $(JITTEST) $(INTERPTEST) $(PYPYSAMPLETEST) $(PYPYSAMPLETEST).top 2>/dev/null
+	@for dir in $(SUBDIRS); do \
+	  rm -f $$dir/{*.o,*.cmi,*.cmo}; \
+	done
+	@for case in $(TESTCASES); do \
+	  rm -f $$case.byte; \
+	done
+	@rm -f min-caml{,.top}
 
-.PHONY: example
-example: compiler
-	$(MAKE) -f $(OCAMLMAKEFILE) RESULT=min-caml example
-
-.PHONY: jittest
-jittest:
-	ocamlfind ocamlc -package ounit,str -linkpkg -o $(JITTEST) $(JITFILES)
-	./$(JITTEST)
-
-.PHONY: intertest
-interptest:
-	ocamlfind ocamlc -package ounit,str -linkpkg -o $(INTERPTEST) $(INTERPFILES)
-	./$(INTERPTEST)
-
-.PHONY: pypysampletest
-pypysampletest:
-	$(MAKE) -f $(OCAMLMAKEFILE) PROJECT=trace PROGRAM=$(PYPYSAMPLETEST)
-	./$(PYPYSAMPLETEST)
-
-test: jittest interptest pypysampletest
+.PHONY: test
+test:
+	@for case in $(TESTCASES); do \
+	  ocamlbuild -Is src,test -pkgs $(PACKS) test/$$case.byte; \
+	  ./$$case.byte; \
+	done
+	@rm -f min-camli
