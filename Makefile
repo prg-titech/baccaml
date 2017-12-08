@@ -33,9 +33,7 @@ interp:
 	mv interpMain.byte min-camli
 
 clean:
-	@for dir in $(SUBDIRS); do \
-		cd $$dir; $(MAKE) clean -s; cd ..;\
-	done
+	@rm -f $(TRASH)
 	ocamlbuild -clean
 
 .PHONY: test
