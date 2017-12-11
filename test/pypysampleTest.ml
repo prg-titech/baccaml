@@ -1,6 +1,7 @@
 open OUnit
 open Asm
 open Jit
+open JitUtil
 open MincamlUtil
 
 let dir = "min-interp/"
@@ -43,14 +44,21 @@ let _ = run_test_tt_main begin
         mem.(20 * 4) <- Green (2);
         mem.(21 * 4) <- Green (5);
         mem.(100 * 4) <- Green (10);
-        let trace = exec_jitcompile prog instr reg mem in
-        let prog' = Prog ([], fundef :: trace :: [], main) in
         Logger.log_level := Logger.Debug;
+        let jit_args =
+          { trace_name = "test_trace.1000";
+            reds = ["a.109"; "regs.110"];
+            loop_header = 4;
+            loop_pc = 108; }
+        in
+        let trace = exec_jitcompile prog instr reg mem jit_args in
+        let prog' = Prog ([], fundef :: trace :: [], main) in
         let _ = Interp.interp
-          (Interp.to_prog_with_label prog')
-          main
-          (Array.make 10000 0)
-          (Array.make 10000 0)
+            (Interp.to_prog_with_label prog')
+            main
+            (Array.make 10000 0)
+            (Array.make 10000 0)
+            jit_args
         in
         ()
       end

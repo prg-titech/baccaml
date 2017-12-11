@@ -10,7 +10,7 @@ INTERPRETER = min-camli
 
 PACKS = ounit,str
 
-TESTCASES = jitTest interpTest pypysampleTest
+TESTCASES = jitTest interpTest pypysampleTest simple1Test
 
 EXAMPLES = print sum-tail gcd sum fib ack even-odd adder \
 funcomp cls-rec cls-bug cls-bug2 cls-reg-bug shuffle \
@@ -40,13 +40,19 @@ clean:
 .PHONY: test
 test:
 	@for case in $(TESTCASES); do \
-	  ocamlbuild -Is src,test -pkgs $(PACKS) test/$$case.byte; \
+	  ocamlbuild -Is src,test -pkgs $(PACKS) test/$$case.byte || exit 1; \
 	  ./$$case.byte; \
 	done
 
 .PHONY: pypytest
 pypytest:
-	ocamlbuild -Is src,test -pkgs ounit,str test/pypysampleTest.byte; ./pypysampleTest.byte
+	ocamlbuild -Is src,test -pkgs ounit,str test/pypysampleTest.byte
+	./pypysampleTest.byte
+
+.PHONY: simple1test
+simple1test:
+	ocamlbuild -I src -pkgs ounit,str test/simple1Test.byte
+	./simple1Test.byte
 
 .PHONY: example
 example: $(EXAMPLES:%=example/%.cmp)
