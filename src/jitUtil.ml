@@ -22,6 +22,8 @@ type jit_args = {
   loop_pc : int;
 }
 
+let is_jit = ref false
+
 let value_of = function
   | Red (n) -> n
   | Green (n) -> n

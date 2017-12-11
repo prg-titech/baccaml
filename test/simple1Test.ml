@@ -37,6 +37,7 @@ let _ = run_test_tt_main begin
         let reg' = Array.make 10000 0 in
         let mem' = Array.make 10000 0 in
         Logger.log_level := Logger.Debug;
+        JitUtil.is_jit := true;
         reg'.(42) <- 100;
         mem'.(12) <- 4;
         let _ = Interp.interp
@@ -45,7 +46,7 @@ let _ = run_test_tt_main begin
             reg'
             mem'
             jit_args
-           in
+        in
         ()
       end
     ]
