@@ -1,0 +1,15 @@
+sudo: required
+
+services:
+  - docker
+
+language: c
+
+before_install:
+  - docker build -t micchon/min-caml:latest .
+  - docker run --name min-cmal-debug -it micchon/min-caml:latest
+
+script:
+  - docker ps -a
+  - docker exec -it min-caml-debug ./runtest.sh
+  - docker rm -f `docker ps -aq`
