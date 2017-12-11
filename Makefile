@@ -24,7 +24,7 @@ SUBDIRS = src
 .PHONY: compiler
 compiler:
 	ocamlbuild src/float.o
-	ocamlbuild -pkgs $(PACKS) -lflags -custom,src/float.o src/main.byte
+	ocamlbuild -use-ocamlfind -pkgs ounit,str -lflags -custom,src/float.o src/main.byte
 	@mv main.byte min-caml
 
 .PHONY: interp
