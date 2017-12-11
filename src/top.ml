@@ -1,3 +1,5 @@
+open MincamlUtil
+
 let emit_virtual str =
   Id.counter := 0;
   Typing.extenv := M.empty;
