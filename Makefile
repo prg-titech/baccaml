@@ -8,7 +8,7 @@ OCAMLLDFLAGS = -warn-error -31
 COMPILER = min-caml
 INTERPRETER = min-camli
 
-PACKS = ounit,str
+PACKS = oUnit,str
 
 TESTCASES = jitTest interpTest pypysampleTest simple1Test
 
@@ -24,12 +24,12 @@ SUBDIRS = src
 .PHONY: compiler
 compiler:
 	ocamlbuild src/float.o
-	ocamlbuild -use-ocamlfind -pkgs ounit,str -lflags -custom,src/float.o src/main.byte
+	ocamlbuild -pkgs str -lflags -custom,src/float.o src/main.byte
 	@mv main.byte min-caml
 
 .PHONY: interp
 interp:
-	ocamlbuild -pkgs $(PACKS) src/interpMain.byte
+	ocamlbuild -pkg str src/interpMain.byte
 	@mv interpMain.byte min-camli
 
 .PHONY: clean
@@ -46,12 +46,12 @@ test:
 
 .PHONY: pypytest
 pypytest:
-	ocamlbuild -Is src,test -pkgs ounit,str test/pypysampleTest.byte
+	ocamlbuild -Is src,test -pkgs $(PACKS) test/pypysampleTest.byte
 	./pypysampleTest.byte
 
 .PHONY: simple1test
 simple1test:
-	ocamlbuild -I src -pkgs ounit,str test/simple1Test.byte
+	ocamlbuild -I src -pkgs $(PACKS) test/simple1Test.byte
 	./simple1Test.byte
 
 .PHONY: example
