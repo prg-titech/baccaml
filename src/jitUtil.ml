@@ -3,6 +3,29 @@ open Util
 
 exception Not_supported of string
 
+type value =
+  | Red of int
+  | Green of int
+
+type jit_result =
+  | Specialized of value
+  | Not_specialised of exp
+
+type jit_branch_result =
+  | Selected of t
+  | Not_selected of exp
+
+type jit_args = {
+  trace_name : string;
+  reds : string list;
+  loop_header : int;
+  loop_pc : int;
+}
+
+let value_of = function
+  | Red (n) -> n
+  | Green (n) -> n
+
 let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
   | "min_caml_hp" -> raise (Not_supported ("int_of_id_t min_caml_hp is not supported."))
   | id ->

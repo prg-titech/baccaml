@@ -4,24 +4,6 @@ open JitUtil
 
 exception Un_supported of string
 
-type value =
-  | Red of int
-  | Green of int
-
-type jit_result =
-  | Specialized of value
-  | Not_specialised of exp
-
-type jit_branch_result =
-  | Selected of t
-  | Not_selected of exp
-
-type jit_args = { trace_name : string; reds : string list; }
-
-let value_of = function
-  | Red (n) -> n
-  | Green (n) -> n
-
 let rec args_to_mov argsr argst funbody =
   match argsr, argst with
   | [], [] ->
@@ -86,11 +68,12 @@ let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array
     let fundef = get_body_by_id_l p id_l in
     let funbody = fundef.body in
     let argst = fundef.args in
-    (match !pc_4_count, value_of reg.(108) with
-     | 0, 4 ->
+    let loop_pc = jit_args.loop_pc in
+    (match !pc_4_count, (value_of reg.(jit_args.loop_header)) with
+     | 0, loop_pc ->
        pc_4_count := !pc_4_count + 1;
        jitcompile p (unroll_exp argsr argst funbody) reg mem jit_args
-     | 1, 4 ->
+     | 1, loop_pc ->
        Ans (CallDir (Id.L (jit_args.trace_name), jit_args.reds, []))
      | _ ->
        jitcompile p (unroll_exp argsr argst funbody) reg mem jit_args
@@ -228,8 +211,7 @@ and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array
   | _ ->
     failwith "Not supported."
 
-let exec_jitcompile p t reg mem =
-  let jit_args = { trace_name = "test_trace.1000"; reds = ["a.109"; "regs.110"] } in
+let exec_jitcompile p t reg mem jit_args =
   let res = jitcompile p t reg mem jit_args in
   { name = Id.L (jit_args.trace_name)
   ; args = jit_args.reds
