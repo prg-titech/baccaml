@@ -24,13 +24,13 @@ SUBDIRS = src
 .PHONY: compiler
 compiler:
 	ocamlbuild src/float.o
-	ocamlbuild -I src -pkgs str,ounit -lflags -custom,src/float.o src/main.byte
+	ocamlbuild -pkgs $(PACKS) -lflags -custom,src/float.o src/main.byte
 	@mv main.byte min-caml
 
 .PHONY: interp
 interp:
-	ocamlbuild -Is src,test -pkgs $(PACKS) src/interpMain.byte
-	mv interpMain.byte min-camli
+	ocamlbuild -pkgs $(PACKS) src/interpMain.byte
+	@mv interpMain.byte min-camli
 
 clean:
 	@rm -f $(TRASH)
