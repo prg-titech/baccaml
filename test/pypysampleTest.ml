@@ -18,7 +18,7 @@ let _ = run_test_tt_main begin
         let mem = Array.make 1000 (Red 0) in
         reg.(107) <- Green (0);
         reg.(108) <- Green (4);
-        reg.(109) <- Red (10);
+        reg.(109) <- Red (100);
         reg.(110) <- Red (100 * 4);
         mem.(0 * 4) <- Green (1);
         mem.(1 * 4) <- Green (0);

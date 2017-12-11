@@ -32,6 +32,7 @@ interp:
 	ocamlbuild -pkgs $(PACKS) src/interpMain.byte
 	@mv interpMain.byte min-camli
 
+.PHONY: clean
 clean:
 	@rm -f $(TRASH)
 	ocamlbuild -clean
@@ -42,6 +43,10 @@ test:
 	  ocamlbuild -Is src,test -pkgs $(PACKS) test/$$case.byte; \
 	  ./$$case.byte; \
 	done
+
+.PHONY: pypytest
+pypytest:
+	ocamlbuild -Is src,test -pkgs ounit,str test/pypysampleTest.byte; ./pypysampleTest.byte
 
 .PHONY: example
 example: $(EXAMPLES:%=example/%.cmp)

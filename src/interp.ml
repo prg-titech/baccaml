@@ -83,7 +83,10 @@ let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : int array) (mem :
       let res = eval_exp prog exp reg mem in
       Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
       reg.(reg_num) <- res;
-      interp prog t reg mem
+      if reg.(108) = 4 then
+        interp prog (Ans (CallDir (Id.L "test_trace.1000", [], []))) reg mem
+      else
+        interp prog t reg mem
 
 
 and eval_exp (prog : prog_with_label) (exp' : exp) (reg : int array) (mem : int array) : 'a =
@@ -261,16 +264,7 @@ and eval_exp (prog : prog_with_label) (exp' : exp) (reg : int array) (mem : int 
     let fundef = lookup_by_id_l prog name in
     let reg' = make_reg reg (fundef.args) args in
     let Id.L s = name in Logger.debug (Printf.sprintf "CallDir %s" s);
-    Logger.debug (string_of_int (reg.(109)));
-    (match reg.(108), !is_first_enter with
-     | 4, true ->
-       is_first_enter := false;
-       interp prog (fundef.body) reg' mem
-     | 4, false ->
-       interp prog (Ans (CallDir (Id.L ("test_trace.1000"), ["a.109"; "regs.110"], []))) reg' mem
-     | _ ->
-      interp prog (fundef.body) reg' mem
-    )
+    interp prog (fundef.body) reg' mem
   | _ -> raise (Un_implemented_instruction "Not implemented.")
 
 
