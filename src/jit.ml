@@ -54,7 +54,7 @@ let restore_green reg cont =
   in
   restore greens cont
 
-let pc_4_count = ref 0
+let is_first_enter = ref true
 
 let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array) (jit_args : jit_args) : t =
   (* 毎回再帰呼び出しが行われたとき最初にもどったかどうかを調べる *)
@@ -68,15 +68,14 @@ let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array
     let fundef = get_body_by_id_l p id_l in
     let funbody = fundef.body in
     let argst = fundef.args in
-    let loop_pc = jit_args.loop_pc in
-    (match !pc_4_count, (value_of reg.(jit_args.loop_header)) with
-     | 0, loop_pc ->
-       pc_4_count := !pc_4_count + 1;
-       jitcompile p (unroll_exp argsr argst funbody) reg mem jit_args
-     | 1, loop_pc ->
-       Ans (CallDir (Id.L (jit_args.trace_name), jit_args.reds, []))
-     | _ ->
-       jitcompile p (unroll_exp argsr argst funbody) reg mem jit_args
+    (match !is_first_enter with
+    | true when (value_of reg.(jit_args.loop_pc) = jit_args.loop_header) ->
+      is_first_enter := false;
+      jitcompile p (unroll_exp argsr argst funbody) reg mem jit_args
+    | false when (value_of reg.(jit_args.loop_pc) = jit_args.loop_header) ->
+      Ans (CallDir (Id.L (jit_args.trace_name), jit_args.reds, []))
+    | _ ->
+      jitcompile p (unroll_exp argsr argst funbody) reg mem jit_args
     )
   | Ans exp ->
     jitcompile_branch p exp reg mem jit_args
