@@ -1,13 +1,8 @@
-FROM ubuntu:latest
+FROM ocaml/opam:ubuntu
 
 MAINTAINER Yusuke Izawa <yuizalp@gmail.com>
 
-WORKDIR /app
-
-RUN apt-get -y update && \
-    apt-get -y install \
-    opam \
-    m4
+WORKDIR /tmp
 
 RUN opam init && \
     opam install -y ounit
