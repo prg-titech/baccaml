@@ -5,11 +5,12 @@ services:
 
 language: c
 
-before_install:
-  - docker build -t micchon/min-caml:latest .
-  - docker run --name min-cmal-debug -it micchon/min-caml:latest
+env:
+  - CONTAINER_NAME=min-caml-debug
 
 script:
+  - docker build -t micchon/min-caml:latest .
+  - docker run --name ${CONTAINER_NAME} -dit micchon/min-caml:latest
   - docker ps -a
-  - docker exec -it min-caml-debug ./runtest.sh
+  - docker exec -it ${CONTAINER_NAME} ./runtest.sh
   - docker rm -f `docker ps -aq`

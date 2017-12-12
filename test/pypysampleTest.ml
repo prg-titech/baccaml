@@ -44,7 +44,6 @@ let _ = run_test_tt_main begin
         mem.(20 * 4) <- Green (2);
         mem.(21 * 4) <- Green (5);
         mem.(100 * 4) <- Green (10);
-        Logger.log_level := Logger.Debug;
         let jit_args =
           { trace_name = "test_trace.1000";
             reds = ["a.109"; "regs.110"];
