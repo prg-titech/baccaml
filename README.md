@@ -1,4 +1,4 @@
-# min-caml
+# min-caml [![Build Status](https://travis-ci.org/prg-titech/min-caml.svg?branch=develop)](https://travis-ci.org/prg-titech/min-caml)
 
 An educational compiler and interpreter for a minimal subset of OCaml, written in
 ~2000 lines of OCaml.  For details, see:
