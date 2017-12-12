@@ -50,7 +50,7 @@ let restore_green reg cont =
   let rec restore greens cont =
     match greens with
     | [] -> cont
-    | (v, n) :: tl -> Let (("Ti." ^ (string_of_int n), Type.Int), Set (v), restore tl cont)
+    | (v, n) :: tl -> Let (("Ti" ^ (string_of_int n) ^ "." ^ (string_of_int n), Type.Int), Set (v), restore tl cont)
   in
   restore greens cont
 
