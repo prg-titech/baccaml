@@ -6,12 +6,14 @@ open MincamlUtil
 
 let dir = "min-interp/"
 
+let file = dir ^ "simple1"
+
 let _ = run_test_tt_main begin
-    "tracing jit test" >::: [
-      "test 1" >::
+    "tracing_jit_test" >::: [
+      "simple1" >::
       begin fun () ->
         let prog =
-          open_in (dir ^ "simple1.ml")
+          open_in (file ^ ".ml")
           |> Lexing.from_channel
           |> virtualize
         in
@@ -26,11 +28,11 @@ let _ = run_test_tt_main begin
         reg.(40) <- Green (0);
         reg.(41) <- Green (0);
         reg.(42) <- Red (100);
-        let jit_args =
-          { trace_name = "test_trace.1000";
-            reds = ["a.42"];
-            loop_header = 0;
-            loop_pc = 41; }
+        let jit_args = {
+          trace_name = "test_trace.1000";
+          reds = ["a.42"];
+          loop_header = 0;
+          loop_pc = 41; }
         in
         let res = exec_jitcompile prog instr reg mem jit_args in
         let prog' = Prog ([], fundef :: res :: [], main) in
@@ -46,7 +48,9 @@ let _ = run_test_tt_main begin
             mem'
             jit_args
         in
+        let oc = open_out (file ^ ".s") in
+        prog' |> Simm.f |> Emit.f oc;
         ()
-      end
+      end;
     ]
   end
