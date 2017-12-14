@@ -41,8 +41,8 @@ clean:
 test:
 	@for case in $(TESTCASES); do \
 		ocamlbuild src/float.o; \
-	  ocamlbuild -Is src,test -pkgs $(PACKS) -lflags -custom,src/float.o test/$$case.byte || exit 1; \
-	  ./$$case.byte; \
+		ocamlbuild -Is src,test -pkgs $(PACKS) -lflags -custom,src/float.o test/$$case.byte || exit 1; \
+		./$$case.byte; \
 	done
 
 .PHONY: pypytest
