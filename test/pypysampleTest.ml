@@ -7,14 +7,24 @@ open MincamlUtil
 
 let dir = "min-interp/"
 
+let setup aa bb =
+  List.iter (fun (a, i) -> bb.(i) <- value_of a)
+    (List.zip (Array.to_list aa) (List.range 0 (Array.length aa - 1)))
+
 let _ = run_test_tt_main begin
     "tracing_jit_test" >::: [
       "pypysample_test" >::
       begin fun () ->
-        let ic = open_in (dir ^ "pypysample.ml") in
-        let lexbuf = Lexing.from_channel ic in
-        let prog = virtualize lexbuf in
-        let Prog (_, [fundef], main) = prog in
+        let prog =
+          open_in (dir ^ "pypysample.ml")
+          |> Lexing.from_channel
+          |> virtualize
+        in
+        let Prog (_, fundefs, main) = prog in
+        let fundef = match fundefs with
+          | [fundef] -> fundef
+          | _ -> failwith "Error."
+        in
         let instr = fundef.body in
         let reg = Array.make 1000 (Red 0) in
         let mem = Array.make 1000 (Red 0) in
@@ -44,7 +54,7 @@ let _ = run_test_tt_main begin
         mem.(19 * 4) <- Green (2);
         mem.(20 * 4) <- Green (2);
         mem.(21 * 4) <- Green (5);
-        mem.(100 * 4) <- Green (10);
+        mem.(100 * 4) <- Green (100);
         JitUtil.enable_jit := true;
         Logger.log_level := Logger.Debug;
         let jit_args =
@@ -55,7 +65,9 @@ let _ = run_test_tt_main begin
         in
         let trace = exec_jitcompile prog instr reg mem jit_args in
         let prog' = Prog ([], fundef :: trace :: [], main) in
-        let reg', mem' = Array.make 10000 (-1), Array.make 10000 (-1) in
+        let reg' = Array.make 10000 0 in
+        let mem' = Array.make 10000 0 in
+        print_string (EmitVirtual.to_string_fundef trace);
         let _ = Interp.interp (Interp.to_prog_with_label prog') main reg' mem' jit_args in
         ()
       end

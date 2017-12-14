@@ -125,7 +125,7 @@ ProgInterp (table = [], fundefs = [
   Let ((Ti71.181, Int), Set (5), 
   Let ((Tu2.182, Unit), St (Ti71.181, bytecode.113, Ti70.180, 4), 
   Let ((Ti72.183, Int), Set (0), 
-  Let ((Ti73.184, Int), Set (10), 
+  Let ((Ti73.184, Int), Set (100), 
   Let ((Ti74.185, Int), CallDir (Id.L (interpret.106), [bytecode.113, Ti72.183, Ti73.184, regs.116], []), 
   Ans (CallDir (Id.L (min_caml_print_int), [Ti74.185], []))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))),
  labels = (Id.L (interpret.106), 0))

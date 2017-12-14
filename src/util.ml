@@ -8,6 +8,11 @@ module ListUtil = struct
     let f (l, s) (x, y) = (x::l, y::s) in
     List.fold_left f ([],[]) (List.rev lst)
 
+  let range i j =
+    let rec aux n acc =
+      if n < i then acc else aux (n-1) (n :: acc)
+    in aux j []
+
   let print_list f lst =
     let rec print_elements = function
       | [] -> ()

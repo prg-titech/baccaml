@@ -10,14 +10,18 @@ let file = dir ^ "simple1"
 
 let _ = run_test_tt_main begin
     "tracing_jit_test" >::: [
-      "simple1" >::
+      "simple1_test" >::
       begin fun () ->
         let prog =
           open_in (file ^ ".ml")
           |> Lexing.from_channel
           |> virtualize
         in
-        let Prog (_, [fundef], main) = prog in
+        let Prog (_, fundefs, main) = prog in
+        let fundef = match fundefs with
+          | [fundef] -> fundef
+          | _ -> failwith "Error."
+        in
         let instr = fundef.body in
         let reg = Array.make 1000 (Red 0) in
         let mem = Array.make 1000 (Red 0) in
