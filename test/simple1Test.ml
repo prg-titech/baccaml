@@ -48,8 +48,7 @@ let _ = run_test_tt_main begin
             mem'
             jit_args
         in
-        let oc = open_out (file ^ ".s") in
-        prog' |> Simm.f |> Emit.f oc;
+        (* prog' |> Simm.f |> Emit.f (open_out (file ^ ".s")); *)
         ()
       end;
     ]
