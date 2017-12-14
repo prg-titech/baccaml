@@ -51,7 +51,8 @@ pypytest:
 
 .PHONY: simple1test
 simple1test:
-	ocamlbuild -I src -pkgs $(PACKS) test/simple1Test.byte
+	ocamlbuild src/float.o
+	ocamlbuild -I src -pkgs $(PACKS) -lflags -custom,src/float.o test/simple1Test.byte
 	./simple1Test.byte
 
 .PHONY: example
