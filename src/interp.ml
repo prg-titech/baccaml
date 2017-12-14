@@ -83,7 +83,7 @@ let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : int array) (mem :
       let res = eval_exp prog exp reg mem jit_args in
       Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
       reg.(reg_num) <- res;
-      (match !is_jit, !is_first_dispatch with
+      (match !enable_jit, !is_first_dispatch with
        | true, true when reg.(jit_args.loop_pc) = jit_args.loop_header ->
          is_first_dispatch := false;
          interp prog (Ans (CallDir (Id.L jit_args.trace_name, jit_args.reds, []))) reg mem jit_args

@@ -1,4 +1,5 @@
 open OUnit
+open Util
 open Asm
 open Jit
 open JitUtil
@@ -7,8 +8,8 @@ open MincamlUtil
 let dir = "min-interp/"
 
 let _ = run_test_tt_main begin
-    "tracing jit test" >::: [
-      "test 1" >::
+    "tracing_jit_test" >::: [
+      "pypysample_test" >::
       begin fun () ->
         let ic = open_in (dir ^ "pypysample.ml") in
         let lexbuf = Lexing.from_channel ic in
@@ -44,6 +45,8 @@ let _ = run_test_tt_main begin
         mem.(20 * 4) <- Green (2);
         mem.(21 * 4) <- Green (5);
         mem.(100 * 4) <- Green (10);
+        JitUtil.enable_jit := true;
+        Logger.log_level := Logger.Debug;
         let jit_args =
           { trace_name = "test_trace.1000";
             reds = ["a.109"; "regs.110"];
@@ -52,13 +55,8 @@ let _ = run_test_tt_main begin
         in
         let trace = exec_jitcompile prog instr reg mem jit_args in
         let prog' = Prog ([], fundef :: trace :: [], main) in
-        let _ = Interp.interp
-            (Interp.to_prog_with_label prog')
-            main
-            (Array.make 10000 0)
-            (Array.make 10000 0)
-            jit_args
-        in
+        let reg', mem' = Array.make 10000 (-1), Array.make 10000 (-1) in
+        let _ = Interp.interp (Interp.to_prog_with_label prog') main reg' mem' jit_args in
         ()
       end
     ]
