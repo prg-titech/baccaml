@@ -40,7 +40,8 @@ clean:
 .PHONY: test
 test:
 	@for case in $(TESTCASES); do \
-	  ocamlbuild -Is src,test -pkgs $(PACKS) test/$$case.byte || exit 1; \
+		ocamlbuild src/float.o; \
+	  ocamlbuild -Is src,test -pkgs $(PACKS) -lflags -custom,src/float.o test/$$case.byte || exit 1; \
 	  ./$$case.byte; \
 	done
 
