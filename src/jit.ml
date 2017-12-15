@@ -69,13 +69,13 @@ let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array
     let funbody = fundef.body in
     let argst = fundef.args in
     (match !is_first_enter with
-    | true when (value_of reg.(jit_args.loop_pc) = jit_args.loop_header) ->
-      is_first_enter := false;
-      jitcompile p (unroll_exp argsr argst funbody) reg mem jit_args
-    | false when (value_of reg.(jit_args.loop_pc) = jit_args.loop_header) ->
-      Ans (CallDir (Id.L (jit_args.trace_name), jit_args.reds, []))
-    | _ ->
-      jitcompile p (unroll_exp argsr argst funbody) reg mem jit_args
+     | true when (value_of reg.(jit_args.loop_pc) = jit_args.loop_header) ->
+       is_first_enter := false;
+       jitcompile p (unroll_exp argsr argst funbody) reg mem jit_args
+     | false when (value_of reg.(jit_args.loop_pc) = jit_args.loop_header) ->
+       Ans (CallDir (Id.L (jit_args.trace_name), jit_args.reds, []))
+     | _ ->
+       jitcompile p (unroll_exp argsr argst funbody) reg mem jit_args
     )
   | Ans exp ->
     jitcompile_branch p exp reg mem jit_args
@@ -205,6 +205,10 @@ and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array
      | Green (n1), Green (n2) ->
        mem.(n1 + n2) <- dest';
        Specialized (Green (0))
+     | Green (n1), Red (n2) ->
+       failwith "St (green, red)"
+     | Red (n1), Green (n2) ->
+       Not_specialised (St (dest, src, C (n2), x))
      | _ ->
        Not_specialised (exp))
   | _ ->
