@@ -1,8 +1,8 @@
 open OUnit
-open Util
 open Asm
 open Jit
 open JitUtil
+open Util
 open MincamlUtil
 
 let dir = "min-interp/"
@@ -13,10 +13,10 @@ let setup aa bb =
 
 let _ = run_test_tt_main begin
     "tracing_jit_test" >::: [
-      "pypysample_test" >::
+      "pypyfig3_test" >::
       begin fun () ->
         let prog =
-          open_in (dir ^ "pypysample.ml")
+          open_in (dir ^ "pypyfig3.ml")
           |> Lexing.from_channel
           |> virtualize
         in

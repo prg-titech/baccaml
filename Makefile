@@ -10,7 +10,7 @@ INTERPRETER = min-camli
 
 PACKS = oUnit,str
 
-TESTCASES = jitTest interpTest pypysampleTest simple1Test
+TESTCASES = jitTest interpTest pypyfig3Test simple1Test
 
 EXAMPLES = print sum-tail gcd sum fib ack even-odd adder \
 funcomp cls-rec cls-bug cls-bug2 cls-reg-bug shuffle \
@@ -47,8 +47,8 @@ test:
 
 .PHONY: pypytest
 pypytest:
-	ocamlbuild -Is src,test -pkgs $(PACKS) test/pypysampleTest.byte
-	./pypysampleTest.byte
+	ocamlbuild -Is src,test -pkgs $(PACKS) test/pypyfig3Test.byte
+	./pypyfig3Test.byte
 
 .PHONY: simple1test
 simple1test:
