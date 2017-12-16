@@ -41,10 +41,10 @@ let rec interp bytecode pc stack sp =
 in
 let code = Array.make 10 0 in
 let stack = Array.make 10 0 in
-code.(0) <- 2; code.(1) <- 10;
-code.(2) <- 2; code.(3) <- 20;
+code.(0) <- 3; code.(1) <- 10;
+code.(2) <- 3; code.(3) <- 20;
 code.(4) <- 0;
 code.(5) <- 4;
 code.(6) <- 0;
 code.(7) <- 20;
-(* print_int (interp code 0 stack 0); *)
+print_int (interp code 0 stack 0)
