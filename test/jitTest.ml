@@ -8,6 +8,7 @@ open JitUtil
 let jit_args = {
   trace_name = "jittest";
   reds = ["var.42"];
+  greens = [];
   loop_header = 0;
   loop_pc = 0
 }

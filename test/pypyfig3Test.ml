@@ -58,10 +58,11 @@ let _ = run_test_tt_main begin
         JitUtil.enable_jit := true;
         Logger.log_level := Logger.Debug;
         let jit_args =
-          { trace_name = "test_trace.1000";
-            reds = ["a.109"; "regs.110"];
-            loop_header = 4;
-            loop_pc = 108; }
+          { trace_name = "test_trace.1000"
+          ; reds = ["a.109"; "regs.110"]
+          ; greens = []
+          ; loop_header = 4
+          ; loop_pc = 108 }
         in
         let trace = exec_jitcompile prog instr reg mem jit_args in
         let prog' = Prog ([], fundef :: trace :: [], main) in

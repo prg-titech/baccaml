@@ -15,12 +15,13 @@ type jit_branch_result =
   | Selected of t
   | Not_selected of exp
 
-type jit_args = {
-  trace_name : string;
-  reds : string list;
-  loop_header : int;
-  loop_pc : int;
-}
+type jit_args =
+  { trace_name : string
+  ; reds : string list
+  ; greens: string list
+  ; loop_header : int
+  ; loop_pc : int
+  }
 
 let enable_jit = ref false
 

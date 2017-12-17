@@ -32,11 +32,12 @@ let _ = run_test_tt_main begin
         reg.(40) <- Green (0);
         reg.(41) <- Green (0);
         reg.(42) <- Red (100);
-        let jit_args = {
-          trace_name = "test_trace.1000";
-          reds = ["a.42"];
-          loop_header = 0;
-          loop_pc = 41; }
+        let jit_args =
+          { trace_name = "test_trace.1000"
+          ; reds = ["a.42"]
+          ; greens = []
+          ; loop_header = 0
+          ; loop_pc = 41 }
         in
         let res = exec_jitcompile prog instr reg mem jit_args in
         let prog' = Prog ([], fundef :: res :: [], main) in
