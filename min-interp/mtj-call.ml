@@ -15,37 +15,39 @@ let rec interp bytecode pc stack sp =
     let n = bytecode.(pc + 1) in
     stack.(sp - 1) <- (v - n);
     interp bytecode (pc + 2) stack (sp - 1)
-  else if instr = 3 then (* Push*)
-    let n = bytecode.(pc + 1) in
-    stack.(sp + 1) <- n;
-    interp bytecode (pc + 2) stack (sp + 1)
-  else if instr = 4 then (* Dup *)
-    let v = stack.(sp) in
-    stack.(sp + 1) <- v;
-    interp bytecode (pc + 1) stack (sp + 1)
   else if instr = 10 then (* Call *)
     let addr = bytecode.(pc + 1) in
     interp bytecode addr stack sp
-  else if instr = 11 then (* Jump_if_zero *)
-    let addr = bytecode.(pc + 1) in
+  else if instr = 11 then (* Ret *)
+    let n = bytecode.(pc + 1) in
     let v = stack.(sp) in
-    if v = 0 then
-      interp bytecode (pc + 2) stack sp
-    else
-      interp bytecode addr stack sp
-  else if instr = 20 then (* Halt *)
+    let raddr = stack.(sp - 1) in
+    stack.(sp - n - 1) <- v;
+    interp bytecode raddr stack (sp - n - 1)
+  else if instr = 20 then (* POP1 *)
+    let v = stack.(sp) in
+    let _ = stack.(sp - 1)in
+    stack.(sp - 1) <- v;
+    interp bytecode (pc + 1) stack (sp - 1)
+  else if instr = 21 then (* PUSH *)
+    let n = bytecode.(pc + 1) in
+    stack.(sp + 1) <- n;
+    interp bytecode (pc + 2) stack (sp + 1)
+  else if instr = 22 then (* Dup *)
+    let n = bytecode.(pc + 1) in
+    let v = stack.(sp - n) in
+    stack.(sp + 1) <- v;
+    interp bytecode (pc + 2) stack (sp + 1)
+  else if instr = 30 then (* Halt *)
     stack.(sp)
   else
     -1
 in
-let code = Array.make 100 0 in
+let code  = Array.make 10 0 in
 let stack = Array.make 10 0 in
-code.(0) <- 3; code.(1) <- 10;
-code.(2) <- 3; code.(3) <- 20;
-code.(4) <- 0;
-code.(5) <- 4;
+code.(0) <- 21; code.(1) <- 2;
+code.(2) <- 21; code.(3) <- 3;
+code.(4) <- 22; code.(5) <- 1;
 code.(6) <- 0;
-code.(7) <- 2; code.(8) <- 1;
-code.(9) <- 11; code.(10) <- 7;
-code.(11) <- 20;
+code.(7) <- 30;
 print_int (interp code 0 stack 0)
