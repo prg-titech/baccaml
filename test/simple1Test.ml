@@ -1,10 +1,10 @@
 open OUnit
 open Asm
+open Util
 open Jit
 open JitUtil
 open MincamlUtil
-
-let dir = "min-interp/"
+open TestUtil
 
 let file = dir ^ "simple1"
 
@@ -44,15 +44,9 @@ let _ = run_test_tt_main begin
         let reg' = Array.make 10000 0 in
         let mem' = Array.make 10000 0 in
         JitUtil.enable_jit := true;
-        reg'.(42) <- 100;
-        mem'.(12) <- 4;
-        let _ = Interp.interp
-            (Interp.to_prog_with_label prog')
-            main
-            reg'
-            mem'
-            jit_args
-        in
+        Logger.log_level := Logger.Debug;
+        setup reg reg'; setup mem mem';
+        let _ = Interp.interp (Interp.to_prog_with_label prog') main reg' mem' jit_args in
         (* prog' |> Simm.f |> Emit.f (open_out (file ^ ".s")); *)
         ()
       end;
