@@ -1,5 +1,6 @@
+open Core
+
 open Asm
-open Util
 
 exception Not_supported of string
 
@@ -32,11 +33,9 @@ let value_of = function
 let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
   | "min_caml_hp" -> raise (Not_supported ("int_of_id_t min_caml_hp is not supported."))
   | id ->
-    try
-      let s = (String.after_of id '.') in
-      try int_of_string s with _ -> int_of_string (String.before_of id '.')
-    with _ ->
-      int_of_string (String.after_of id 'u')
+    match List.last (String.split id ~on:'.') with
+    | Some v -> int_of_string v
+    | None -> int_of_string id
 
 let int_of_id_or_imm = function
     Asm.V (id_t) -> int_of_id_t id_t
@@ -49,6 +48,6 @@ let string_of_id_or_imm = function
 let rec get_body_by_id_l prog name =
   let Asm.Prog (_, fundefs, _) = prog in
   try
-    List.find (fun fundef -> fundef.name = name) fundefs
+    List.find_exn fundefs ~f:(fun fundef -> fundef.name = name)
   with
   | _ -> failwith "Unknown"

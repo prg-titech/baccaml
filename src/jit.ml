@@ -25,10 +25,10 @@ module Inline = struct
     | Set (n) -> Set (n)
     | Mov (id_t) -> Mov (rename id_t)
     | Neg (id_t) -> Neg (rename id_t)
-    | Add (id_t, id_or_imm) -> Add (rename id_t, id_or_imm)
+    | Add (id_t, id_or_imm) -> Add (rename id_t, match id_or_imm with V id -> V (rename id) | C n -> C n)
     | Sub (id_t, id_or_imm) -> Sub (rename id_t, id_or_imm)
     | Ld (id_t, id_or_imm, x) -> Ld (rename id_t, id_or_imm, x)
-    | St (src, dest, id_or_imm, x) -> St (src, rename dest, id_or_imm, x)
+    | St (src, dest, id_or_imm, x) -> St (rename src, rename dest, id_or_imm, x)
     | IfEq (id_t1, id_t2, t1, t2) -> IfEq (rename id_t1, id_t2, t1, t2)
     | IfLE (id_t1, id_t2, t1, t2) -> IfLE (rename id_t1, id_t2, t1, t2)
     | IfGE (id_t1, id_t2, t1, t2) -> IfGE (rename id_t1, id_t2, t1, t2)
@@ -120,7 +120,7 @@ let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array
        is_first_enter := false;
        jitcompile p (inline_calldir_exp argsr argst funbody) reg mem jit_args
      | false when (value_of reg.(jit_args.loop_pc) = jit_args.loop_header) ->
-       Ans (CallDir (Id.L (jit_args.trace_name), jit_args.reds, []))
+       Ans (CallDir (Id.L (jit_args.trace_name), List.map jit_args.reds ~f:rename, []))
      | _ ->
        jitcompile p (inline_calldir_exp argsr argst funbody) reg mem jit_args
     )
