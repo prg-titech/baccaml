@@ -1,4 +1,5 @@
 open OUnit
+
 open Asm
 open Jit
 open JitUtil
@@ -49,7 +50,9 @@ let _ = run_test_tt_main begin
         mem.(19 * 4) <- Green (2);
         mem.(20 * 4) <- Green (2);
         mem.(21 * 4) <- Green (5);
-        mem.(100 * 4) <- Green (400);
+        mem.(100 * 4) <- Green (100);
+        mem.(100 * 4 + 16) <- Red (100);
+        mem.(100 * 4 + 32) <- Red (100);
         JitUtil.enable_jit := true;
         Logger.log_level := Logger.Debug;
         let jit_args =
@@ -63,7 +66,7 @@ let _ = run_test_tt_main begin
         let prog' = Prog ([], fundef :: trace :: [], main) in
         let reg' = Array.make 10000 0 in
         let mem' = Array.make 10000 0 in
-        (* print_string (EmitVirtual.to_string_fundef trace); *)
+        print_string (EmitVirtual.to_string_fundef trace);
         setup reg reg'; setup mem mem';
         ignore (Interp.interp (Interp.to_prog_with_label prog') main reg' mem' jit_args);
         ()
