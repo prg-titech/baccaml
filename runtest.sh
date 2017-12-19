@@ -27,5 +27,6 @@ do
 done
 
 if [ -z "$param" ]; then
+  rm -rf /tmp/_build && mkdir /tmp/_build
   make test
 fi
