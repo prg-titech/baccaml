@@ -49,6 +49,6 @@ let _ =
   ignore(
     Interp.interp (Interp.to_prog_with_label prog') main reg' mem' jit_args
   );
-  prog' |> Simm.f |> RegAlloc.f |> Emit.f (open_out ("test/simple1.s"));
+  (* prog' |> Simm.f |> RegAlloc.f |> Emit.f (open_out ("test/simple1.s")); *)
   ()
 
