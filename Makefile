@@ -47,6 +47,7 @@ test:
 
 .PHONY: pypytest
 pypytest:
+	ocamlbuild src/float.o &>/dev/null
 	ocamlbuild -Is src,test $(OCAMLBUILD_OPTIONS) test/pypyfig3Test.byte
 	./pypyfig3Test.byte
 
