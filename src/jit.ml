@@ -19,19 +19,23 @@ module Inline = struct
       id_env := Array.append !id_env [|(id_t, genned_id)|];
       genned_id
 
+  let rename_id_or_imm = function
+    | V (id_t) -> V (rename id_t)
+    | C (n) -> C (n)
+
   let rename_exp exp =
     match exp with
     | Nop -> Nop
     | Set (n) -> Set (n)
     | Mov (id_t) -> Mov (rename id_t)
     | Neg (id_t) -> Neg (rename id_t)
-    | Add (id_t, id_or_imm) -> Add (rename id_t, match id_or_imm with V id -> V (rename id) | C n -> C n)
-    | Sub (id_t, id_or_imm) -> Sub (rename id_t, id_or_imm)
-    | Ld (id_t, id_or_imm, x) -> Ld (rename id_t, id_or_imm, x)
-    | St (src, dest, id_or_imm, x) -> St (rename src, rename dest, id_or_imm, x)
-    | IfEq (id_t1, id_t2, t1, t2) -> IfEq (rename id_t1, id_t2, t1, t2)
-    | IfLE (id_t1, id_t2, t1, t2) -> IfLE (rename id_t1, id_t2, t1, t2)
-    | IfGE (id_t1, id_t2, t1, t2) -> IfGE (rename id_t1, id_t2, t1, t2)
+    | Add (id_t, id_or_imm) -> Add (rename id_t, rename_id_or_imm id_or_imm)
+    | Sub (id_t, id_or_imm) -> Sub (rename id_t, rename_id_or_imm id_or_imm)
+    | Ld (id_t, id_or_imm, x) -> Ld (rename id_t, rename_id_or_imm id_or_imm, x)
+    | St (src, dest, id_or_imm, x) -> St (rename src, rename dest, rename_id_or_imm id_or_imm, x)
+    | IfEq (id_t1, id_t2, t1, t2) -> IfEq (rename id_t1, rename_id_or_imm id_t2, t1, t2)
+    | IfLE (id_t1, id_t2, t1, t2) -> IfLE (rename id_t1, rename_id_or_imm id_t2, t1, t2)
+    | IfGE (id_t1, id_t2, t1, t2) -> IfGE (rename id_t1, rename_id_or_imm id_t2, t1, t2)
     | _ -> exp
 
   let rec rename_t = function
@@ -137,7 +141,8 @@ let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array
        reg.(int_of_id_t dest) <- v;
        jitcompile p body reg mem jit_args
      | Not_specialised e ->
-       Let ((dest, typ), e, jitcompile p body reg mem jit_args))
+       Let ((dest, typ), e, jitcompile p body reg mem jit_args)
+    )
 
 and jitcompile_branch (p : prog) (e : exp) (reg : value array) (mem : value array) (jit_args : jit_args) : t =
   match e with
