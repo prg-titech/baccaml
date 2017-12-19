@@ -33,7 +33,8 @@ let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装
   | "min_caml_hp" -> raise (Not_supported ("int_of_id_t min_caml_hp is not supported."))
   | id ->
     try
-      int_of_string (String.after_of id '.')
+      let s = (String.after_of id '.') in
+      try int_of_string s with _ -> int_of_string (String.before_of id '.')
     with _ ->
       int_of_string (String.after_of id 'u')
 

@@ -13,7 +13,7 @@ module Inline = struct
     let var = String.before_of id_t '.' in
     Id.genid var
 
-  let rename_exp rename exp =
+  let rename_exp exp =
     match exp with
     | Nop -> Nop
     | Set (n) -> Set (n)
@@ -25,11 +25,18 @@ module Inline = struct
     | St (src, dest, id_or_imm, x) -> St (src, rename dest, id_or_imm, x)
     | _ -> exp
 
-  let rec rename_t rename = function
+  let rec rename_t = function
     | Ans (exp) ->
-      Ans (rename_exp rename exp)
+      Ans (rename_exp exp)
     | Let ((dest, typ), exp, body) ->
-      Let ((rename dest, typ), rename_exp rename exp, rename_t rename body)
+      Let ((rename dest, typ), rename_exp exp, rename_t body)
+
+  let rename_fundef ({name = name; args = args; fargs = fargs; body = body; ret = ret;}) =
+    { name = name
+    ; args = List.map rename args
+    ; fargs = fargs
+    ; body = rename_t body
+    ; ret = ret }
 
   let rec inline_args argsr argst funbody =
     match argsr, argst with
@@ -246,10 +253,12 @@ and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array
     failwith "Not supported."
 
 let exec_jitcompile p t reg mem jit_args =
-  let res = jitcompile p t reg mem jit_args in
+  let res =
+    jitcompile p t reg mem jit_args
+  in
   { name = Id.L (jit_args.trace_name)
   ; args = jit_args.reds
   ; fargs = []
   ; body = res
   ; ret = Type.Int
-  }
+  } |> rename_fundef

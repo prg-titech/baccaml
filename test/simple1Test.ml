@@ -45,9 +45,9 @@ let _ = run_test_tt_main begin
         let mem' = Array.make 10000 0 in
         JitUtil.enable_jit := true;
         Logger.log_level := Logger.Debug;
-        setup reg reg'; setup mem mem';
-        let _ = Interp.interp (Interp.to_prog_with_label prog') main reg' mem' jit_args in
-        (* prog' |> Simm.f |> Emit.f (open_out (file ^ ".s")); *)
+        EmitVirtual.to_string_fundef res |> print_string;
+        (* ignore (Interp.interp (Interp.to_prog_with_label prog') main reg' mem' jit_args); *)
+        (* prog' |> Simm.f |> RegAlloc.f |> Emit.f (open_out ("test/simple1.s")); *)
         ()
       end;
     ]
