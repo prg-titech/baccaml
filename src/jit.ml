@@ -1,7 +1,7 @@
-open Asm
-open Util
+open Core
 
-include JitUtil
+open Asm
+open JitUtil
 
 exception Un_supported of string
 
@@ -9,9 +9,15 @@ module Inline = struct
 
   type rename_env = Id.t -> Id.t
 
+  let id_env = ref [||]
+
   let rename id_t =
-    let var = String.before_of id_t '.' in
-    Id.genid var
+    match Array.find !id_env (fun (id, genned_id) -> id = id_t) with
+    | Some (id, genned_id) -> genned_id
+    | None ->
+      let genned_id = Id.genid id_t in
+      id_env := Array.append !id_env [|(id_t, genned_id)|];
+      genned_id
 
   let rename_exp exp =
     match exp with
@@ -23,6 +29,9 @@ module Inline = struct
     | Sub (id_t, id_or_imm) -> Sub (rename id_t, id_or_imm)
     | Ld (id_t, id_or_imm, x) -> Ld (rename id_t, id_or_imm, x)
     | St (src, dest, id_or_imm, x) -> St (src, rename dest, id_or_imm, x)
+    | IfEq (id_t1, id_t2, t1, t2) -> IfEq (rename id_t1, id_t2, t1, t2)
+    | IfLE (id_t1, id_t2, t1, t2) -> IfLE (rename id_t1, id_t2, t1, t2)
+    | IfGE (id_t1, id_t2, t1, t2) -> IfGE (rename id_t1, id_t2, t1, t2)
     | _ -> exp
 
   let rec rename_t = function
@@ -33,7 +42,7 @@ module Inline = struct
 
   let rename_fundef ({name = name; args = args; fargs = fargs; body = body; ret = ret;}) =
     { name = name
-    ; args = List.map rename args
+    ; args = List.map args rename
     ; fargs = fargs
     ; body = rename_t body
     ; ret = ret }
