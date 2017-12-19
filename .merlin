@@ -7,3 +7,4 @@ B _build/test/
 
 PKG core
 PKG ounit
+PKG str
