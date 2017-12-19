@@ -69,6 +69,9 @@ module StringUtil = struct
     with Not_found ->
       false
 
+  let before_of str chr =
+    Str.string_before str (String.index str chr)
+
 end
 
 module List = struct

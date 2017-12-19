@@ -1,31 +1,62 @@
 open Asm
 open Util
-open JitUtil
+
+include JitUtil
 
 exception Un_supported of string
 
-let rec args_to_mov argsr argst funbody =
-  match argsr, argst with
-  | [], [] ->
-    funbody
-  | hdr :: tlr, hdt :: tlt ->
-    if hdr = hdt then
-      args_to_mov tlr tlt funbody
-    else
-      Let ((hdt, Type.Int), Mov (hdr), (args_to_mov tlr tlt funbody))
-  | _ ->
-    failwith "Un matched pattern."
+module Inline = struct
 
-let rec unroll argsr argst dest funbody contbody =
-  let rec add_cont_proc id_t instr =
-    match instr with
-    | Let (a, e, t) -> Let (a, e, add_cont_proc id_t t)
-    | Ans e -> Let ((id_t, Type.Int), e, contbody)
-  in
-  add_cont_proc dest (args_to_mov argsr argst funbody)
+  type rename_env = Id.t -> Id.t
 
-let rec unroll_exp argsr argst funbody =
-  args_to_mov argsr argst funbody
+  let rename id_t =
+    let var = String.before_of id_t '.' in
+    Id.genid var
+
+  let rename_exp rename exp =
+    match exp with
+    | Nop -> Nop
+    | Set (n) -> Set (n)
+    | Mov (id_t) -> Mov (rename id_t)
+    | Neg (id_t) -> Neg (rename id_t)
+    | Add (id_t, id_or_imm) -> Add (rename id_t, id_or_imm)
+    | Sub (id_t, id_or_imm) -> Sub (rename id_t, id_or_imm)
+    | Ld (id_t, id_or_imm, x) -> Ld (rename id_t, id_or_imm, x)
+    | St (src, dest, id_or_imm, x) -> St (src, rename dest, id_or_imm, x)
+    | _ -> exp
+
+  let rec rename_t rename = function
+    | Ans (exp) ->
+      Ans (rename_exp rename exp)
+    | Let ((dest, typ), exp, body) ->
+      Let ((rename dest, typ), rename_exp rename exp, rename_t rename body)
+
+  let rec inline_args argsr argst funbody =
+    match argsr, argst with
+    | [], [] ->
+      funbody
+    | hdr :: tlr, hdt :: tlt when hdr = hdt ->
+      inline_args tlr tlt funbody
+    | hdr :: tlr, hdt :: tlt ->
+      Let ((hdt, Type.Int), Mov (hdr), (inline_args tlr tlt funbody))
+    | _ ->
+      failwith "Un matched pattern."
+
+  let rec inline_calldir argsr argst dest funbody contbody =
+    let rec add_cont_proc id_t instr =
+      match instr with
+      | Let (a, e, t) ->
+        Let (a, e, add_cont_proc id_t t)
+      | Ans e ->
+        Let ((id_t, Type.Int), e, contbody)
+    in
+    add_cont_proc dest (inline_args argsr argst funbody)
+
+  let rec inline_calldir_exp argsr argst funbody =
+    inline_args argsr argst funbody
+end
+
+open Inline
 
 let select_branch e n1 n2 t1 t2 =
   match e with
@@ -71,11 +102,11 @@ let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array
     (match !is_first_enter with
      | true when (value_of reg.(jit_args.loop_pc) = jit_args.loop_header) ->
        is_first_enter := false;
-       jitcompile p (unroll_exp argsr argst funbody) reg mem jit_args
+       jitcompile p (inline_calldir_exp argsr argst funbody) reg mem jit_args
      | false when (value_of reg.(jit_args.loop_pc) = jit_args.loop_header) ->
        Ans (CallDir (Id.L (jit_args.trace_name), jit_args.reds, []))
      | _ ->
-       jitcompile p (unroll_exp argsr argst funbody) reg mem jit_args
+       jitcompile p (inline_calldir_exp argsr argst funbody) reg mem jit_args
     )
   | Ans exp ->
     jitcompile_branch p exp reg mem jit_args
@@ -83,7 +114,7 @@ let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array
     let fundef = get_body_by_id_l p id_l in
     let funbody = fundef.body in
     let argst = fundef.args in
-    unroll argsr argst dest funbody (jitcompile p contbody reg mem jit_args)
+    inline_calldir argsr argst dest funbody (jitcompile p contbody reg mem jit_args)
   | Let ((dest, typ), instr, body) ->
     (match jitcompile_instr p instr reg mem with
      | Specialized v ->
