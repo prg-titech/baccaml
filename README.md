@@ -8,11 +8,6 @@ An educational compiler and interpreter for a minimal subset of OCaml, written i
 - http://esumii.github.io/min-caml/index-e.html (English Web page)
 - http://esumii.github.io/min-caml/paper.pdf (English academic paper)
 
-## Branches
-
-- master (stable)
-- develop (development)
-
 ## Setup
 
 ### Build
