@@ -55,7 +55,7 @@ pypytest:
 simple1test:
 	ocamlbuild src/float.o &>/dev/null
 	ocamlbuild -I src $(OCAMLBUILD_OPTIONS) test/simple1Test.byte
-	./simple1Test.byte
+	./simple1Test.byte -debug -jit
 
 .PHONY: example
 example: $(EXAMPLES:%=example/%.cmp)
