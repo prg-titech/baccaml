@@ -13,6 +13,11 @@ module ListUtil = struct
       if n < i then acc else aux (n-1) (n :: acc)
     in aux j []
 
+  let last = function
+      [] -> None
+    | lst ->
+      Some (List.hd (List.rev lst))
+
   let print_list f lst =
     let rec print_elements = function
       | [] -> ()
@@ -71,6 +76,9 @@ module StringUtil = struct
 
   let before_of str chr =
     Str.string_before str (String.index str chr)
+
+  let split str on =
+    Str.split (Str.regexp on) str
 
 end
 

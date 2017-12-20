@@ -1,7 +1,7 @@
 open Asm
 open Util
 open Jit
-open JitUtil
+open Jit.Util
 open MincamlUtil
 open TestUtil
 
@@ -12,7 +12,8 @@ let prog =
 
 let Prog (_, fundefs, main) = prog
 
-let fundef = List.hd fundefs
+let fundef =
+  List.hd fundefs
 
 let prepare reg mem =
   mem.(0 * 4) <- Green (1);
@@ -25,7 +26,7 @@ let prepare reg mem =
   ()
 
 let jit_args =
-  { trace_name = "test_trace.1000"
+  { trace_name = "test_trace"
   ; reds = ["a.42"]
   ; greens = []
   ; loop_header = 0
@@ -33,7 +34,7 @@ let jit_args =
 
 let _ =
   Arg.parse
-    [("-jit", Arg.Unit (fun _ -> JitUtil.enable_jit := true), "enable jit compile");
+    [("-jit", Arg.Unit (fun _ -> Jit.Util.enable_jit := true), "enable jit compile");
      ("-debug", Arg.Unit (fun _ -> Logger.log_level := Logger.Debug), "debug mode");]
     (fun s -> ())
     ("usage: -jit: enable jit, -debug: execute as debug mode");
@@ -45,10 +46,9 @@ let _ =
   let prog' = Prog ([], fundef :: res :: [], main) in
   setup reg reg';
   setup mem mem';
+  Logger.log_level := Logger.Debug;
+  enable_jit := true;
   print_string (EmitVirtual.to_string_fundef res);
-  ignore(
-    Interp.interp (Interp.to_prog_with_label prog') main reg' mem' jit_args
-  );
-  (* prog' |> Simm.f |> RegAlloc.f |> Emit.f (open_out ("test/simple1.s")); *)
+  prog' |> Simm.f |> RegAlloc.f |> Emit.f (open_out ("test/simple1.s"));
   ()
 

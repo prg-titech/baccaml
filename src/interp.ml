@@ -1,6 +1,8 @@
 open Asm
+open Jit.Util
 open Util
-open JitUtil
+
+exception Not_supported of string
 
 exception Un_implemented_instruction of string
 
@@ -13,10 +15,19 @@ type prog_with_label = (* prog for interpreter *)
 let register_size = 1000000
 let heap = ref 0
 
+let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
+  | "min_caml_hp" -> raise (Not_supported ("int_of_id_t min_caml_hp is not supported."))
+  | id ->
+    try int_of_string (String.after_of id '.')
+    with _ -> int_of_string (String.after_of id 'u')
+
+let string_of_id_or_imm = function
+    Asm.V (id_t) -> id_t
+  | Asm.C (n) -> string_of_int n
+
 let rec find_label_number label = function
   | [] -> let Id.L s = label in int_of_id_t s
   | (l, num) :: tl -> if l = label then num else find_label_number label tl
-
 
 let rec find_label prog num =
   let ProgWithLabel (_, _, _, labels) = prog in
@@ -27,7 +38,6 @@ let rec find_label prog num =
     Logger.error (Printf.sprintf "num: %d" num);
     raise Not_found
 
-
 let rec lookup_by_id_l prog name =
   let ProgWithLabel (_, fundefs, _, _) = prog in
   try
@@ -35,14 +45,12 @@ let rec lookup_by_id_l prog name =
   with e ->
     Logger.error (let Id.L s = name in Printf.sprintf "CallCls %s" s); raise e
 
-
 let rec lookup_by_id_t prog name =
   let ProgWithLabel (_, fundefs, _, _) = prog in
   try
     List.find (fun fundef -> (let Id.L s = fundef.name in s) = name) fundefs
   with e ->
     Logger.error (Printf.sprintf "CallCls %s" name); raise e
-
 
 let to_prog_with_label prog =
   let rec create_labels fundefs i =

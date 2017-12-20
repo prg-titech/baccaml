@@ -1,5 +1,5 @@
 open Util
-open JitUtil
+open Jit.Util
 
 let dir = "min-interp/"
 

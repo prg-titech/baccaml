@@ -2,7 +2,7 @@ open OUnit
 open Asm
 open Type
 open Jit
-open JitUtil
+open Jit.Util
 
 
 let jit_args = {

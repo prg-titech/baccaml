@@ -8,7 +8,7 @@ OCAMLLDFLAGS = -warn-error -31
 COMPILER = min-caml
 INTERPRETER = min-camli
 
-OCAMLBUILD_OPTIONS = -use-ocamlfind -lflags -custom,src/float.o
+OCAMLBUILD_OPTIONS = -use-ocamlfind
 
 TESTCASES = jitTest interpTest pypyfig3Test simple1Test
 
@@ -23,7 +23,6 @@ SUBDIRS = src
 
 .PHONY: compiler
 compiler:
-	@ocamlbuild src/float.o &>/dev/null
 	@ocamlbuild $(OCAMLBUILD_OPTIONS) src/main.byte
 	@mv main.byte min-caml
 
@@ -40,20 +39,17 @@ clean:
 .PHONY: test
 test:
 	@for case in $(TESTCASES); do \
-		ocamlbuild src/float.o &>/dev/null; \
 		ocamlbuild -Is src,test $(OCAMLBUILD_OPTIONS) test/$$case.byte || exit 1; \
 		./$$case.byte; \
 	done
 
 .PHONY: pypytest
 pypytest:
-	ocamlbuild src/float.o &>/dev/null
 	ocamlbuild -Is src,test $(OCAMLBUILD_OPTIONS) test/pypyfig3Test.byte
 	./pypyfig3Test.byte
 
 .PHONY: simple1test
 simple1test:
-	ocamlbuild src/float.o &>/dev/null
 	ocamlbuild -I src $(OCAMLBUILD_OPTIONS) test/simple1Test.byte
 	./simple1Test.byte -debug -jit
 

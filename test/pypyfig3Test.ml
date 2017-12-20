@@ -3,8 +3,7 @@ open OUnit
 
 open Asm
 open Jit
-open JitUtil
-open Util
+open Jit.Util
 open MincamlUtil
 open TestUtil
 
@@ -13,7 +12,7 @@ let _ = run_test_tt_main begin
       "pypyfig3_test" >::
       begin fun () ->
         let prog =
-          open_in (dir ^ "pypyfig3.ml")
+          In_channel.create (dir ^ "pypyfig3.ml")
           |> Lexing.from_channel
           |> virtualize
         in
@@ -23,8 +22,8 @@ let _ = run_test_tt_main begin
           | _ -> failwith "Error."
         in
         let instr = fundef.body in
-        let reg = Array.make 1000 (Red 0) in
-        let mem = Array.make 1000 (Red 0) in
+        let reg = Array.create 1000 (Red 0) in
+        let mem = Array.create 1000 (Red 0) in
         reg.(107) <- Green (0);
         reg.(108) <- Green (4);
         reg.(109) <- Red (100);
@@ -54,7 +53,7 @@ let _ = run_test_tt_main begin
         mem.(100 * 4) <- Green (100);
         mem.(100 * 4 + 16) <- Red (100);
         mem.(100 * 4 + 32) <- Red (100);
-        JitUtil.enable_jit := true;
+        Jit.Util.enable_jit := true;
         Logger.log_level := Logger.Debug;
         let jit_args =
           { trace_name = "test_trace.1000"
@@ -65,11 +64,11 @@ let _ = run_test_tt_main begin
         in
         let trace = exec_jitcompile prog instr reg mem jit_args in
         let prog' = Prog ([], fundef :: trace :: [], main) in
-        let reg' = Array.make 10000 0 in
-        let mem' = Array.make 10000 0 in
+        let reg' = Array.create 10000 0 in
+        let mem' = Array.create 10000 0 in
         print_string (EmitVirtual.to_string_fundef trace);
         setup reg reg'; setup mem mem';
-        ignore (Interp.interp (Interp.to_prog_with_label prog') main reg' mem' jit_args);
+        (* ignore (Interp.interp (Interp.to_prog_with_label prog') main reg' mem' jit_args); *)
         ()
       end
     ]
