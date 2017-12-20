@@ -8,7 +8,7 @@ OCAMLLDFLAGS = -warn-error -31
 COMPILER = min-caml
 INTERPRETER = min-camli
 
-OCAMLBUILD_OPTIONS = -use-ocamlfind
+OCAMLBUILD_OPTIONS = -use-ocamlfind -Is src,lib,test
 
 TESTCASES = jitTest interpTest pypyfig3Test simple1Test
 
@@ -18,8 +18,6 @@ spill spill2 spill3 join-stack join-stack2 join-stack3 \
 join-reg join-reg2 non-tail-if non-tail-if2 inprod inprod-rec \
 inprod-loop matmul matmul-flat manyargs fib-tail array array2 \
 float tuple
-
-SUBDIRS = src
 
 .PHONY: compiler
 compiler:
@@ -44,13 +42,13 @@ test:
 	done
 
 .PHONY: pypytest
-pypytest:
-	ocamlbuild -Is src,test $(OCAMLBUILD_OPTIONS) test/pypyfig3Test.byte
+pypytest: test/pypyfig3Test.ml
+	ocamlbuild -Is src,test $(OCAMLBUILD_OPTIONS) $(basename $<).byte
 	./pypyfig3Test.byte
 
 .PHONY: simple1test
-simple1test:
-	ocamlbuild -I src $(OCAMLBUILD_OPTIONS) test/simple1Test.byte
+simple1test: test/simple1Test.ml
+	ocamlbuild $(OCAMLBUILD_OPTIONS) $(basename $<).byte
 	./simple1Test.byte -debug -jit
 
 .PHONY: example
