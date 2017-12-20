@@ -61,7 +61,7 @@ TRASH = $(EXAMPLES:%=example/%.s) $(EXAMPLES:%=example/%) $(EXAMPLES:%=example/%
 
 example/%.s: compiler example/%.ml
 	./$(COMPILER) example/$*
-example/%: example/%.s src/libmincaml.S src/stub.c
+example/%: example/%.s lib/libmincaml.S lib/stub.c
 	$(CC) $(CFLAGS) -m32 $^ -lm -o $@
 example/%.res: example/%
 	$< > $@
