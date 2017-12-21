@@ -91,12 +91,13 @@ let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : int array) (mem :
       let res = eval_exp prog exp reg mem jit_args in
       Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
       reg.(reg_num) <- res;
-      (match !enable_jit, !is_first_dispatch with
+      interp prog (Ans (CallDir (Id.L jit_args.trace_name, jit_args.reds, []))) reg mem jit_args
+      (* match !enable_jit, !is_first_dispatch with
        | true, true when reg.(jit_args.loop_pc) = jit_args.loop_header ->
          is_first_dispatch := false;
          interp prog (Ans (CallDir (Id.L jit_args.trace_name, jit_args.reds, []))) reg mem jit_args
        | _ -> interp prog t reg mem jit_args
-      )
+      *)
 
 and eval_exp (prog : prog_with_label) (exp' : exp) (reg : int array) (mem : int array) (jit_args : jit_args) : 'a =
   match exp' with
@@ -282,4 +283,4 @@ let f prog =
   let mem = Array.make register_size 0 in
   let prog' = to_prog_with_label prog in
   let ProgWithLabel (_, _, instructions, labels) = prog' in
-  interp prog' instructions reg mem { trace_name = ""; reds = []; greens = []; loop_header = 0; loop_pc = 0; }
+  interp prog' instructions reg mem { trace_name = ""; reds = []; greens = []; loop_header = 0; loop_pc_place = 0; }

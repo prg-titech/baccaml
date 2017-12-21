@@ -30,7 +30,7 @@ let jit_args =
   ; reds = ["a.42"]
   ; greens = []
   ; loop_header = 0
-  ; loop_pc = 41 }
+  ; loop_pc_place = 1 }
 
 let _ =
   Arg.parse
@@ -49,6 +49,6 @@ let _ =
   Logger.log_level := Logger.Debug;
   enable_jit := true;
   print_string (EmitVirtual.to_string_fundef res);
-  prog' |> Simm.f |> RegAlloc.f |> Emit.f (open_out ("test/simple1.s"));
+  (*prog' |> Simm.f |> RegAlloc.f |> Emit.f (open_out ("test/simple1.s"));*)
   ()
 

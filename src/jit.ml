@@ -22,7 +22,7 @@ module Util = struct
     ; reds : string list
     ; greens: string list
     ; loop_header : int
-    ; loop_pc : int
+    ; loop_pc_place : int
     }
 
   let enable_jit = ref false
@@ -48,10 +48,9 @@ module Util = struct
 
   let rec get_body_by_id_l prog name =
     let Asm.Prog (_, fundefs, _) = prog in
-    try
-      List.find_exn fundefs ~f:(fun fundef -> fundef.name = name)
-    with
-    | _ -> failwith "Unknown"
+    match List.find fundefs ~f:(fun fundef -> fundef.name = name) with
+    | Some (body) -> body
+    | None -> failwith "get_body_by_id_l is failed"
 end
 
 open Util
@@ -122,7 +121,8 @@ module Inline = struct
     | _ ->
       failwith "Un matched pattern."
 
-  let rec inline_calldir argsr argst dest funbody contbody =
+  let rec inline_calldir argsr dest fundef contbody =
+    let { args; body } = rename_fundef fundef in
     let rec add_cont_proc id_t instr =
       match instr with
       | Let (a, e, t) ->
@@ -130,7 +130,7 @@ module Inline = struct
       | Ans e ->
         Let ((id_t, Type.Int), e, contbody)
     in
-    add_cont_proc dest (inline_args argsr argst funbody)
+    add_cont_proc dest (inline_args argsr args body)
 
   let rec inline_calldir_exp argsr fundef =
     let { args; body } = rename_fundef fundef in
@@ -180,8 +180,7 @@ module Guard = struct
           Let ((hd, Type.Int), Set (n), restore cont tl)
         | Red _ ->
           restore cont tl
-    in
-    restore cont free_vars
+    in restore cont free_vars
 end
 
 open Guard
@@ -189,40 +188,38 @@ open Guard
 let is_first_enter = ref true
 
 let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array) (jit_args : jit_args) : t =
-  (* 毎回再帰呼び出しが行われたとき最初にもどったかどうかを調べる *)
-  (* 戻ったらトレース最適化終了 *)
-  (* CallDir を生成して終了 *)
-  (* 新しい関数（トレース）の名前は外から決める、つまり引数にする *)
-  (* その関数を CallDir する命令を生成すればいい *)
-  (* 引数は red なレジスタ *)
   match instr with
   | Ans CallDir (id_l, argsr, argst') ->
     let fundef = get_body_by_id_l p id_l in
+    let pc = match List.nth argsr (jit_args.loop_pc_place) with
+      | Some str ->
+        print_string str; print_newline ();
+        let r = value_of reg.(int_of_id_t str) in
+        print_int r; print_newline ();
+        r
+      | None -> failwith "pc place is invalid!"
+    in
     (match !is_first_enter with
-     | true when (value_of reg.(jit_args.loop_pc) = jit_args.loop_header) ->
-       (* is_first_enter := false; *)
+     | true when (value_of reg.(pc) = jit_args.loop_header) ->
+       is_first_enter := false;
        jitcompile p (inline_calldir_exp argsr fundef) reg mem jit_args
-     | false when (value_of reg.(jit_args.loop_pc) = jit_args.loop_header) ->
+     | false when (pc = jit_args.loop_header) ->
        let reds = List.filter ~f:(fun a -> is_red reg.(int_of_id_t a)) argsr in
        Ans (CallDir (Id.L (jit_args.trace_name), reds, []))
      | _ ->
-       jitcompile p (inline_calldir_exp argsr fundef) reg mem jit_args
-    )
+       jitcompile p (inline_calldir_exp argsr fundef) reg mem jit_args)
   | Ans exp ->
     jitcompile_branch p exp reg mem jit_args
   | Let ((dest, typ), CallDir (id_l, argsr, argst), contbody) ->
-    let fundef = get_body_by_id_l p id_l in
-    let funbody = fundef.body in
-    let argst = fundef.args in
-    inline_calldir argsr argst dest funbody (jitcompile p contbody reg mem jit_args)
+    let fundef = rename_fundef (get_body_by_id_l p id_l) in
+    inline_calldir argsr dest fundef (jitcompile p contbody reg mem jit_args)
   | Let ((dest, typ), instr, body) ->
     (match jitcompile_instr p instr reg mem with
      | Specialized v ->
        reg.(int_of_id_t dest) <- v;
        jitcompile p body reg mem jit_args
      | Not_specialised e ->
-       Let ((dest, typ), e, jitcompile p body reg mem jit_args)
-    )
+       Let ((dest, typ), e, jitcompile p body reg mem jit_args))
 
 and jitcompile_branch (p : prog) (e : exp) (reg : value array) (mem : value array) (jit_args : jit_args) : t =
   match e with
@@ -257,8 +254,7 @@ and jitcompile_branch (p : prog) (e : exp) (reg : value array) (mem : value arra
         | _ ->
           failwith "Not supported"
        )
-     | _ ->
-       let n1, n2 = value_of r1, value_of r2 in
+     | Red (n1), Red (n2) ->
        (match e with
         | IfEq _ ->
           if n1 = n2 then

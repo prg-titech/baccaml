@@ -60,7 +60,7 @@ let _ = run_test_tt_main begin
           ; reds = ["a.109"; "regs.110"]
           ; greens = []
           ; loop_header = 4
-          ; loop_pc = 108 }
+          ; loop_pc_place = 1 }
         in
         let trace = exec_jitcompile prog instr reg mem jit_args in
         let prog' = Prog ([], fundef :: trace :: [], main) in
