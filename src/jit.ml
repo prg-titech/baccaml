@@ -22,6 +22,7 @@ module Util = struct
     ; reds : string list
     ; greens: string list
     ; loop_header : int
+    ; loop_end : int
     ; loop_pc_place : int
     }
 
@@ -46,11 +47,22 @@ module Util = struct
       | Some v -> int_of_string v
       | None -> int_of_string id
 
-  let rec get_body_by_id_l prog name =
+  let rec find_fundef prog name =
     let Asm.Prog (_, fundefs, _) = prog in
     match List.find fundefs ~f:(fun fundef -> fundef.name = name) with
     | Some (body) -> body
-    | None -> failwith "get_body_by_id_l is failed"
+    | None -> failwith "find_fundef is failed"
+
+  let find_pc args jit_args =
+    match List.nth args (jit_args.loop_pc_place) with
+    | Some (s) -> int_of_id_t s
+    | None -> failwith "find_pc is failed"
+
+  let find_a args n =
+    match List.nth args n with
+    | Some (s) -> int_of_id_t s
+    | None -> failwith "find_pc is failed"
+
 end
 
 open Util
@@ -185,33 +197,22 @@ end
 
 open Guard
 
-let is_first_enter = ref true
-
 let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array) (jit_args : jit_args) : t =
   match instr with
   | Ans CallDir (id_l, argsr, argst') ->
-    let fundef = get_body_by_id_l p id_l in
-    let pc = match List.nth argsr (jit_args.loop_pc_place) with
-      | Some str ->
-        print_string str; print_newline ();
-        let r = value_of reg.(int_of_id_t str) in
-        print_int r; print_newline ();
-        r
-      | None -> failwith "pc place is invalid!"
-    in
-    (match !is_first_enter with
-     | true when (value_of reg.(pc) = jit_args.loop_header) ->
-       is_first_enter := false;
-       jitcompile p (inline_calldir_exp argsr fundef) reg mem jit_args
-     | false when (pc = jit_args.loop_header) ->
+    let fundef = find_fundef p id_l in
+    let pc = value_of reg.(find_pc argsr jit_args) in
+    Logger.info ("pc: " ^ string_of_int pc);
+    (match (pc = (jit_args.loop_end)) with
+     | true ->
        let reds = List.filter ~f:(fun a -> is_red reg.(int_of_id_t a)) argsr in
        Ans (CallDir (Id.L (jit_args.trace_name), reds, []))
-     | _ ->
+     | false ->
        jitcompile p (inline_calldir_exp argsr fundef) reg mem jit_args)
-  | Ans exp ->
+  | Ans (exp) ->
     jitcompile_branch p exp reg mem jit_args
   | Let ((dest, typ), CallDir (id_l, argsr, argst), contbody) ->
-    let fundef = rename_fundef (get_body_by_id_l p id_l) in
+    let fundef = rename_fundef (find_fundef p id_l) in
     inline_calldir argsr dest fundef (jitcompile p contbody reg mem jit_args)
   | Let ((dest, typ), instr, body) ->
     (match jitcompile_instr p instr reg mem with

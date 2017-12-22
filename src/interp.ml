@@ -283,4 +283,12 @@ let f prog =
   let mem = Array.make register_size 0 in
   let prog' = to_prog_with_label prog in
   let ProgWithLabel (_, _, instructions, labels) = prog' in
-  interp prog' instructions reg mem { trace_name = ""; reds = []; greens = []; loop_header = 0; loop_pc_place = 0; }
+  let jit_args =
+    { trace_name = ""
+    ; reds = []
+    ; greens = []
+    ; loop_header = 0
+    ; loop_end = 100
+    ; loop_pc_place = 0; }
+  in
+  interp prog' instructions reg mem jit_args
