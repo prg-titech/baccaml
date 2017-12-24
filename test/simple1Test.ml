@@ -30,6 +30,7 @@ let jit_args =
   ; reds = ["a.42"]
   ; greens = []
   ; loop_header = 0
+  ; loop_end = 1
   ; loop_pc_place = 1 }
 
 let _ =
