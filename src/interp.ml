@@ -80,23 +80,22 @@ let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : int array) (mem :
     let res = eval_exp prog exp reg mem jit_args in
     (* Logger.debug (Printf.sprintf "Ans (%d)" res); *)
     res
+  | Let (("min_caml_hp", _), exp, t) ->
+    let res = eval_exp prog exp reg mem jit_args in
+    Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" "min_caml_hp" !heap res);
+    heap := res;
+    interp prog t reg mem jit_args
   | Let ((id, _), exp, t) ->
-    if id = "min_caml_hp" then
-      let res = eval_exp prog exp reg mem jit_args in
-      Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id !heap res);
-      heap := res;
-      interp prog t reg mem jit_args
-    else
-      let reg_num = int_of_id_t id in
-      let res = eval_exp prog exp reg mem jit_args in
-      Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
-      reg.(reg_num) <- res;
-      (match !enable_jit, !is_first_dispatch with
-       | true, true ->
-         is_first_dispatch := false;
-         interp prog (Ans (CallDir (Id.L jit_args.trace_name, jit_args.reds, []))) reg mem jit_args
-       | _ -> interp prog t reg mem jit_args
-      )
+    let reg_num = int_of_id_t id in
+    let res = eval_exp prog exp reg mem jit_args in
+    Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
+    reg.(reg_num) <- res;
+    (match !enable_jit, !is_first_dispatch with
+     | true, true ->
+       is_first_dispatch := false;
+       interp prog (Ans (CallDir (Id.L jit_args.trace_name, jit_args.reds, []))) reg mem jit_args
+     | _ -> interp prog t reg mem jit_args
+    )
 
 and eval_exp (prog : prog_with_label) (exp' : exp) (reg : int array) (mem : int array) (jit_args : jit_args) : 'a =
   match exp' with
