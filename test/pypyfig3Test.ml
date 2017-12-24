@@ -69,7 +69,7 @@ let _ = run_test_tt_main begin
         let mem' = Array.create 10000 0 in
         print_string (EmitVirtual.to_string_fundef trace);
         setup reg reg'; setup mem mem';
-        (* ignore (Interp.interp (Interp.to_prog_with_label prog') main reg' mem' jit_args); *)
+        ignore (Interp.interp (Interp.to_prog_with_label prog') main reg' mem' jit_args);
         ()
       end
     ]
