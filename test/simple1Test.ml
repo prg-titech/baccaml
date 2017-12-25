@@ -42,7 +42,7 @@ let _ =
   let reg, mem = Array.make 1000 (Red 0), Array.make 1000 (Red 0) in
   let reg', mem' = Array.make 10000 0, Array.make 10000 0 in
   prepare reg mem;
-  let res = exec_jitcompile prog instr reg mem jit_args in
+  let res = exec_tracing_jit prog instr reg mem jit_args in
   let prog' = Prog ([], fundef :: res :: [], main) in
   setup reg reg';
   setup mem mem';

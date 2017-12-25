@@ -61,7 +61,7 @@ let _ = run_test_tt_main begin
           ; loop_header = 4
           ; loop_pc_place = 1 }
         in
-        let trace = exec_jitcompile prog instr reg mem jit_args in
+        let trace = exec_tracing_jit prog instr reg mem jit_args in
         let prog' = Prog ([], fundef :: trace :: [], main) in
         let reg' = Array.create 10000 0 in
         let mem' = Array.create 10000 0 in

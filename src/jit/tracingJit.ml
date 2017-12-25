@@ -83,24 +83,24 @@ end
 
 open Guard
 
-let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array) (jit_args : jit_args) : t =
+let rec tracing_jit (p : prog) (instr : t) (reg : value array) (mem : value array) (jit_args : jit_args) : t =
   match instr with
   | Ans (exp) ->
-    jitcompile_ans p exp reg mem jit_args
+    tracing_jit_ans p exp reg mem jit_args
   | Let ((dest, typ), CallDir (id_l, argsr, argst), contbody) ->
     let fundef = rename_fundef (find_fundef p id_l) in
-    inline_calldir argsr dest fundef (jitcompile p contbody reg mem jit_args) reg
+    inline_calldir argsr dest fundef (tracing_jit p contbody reg mem jit_args) reg
   | Let ((dest, typ), instr, body) ->
-    (match jitcompile_let p instr reg mem with
+    (match tracing_jit_let p instr reg mem with
      | Specialized v ->
        reg.(int_of_id_t dest) <- v;
-       jitcompile p body reg mem jit_args
+       tracing_jit p body reg mem jit_args
      | Not_specialised (e, v) ->
        (* 式としまう値を返すようにして，not_specialized が適切な値を返さないといけない *)
        reg.(int_of_id_t dest) <- v;
-       Let ((dest, typ), e, jitcompile p body reg mem jit_args))
+       Let ((dest, typ), e, tracing_jit p body reg mem jit_args))
 
-and jitcompile_ans (p : prog) (e : exp) (reg : value array) (mem : value array) (jit_args : jit_args) : t =
+and tracing_jit_ans (p : prog) (e : exp) (reg : value array) (mem : value array) (jit_args : jit_args) : t =
   match e with
   | CallDir (id_l, argsr, _) ->
     let fundef = find_fundef p id_l in
@@ -113,7 +113,7 @@ and jitcompile_ans (p : prog) (e : exp) (reg : value array) (mem : value array) 
        let reds = List.filter ~f:(fun a -> is_red reg.(int_of_id_t a)) argsr in
        Ans (CallDir (Id.L (jit_args.trace_name), reds, []))
      | false ->
-       jitcompile p (inline_calldir_exp argsr fundef reg) reg mem jit_args)
+       tracing_jit p (inline_calldir_exp argsr fundef reg) reg mem jit_args)
   | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) ->
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
@@ -122,26 +122,26 @@ and jitcompile_ans (p : prog) (e : exp) (reg : value array) (mem : value array) 
     in
     (match r1, r2 with
      | Green (n1), Green (n2) ->
-       jitcompile p (select_branch e n1 n2 t1 t2) reg mem jit_args
+       tracing_jit p (select_branch e n1 n2 t1 t2) reg mem jit_args
      | Green (n1), Red (n2) ->
        failwith "if (green, red)"
      | Red (n1), Green (n2) ->
        (match e with
         | IfEq _ ->
           if n1 = n2 then
-            Ans (IfEq (id_t, C (n2), jitcompile p t1 reg mem jit_args, restore_green reg t2))
+            Ans (IfEq (id_t, C (n2), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
           else
-            Ans (IfEq (id_t, C (n2), restore_green reg t1, jitcompile p t2 reg mem jit_args))
+            Ans (IfEq (id_t, C (n2), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
         | IfLE _ ->
           if n1 <= n2 then
-            Ans (IfLE (id_t, C (n2), jitcompile p t1 reg mem jit_args, restore_green reg t2))
+            Ans (IfLE (id_t, C (n2), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
           else
-            Ans (IfLE (id_t, C (n2), restore_green reg t1, jitcompile p t2 reg mem jit_args))
+            Ans (IfLE (id_t, C (n2), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
         | IfGE _ ->
           if n1 >= n2 then
-            Ans (IfGE (id_t, C (n2), jitcompile p t1 reg mem jit_args, restore_green reg t2))
+            Ans (IfGE (id_t, C (n2), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
           else
-            Ans (IfGE (id_t, C (n2), restore_green reg t1, jitcompile p t2 reg mem jit_args))
+            Ans (IfGE (id_t, C (n2), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
         | _ ->
           failwith "Not supported"
        )
@@ -149,25 +149,25 @@ and jitcompile_ans (p : prog) (e : exp) (reg : value array) (mem : value array) 
        (match e with
         | IfEq _ ->
           if n1 = n2 then
-            Ans (IfEq (id_t, id_or_imm, jitcompile p t1 reg mem jit_args, restore_green reg t2))
+            Ans (IfEq (id_t, id_or_imm, tracing_jit p t1 reg mem jit_args, restore_green reg t2))
           else
-            Ans (IfEq (id_t, id_or_imm, restore_green reg t1, jitcompile p t2 reg mem jit_args))
+            Ans (IfEq (id_t, id_or_imm, restore_green reg t1, tracing_jit p t2 reg mem jit_args))
         | IfLE _ ->
           if n1 <= n2 then
-            Ans (IfLE (id_t, id_or_imm, jitcompile p t1 reg mem jit_args, restore_green reg t2))
+            Ans (IfLE (id_t, id_or_imm, tracing_jit p t1 reg mem jit_args, restore_green reg t2))
           else
-            Ans (IfLE (id_t, id_or_imm, restore_green reg t1, jitcompile p t2 reg mem jit_args))
+            Ans (IfLE (id_t, id_or_imm, restore_green reg t1, tracing_jit p t2 reg mem jit_args))
         | IfGE _ ->
           if n1 >= n2 then
-            Ans (IfGE (id_t, id_or_imm, jitcompile p t1 reg mem jit_args, restore_green reg t2))
+            Ans (IfGE (id_t, id_or_imm, tracing_jit p t1 reg mem jit_args, restore_green reg t2))
           else
-            Ans (IfGE (id_t, id_or_imm, restore_green reg t1, jitcompile p t2 reg mem jit_args))
+            Ans (IfGE (id_t, id_or_imm, restore_green reg t1, tracing_jit p t2 reg mem jit_args))
         | _ ->
           failwith "Not supported"
        ))
   | _ -> Ans e
 
-and jitcompile_let (p : prog) (e : exp) (reg : value array) (mem : value array) : jit_result =
+and tracing_jit_let (p : prog) (e : exp) (reg : value array) (mem : value array) : jit_result =
   match e with
   | Set n ->
     Specialized (Green n)
@@ -259,9 +259,9 @@ and jitcompile_let (p : prog) (e : exp) (reg : value array) (mem : value array) 
   | _ ->
     failwith "Not supported."
 
-let exec_jitcompile p t reg mem jit_args =
+let exec_tracing_jit p t reg mem jit_args =
   let res =
-    jitcompile p t reg mem jit_args
+    tracing_jit p t reg mem jit_args
   in
   { name = Id.L (jit_args.trace_name)
   ; args = jit_args.reds
