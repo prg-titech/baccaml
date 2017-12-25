@@ -2,8 +2,8 @@ open Core
 open OUnit
 
 open Asm
-open Jit
-open Jit.Util
+open TracingJit
+open TracingJit.Util
 open MincamlUtil
 open TestUtil
 
@@ -53,7 +53,7 @@ let _ = run_test_tt_main begin
         mem.(100 * 4) <- Red (100);
         mem.(100 * 4 + 16) <- Red (100);
         mem.(100 * 4 + 32) <- Red (100);
-        Jit.Util.enable_jit := true;
+        TracingJit.Util.enable_jit := true;
         Logger.log_level := Logger.Debug;
         let jit_args =
           { trace_name = "test_trace.1000"

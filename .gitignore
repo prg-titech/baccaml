@@ -58,5 +58,5 @@ min-camli
 *.top
 *.byte
 
-# ocamlbuidl
+# ocamlbuild
 _build/
