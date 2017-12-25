@@ -41,19 +41,21 @@ je_else.115:
 je_else.116:
 	movl	$-1, %eax
 	ret
-test_trace:
+test_trace.1000:
 	subl	$1, %eax
-	cmpl	$0, %eax
-	jg	jle_else.117
-	jmp	test_trace
-jle_else.117:
-	movl	$0, %ebx
-	movl	$0, %ecx
-	movl	%ecx, 0(%ebp)
 	movl	%eax, %ecx
-	movl	%ebx, %eax
-	movl	0(%ebp), %ebx
+	cmpl	$0, %ecx
+	jg	jle_else.117
+	movl	$1, %eax
+	movl	$0, %ebx
+	addl	$2, %eax
+	movl	%ebx, 0(%ebp)
+	movl	%eax, %ebx
+	movl	0(%ebp), %eax
 	jmp	interpret.39
+jle_else.117:
+	movl	%ecx, %eax
+	jmp	test_trace.1000
 .globl	min_caml_start
 min_caml_start:
 .globl	_min_caml_start
