@@ -1,9 +1,11 @@
 S .
 S src/
+S src/jit/
 S test/
 
 B _build/
 B _build/src/
+B _build/src/jit/
 B _build/test/
 
 PKG core lwt ppx_jane ounit str
