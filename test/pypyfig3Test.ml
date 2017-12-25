@@ -50,17 +50,16 @@ let _ = run_test_tt_main begin
         mem.(19 * 4) <- Green (2);
         mem.(20 * 4) <- Green (2);
         mem.(21 * 4) <- Green (5);
-        mem.(100 * 4) <- Green (100);
+        mem.(100 * 4) <- Red (100);
         mem.(100 * 4 + 16) <- Red (100);
         mem.(100 * 4 + 32) <- Red (100);
         Jit.Util.enable_jit := true;
         Logger.log_level := Logger.Debug;
         let jit_args =
           { trace_name = "test_trace.1000"
-          ; reds = ["a.109"; "regs.110"]
+          ; reds = ["a.109"; "reg.110"]
           ; greens = []
           ; loop_header = 4
-          ; loop_end = 17
           ; loop_pc_place = 1 }
         in
         let trace = exec_jitcompile prog instr reg mem jit_args in
@@ -70,6 +69,7 @@ let _ = run_test_tt_main begin
         print_string (EmitVirtual.to_string_fundef trace);
         setup reg reg'; setup mem mem';
         ignore (Interp.interp (Interp.to_prog_with_label prog') main reg' mem' jit_args);
+        (*prog' |> Simm.f |> RegAlloc.f |> Emit.f (Out_channel.create ("test/pypyfig3.s"));*)
         ()
       end
     ]

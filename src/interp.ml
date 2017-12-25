@@ -286,7 +286,6 @@ let f prog =
     ; reds = []
     ; greens = []
     ; loop_header = 0
-    ; loop_end = 100
     ; loop_pc_place = 0; }
   in
   interp prog' instructions reg mem jit_args

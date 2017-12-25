@@ -26,11 +26,10 @@ let prepare reg mem =
   ()
 
 let jit_args =
-  { trace_name = "test_trace"
+  { trace_name = "test_trace.1000"
   ; reds = ["a.42"]
   ; greens = []
   ; loop_header = 0
-  ; loop_end = 1
   ; loop_pc_place = 1 }
 
 let _ =

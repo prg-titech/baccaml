@@ -11,7 +11,9 @@ module Util = struct
 
   type jit_result =
     | Specialized of value
-    | Not_specialised of exp
+    | Not_specialised of exp * value
+
+  let not_specialised exp = Not_specialised (exp, Red (-99))
 
   type jit_branch_result =
     | Selected of t
@@ -22,7 +24,6 @@ module Util = struct
     ; reds : string list
     ; greens: string list
     ; loop_header : int
-    ; loop_end : int
     ; loop_pc_place : int
     }
 
@@ -122,18 +123,19 @@ module Inline = struct
       }
     in res
 
-  let rec inline_args argsr argst funbody =
+  let rec inline_args argsr argst funbody reg =
     match argsr, argst with
     | [], [] ->
       funbody
     | hdr :: tlr, hdt :: tlt when hdr = hdt ->
-      inline_args tlr tlt funbody
+      inline_args tlr tlt funbody reg
     | hdr :: tlr, hdt :: tlt ->
-      Let ((hdt, Type.Int), Mov (hdr), (inline_args tlr tlt funbody))
+      reg.(int_of_id_t hdt) <- reg.(int_of_id_t hdr);
+      Let ((hdt, Type.Int), Mov (hdr), (inline_args tlr tlt funbody reg))
     | _ ->
       failwith "Un matched pattern."
 
-  let rec inline_calldir argsr dest fundef contbody =
+  let rec inline_calldir argsr dest fundef contbody reg =
     let { args; body } = rename_fundef fundef in
     let rec add_cont_proc id_t instr =
       match instr with
@@ -142,11 +144,11 @@ module Inline = struct
       | Ans e ->
         Let ((id_t, Type.Int), e, contbody)
     in
-    add_cont_proc dest (inline_args argsr args body)
+    add_cont_proc dest (inline_args argsr args body reg)
 
-  let rec inline_calldir_exp argsr fundef =
+  let rec inline_calldir_exp argsr fundef reg =
     let { args; body } = rename_fundef fundef in
-    inline_args argsr args body
+    inline_args argsr args body reg
 
 end
 
@@ -202,24 +204,28 @@ let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array
   | Ans CallDir (id_l, argsr, argst') ->
     let fundef = find_fundef p id_l in
     let pc = value_of reg.(find_pc argsr jit_args) in
+    let a = value_of reg.(int_of_id_t (List.nth_exn argsr 2)) in
     Logger.info ("pc: " ^ string_of_int pc);
-    (match (pc = (jit_args.loop_end)) with
+    Logger.info ("a: " ^ (string_of_int a) ^ " " ^ (List.nth_exn argsr 2));
+    (match (pc = (jit_args.loop_header)) with
      | true ->
        let reds = List.filter ~f:(fun a -> is_red reg.(int_of_id_t a)) argsr in
        Ans (CallDir (Id.L (jit_args.trace_name), reds, []))
      | false ->
-       jitcompile p (inline_calldir_exp argsr fundef) reg mem jit_args)
+       jitcompile p (inline_calldir_exp argsr fundef reg) reg mem jit_args)
   | Ans (exp) ->
     jitcompile_branch p exp reg mem jit_args
   | Let ((dest, typ), CallDir (id_l, argsr, argst), contbody) ->
     let fundef = rename_fundef (find_fundef p id_l) in
-    inline_calldir argsr dest fundef (jitcompile p contbody reg mem jit_args)
+    inline_calldir argsr dest fundef (jitcompile p contbody reg mem jit_args) reg
   | Let ((dest, typ), instr, body) ->
     (match jitcompile_instr p instr reg mem with
      | Specialized v ->
        reg.(int_of_id_t dest) <- v;
        jitcompile p body reg mem jit_args
-     | Not_specialised e ->
+     | Not_specialised (e, v) ->
+       (* 式としまう値を返すようにして，not_specialized が適切な値を返さないといけない *)
+       reg.(int_of_id_t dest) <- v;
        Let ((dest, typ), e, jitcompile p body reg mem jit_args))
 
 and jitcompile_branch (p : prog) (e : exp) (reg : value array) (mem : value array) (jit_args : jit_args) : t =
@@ -287,7 +293,7 @@ and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array
      | Green (n) ->
        Specialized (Green (n))
      | Red (n) ->
-       Not_specialised (exp))
+       Not_specialised (exp, Red (n)))
   | Add (id_t1, id_or_imm) as exp ->
     let r1 = reg.(int_of_id_t id_t1) in
     let r2 = match id_or_imm with
@@ -298,11 +304,11 @@ and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array
      | Green (n1), Green (n2) ->
        Specialized (Green (n1 + n2))
      | Red (n1), Green (n2) ->
-       Not_specialised (Add (id_t1, C (n2)))
+       Not_specialised (Add (id_t1, C (n2)), Red (n1 + n2))
      | Green (n1), Red (n2) ->
        failwith "Add (green, red)"
-     | _ ->
-       Not_specialised (exp))
+     | Red (n1), Red (n2) ->
+       Not_specialised (exp, Red (n1 + n2)))
   | Sub (id_t1, id_or_imm) as exp ->
     let r1 = reg.(int_of_id_t id_t1) in
     let r2 = match id_or_imm with
@@ -314,11 +320,11 @@ and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array
        Specialized (Green (n1 - n2))
      | Red (n1), Green (n2) ->
        (* green なものが残っていたら即値に置き換える *)
-       Not_specialised (Sub (id_t1, C (n2)))
+       Not_specialised (Sub (id_t1, C (n2)), Red (n1 - n2))
      | Green (n1), Red (n2) ->
        failwith "Sub (green, red)"
-     | _ ->
-       Not_specialised (exp))
+     | Red (n1), Red (n2) ->
+       Not_specialised (exp, Red (n1 - n2)))
   | Ld (id_t, id_or_imm, x) as exp ->
     let destld = reg.(int_of_id_t id_t) in
     let offsetld =
@@ -335,13 +341,16 @@ and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array
         | Green n as value ->
           Specialized (value)
         | Red n ->
-          Not_specialised (exp))
+          let e = Ld (id_t, C (n2), x) in
+          Not_specialised (e, Red n))
      | Green (n1), Red (n2) ->
        failwith "Ld (green, red)"
      | Red (n1), Green (n2) ->
-       Not_specialised (Ld (id_t, C (n2), x))
+       let n = mem.(n1 + n2) in
+       Not_specialised (Ld (id_t, C (n2), x), n)
      | Red (n1), Red (n2) ->
-       Not_specialised exp)
+       let n = mem.(n1 + n2) in
+       Not_specialised (exp, n))
   | St (dest, src, offset, x) as exp ->
     let dest', src' = reg.(int_of_id_t dest), reg.(int_of_id_t src) in
     let offset' = match offset with
@@ -358,9 +367,11 @@ and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array
      | Green (n1), Red (n2) ->
        failwith "St (green, red)"
      | Red (n1), Green (n2) ->
-       Not_specialised (St (dest, src, C (n2), x))
-     | _ ->
-       Not_specialised (exp))
+       mem.(n1 + n2) <- dest';
+       Not_specialised (St (dest, src, C (n2), x), Red (0))
+     | Red (n1), Red (n2) ->
+       mem.(n1 + n2) <- dest';
+       Not_specialised (exp, Red (0)))
   | _ ->
     failwith "Not supported."
 
