@@ -1,7 +1,7 @@
 open Asm
 open Util
 open TracingJit
-open TracingJit.Util
+open JitConfig
 open MincamlUtil
 open TestUtil
 
@@ -34,7 +34,7 @@ let jit_args =
 
 let _ =
   Arg.parse
-    [("-jit", Arg.Unit (fun _ -> TracingJit.Util.enable_jit := true), "enable jit compile");
+    [("-jit", Arg.Unit (fun _ -> enable_jit := true), "enable jit compile");
      ("-debug", Arg.Unit (fun _ -> Logger.log_level := Logger.Debug), "debug mode");]
     (fun s -> ())
     ("usage: -jit: enable jit, -debug: execute as debug mode");
@@ -51,4 +51,3 @@ let _ =
   print_string (EmitVirtual.to_string_fundef res);
   (*prog' |> Simm.f |> RegAlloc.f |> Emit.f (open_out ("test/simple1.s"));*)
   ()
-

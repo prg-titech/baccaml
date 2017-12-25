@@ -1,127 +1,11 @@
-open Core
-
 open Asm
+open Core
+open JitConfig
+open Renaming
 
 exception Not_supported of string
 
-module Util = struct
-  type value =
-    | Red of int
-    | Green of int
-
-  type jit_result =
-    | Specialized of value
-    | Not_specialised of exp * value
-
-  let not_specialised exp = Not_specialised (exp, Red (-99))
-
-  type jit_branch_result =
-    | Selected of t
-    | Not_selected of exp
-
-  type jit_args =
-    { trace_name : string
-    ; reds : string list
-    ; greens: string list
-    ; loop_header : int
-    ; loop_pc_place : int
-    }
-
-  let enable_jit = ref false
-
-  let value_of = function
-    | Red (n) -> n
-    | Green (n) -> n
-
-  let is_red = function
-    | Red _ -> true
-    | Green _ -> false
-
-  let is_green = function
-    | Red _ -> false
-    | Green _ -> true
-
-  let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
-    | "min_caml_hp" -> raise (Not_supported ("int_of_id_t min_caml_hp is not supported."))
-    | id ->
-      match List.last (String.split id ~on:'.') with
-      | Some v -> int_of_string v
-      | None -> int_of_string id
-
-  let rec find_fundef prog name =
-    let Asm.Prog (_, fundefs, _) = prog in
-    match List.find fundefs ~f:(fun fundef -> fundef.name = name) with
-    | Some (body) -> body
-    | None -> failwith "find_fundef is failed"
-
-  let find_pc args jit_args =
-    match List.nth args (jit_args.loop_pc_place) with
-    | Some (s) -> int_of_id_t s
-    | None -> failwith "find_pc is failed"
-
-  let find_a args n =
-    match List.nth args n with
-    | Some (s) -> int_of_id_t s
-    | None -> failwith "find_pc is failed"
-
-end
-
-open Util
-
 module Inline = struct
-
-  type rename_env = Id.t -> Id.t
-
-  let empty_env id =
-    failwith (Format.sprintf "empty env %s" id)
-
-  let extend_env env id =
-    let newid = Id.genid id in
-    fun name ->
-      if name = id then newid
-      else env name
-
-  let rename_id_or_imm rename = function
-    | V (id_t) -> V (rename id_t)
-    | C (n) -> C (n)
-
-  let rec rename_exp rename = function
-    | Nop -> Nop
-    | Set (n) -> Set (n)
-    | Mov (id_t) -> Mov (rename id_t)
-    | Neg (id_t) -> Neg (rename id_t)
-    | Add (id_t, id_or_imm) -> Add (rename id_t, rename_id_or_imm rename id_or_imm)
-    | Sub (id_t, id_or_imm) -> Sub (rename id_t, rename_id_or_imm rename id_or_imm)
-    | Ld (id_t, id_or_imm, x) -> Ld (rename id_t, rename_id_or_imm rename id_or_imm, x)
-    | St (src, dest, id_or_imm, x) -> St (rename src, rename dest, rename_id_or_imm rename id_or_imm, x)
-    | IfEq (id_t1, id_t2, t1, t2) -> IfEq (rename id_t1, rename_id_or_imm rename id_t2, rename_t rename t1, rename_t rename t2)
-    | IfLE (id_t1, id_t2, t1, t2) -> IfLE (rename id_t1, rename_id_or_imm rename id_t2, rename_t rename t1, rename_t rename t2)
-    | IfGE (id_t1, id_t2, t1, t2) -> IfGE (rename id_t1, rename_id_or_imm rename id_t2, rename_t rename t1, rename_t rename t2)
-    | CallDir (id_l, args, fargs) -> CallDir (id_l, List.map ~f:rename args, List.map ~f:rename fargs)
-    | exp -> exp
-
-  and rename_t env = function
-    | Ans (exp) ->
-      Ans (rename_exp env exp)
-    | Let ((dest, typ), exp, body) ->
-      let env' = extend_env env dest in
-      Let ((env' dest, typ), rename_exp env' exp, rename_t env' body)
-
-  let rename_fundef ({name = name; args = args'; fargs = fargs; body = body; ret = ret;}) =
-    let (args, rename) =
-      List.fold_right
-        ~f:(fun id (ids, env) -> let env' = extend_env env id in ((env' id) :: ids, env'))
-        args'
-        ~init:([], empty_env)
-    in
-    let res =
-      { name = name
-      ; args = args
-      ; fargs = fargs
-      ; body = rename_t rename body
-      ; ret = ret
-      }
-    in res
 
   let rec inline_args argsr argst funbody reg =
     match argsr, argst with
@@ -136,7 +20,7 @@ module Inline = struct
       failwith "Un matched pattern."
 
   let rec inline_calldir argsr dest fundef contbody reg =
-    let { args; body } = rename_fundef fundef in
+    let { args; body } = Renaming.rename_fundef fundef in
     let rec add_cont_proc id_t instr =
       match instr with
       | Let (a, e, t) ->
@@ -147,7 +31,7 @@ module Inline = struct
     add_cont_proc dest (inline_args argsr args body reg)
 
   let rec inline_calldir_exp argsr fundef reg =
-    let { args; body } = rename_fundef fundef in
+    let { args; body } = Renaming.rename_fundef fundef in
     inline_args argsr args body reg
 
 end

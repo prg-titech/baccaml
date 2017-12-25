@@ -1,5 +1,5 @@
 open Util
-open TracingJit.Util
+open JitConfig
 
 let dir = "min-interp/"
 

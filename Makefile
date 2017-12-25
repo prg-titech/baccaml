@@ -8,7 +8,7 @@ OCAMLLDFLAGS = -warn-error -31
 COMPILER = min-caml
 INTERPRETER = min-camli
 
-OCAMLBUILD_OPTIONS = -use-ocamlfind -Is src,lib,test
+OCAMLBUILD_OPTIONS = -use-ocamlfind -Is src,src/jit,lib,test
 
 TESTCASES = jitTest interpTest pypyfig3Test simple1Test
 
@@ -26,7 +26,7 @@ compiler:
 
 .PHONY: interp
 interp:
-	@ocamlbuild $(OCAMLBUILD_OPTIONS) src/interpMain.byte
+	@ocamlbuild $(OCAMLBUILD_OPTIONS) src/jit/interpMain.byte
 	@mv interpMain.byte min-camli
 
 .PHONY: clean

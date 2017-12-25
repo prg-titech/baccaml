@@ -1,5 +1,5 @@
 open Asm
-open TracingJit.Util
+open JitConfig
 open Util
 
 exception Not_supported of string
