@@ -1,20 +1,7 @@
 open Asm
 open Core
+open InterpConfig
 open JitConfig
-
-exception Not_supported of string
-
-exception Un_implemented_instruction of string
-
-type labels = (* function label for closures *)
-  (Id.l * int) list
-
-type prog_with_label = (* prog for interpreter *)
-    ProgWithLabel of (Id.l * float) list * fundef list * t * labels
-
-let register_size = 1000000
-
-let heap = ref 0
 
 module Converter = struct
   let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
@@ -63,24 +50,18 @@ module FAO = struct
 
 end
 
-let to_prog_with_label prog =
-  let rec create_labels fundefs i =
-    match fundefs with
-    | [] -> []
-    | fundef :: tl -> (fundef.name, i) :: create_labels tl (i + 1)
-  in
-  let Prog (table, fundefs, exp) = prog in
-  let labels = create_labels fundefs 0 in
-  ProgWithLabel (table, fundefs, exp, labels)
+module FunCall = struct
+  let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数がしまわれている reg を作る *)
+    let regs_tmp = List.map ~f:int_of_id_t args_tmp in
+    let regs_real = List.map ~f:int_of_id_t args_real in
+    let arr = Array.create register_size 0 in
+    List.iter
+      ~f:(fun (x, y) -> arr.(x) <- reg.(y))
+      (List.zip_exn regs_tmp regs_real);
+    arr
+end
 
-let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数がしまわれている reg を作る *)
-  let regs_tmp = List.map ~f:int_of_id_t args_tmp in
-  let regs_real = List.map ~f:int_of_id_t args_real in
-  let arr = Array.create register_size 0 in
-  List.iter
-    ~f:(fun (x, y) -> arr.(x) <- reg.(y))
-    (List.zip_exn regs_tmp regs_real);
-  arr
+open FunCall
 
 let is_first_dispatch = ref true
 

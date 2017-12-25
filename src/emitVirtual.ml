@@ -143,7 +143,7 @@ let to_string_labels labels =
 
 (* Asm.prog -> Interp.ProgInterp *)
 let g oc asm_prog =
-  let Interp.ProgWithLabel (xs, fundefs, t', labels) = Interp.to_prog_with_label asm_prog in
+  let InterpConfig.ProgWithLabel (xs, fundefs, t', labels) = InterpConfig.to_prog_with_label asm_prog in
   let xs' = to_string_floating_point_table xs in
   let fundefs' = "[" ^ String.concat ", " (List.map to_string_fundef fundefs) ^ "]" in
   let main_exp = to_string_t t' in
