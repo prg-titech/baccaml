@@ -201,7 +201,24 @@ open Guard
 
 let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array) (jit_args : jit_args) : t =
   match instr with
-  | Ans CallDir (id_l, argsr, argst') ->
+  | Ans (exp) ->
+    jitcompile_ans p exp reg mem jit_args
+  | Let ((dest, typ), CallDir (id_l, argsr, argst), contbody) ->
+    let fundef = rename_fundef (find_fundef p id_l) in
+    inline_calldir argsr dest fundef (jitcompile p contbody reg mem jit_args) reg
+  | Let ((dest, typ), instr, body) ->
+    (match jitcompile_let p instr reg mem with
+     | Specialized v ->
+       reg.(int_of_id_t dest) <- v;
+       jitcompile p body reg mem jit_args
+     | Not_specialised (e, v) ->
+       (* 式としまう値を返すようにして，not_specialized が適切な値を返さないといけない *)
+       reg.(int_of_id_t dest) <- v;
+       Let ((dest, typ), e, jitcompile p body reg mem jit_args))
+
+and jitcompile_ans (p : prog) (e : exp) (reg : value array) (mem : value array) (jit_args : jit_args) : t =
+  match e with
+  | CallDir (id_l, argsr, _) ->
     let fundef = find_fundef p id_l in
     let pc = value_of reg.(find_pc argsr jit_args) in
     let a = value_of reg.(int_of_id_t (List.nth_exn argsr 2)) in
@@ -213,23 +230,6 @@ let rec jitcompile (p : prog) (instr : t) (reg : value array) (mem : value array
        Ans (CallDir (Id.L (jit_args.trace_name), reds, []))
      | false ->
        jitcompile p (inline_calldir_exp argsr fundef reg) reg mem jit_args)
-  | Ans (exp) ->
-    jitcompile_branch p exp reg mem jit_args
-  | Let ((dest, typ), CallDir (id_l, argsr, argst), contbody) ->
-    let fundef = rename_fundef (find_fundef p id_l) in
-    inline_calldir argsr dest fundef (jitcompile p contbody reg mem jit_args) reg
-  | Let ((dest, typ), instr, body) ->
-    (match jitcompile_instr p instr reg mem with
-     | Specialized v ->
-       reg.(int_of_id_t dest) <- v;
-       jitcompile p body reg mem jit_args
-     | Not_specialised (e, v) ->
-       (* 式としまう値を返すようにして，not_specialized が適切な値を返さないといけない *)
-       reg.(int_of_id_t dest) <- v;
-       Let ((dest, typ), e, jitcompile p body reg mem jit_args))
-
-and jitcompile_branch (p : prog) (e : exp) (reg : value array) (mem : value array) (jit_args : jit_args) : t =
-  match e with
   | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) ->
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
@@ -283,7 +283,7 @@ and jitcompile_branch (p : prog) (e : exp) (reg : value array) (mem : value arra
        ))
   | _ -> Ans e
 
-and jitcompile_instr (p : prog) (e : exp) (reg : value array) (mem : value array) : jit_result =
+and jitcompile_let (p : prog) (e : exp) (reg : value array) (mem : value array) : jit_result =
   match e with
   | Set n ->
     Specialized (Green n)
