@@ -1,6 +1,6 @@
 open Asm
+open Core
 open JitConfig
-open Util
 
 exception Not_supported of string
 
@@ -13,44 +13,55 @@ type prog_with_label = (* prog for interpreter *)
     ProgWithLabel of (Id.l * float) list * fundef list * t * labels
 
 let register_size = 1000000
+
 let heap = ref 0
 
-let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
-  | "min_caml_hp" -> raise (Not_supported ("int_of_id_t min_caml_hp is not supported."))
-  | id ->
-    try int_of_string (String.after_of id '.')
-    with _ -> int_of_string (String.after_of id 'u')
+module Converter = struct
+  let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
+    | "min_caml_hp" -> raise (Not_supported ("int_of_id_t min_caml_hp is not supported."))
+    | id ->
+      match List.last (String.split id ~on:'.') with
+      | Some (str) -> int_of_string str
+      | None -> int_of_string (List.last_exn (String.split id ~on:'u'))
 
-let string_of_id_or_imm = function
-    Asm.V (id_t) -> id_t
-  | Asm.C (n) -> string_of_int n
+  let string_of_id_or_imm = function
+      Asm.V (id_t) -> id_t
+    | Asm.C (n) -> string_of_int n
+end
 
-let rec find_label_number label = function
-  | [] -> let Id.L s = label in int_of_id_t s
-  | (l, num) :: tl -> if l = label then num else find_label_number label tl
+open Converter
 
-let rec find_label prog num =
-  let ProgWithLabel (_, _, _, labels) = prog in
-  try
-    let (id, _) = (List.find (fun (id_l, n) -> n = num) labels) in id
-  with
-    Not_found ->
-    Logger.error (Printf.sprintf "num: %d" num);
-    raise Not_found
+module FAO = struct
 
-let rec lookup_by_id_l prog name =
-  let ProgWithLabel (_, fundefs, _, _) = prog in
-  try
-    List.find (fun fundef -> (fundef.name = name)) fundefs
-  with e ->
-    Logger.error (let Id.L s = name in Printf.sprintf "CallCls %s" s); raise e
+  let rec find_label_number label = function
+    | [] -> let Id.L s = label in int_of_id_t s
+    | (l, num) :: tl -> if l = label then num else find_label_number label tl
 
-let rec lookup_by_id_t prog name =
-  let ProgWithLabel (_, fundefs, _, _) = prog in
-  try
-    List.find (fun fundef -> (let Id.L s = fundef.name in s) = name) fundefs
-  with e ->
-    Logger.error (Printf.sprintf "CallCls %s" name); raise e
+  let rec find_label prog num =
+    let ProgWithLabel (_, _, _, labels) = prog in
+    match List.find ~f:(fun (id_l, n) -> n = num) labels with
+    | Some (id, _) -> id
+    | None ->
+      Logger.error (Printf.sprintf "num: %d" num);
+      raise Not_found
+
+  let rec lookup_by_id_l prog name =
+    let ProgWithLabel (_, fundefs, _, _) = prog in
+    match List.find ~f:(fun fundef -> (fundef.name = name)) fundefs with
+    | Some (fundef) -> fundef
+    | None ->
+      Logger.error (let Id.L s = name in Printf.sprintf "CallCls %s is not found" s);
+      raise Not_found
+
+  let rec lookup_by_id_t prog name =
+    let ProgWithLabel (_, fundefs, _, _) = prog in
+    match List.find ~f:(fun fundef -> (let Id.L s = fundef.name in s) = name) fundefs with
+    | Some (fundef) -> fundef
+    | None ->
+      Logger.error (Printf.sprintf "CallCls %s" name);
+      raise Not_found
+
+end
 
 let to_prog_with_label prog =
   let rec create_labels fundefs i =
@@ -62,14 +73,13 @@ let to_prog_with_label prog =
   let labels = create_labels fundefs 0 in
   ProgWithLabel (table, fundefs, exp, labels)
 
-
 let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数がしまわれている reg を作る *)
-  let regs_tmp = List.map int_of_id_t args_tmp in
-  let regs_real = List.map int_of_id_t args_real in
-  let arr = Array.make register_size 0 in
+  let regs_tmp = List.map ~f:int_of_id_t args_tmp in
+  let regs_real = List.map ~f:int_of_id_t args_real in
+  let arr = Array.create register_size 0 in
   List.iter
-    (fun (x, y) -> arr.(x) <- reg.(y))
-    (List.zip regs_tmp regs_real);
+    ~f:(fun (x, y) -> arr.(x) <- reg.(y))
+    (List.zip_exn regs_tmp regs_real);
   arr
 
 let is_first_dispatch = ref true
@@ -111,7 +121,7 @@ and eval_exp (prog : prog_with_label) (exp' : exp) (reg : int array) (mem : int 
     (- res)
   | SetL id_l ->
     let ProgWithLabel (_, _, _, labels) = prog in
-    let res = find_label_number id_l labels in
+    let res = FAO.find_label_number id_l labels in
     Logger.debug (Printf.sprintf "SetL (%s: %d)" (let Id.L s = id_l in s) res);
     res
   | Mov "min_caml_hp" ->
@@ -215,9 +225,9 @@ and eval_exp (prog : prog_with_label) (exp' : exp) (reg : int array) (mem : int 
     in
     Logger.debug (Printf.sprintf "IfEq (id1: %s, id2: %s, t1: %d, t2: %d)" id1 (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 = r2 then
-      interp prog t1 reg  mem jit_args
+      interp prog t1 reg mem jit_args
     else
-      interp prog t2 reg  mem jit_args
+      interp prog t2 reg mem jit_args
   | IfLE (id, id_or_imm, t1, t2) ->
     let r1 = match id with "min_caml_hp" -> !heap | _ -> reg.(int_of_id_t id) in
     let r2 = match id_or_imm with
@@ -243,18 +253,20 @@ and eval_exp (prog : prog_with_label) (exp' : exp) (reg : int array) (mem : int 
   | CallCls (id_t, args, _) ->
     let r1 = reg.(int_of_id_t id_t) in
     let m1 = mem.(r1) in
-    let Id.L id = find_label prog m1 in
+    let Id.L id = FAO.find_label prog m1 in
     Logger.debug (Printf.sprintf "CallCls (id_t: %s, r1: %d, r2: %d, id_l: %s)" id_t r1 m1 id);
-    let fundef = lookup_by_id_l prog (Id.L (id)) in
+    let fundef = FAO.lookup_by_id_l prog (Id.L (id)) in
     let reg' = make_reg reg (fundef.args) args in
     reg'.(int_of_id_t id) <- r1;
     interp prog (fundef.body) reg' mem jit_args
   | CallDir (Id.L ("min_caml_print_int"), [arg], _) ->
     let v = reg.(int_of_id_t arg) in
     Logger.debug (Printf.sprintf "CallDir min_caml_print_int %d" v);
-    print_int v; 0
+    print_int v;
+    0
   | CallDir (Id.L ("min_caml_print_newline"), _, _) ->
-    print_newline (); 0
+    print_newline ();
+    0
   | CallDir (Id.L ("min_caml_truncate"), _, [farg]) ->
     raise (Un_implemented_instruction "min_caml_truncate is not implemented.")
   | CallDir (Id.L ("min_caml_create_array"), arg1 :: arg2 :: [], _) ->
@@ -269,7 +281,7 @@ and eval_exp (prog : prog_with_label) (exp' : exp) (reg : int array) (mem : int 
     a
   | CallDir (name, args, _) ->
     (* fundef.args: 仮引数 args: 実引数 *)
-    let fundef = lookup_by_id_l prog name in
+    let fundef = FAO.lookup_by_id_l prog name in
     let reg' = make_reg reg (fundef.args) args in
     let Id.L s = name in Logger.debug (Printf.sprintf "CallDir %s" s);
     interp prog (fundef.body) reg' mem jit_args
@@ -277,8 +289,8 @@ and eval_exp (prog : prog_with_label) (exp' : exp) (reg : int array) (mem : int 
 
 
 let f prog =
-  let reg = Array.make register_size 0 in
-  let mem = Array.make register_size 0 in
+  let reg = Array.create register_size 0 in
+  let mem = Array.create register_size 0 in
   let prog' = to_prog_with_label prog in
   let ProgWithLabel (_, _, instructions, labels) = prog' in
   let jit_args =
