@@ -1,7 +1,7 @@
 open Util
 open JitConfig
 
-let dir = "min-interp/"
+let dir = "data/"
 
 let setup aa bb =
   List.iter (fun (a, i) -> bb.(i) <- value_of a)
