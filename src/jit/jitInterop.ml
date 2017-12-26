@@ -57,7 +57,7 @@ let find_in_body t reds =
     | Let ((dest, _), exp, body) ->
       let reds_in_exp = find_in_exp exp reds in
       if is_red dest reds then
-        let r = List.rev_append (List.append reds_in_exp [dest]) acc in
+        let r = List.rev_append (reds_in_exp @ [dest]) acc in
         loop body reds r
       else
         loop body reds acc
@@ -71,7 +71,7 @@ let find_in_fundefs fundefs reds =
         let { args; body } = fundef in
         let reds_in_args = List.filter ~f:(fun arg -> is_red arg reds) args in
         let reds_in_body = find_in_body body reds in
-        List.append (List.append reds_in_body reds_in_args) env
+        reds_in_body @ reds_in_args @ env
       )
     ~init:[]
     fundefs
