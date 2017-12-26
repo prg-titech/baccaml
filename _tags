@@ -1,4 +1,9 @@
 true: package(core, ppx_jane, oUnit, str)
 true: thread, debug
-<{src,test}/*.byte>: linkdep(lib/float.o), custom
-<{src,test}/*.native>: linkdep(lib/float.o)
+"lib": include
+"src": include
+"src/jit": include
+"test/util": include
+"lib": -traverse
+<{src,test}/**/*.byte>: linkdep(lib/float.o), custom
+<{src,test}/**/*.native>: linkdep(lib/float.o)

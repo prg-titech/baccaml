@@ -23,6 +23,14 @@ type jit_args =
   ; loop_pc_place : int
   }
 
+let dummy_jit_args =
+  { trace_name = "dummy_jit_args.1000"
+  ; reds = []
+  ; greens = []
+  ; loop_header = 0
+  ; loop_pc_place = 0
+  }
+
 let enable_jit = ref false
 
 let value_of = function

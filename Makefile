@@ -8,9 +8,9 @@ OCAMLLDFLAGS = -warn-error -31
 COMPILER = min-caml
 INTERPRETER = min-camli
 
-OCAMLBUILD_OPTIONS = -use-ocamlfind -Is src,src/jit,lib,test
+OCAMLBUILD_OPTIONS = -use-ocamlfind
 
-TESTCASES = jitTest interpTest pypyfig3Test simple1Test
+TESTCASES = jitTest methodJitTest interpTest pypyfig3Test simple1Test
 
 EXAMPLES = print sum-tail gcd sum fib ack even-odd adder \
 funcomp cls-rec cls-bug cls-bug2 cls-reg-bug shuffle \
@@ -37,7 +37,10 @@ clean:
 .PHONY: test
 test:
 	@for case in $(TESTCASES); do \
-		ocamlbuild -Is src,test $(OCAMLBUILD_OPTIONS) test/$$case.byte || exit 1; \
+		echo ;\
+		echo $$case; \
+		echo ;\
+		ocamlbuild -Is src,test $(OCAMLBUILD_OPTIONS) $$case.byte || exit 1; \
 		./$$case.byte; \
 	done
 
