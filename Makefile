@@ -25,8 +25,8 @@ compiler:
 
 .PHONY: interp
 interp:
-	@ocamlbuild $(OCAMLBUILD_OPTIONS) src/jit/interpMain.byte
-	@mv interpMain.byte min-camli
+	@ocamlbuild $(OCAMLBUILD_OPTIONS) src/jit/min-camli.byte
+	@mv min-camli.byte min-camli
 
 .PHONY: clean
 clean:
