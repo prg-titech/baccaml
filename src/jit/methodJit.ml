@@ -19,13 +19,14 @@ let rec method_jit p instr reg mem jit_args =
   | Ans (exp) ->
     method_jit_ans p exp reg mem jit_args
   | Let ((dest, typ), exp, body) ->
-    (match TracingJit.tracing_jit_let p exp reg mem with
-     | Specialized (v) ->
-       method_jit p body reg mem jit_args
-     | Not_specialised (e, v) ->
-       reg.(int_of_id_t dest) <- v;
-       Let ((dest, typ), exp, method_jit p body reg mem jit_args)
-    )
+    begin
+      match TracingJit.tracing_jit_let p exp reg mem with
+      | Specialized (v) ->
+        method_jit p body reg mem jit_args
+      | Not_specialised (e, v) ->
+        reg.(int_of_id_t dest) <- v;
+        Let ((dest, typ), exp, method_jit p body reg mem jit_args)
+    end
 
 and method_jit_ans p e reg mem jit_args =
   match e with
