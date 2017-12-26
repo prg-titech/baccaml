@@ -1,5 +1,6 @@
 open Asm
 open Core
+open JitConfig
 
 let remove_elt e l =
   let rec go l acc = match l with
@@ -80,3 +81,13 @@ let find_red_registers p reds =
   List.append
     (find_red_in_body t reds)
     (find_red_in_fundefs fundefs reds)
+
+let convert p reg reds =
+  let red_regs = find_red_registers p reds in
+  let red_reg_num = List.map ~f:(fun id -> int_of_id_t id) red_regs in
+  let jit_regs = Array.create (Array.length reg) (Green (0)) in
+  Array.iter
+    ~f:(fun n -> jit_regs.(n) <- Red (reg.(n)))
+    (Array.of_list red_reg_num);
+  jit_regs
+
