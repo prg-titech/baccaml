@@ -19,19 +19,50 @@ let name_of id_t =
   | Some name -> name
   | None -> id_t
 
-let is_red name reds =
-  List.exists reds ~f:(fun n -> n = name)
+let is_red id_t reds =
+  List.exists reds ~f:(fun n -> n = name_of id_t)
+
+let find_red_in_exp exp reds = match exp with
+  | Mov id_t | Neg id_t ->
+    if is_red id_t reds then [id_t] else []
+  | Add (id_t, id_or_imm) | Sub (id_t, id_or_imm) ->
+    (match id_or_imm with
+    | V (id_t') ->
+      List.filter ~f:(fun id -> is_red id reds) [id_t; id_t']
+    | C _ ->
+      if is_red id_t reds then [id_t] else [])
+  | Ld (id_t, id_or_imm, x) ->
+    (match id_or_imm with
+    | V (id_t') ->
+      List.filter ~f:(fun id -> is_red id reds) [id_t; id_t']
+    | C _ ->
+      if is_red id_t reds then [id_t] else [])
+  | St (id_t1, id_t2, id_or_imm, x) ->
+    (match id_or_imm with
+    | V (id_t') ->
+      List.filter ~f:(fun id -> is_red id reds) [id_t1; id_t2; id_t']
+    | C _ ->
+      List.filter ~f:(fun id -> is_red id reds) [id_t1; id_t2])
+  | IfEq (id_t, id_or_imm, _, _) | IfLE (id_t, id_or_imm, _, _) | IfGE (id_t, id_or_imm, _, _) ->
+    (match id_or_imm with
+    | V (id_t') ->
+      List.filter ~f:(fun id -> is_red id reds) [id_t; id_t']
+    | C _ ->
+      if is_red id_t reds then [id_t] else [])
+  | _ -> []
 
 let find_red_in_body t reds =
   let rec loop t reds acc = match t with
-    | Let ((dest, _), _, body) ->
+    | Let ((dest, _), exp, body) ->
+      let reds_in_exp = find_red_in_exp exp reds in
       if is_red dest reds then
-        loop body reds (dest :: acc)
+        let r = List.rev_append (List.append reds_in_exp [dest]) acc in
+        loop body reds r
       else
         loop body reds acc
     | Ans (e) ->
       acc
-  in List.rev (loop t reds []) |> remove_duplicates
+  in List.rev (loop t reds [])
 
 let find_red_in_fundefs fundefs reds =
   List.fold_right
@@ -39,7 +70,7 @@ let find_red_in_fundefs fundefs reds =
         let { args; body } = fundef in
         let reds_in_args = List.filter ~f:(fun arg -> is_red arg reds) args in
         let reds_in_body = find_red_in_body body reds in
-        remove_duplicates (List.append (List.append reds_in_body reds_in_args) env)
+        List.append (List.append reds_in_body reds_in_args) env
       )
     ~init:[]
     fundefs
