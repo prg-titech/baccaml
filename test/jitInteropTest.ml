@@ -31,7 +31,7 @@ let _ = run_test_tt_main begin
           let reds = ["a"; "b"] in
           assert_equal
             ~printer:print_string_list
-            (find_red_in_body instr reds)
+            (find_in_body instr reds)
             (["a.100"; "a.2.101"; "b.3.102"])
       end;
       "convert" >:: begin
@@ -45,7 +45,7 @@ let _ = run_test_tt_main begin
           expected.(101) <- Red (0);
           expected.(102) <- Red (200);
           assert_equal
-            (convert prog1 reg reds)
+            (convert prog1 reg reds [])
             expected
       end
     ]

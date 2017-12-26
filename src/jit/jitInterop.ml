@@ -23,7 +23,7 @@ let name_of id_t =
 let is_red id_t reds =
   List.exists reds ~f:(fun n -> n = name_of id_t)
 
-let find_red_in_exp exp reds = match exp with
+let find_in_exp exp reds = match exp with
   | Mov id_t | Neg id_t ->
     if is_red id_t reds then [id_t] else []
   | Add (id_t, id_or_imm) | Sub (id_t, id_or_imm) ->
@@ -52,10 +52,10 @@ let find_red_in_exp exp reds = match exp with
       if is_red id_t reds then [id_t] else [])
   | _ -> []
 
-let find_red_in_body t reds =
+let find_in_body t reds =
   let rec loop t reds acc = match t with
     | Let ((dest, _), exp, body) ->
-      let reds_in_exp = find_red_in_exp exp reds in
+      let reds_in_exp = find_in_exp exp reds in
       if is_red dest reds then
         let r = List.rev_append (List.append reds_in_exp [dest]) acc in
         loop body reds r
@@ -65,29 +65,33 @@ let find_red_in_body t reds =
       acc
   in List.rev (loop t reds [])
 
-let find_red_in_fundefs fundefs reds =
+let find_in_fundefs fundefs reds =
   List.fold_right
     ~f:(fun fundef env ->
         let { args; body } = fundef in
         let reds_in_args = List.filter ~f:(fun arg -> is_red arg reds) args in
-        let reds_in_body = find_red_in_body body reds in
+        let reds_in_body = find_in_body body reds in
         List.append (List.append reds_in_body reds_in_args) env
       )
     ~init:[]
     fundefs
 
-let find_red_registers p reds =
+let find_registers p reds =
   let Prog (_, fundefs, t) = p in
   List.append
-    (find_red_in_body t reds)
-    (find_red_in_fundefs fundefs reds)
+    (find_in_body t reds)
+    (find_in_fundefs fundefs reds)
 
-let convert p reg reds =
-  let red_regs = find_red_registers p reds in
+let convert p reg reds greens =
+  let red_regs = find_registers p reds in
   let red_reg_num = List.map ~f:(fun id -> int_of_id_t id) red_regs in
+  let green_regs = find_registers p greens in
+  let green_reg_num = List.map ~f:(fun id -> int_of_id_t id) green_regs in
   let jit_regs = Array.create (Array.length reg) (Green (0)) in
   Array.iter
     ~f:(fun n -> jit_regs.(n) <- Red (reg.(n)))
     (Array.of_list red_reg_num);
+  Array.iter
+    ~f:(fun n -> jit_regs.(n) <- Green (reg.(n)))
+    (Array.of_list green_reg_num);
   jit_regs
-
