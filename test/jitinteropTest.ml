@@ -1,7 +1,7 @@
 open Asm
 open Core
 open JitConfig
-open Jitinterop
+open JitInterop
 open OUnit
 
 let print_string_list l =
