@@ -1,9 +1,12 @@
 S ../src/
 S ../src/jit/
+S ./util
 
 B ../_build/
 B ../_build/src
 B ../_build/src/jit/
+B ../_build/src/util
 B ../_build/test/
+B ../_build/test/util/
 
 PKG core ounit
