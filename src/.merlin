@@ -1,8 +1,10 @@
 S .
 S ./jit
+S ./util
 
 B ../_build/
 B ../_build/src
+B ../_build/src/util
 B ../_build/src/jit
 
 PKG core lwt
