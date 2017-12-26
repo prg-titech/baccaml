@@ -7,9 +7,10 @@ module Converter = struct
   let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
     | "min_caml_hp" -> raise (Not_supported ("int_of_id_t min_caml_hp is not supported."))
     | id ->
-      match List.last (String.split id ~on:'.') with
-      | Some (str) -> int_of_string str
-      | None -> int_of_string (List.last_exn (String.split id ~on:'u'))
+      try
+        int_of_string (List.last_exn (String.split id ~on:'.'))
+      with _ ->
+        int_of_string (List.last_exn (String.split id ~on:'u'))
 
   let string_of_id_or_imm = function
       Asm.V (id_t) -> id_t
@@ -244,10 +245,10 @@ and eval_exp (prog : prog_with_label) (exp' : exp) (reg : int array) (mem : int 
   | CallDir (Id.L ("min_caml_print_int"), [arg], _) ->
     let v = reg.(int_of_id_t arg) in
     Logger.debug (Printf.sprintf "CallDir min_caml_print_int %d" v);
-    print_int v;
+    Out_channel.output_string stdout (string_of_int v);
     0
   | CallDir (Id.L ("min_caml_print_newline"), _, _) ->
-    print_newline ();
+    Out_channel.newline stdout;
     0
   | CallDir (Id.L ("min_caml_truncate"), _, [farg]) ->
     raise (Un_implemented_instruction "min_caml_truncate is not implemented.")

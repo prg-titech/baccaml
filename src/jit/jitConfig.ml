@@ -48,9 +48,10 @@ let is_green = function
 let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
   | "min_caml_hp" -> failwith ("int_of_id_t min_caml_hp is not supported.")
   | id ->
-    match List.last (String.split id ~on:'.') with
-    | Some v -> int_of_string v
-    | None -> int_of_string id
+    try
+      int_of_string (List.last_exn (String.split id ~on:'.'))
+    with _ ->
+      int_of_string (List.last_exn (String.split id ~on:'u'))
 
 let rec find_fundef prog name =
   let Asm.Prog (_, fundefs, _) = prog in
