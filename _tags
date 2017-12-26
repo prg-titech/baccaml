@@ -2,6 +2,7 @@ true: package(core, ppx_jane, oUnit, str)
 true: thread, debug
 "lib": include
 "src": include
+"src/util": include
 "src/jit": include
 "test/util": include
 "lib": -traverse
