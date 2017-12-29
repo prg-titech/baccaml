@@ -9,3 +9,9 @@ val convert :
   Core.String.t Core.List.t ->
   Core.String.t Core.List.t ->
   JitConfig.value Core.Array.t
+val colorize :
+  int Core.Array.t ->
+  string Core.List.t ->
+  int Core.List.t ->
+  int Core.List.t ->
+  JitConfig.value Core.Array.t

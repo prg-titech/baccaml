@@ -95,3 +95,18 @@ let convert p reg reds greens =
     ~f:(fun n -> jit_regs.(n) <- Green (reg.(n)))
     (Array.of_list green_reg_num);
   jit_regs
+
+let colorize reg args reds greens =
+  let jit_regs = Array.create (Array.length reg) (Green (0)) in
+  List.iter
+    ~f:
+      begin fun n ->
+        jit_regs.(n) <- Red (reg.(n))
+      end
+    reds;
+  List.iter
+    ~f:begin
+      fun n -> jit_regs.(n) <- Green (reg.(n))
+    end
+    greens;
+  jit_regs
