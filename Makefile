@@ -36,12 +36,16 @@ clean:
 .PHONY: test
 test:
 	@for case in $(TESTCASES); do \
-		echo ;\
+		echo "================================================="; \
 		echo $$case; \
-		echo ;\
+		echo "================================================="; \
 		ocamlbuild $(OCAMLBUILD_OPTIONS) test/$$case.byte || exit 1; \
 		./$$case.byte; \
 	done
+
+pypytest:
+	@ocamlbuild $(OCAMLBUILD_OPTIONS) test/pypyfig3Test.byte || exit 1
+	./pypyfig3Test.byte
 
 .PHONY: example
 example: $(EXAMPLES:%=example/%.cmp)
