@@ -35,56 +35,47 @@ and method_jit_ans p e reg mem jit_args =
     method_jit p (inline_calldir_exp argsr fundef reg) reg mem jit_args
   | IfEq (id_t, id_or_imm, t1, t2) ->
     let r2 = Util.value_of_id_or_imm reg id_or_imm in
-    Ans (match r2 with
-        | Green (n2) ->
-          IfEq (
-            id_t,
-            C (n2),
-            method_jit p t1 reg mem jit_args,
-            method_jit p t2 reg mem jit_args
-          )
-        | Red (n2) ->
-          IfEq (
-            id_t,
-            id_or_imm,
-            method_jit p t1 reg mem jit_args,
-            method_jit p t2 reg mem jit_args
-          )
-      )
+    Ans (
+      match r2 with
+      | Green (n2) ->
+        let reg', mem' = reg, mem in
+        let t1' = method_jit p t1 reg' mem' jit_args in
+        let t2' = method_jit p t2 reg' mem' jit_args in
+        IfEq (id_t, C (n2), t1', t2')
+      | Red (n2) ->
+        let reg', mem' = reg, mem in
+        let t1' = method_jit p t1 reg' mem' jit_args in
+        let t2' = method_jit p t2 reg' mem' jit_args in
+        IfEq (id_t, id_or_imm, t1', t2')
+    )
   | IfLE (id_t, id_or_imm, t1, t2) ->
     let r2 = Util.value_of_id_or_imm reg id_or_imm in
-    Ans (match r2 with
-        | Green (n2) ->
-          IfLE (
-            id_t,
-            C (n2),
-            method_jit p t1 reg mem jit_args,
-            method_jit p t2 reg mem jit_args
-          )
-        | Red (n2) ->
-          IfLE (
-            id_t,
-            id_or_imm,
-            method_jit p t1 reg mem jit_args,
-            method_jit p t2 reg mem jit_args
-          )
-      )
+    Ans (
+      match r2 with
+      | Green (n2) ->
+        let reg', mem' = reg, mem in
+        let t1' = method_jit p t1 reg' mem' jit_args in
+        let t2' = method_jit p t2 reg' mem' jit_args in
+        IfLE (id_t, C (n2), t1', t2')
+      | Red (n2) ->
+        let reg', mem' = reg, mem in
+        let t1' = method_jit p t1 reg' mem' jit_args in
+        let t2' = method_jit p t2 reg' mem' jit_args in
+        IfLE (id_t, id_or_imm, t1', t2')
+    )
   | IfGE (id_t, id_or_imm, t1, t2) ->
     let r2 = Util.value_of_id_or_imm reg id_or_imm in
-    Ans (match r2 with
-        | Green (n2) ->
-          IfGE (
-            id_t,
-            C (n2),
-            method_jit p t1 reg mem jit_args,
-            method_jit p t2 reg mem jit_args
-          )
-        | Red (n2) ->
-          IfGE (
-            id_t,
-            id_or_imm,
-            method_jit p t1 reg mem jit_args,
-            method_jit p t2 reg mem jit_args
-          )
+    Ans (
+      match r2 with
+      | Green (n2) ->
+        let reg', mem' = reg, mem in
+        let t1' = method_jit p t1 reg' mem' jit_args in
+        let t2' = method_jit p t2 reg' mem' jit_args in
+        IfGE (id_t, C (n2), t1', t2')
+      | Red (n2) ->
+        let reg', mem' = reg, mem in
+        let t1' = method_jit p t1 reg' mem' jit_args in
+        let t2' = method_jit p t2 reg' mem' jit_args in
+        IfGE (id_t, id_or_imm, t1', t2')
       )
   | _ -> Ans (e)
