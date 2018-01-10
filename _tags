@@ -6,5 +6,5 @@ true: thread, debug
 "src/jit": include
 "test/util": include
 "lib": -traverse
-<{src,test}/**/*.byte>: linkdep(lib/float.o), custom
-<{src,test}/**/*.native>: linkdep(lib/float.o)
+<{src,test}/**/*.byte>: linkdep(lib/float.o), custom, debug
+<{src,test}/**/*.native>: linkdep(lib/float.o), debug
