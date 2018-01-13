@@ -65,8 +65,12 @@ open FunCall
 
 let is_first_dispatch = ref true
 
-let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : int array) (mem : int array) (jit_args : jit_args) : 'a =
-  match instr with
+let rec interp
+    (prog : prog_with_label)
+    (instr : Asm.t)
+    (reg : int array)
+    (mem : int array)
+    (jit_args : jit_args) : 'a = match instr with
   | Ans exp ->
     let res = eval_exp prog exp reg mem jit_args in
     (* Logger.debug (Printf.sprintf "Ans (%d)" res); *)
@@ -89,8 +93,12 @@ let rec interp (prog : prog_with_label) (instr : Asm.t) (reg : int array) (mem :
       | _ -> interp prog t reg mem jit_args
     end
 
-and eval_exp (prog : prog_with_label) (exp' : exp) (reg : int array) (mem : int array) (jit_args : jit_args) : 'a =
-  match exp' with
+and eval_exp
+    (prog : prog_with_label)
+    (exp' : exp)
+    (reg : int array)
+    (mem : int array)
+    (jit_args : jit_args) : 'a = match exp' with
   | Nop ->
     Logger.debug ("Nop");
     0
