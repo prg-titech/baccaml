@@ -39,8 +39,10 @@ let _ =
     (fun s -> ())
     ("usage: -jit: enable jit, -debug: execute as debug mode");
   let instr = fundef.body in
-  let reg, mem = Array.make 1000 (Red 0), Array.make 1000 (Red 0) in
-  let reg', mem' = Array.make 10000 0, Array.make 10000 0 in
+  let reg = Array.make 1000 (Red 0) in
+  let mem = Array.make 1000 (Red 0) in
+  let reg' = Array.make 10000 0 in
+  let mem' = Array.make 10000 0 in
   prepare reg mem;
   let res = exec_tracing_jit prog instr reg mem jit_args in
   let prog' = Prog ([], fundef :: res :: [], main) in
