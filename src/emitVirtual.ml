@@ -2,17 +2,17 @@ open Asm
 
 let to_string_idl idl =
   match idl with
-  | Id.L (s) -> s
+  | Id.L (s) -> "\"" ^ s ^ "\""
 
 let to_string_id_or_imm id_or_imm =
   match id_or_imm with
-  | V (t) -> t
+  | V (t) -> "\"" ^ t ^ "\""
   | C (i) -> Pervasives.string_of_int i
 
 let rec to_string_type_list lst =
   let rec loop = function
     | [] -> ""
-    | hd :: tl -> (to_string_type hd) ^ ", " ^ (to_string_type_list tl)
+    | hd :: tl -> (to_string_type hd) ^ "; " ^ (to_string_type_list tl)
   in "[" ^ (loop lst) ^ "]"
 
 and to_string_type typ =
@@ -39,7 +39,7 @@ and to_string_type typ =
 let rec to_string_ids ids =
   match ids with
   | [] -> "[]"
-  | _ -> "[" ^ (String.concat ", " ids) ^ "]"
+  | _ -> "[" ^ (String.concat "; " ids) ^ "]"
 
 
 (* Asm.exp to string *)
