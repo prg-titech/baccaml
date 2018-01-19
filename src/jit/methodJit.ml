@@ -25,10 +25,10 @@ let rec method_jit p instr reg mem jit_args = match instr with
     method_jit_ans p exp reg mem jit_args
   | Let ((dest, typ), exp, body) ->
     begin
-      match TracingJit.tracing_jit_let p exp reg mem with
-      | Specialized (v) ->
+      match method_jit_let p exp reg mem with
+      | MSpecialized (v) ->
         method_jit p body reg mem jit_args
-      | Not_specialised (e, v) ->
+      | MNot_specialized (e, v) ->
         reg.(int_of_id_t dest) <- v;
         Let ((dest, typ), exp, method_jit p body reg mem jit_args)
     end
@@ -58,6 +58,23 @@ and method_jit_let p e reg mem = match e with
         failwith "Add (green, red)"
       | Red (n1), Red (n2) ->
         MNot_specialized (e, Red (n1 + n2))
+    end
+  | Sub (id_t1, id_or_imm) ->
+    let r1 = reg.(int_of_id_t id_t1) in
+    let r2 = match id_or_imm with
+      | V (id_t) -> reg.(int_of_id_t id_t)
+      | C (n) -> Green (n)
+    in
+    begin
+      match r1, r2 with
+      | Green (n1), Green (n2) ->
+        MSpecialized (Green (n1 - n2))
+      | Red (n1), Green (n2) ->
+        MNot_specialized (Sub (id_t1, C (n2)), Red (n1 - n2))
+      | Green (n1), Red (n2) ->
+        failwith "Add (green, red)"
+      | Red (n1), Red (n2) ->
+        MNot_specialized (e, Red (n1 - n2))
     end
   | Ld (id_t, id_or_imm, x) ->
     let destld = reg.(int_of_id_t id_t) in
@@ -108,7 +125,9 @@ and method_jit_let p e reg mem = match e with
         mem.(n1 + n2) <- dest';
         MNot_specialized (e, Red (0))
     end
-  | _ -> failwith "Not supported in method jit"
+  | _ ->
+    print_string (EmitVirtual.to_string_exp e);
+    failwith "Not supported in method jit"
 
 and method_jit_ans p e reg mem jit_args = match e with
   | CallDir (id_l, argsr, _) ->
