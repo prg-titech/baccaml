@@ -3,6 +3,7 @@ open Core
 open OUnit
 open MethodJit
 open JitConfig
+open Type
 
 let _ = run_test_tt_main begin
     "method_jit_test" >::: [
@@ -27,6 +28,6 @@ let _ = run_test_tt_main begin
                       Ans (Mov ("Ti3.3")),
                       Ans (Mov ("Ti1.1")))));
         ()
-      end
+      end;
     ]
   end

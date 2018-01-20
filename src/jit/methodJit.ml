@@ -54,9 +54,7 @@ and method_jit_let p e reg mem = match e with
         MSpecialized (Green (n1 + n2))
       | Red (n1), Green (n2) ->
         MNot_specialized (Add (id_t1, C (n2)), Red (n1 + n2))
-      | Green (n1), Red (n2) ->
-        failwith "Add (green, red)"
-      | Red (n1), Red (n2) ->
+      | Red (n1), Red (n2) | Green (n1), Red (n2) ->
         MNot_specialized (e, Red (n1 + n2))
     end
   | Sub (id_t1, id_or_imm) ->
@@ -71,9 +69,7 @@ and method_jit_let p e reg mem = match e with
         MSpecialized (Green (n1 - n2))
       | Red (n1), Green (n2) ->
         MNot_specialized (Sub (id_t1, C (n2)), Red (n1 - n2))
-      | Green (n1), Red (n2) ->
-        failwith "Add (green, red)"
-      | Red (n1), Red (n2) ->
+      | Green (n1), Red (n2) | Red (n1), Red (n2) ->
         MNot_specialized (e, Red (n1 - n2))
     end
   | Ld (id_t, id_or_imm, x) ->
@@ -126,15 +122,18 @@ and method_jit_let p e reg mem = match e with
         MNot_specialized (e, Red (0))
     end
   | _ ->
-    print_string (EmitVirtual.to_string_exp e);
     failwith "Not supported in method jit"
 
 and method_jit_ans p e reg mem jit_args = match e with
   | CallDir (id_l, argsr, _) ->
     let fundef = find_fundef p id_l in
     if !is_first_calldir then
-      (is_first_calldir := false; method_jit p (inline_calldir_exp argsr fundef reg) reg mem jit_args)
-    else Ans e
+      begin
+        is_first_calldir := false;
+        method_jit p (inline_calldir_exp argsr fundef reg) reg mem jit_args
+      end
+    else
+      Ans e
   | IfEq (id_t, id_or_imm, t1, t2) ->
     let r2 = Util.value_of_id_or_imm reg id_or_imm in
     Ans (
