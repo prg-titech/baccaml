@@ -12,25 +12,34 @@ module Util = struct
   let value_of_id_or_imm reg = function
     | V (id) -> reg.(int_of_id_t id)
     | C (n) -> Green (n)
+
+  let name_of id = List.hd_exn (String.split id ~on:'.')
 end
 
 type method_jit_result =
   | MSpecialized of value
   | MNot_specialized of exp * value
 
-let is_first_calldir = ref true
+type method_jit_args =
+  { method_name : string
+  ; reds : string list
+  ; method_start : int
+  ; method_end : int
+  ; pc_place : int
+  }
 
-let rec method_jit p instr reg mem jit_args = match instr with
+let rec method_jit p instr reg mem method_jit_args = match instr with
   | Ans (exp) ->
-    method_jit_ans p exp reg mem jit_args
+    method_jit_ans p exp reg mem method_jit_args
   | Let ((dest, typ), exp, body) ->
     begin
       match method_jit_let p exp reg mem with
       | MSpecialized (v) ->
-        method_jit p body reg mem jit_args
+        reg.(int_of_id_t dest) <- v;
+        method_jit p body reg mem method_jit_args
       | MNot_specialized (e, v) ->
         reg.(int_of_id_t dest) <- v;
-        Let ((dest, typ), exp, method_jit p body reg mem jit_args)
+        Let ((dest, typ), exp, method_jit p body reg mem method_jit_args)
     end
 
 and method_jit_let p e reg mem = match e with
@@ -52,9 +61,11 @@ and method_jit_let p e reg mem = match e with
       match r1, r2 with
       | Green (n1), Green (n2) ->
         MSpecialized (Green (n1 + n2))
+      | Green (n1), Red (n2) ->
+        failwith "Add (green, red)"
       | Red (n1), Green (n2) ->
         MNot_specialized (Add (id_t1, C (n2)), Red (n1 + n2))
-      | Red (n1), Red (n2) | Green (n1), Red (n2) ->
+      | Red (n1), Red (n2) ->
         MNot_specialized (e, Red (n1 + n2))
     end
   | Sub (id_t1, id_or_imm) ->
@@ -124,29 +135,40 @@ and method_jit_let p e reg mem = match e with
   | _ ->
     failwith "Not supported in method jit"
 
-and method_jit_ans p e reg mem jit_args = match e with
-  | CallDir (id_l, argsr, _) ->
+and method_jit_ans p e reg mem method_jit_args = match e with
+  (* | CallDir (id_l, argsr, _) ->
+    let { method_name; reds; method_start; method_end; pc_place } = method_jit_args in
     let fundef = find_fundef p id_l in
-    if !is_first_calldir then
-      begin
-        is_first_calldir := false;
-        method_jit p (inline_calldir_exp argsr fundef reg) reg mem jit_args
-      end
+    let pc = value_of reg.(Util.find_pc argsr pc_place) in
+    begin
+      match (pc = method_end) with
+      | true ->
+        let reds = List.filter ~f:(fun a -> is_red reg.(int_of_id_t a)) argsr in
+        Ans (CallDir (Id.L (method_name), reds, []))
+      | false ->
+        let t' = inline_calldir_exp argsr fundef reg in
+        method_jit p t' reg mem method_jit_args
+     end *)
+  (* | IfEq (id_t, id_or_imm, t1, t2) when (Util.name_of id_t = "instr") ->
+    let r1 = value_of reg.(int_of_id_t id_t) in
+    let r2 = value_of (Util.value_of_id_or_imm reg id_or_imm) in
+    if r1 = r2 then
+      method_jit p t1 reg mem method_jit_args
     else
-      Ans e
+      method_jit p t2 reg mem method_jit_args *)
   | IfEq (id_t, id_or_imm, t1, t2) ->
     let r2 = Util.value_of_id_or_imm reg id_or_imm in
     Ans (
       match r2 with
       | Green (n2) ->
         let reg', mem' = reg, mem in
-        let t1' = method_jit p t1 reg' mem' jit_args in
-        let t2' = method_jit p t2 reg' mem' jit_args in
+        let t1' = method_jit p t1 reg' mem' method_jit_args in
+        let t2' = method_jit p t2 reg' mem' method_jit_args in
         IfEq (id_t, C (n2), t1', t2')
       | Red (n2) ->
         let reg', mem' = reg, mem in
-        let t1' = method_jit p t1 reg' mem' jit_args in
-        let t2' = method_jit p t2 reg' mem' jit_args in
+        let t1' = method_jit p t1 reg' mem' method_jit_args in
+        let t2' = method_jit p t2 reg' mem' method_jit_args in
         IfEq (id_t, id_or_imm, t1', t2')
     )
   | IfLE (id_t, id_or_imm, t1, t2) ->
@@ -155,14 +177,14 @@ and method_jit_ans p e reg mem jit_args = match e with
       match r2 with
       | Green (n2) ->
         let reg', mem' = reg, mem in
-        let t1' = method_jit p t1 reg' mem' jit_args in
-        let t2' = method_jit p t2 reg' mem' jit_args in
+        let t1' = method_jit p t1 reg' mem' method_jit_args in
+        let t2' = method_jit p t2 reg' mem' method_jit_args in
         IfLE (id_t, C (n2), t1', t2')
       | Red (n2) ->
         let reg', mem' = reg, mem in
-        let t1' = method_jit p t1 reg' mem' jit_args in
-        let t2' = method_jit p t2 reg' mem' jit_args in
-        IfLE (id_t, id_or_imm, t1', t2')
+        let t1' = method_jit p t1 reg' mem' method_jit_args in
+        let t2' = method_jit p t2 reg' mem' method_jit_args in
+        IfLE (id_t, C (n2), t1', t2')
     )
   | IfGE (id_t, id_or_imm, t1, t2) ->
     let r2 = Util.value_of_id_or_imm reg id_or_imm in
@@ -170,13 +192,13 @@ and method_jit_ans p e reg mem jit_args = match e with
       match r2 with
       | Green (n2) ->
         let reg', mem' = reg, mem in
-        let t1' = method_jit p t1 reg' mem' jit_args in
-        let t2' = method_jit p t2 reg' mem' jit_args in
+        let t1' = method_jit p t1 reg' mem' method_jit_args in
+        let t2' = method_jit p t2 reg' mem' method_jit_args in
         IfGE (id_t, C (n2), t1', t2')
       | Red (n2) ->
         let reg', mem' = reg, mem in
-        let t1' = method_jit p t1 reg' mem' jit_args in
-        let t2' = method_jit p t2 reg' mem' jit_args in
+        let t1' = method_jit p t1 reg' mem' method_jit_args in
+        let t2' = method_jit p t2 reg' mem' method_jit_args in
         IfGE (id_t, id_or_imm, t1', t2')
     )
   | _ -> Ans (e)

@@ -73,9 +73,6 @@ and tracing_jit_ans (p : prog) (e : exp) (reg : value array) (mem : value array)
   | CallDir (id_l, argsr, _) ->
     let fundef = find_fundef p id_l in
     let pc = value_of reg.(find_pc argsr jit_args) in
-    let a = value_of reg.(int_of_id_t (List.nth_exn argsr 2)) in
-    Logger.info ("pc: " ^ string_of_int pc);
-    Logger.info ("a: " ^ (string_of_int a) ^ " " ^ (List.nth_exn argsr 2));
     (match (pc = (jit_args.loop_header)) with
      | true ->
        let reds = List.filter ~f:(fun a -> is_red reg.(int_of_id_t a)) argsr in
