@@ -26,11 +26,8 @@ let method_jit_args = {
 
 let _ =
   let { body; } = fundef in
-  let reg = Array.create 10000 (Red (-1)) in
-  let mem = Array.create 10000 (Red (-1)) in
-  reg.(58) <- Green (0);
-  reg.(59) <- Green (0);
-  reg.(60) <- Red (0);
+  let reg = Array.create 10000 (Red (0)) in
+  let mem = Array.create 10000 (Red (0)) in
   let bytecode = [|0; 11; 4; 7; 0; 0; 20; 1; 1; 20|] in
   for i = 0 to (Array.length bytecode - 1) do
     mem.(0 + i * 4) <- Green (i)
@@ -40,20 +37,29 @@ let _ =
   ()
 
 (*
-compiled trace:
+compiled code:
+  Let ((instr.97, Int), Ld (code.58, "pc.59", 4),
   Ans (IfEq (instr.97, 0,
+  Let ((Ti38.118, Int), Add (pc.59, "Ti37.117"),
   Let ((Ti40.120, Int), Add (a.60, "Ti39.119"),
-  Ans (CallDir (Id.L ("interp.57"), [code.58; Ti38.118; Ti40.120], []))),
+  Ans (CallDir (Id.L ("interp.57"), [code.58; Ti38.118; Ti40.120], [])))),
   Ans (IfEq (instr.97, 1,
+  Let ((Ti43.114, Int), Add (pc.59, "Ti42.113"),
   Let ((Ti45.116, Int), Sub (a.60, "Ti44.115"),
-  Ans (CallDir (Id.L ("interp.57"), [code.58; Ti43.114; Ti45.116], []))),
+  Ans (CallDir (Id.L ("interp.57"), [code.58; Ti43.114; Ti45.116], [])))),
   Ans (IfEq (instr.97, 10,
-  Ans (CallDir (Id.L ("interp.57"), [code.58; t.112; a.60], [])),
+  Let ((Ti48.111, Int), Add (pc.59, "Ti47.110"),
+  Let ((t.112, Int), Ld (code.58, "Ti48.111", 4),
+  Ans (CallDir (Id.L ("interp.57"), [code.58; t.112; a.60], [])))),
   Ans (IfEq (instr.97, 11,
   Ans (IfLE (a.60, 0,
-  Ans (CallDir (Id.L ("interp.57"), [code.58; t2.109; a.60], [])),
-  Ans (CallDir (Id.L ("interp.57"), [code.58; t1.106; a.60], [])))),
+  Let ((Ti52.108, Int), Add (pc.59, "Ti51.107"),
+  Let ((t2.109, Int), Ld (code.58, "Ti52.108", 4),
+  Ans (CallDir (Id.L ("interp.57"), [code.58; t2.109; a.60], [])))),
+  Let ((Ti54.105, Int), Add (pc.59, "Ti53.104"),
+  Let ((t1.106, Int), Ld (code.58, "Ti54.105", 4),
+  Ans (CallDir (Id.L ("interp.57"), [code.58; t1.106; a.60], [])))))),
   Ans (IfEq (instr.97, 20,
   Ans (Mov (a.60)),
-  Ans (Set (-1))))))))))))%
+  Ans (Set (-1)))))))))))))
 *)

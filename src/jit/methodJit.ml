@@ -28,7 +28,8 @@ type method_jit_args =
   ; pc_place : int
   }
 
-let rec method_jit p instr reg mem method_jit_args = match instr with
+let rec method_jit p instr reg mem method_jit_args =
+  match instr with
   | Ans (exp) ->
     method_jit_ans p exp reg mem method_jit_args
   | Let ((dest, typ), exp, body) ->
@@ -136,30 +137,6 @@ and method_jit_let p e reg mem = match e with
     failwith "Not supported in method jit"
 
 and method_jit_ans p e reg mem method_jit_args = match e with
-  (*
-  | CallDir (id_l, argsr, _) ->
-    let { method_name; reds; method_start; method_end; pc_place } = method_jit_args in
-    let fundef = find_fundef p id_l in
-    let pc = value_of reg.(Util.find_pc argsr pc_place) in
-    begin
-      match (pc = method_end) with
-      | true ->
-        let reds = List.filter ~f:(fun a -> is_red reg.(int_of_id_t a)) argsr in
-        Ans (CallDir (Id.L (method_name), reds, []))
-      | false ->
-        let t' = inline_calldir_exp argsr fundef reg in
-        method_jit p t' reg mem method_jit_args
-     end
-  *)
-  (*
-  | IfEq (id_t, id_or_imm, t1, t2) when (Util.name_of id_t = "instr") ->
-    let r1 = value_of reg.(int_of_id_t id_t) in
-    let r2 = value_of (Util.value_of_id_or_imm reg id_or_imm) in
-    if r1 = r2 then
-      method_jit p t1 reg mem method_jit_args
-    else
-      method_jit p t2 reg mem method_jit_args
-  *)
   | IfEq (id_t, id_or_imm, t1, t2) ->
     let r2 = Util.value_of_id_or_imm reg id_or_imm in
     Ans (
