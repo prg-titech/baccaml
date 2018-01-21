@@ -38,3 +38,22 @@ let _ =
   let res = method_jit prog body reg mem method_jit_args in
   print_string (EmitVirtual.to_string_t res);
   ()
+
+(*
+compiled trace:
+  Ans (IfEq (instr.97, 0,
+  Let ((Ti40.120, Int), Add (a.60, "Ti39.119"),
+  Ans (CallDir (Id.L ("interp.57"), [code.58; Ti38.118; Ti40.120], []))),
+  Ans (IfEq (instr.97, 1,
+  Let ((Ti45.116, Int), Sub (a.60, "Ti44.115"),
+  Ans (CallDir (Id.L ("interp.57"), [code.58; Ti43.114; Ti45.116], []))),
+  Ans (IfEq (instr.97, 10,
+  Ans (CallDir (Id.L ("interp.57"), [code.58; t.112; a.60], [])),
+  Ans (IfEq (instr.97, 11,
+  Ans (IfLE (a.60, 0,
+  Ans (CallDir (Id.L ("interp.57"), [code.58; t2.109; a.60], [])),
+  Ans (CallDir (Id.L ("interp.57"), [code.58; t1.106; a.60], [])))),
+  Ans (IfEq (instr.97, 20,
+  Ans (Mov (a.60)),
+  Ans (Set (-1))))))))))))%
+*)
