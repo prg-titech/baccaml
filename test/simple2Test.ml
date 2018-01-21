@@ -30,7 +30,7 @@ let _ =
   let mem = Array.create 10000 (Red (0)) in
   let bytecode = [|0; 11; 4; 7; 0; 0; 20; 1; 1; 20|] in
   for i = 0 to (Array.length bytecode - 1) do
-    mem.(0 + i * 4) <- Green (i)
+    mem.(0 + i * 4) <- Green (bytecode.(i))
   done;
   let res = method_jit prog body reg mem method_jit_args in
   print_string (EmitVirtual.to_string_t res);
