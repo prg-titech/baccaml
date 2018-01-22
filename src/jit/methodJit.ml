@@ -76,7 +76,6 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     in
     if r1 = r2 then method_jit p t1 reg mem method_jit_args
     else method_jit p t2 reg mem method_jit_args
-
   | IfEq (id_t, id_or_imm, t1, t2) ->
     let r2 = Util.value_of_id_or_imm reg id_or_imm in
     Ans (
@@ -88,7 +87,6 @@ and method_jit_ans p e reg mem method_jit_args = match e with
         let memt2 = Array.copy mem in
         let t1' = method_jit p t1 regt1 memt1 method_jit_args in
         let t2' = method_jit p t2 regt2 memt2 method_jit_args in
-
         IfEq (id_t, C (n2), t1', t2')
       | Red (n2) ->
         let regt1 = Array.copy reg in
@@ -97,7 +95,6 @@ and method_jit_ans p e reg mem method_jit_args = match e with
         let memt2 = Array.copy mem in
         let t1' = method_jit p t1 regt1 memt1 method_jit_args in
         let t2' = method_jit p t2 regt2 memt2 method_jit_args in
-
         IfEq (id_t, id_or_imm, t1', t2')
     )
   | IfLE (id_t, id_or_imm, t1, t2) ->
