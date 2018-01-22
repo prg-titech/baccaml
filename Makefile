@@ -9,7 +9,7 @@ OCAMLBUILD_OPTIONS = -use-ocamlfind
 COMPILER = min-caml
 INTERPRETER = min-camli
 
-TESTCASES = jitTest methodJitTest interpTest pypyfig3Test \
+TESTCASES = jitTest interpTest pypyfig3Test \
 simple1Test simple2Test simple3Test
 
 EXAMPLES = print sum-tail gcd sum fib ack even-odd adder \
