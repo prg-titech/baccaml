@@ -27,9 +27,10 @@ let _ =
   let { body } = fundef in
   let reg = Array.make 100000 (Red 0) in
   let mem = Array.make 100000 (Red 0) in
-  reg.(111) <- Green 7;
-  reg.(112) <- Red 100;
-  reg.(113) <- Green 1;
+  reg.(110) <- Red (0);
+  reg.(111) <- Green (7);
+  reg.(112) <- Red (100);
+  reg.(113) <- Green (1);
   let bytecode = [|4; 5; 22; 2; 22; 2; 0; 11; 2; 10; 0; 30|] in
   for i = 0 to (Array.length bytecode - 1) do
     mem.(i * 4) <- Green (bytecode.(i))

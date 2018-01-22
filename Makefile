@@ -48,6 +48,14 @@ pypytest:
 	@ocamlbuild $(OCAMLBUILD_OPTIONS) test/pypyfig3Test.byte || exit 1
 	./pypyfig3Test.byte
 
+simple2test:
+	@ocamlbuild $(OCAMLBUILD_OPTIONS) test/simple2Test.byte || exit 1
+	./simple2Test.byte
+
+simple3test:
+	@ocamlbuild $(OCAMLBUILD_OPTIONS) test/simple3Test.byte || exit 1
+	./simple3Test.byte
+
 .PHONY: example
 example: $(EXAMPLES:%=example/%.cmp)
 
