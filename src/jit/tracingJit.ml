@@ -63,7 +63,7 @@ let rec tracing_jit (p : prog) (instr : t) (reg : value array) (mem : value arra
      | Specialized v ->
        reg.(int_of_id_t dest) <- v;
        tracing_jit p body reg mem jit_args
-     | Not_specialised (e, v) ->
+     | Not_specialized (e, v) ->
        (* 式としまう値を返すようにして，not_specialized が適切な値を返さないといけない *)
        reg.(int_of_id_t dest) <- v;
        Let ((dest, typ), e, tracing_jit p body reg mem jit_args))
@@ -142,7 +142,7 @@ and tracing_jit_let (p : prog) (e : exp) (reg : value array) (mem : value array)
      | Green (n) ->
        Specialized (Green (n))
      | Red (n) ->
-       Not_specialised (exp, Red (n)))
+       Not_specialized (exp, Red (n)))
   | Add (id_t1, id_or_imm) as exp ->
     let r1 = reg.(int_of_id_t id_t1) in
     let r2 = match id_or_imm with
@@ -153,11 +153,11 @@ and tracing_jit_let (p : prog) (e : exp) (reg : value array) (mem : value array)
      | Green (n1), Green (n2) ->
        Specialized (Green (n1 + n2))
      | Red (n1), Green (n2) ->
-       Not_specialised (Add (id_t1, C (n2)), Red (n1 + n2))
+       Not_specialized (Add (id_t1, C (n2)), Red (n1 + n2))
      | Green (n1), Red (n2) ->
        failwith "Add (green, red)"
      | Red (n1), Red (n2) ->
-       Not_specialised (exp, Red (n1 + n2)))
+       Not_specialized (exp, Red (n1 + n2)))
   | Sub (id_t1, id_or_imm) as exp ->
     let r1 = reg.(int_of_id_t id_t1) in
     let r2 = match id_or_imm with
@@ -169,11 +169,11 @@ and tracing_jit_let (p : prog) (e : exp) (reg : value array) (mem : value array)
        Specialized (Green (n1 - n2))
      | Red (n1), Green (n2) ->
        (* green なものが残っていたら即値に置き換える *)
-       Not_specialised (Sub (id_t1, C (n2)), Red (n1 - n2))
+       Not_specialized (Sub (id_t1, C (n2)), Red (n1 - n2))
      | Green (n1), Red (n2) ->
        failwith "Sub (green, red)"
      | Red (n1), Red (n2) ->
-       Not_specialised (exp, Red (n1 - n2)))
+       Not_specialized (exp, Red (n1 - n2)))
   | Ld (id_t, id_or_imm, x) as exp ->
     let destld = reg.(int_of_id_t id_t) in
     let offsetld =
@@ -191,15 +191,15 @@ and tracing_jit_let (p : prog) (e : exp) (reg : value array) (mem : value array)
           Specialized (value)
         | Red n ->
           let e = Ld (id_t, C (n2), x) in
-          Not_specialised (e, Red n))
+          Not_specialized (e, Red n))
      | Green (n1), Red (n2) ->
        failwith "Ld (green, red)"
      | Red (n1), Green (n2) ->
        let n = mem.(n1 + n2) in
-       Not_specialised (Ld (id_t, C (n2), x), n)
+       Not_specialized (Ld (id_t, C (n2), x), n)
      | Red (n1), Red (n2) ->
        let n = mem.(n1 + n2) in
-       Not_specialised (exp, n))
+       Not_specialized (exp, n))
   | St (dest, src, offset, x) as exp ->
     let dest', src' = reg.(int_of_id_t dest), reg.(int_of_id_t src) in
     let offset' = match offset with
@@ -217,10 +217,10 @@ and tracing_jit_let (p : prog) (e : exp) (reg : value array) (mem : value array)
        failwith "St (green, red)"
      | Red (n1), Green (n2) ->
        mem.(n1 + n2) <- dest';
-       Not_specialised (St (dest, src, C (n2), x), Red (0))
+       Not_specialized (St (dest, src, C (n2), x), Red (0))
      | Red (n1), Red (n2) ->
        mem.(n1 + n2) <- dest';
-       Not_specialised (exp, Red (0)))
+       Not_specialized (exp, Red (0)))
   | _ ->
     failwith "Not supported."
 

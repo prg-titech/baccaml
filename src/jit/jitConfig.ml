@@ -7,9 +7,9 @@ type value =
 
 type jit_result =
   | Specialized of value
-  | Not_specialised of exp * value
+  | Not_specialized of exp * value
 
-let not_specialised exp = Not_specialised (exp, Red (-99))
+let not_specialised exp = Not_specialized (exp, Red (-99))
 
 type jit_branch_result =
   | Selected of t

@@ -18,20 +18,22 @@ let fundef = match List.hd fundefs with
 
 let method_jit_args = {
   method_name = "test_method.1000";
-  reds = ["a.60"];
+  reds = ["a.69"];
   method_start = 0;
-  method_end = 9;
-  pc_place = 2
+  method_end = 12;
+  pc_place = 1
 }
 
 let _ =
   let { body; } = fundef in
   let reg = Array.create 10000 (Red (0)) in
   let mem = Array.create 10000 (Red (0)) in
-  let bytecode = [|0; 11; 4; 7; 0; 0; 20; 1; 1; 20|] in
+  let bytecode = [|0; 11; 4; 8; 0; 0; 10; 12; 1; 1; 10; 12; 20|] in
   for i = 0 to (Array.length bytecode - 1) do
     mem.(0 + i * 4) <- Green (bytecode.(i))
   done;
+  reg.(67) <- Green (0);
+  reg.(68) <- Green (0);
   let res = method_jit prog body reg mem method_jit_args in
   print_string (EmitVirtual.to_string_t res);
   ()
