@@ -64,7 +64,6 @@ let rec tracing_jit (p : prog) (instr : t) (reg : value array) (mem : value arra
        reg.(int_of_id_t dest) <- v;
        tracing_jit p body reg mem jit_args
      | Not_specialized (e, v) ->
-       (* 式としまう値を返すようにして，not_specialized が適切な値を返さないといけない *)
        reg.(int_of_id_t dest) <- v;
        Let ((dest, typ), e, tracing_jit p body reg mem jit_args))
 
@@ -155,7 +154,11 @@ and tracing_jit_let (p : prog) (e : exp) (reg : value array) (mem : value array)
      | Red (n1), Green (n2) ->
        Not_specialized (Add (id_t1, C (n2)), Red (n1 + n2))
      | Green (n1), Red (n2) ->
-       failwith "Add (green, red)"
+       let id_t' = match id_or_imm with
+           V (id) -> id
+         | C (n) -> failwith "Add (green, red)"
+       in
+       Not_specialized (Add (id_t', C (n1)), Red (n1 + n2))
      | Red (n1), Red (n2) ->
        Not_specialized (exp, Red (n1 + n2)))
   | Sub (id_t1, id_or_imm) as exp ->
@@ -168,10 +171,13 @@ and tracing_jit_let (p : prog) (e : exp) (reg : value array) (mem : value array)
      | Green (n1), Green (n2) ->
        Specialized (Green (n1 - n2))
      | Red (n1), Green (n2) ->
-       (* green なものが残っていたら即値に置き換える *)
        Not_specialized (Sub (id_t1, C (n2)), Red (n1 - n2))
      | Green (n1), Red (n2) ->
-       failwith "Sub (green, red)"
+       let id_t' = match id_or_imm with
+           V (id) -> id
+         | C (n) -> failwith "Sub (green, red)"
+       in
+       Not_specialized (Add (id_t', C (n1)), Red (n1 - n2))
      | Red (n1), Red (n2) ->
        Not_specialized (exp, Red (n1 - n2)))
   | Ld (id_t, id_or_imm, x) as exp ->
