@@ -19,15 +19,16 @@ let rec interp code pc a =
   else (* OTHERS *)
     -1
 in
-let code = Array.make 10 0 in
+let code = Array.make 20 0 in
 code.(0) <- 0;
-code.(1) <- 11; code.(2) <- 4; code.(3) <- 7;
+code.(1) <- 11; code.(2) <- 4; code.(3) <- 8;
 (* then *)
 code.(4) <- 0;
 code.(5) <- 0;
-code.(6) <- 20;
-code.(7) <- 1;
+code.(6) <- 10; code.(7) <- 12;
+(* else *)
 code.(8) <- 1;
-code.(9) <- 20;
+code.(9) <- 1;
+code.(10) <- 10; code.(11) <- 12;
+code.(12) <- 20;
 print_int (interp code 0 0)
-2
