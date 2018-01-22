@@ -8,7 +8,10 @@ open JitConfig
 open MincamlUtil
 open TestUtil
 
-let prog = virtualize (Lexing.from_channel (In_channel.create (dir ^ "simple2.ml")))
+let prog =
+  In_channel.create (dir ^ "simple2.ml")
+  |> Lexing.from_channel
+  |> virtualize
 
 let Prog (_, fundefs, main) = prog
 
@@ -40,17 +43,18 @@ let _ =
 
 (*
 compiled code:
-  Let ((Ti49.138, Int), Add (a.69, "Ti48.137"),
+  { name = "test_method.1000"; args = [a.69]; fargs = []; body =
+  Let ((Ti49.138, Int), Add (a.69, 1),
   Let ((a.69, Int), Mov (Ti49.138),
   Ans (IfLE (a.69, 0,
-  Let ((Ti54.134, Int), Sub (a.69, "Ti53.133"),
+  Let ((Ti54.134, Int), Sub (a.69, 1),
   Let ((a.69, Int), Mov (Ti54.134),
-  Let ((Ti54.134, Int), Sub (a.69, "Ti53.133"),
+  Let ((Ti54.134, Int), Sub (a.69, 1),
   Let ((a.69, Int), Mov (Ti54.134),
-  Ans (CallDir (Id.L ("test_method.1000"), [a.69], [])))))),
-  Let ((Ti49.138, Int), Add (a.69, "Ti48.137"),
+  Ans (Mov (a.69)))))),
+  Let ((Ti49.138, Int), Add (a.69, 1),
   Let ((a.69, Int), Mov (Ti49.138),
-  Let ((Ti49.138, Int), Add (a.69, "Ti48.137"),
+  Let ((Ti49.138, Int), Add (a.69, 1),
   Let ((a.69, Int), Mov (Ti49.138),
-  Ans (CallDir (Id.L ("test_method.1000"), [a.69], []))))))))))
+  Ans (Mov (a.69)))))))))); ret = Int }
 *)
