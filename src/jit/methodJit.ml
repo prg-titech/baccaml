@@ -149,3 +149,13 @@ and method_jit_ans p e reg mem method_jit_args = match e with
         IfGE (id_t, id_or_imm, t1', t2')
     )
   | _ -> Ans (e)
+
+let exec_method_jit p instr reg mem method_jit_args =
+  let { method_name; reds } = method_jit_args in
+  let res = method_jit p instr reg mem method_jit_args in
+  { name = Id.L (method_name)
+  ; args = reds
+  ; fargs = []
+  ; body = res
+  ; ret = Type.Int
+  }

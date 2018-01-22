@@ -34,8 +34,8 @@ let _ =
   done;
   reg.(67) <- Green (0);
   reg.(68) <- Green (0);
-  let res = method_jit prog body reg mem method_jit_args in
-  print_string (EmitVirtual.to_string_t res);
+  let res = exec_method_jit prog body reg mem method_jit_args in
+  print_string (EmitVirtual.to_string_fundef res);
   ()
 
 (*
