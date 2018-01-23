@@ -3,19 +3,21 @@
 [![Build Status](https://travis-ci.org/prg-titech/baccaml.svg?branch=develop)](https://travis-ci.org/prg-titech/baccaml)
 
 
-**!!THIS PROJECT IS UNDER DEVELOPMENT!!**
-
-An experimental Meta-JIT compiler using both approach method and tracing JIT.
+This is an experimental Meta JIT compiler using both approach method JIT and tracing JIT.
 
 ## Setup
 
-### Build
+```bash
+$ opam install -y core ounit
+```
+
+## Build
 
 ``` bash
 $ make
 ```
 
-### Test
+## Test
 
 ``` bash
 $ make test
