@@ -1,29 +1,10 @@
 open Asm
-open Util
+open Core
+open OUnit
 open TracingJit
 open JitConfig
 open MincamlUtil
 open TestUtil
-
-let prog =
-  open_in (dir ^ "simple1.ml")
-  |> Lexing.from_channel
-  |> virtualize
-
-let Prog (_, fundefs, main) = prog
-
-let fundef =
-  List.hd fundefs
-
-let prepare reg mem =
-  mem.(0 * 4) <- Green (1);
-  mem.(1 * 4) <- Green (2);
-  mem.(2 * 4) <- Green (0);
-  mem.(3 * 4) <- Green (4);
-  reg.(40) <- Green (0);
-  reg.(41) <- Green (0);
-  reg.(42) <- Red (100);
-  ()
 
 let jit_args =
   { trace_name = "test_trace.1000"
@@ -32,24 +13,35 @@ let jit_args =
   ; loop_header = 0
   ; loop_pc_place = 1 }
 
-let _ =
-  Arg.parse
-    [("-jit", Arg.Unit (fun _ -> enable_jit := true), "enable jit compile");
-     ("-debug", Arg.Unit (fun _ -> Logger.log_level := Logger.Debug), "debug mode");]
-    (fun s -> ())
-    ("usage: -jit: enable jit, -debug: execute as debug mode");
-  let instr = fundef.body in
-  let reg = Array.make 1000 (Red 0) in
-  let mem = Array.make 1000 (Red 0) in
-  let reg' = Array.make 10000 0 in
-  let mem' = Array.make 10000 0 in
-  prepare reg mem;
-  let res = exec_tracing_jit prog instr reg mem jit_args in
-  let prog' = Prog ([], fundef :: res :: [], main) in
-  setup reg reg';
-  setup mem mem';
-  Logger.log_level := Logger.Debug;
-  enable_jit := true;
-  print_string (EmitVirtual.to_string_fundef res);
-  (*prog' |> Simm.f |> RegAlloc.f |> Emit.f (open_out ("test/output/simple1.s"));*)
-  ()
+let _ = run_test_tt_main begin
+    "tracing_jit_test" >::: [
+      "simple1_test" >:: begin fun () ->
+        let prog =
+          In_channel.create (dir ^ "simple1.ml")
+          |> Lexing.from_channel
+          |> virtualize
+        in
+        let Prog (_, fundefs, main) = prog in
+        let fundef = List.hd_exn fundefs in
+        let { body; } = fundef in
+        let reg = Array.create 1000 (Red 0) in
+        let mem = Array.create 1000 (Red 0) in
+        let reg' = Array.create 10000 0 in
+        let mem' = Array.create 10000 0 in
+        mem.(0 * 4) <- Green (1);
+        mem.(1 * 4) <- Green (2);
+        mem.(2 * 4) <- Green (0);
+        mem.(3 * 4) <- Green (4);
+        reg.(40) <- Green (0);
+        reg.(41) <- Green (0);
+        reg.(42) <- Red (100);
+        let res = exec_tracing_jit prog body reg mem jit_args in
+        let prog' = Prog ([], fundef :: res :: [], main) in
+        setup reg reg';
+        setup mem mem';
+        Logger.log_level := Logger.Debug;
+        enable_jit := true;
+        print_string (EmitVirtual.to_string_fundef res);
+      end
+    ]
+  end

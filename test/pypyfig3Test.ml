@@ -22,32 +22,16 @@ let _ = run_test_tt_main begin
         let instr = fundef.body in
         let reg = Array.create 1000 (Red 0) in
         let mem = Array.create 1000 (Red 0) in
+        let bytecode =
+          [|1; 0; 1; 2; 2; 0; 4; 1; 0; 2; 2; 3; 1; 1; 2; 2; 0; 0; 4; 2; 2; 5|]
+        in
+        for i = 0 to (Array.length bytecode - 1) do
+          mem.(i * 4) <- Green (bytecode.(i))
+        done;
         reg.(107) <- Green (0);
         reg.(108) <- Green (4);
         reg.(109) <- Red (100);
         reg.(110) <- Red (400);
-        mem.(0 * 4) <- Green (1);
-        mem.(1 * 4) <- Green (0);
-        mem.(2 * 4) <- Green (1);
-        mem.(3 * 4) <- Green (2);
-        mem.(4 * 4) <- Green (2);
-        mem.(5 * 4) <- Green (0);
-        mem.(6 * 4) <- Green (4);
-        mem.(7 * 4) <- Green (1);
-        mem.(8 * 4) <- Green (0);
-        mem.(9 * 4) <- Green (2);
-        mem.(10 * 4) <- Green (2);
-        mem.(11 * 4) <- Green (3);
-        mem.(12 * 4) <- Green (1);
-        mem.(13 * 4) <- Green (1);
-        mem.(14 * 4) <- Green (2);
-        mem.(15 * 4) <- Green (2);
-        mem.(16 * 4) <- Green (0);
-        mem.(17 * 4) <- Green (0);
-        mem.(18 * 4) <- Green (4);
-        mem.(19 * 4) <- Green (2);
-        mem.(20 * 4) <- Green (2);
-        mem.(21 * 4) <- Green (5);
         mem.(100 * 4) <- Red (100);
         mem.(100 * 4 + 16) <- Red (100);
         mem.(100 * 4 + 32) <- Red (100);
