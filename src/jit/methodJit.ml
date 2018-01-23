@@ -54,6 +54,9 @@ let rec method_jit p instr reg mem method_jit_args =
     end
 
 and method_jit_ans p e reg mem method_jit_args = match e with
+  | CallDir (Id.L ("min_caml_print_int"),  _, _)
+  | CallDir (Id.L ("min_caml_print_string"), _, _)
+  | CallDir (Id.L ("min_caml_print_newline"), _, _) -> Ans (e)
   | CallDir (id_l, argsr, _) ->
     let { method_name; reds; method_end; pc_place } = method_jit_args in
     let fundef = find_fundef p id_l in
