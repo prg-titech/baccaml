@@ -4,17 +4,16 @@ open Inlining
 open JitConfig
 open Renaming
 
-module Util = struct
-  let find_pc argsr n = int_of_id_t (List.nth_exn argsr n)
 
-  let value_of_id_t reg id_t = reg.(int_of_id_t id_t)
+let find_pc argsr n = int_of_id_t (List.nth_exn argsr n)
 
-  let value_of_id_or_imm reg = function
-    | V (id) -> reg.(int_of_id_t id)
-    | C (n) -> Green (n)
+let value_of_id_t reg id_t = reg.(int_of_id_t id_t)
 
-  let name_of id = List.hd_exn (String.split id ~on:'.')
-end
+let value_of_id_or_imm reg = function
+  | V (id) -> reg.(int_of_id_t id)
+  | C (n) -> Green (n)
+
+let name_of id = List.hd_exn (String.split id ~on:'.')
 
 let print_value = function
   | Green (n) -> Format.eprintf "Green (%d)" n
@@ -60,10 +59,13 @@ and method_jit_ans p e reg mem method_jit_args = match e with
   | CallDir (id_l, argsr, _) ->
     let { method_name; reds; method_end; pc_place } = method_jit_args in
     let fundef = find_fundef p id_l in
-    let pc = value_of reg.(Util.find_pc argsr pc_place) in
-    let t' = inline_calldir argsr fundef reg in
-    method_jit p t' reg mem method_jit_args
-  | IfLE (id_t, id_or_imm, t1, t2) when ((Util.name_of id_t) = "instr") ->
+    let pc = value_of reg.(find_pc argsr pc_place) in
+    if pc = method_end then
+      Ans (e)
+    else
+      let t' = inline_calldir argsr fundef reg in
+      method_jit p t' reg mem method_jit_args
+  | IfLE (id_t, id_or_imm, t1, t2) when ((name_of id_t) = "instr") ->
     let r1 = value_of reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
       | V (id) -> value_of reg.(int_of_id_t id)
@@ -71,7 +73,7 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     in
     if r1 <= r2 then method_jit p t1 reg mem method_jit_args
     else method_jit p t2 reg mem method_jit_args
-  | IfEq (id_t, id_or_imm, t1, t2) when ((Util.name_of id_t) = "instr") ->
+  | IfEq (id_t, id_or_imm, t1, t2) when ((name_of id_t) = "instr") ->
     let r1 = value_of reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
       | V (id) -> value_of reg.(int_of_id_t id)
@@ -79,7 +81,7 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     in
     if r1 = r2 then method_jit p t1 reg mem method_jit_args
     else method_jit p t2 reg mem method_jit_args
-  | IfGE (id_t, id_or_imm, t1, t2) when ((Util.name_of id_t) = "instr") ->
+  | IfGE (id_t, id_or_imm, t1, t2) when ((name_of id_t) = "instr") ->
     let r1 = value_of reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
       | V (id) -> value_of reg.(int_of_id_t id)
@@ -88,7 +90,7 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     if r1 >= r2 then method_jit p t1 reg mem method_jit_args
     else method_jit p t2 reg mem method_jit_args
   | IfEq (id_t, id_or_imm, t1, t2) ->
-    let r2 = Util.value_of_id_or_imm reg id_or_imm in
+    let r2 = value_of_id_or_imm reg id_or_imm in
     Ans (
       match r2 with
       | Green (n2) ->
@@ -109,7 +111,7 @@ and method_jit_ans p e reg mem method_jit_args = match e with
         IfEq (id_t, id_or_imm, t1', t2')
     )
   | IfLE (id_t, id_or_imm, t1, t2) ->
-    let r2 = Util.value_of_id_or_imm reg id_or_imm in
+    let r2 = value_of_id_or_imm reg id_or_imm in
     Ans (
       match r2 with
       | Green (n2) ->
@@ -130,7 +132,7 @@ and method_jit_ans p e reg mem method_jit_args = match e with
         IfLE (id_t, id_or_imm, t1', t2')
     )
   | IfGE (id_t, id_or_imm, t1, t2) ->
-    let r2 = Util.value_of_id_or_imm reg id_or_imm in
+    let r2 = value_of_id_or_imm reg id_or_imm in
     Ans (
       match r2 with
       | Green (n2) ->

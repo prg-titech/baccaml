@@ -198,8 +198,7 @@ and tracing_jit_let (p : prog) (e : exp) (reg : value array) (mem : value array)
         | Red n ->
           let e = Ld (id_t, C (n2), x) in
           Not_specialized (e, Red n))
-     | Green (n1), Red (n2) ->
-       failwith "Ld (green, red)"
+     | Green (n1), Red (n2) -> failwith "Ld (green, red)"
      | Red (n1), Green (n2) ->
        let n = mem.(n1 + n2) in
        Not_specialized (Ld (id_t, C (n2), x), n)
