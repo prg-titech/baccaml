@@ -6,4 +6,4 @@ val find_red_registers :
 val convert :
   Asm.prog ->
   int Core.Array.t ->
-  Core.String.t Core.List.t -> JitConfig.value Core.Array.t
+  Core.String.t Core.List.t -> Jit_config.value Core.Array.t

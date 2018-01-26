@@ -1,6 +1,6 @@
 open Asm
 open Core
-open JitConfig
+open Jit_config
 
 let remove_elt e l =
   let rec go l acc = match l with
@@ -28,28 +28,28 @@ let find_red_in_exp exp reds = match exp with
     if is_red id_t reds then [id_t] else []
   | Add (id_t, id_or_imm) | Sub (id_t, id_or_imm) ->
     (match id_or_imm with
-    | V (id_t') ->
-      List.filter ~f:(fun id -> is_red id reds) [id_t; id_t']
-    | C _ ->
-      if is_red id_t reds then [id_t] else [])
+     | V (id_t') ->
+       List.filter ~f:(fun id -> is_red id reds) [id_t; id_t']
+     | C _ ->
+       if is_red id_t reds then [id_t] else [])
   | Ld (id_t, id_or_imm, x) ->
     (match id_or_imm with
-    | V (id_t') ->
-      List.filter ~f:(fun id -> is_red id reds) [id_t; id_t']
-    | C _ ->
-      if is_red id_t reds then [id_t] else [])
+     | V (id_t') ->
+       List.filter ~f:(fun id -> is_red id reds) [id_t; id_t']
+     | C _ ->
+       if is_red id_t reds then [id_t] else [])
   | St (id_t1, id_t2, id_or_imm, x) ->
     (match id_or_imm with
-    | V (id_t') ->
-      List.filter ~f:(fun id -> is_red id reds) [id_t1; id_t2; id_t']
-    | C _ ->
-      List.filter ~f:(fun id -> is_red id reds) [id_t1; id_t2])
+     | V (id_t') ->
+       List.filter ~f:(fun id -> is_red id reds) [id_t1; id_t2; id_t']
+     | C _ ->
+       List.filter ~f:(fun id -> is_red id reds) [id_t1; id_t2])
   | IfEq (id_t, id_or_imm, _, _) | IfLE (id_t, id_or_imm, _, _) | IfGE (id_t, id_or_imm, _, _) ->
     (match id_or_imm with
-    | V (id_t') ->
-      List.filter ~f:(fun id -> is_red id reds) [id_t; id_t']
-    | C _ ->
-      if is_red id_t reds then [id_t] else [])
+     | V (id_t') ->
+       List.filter ~f:(fun id -> is_red id reds) [id_t; id_t']
+     | C _ ->
+       if is_red id_t reds then [id_t] else [])
   | _ -> []
 
 let find_red_in_body t reds =
