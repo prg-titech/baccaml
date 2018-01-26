@@ -6,6 +6,10 @@ open Inlining
 
 exception Not_supported of string
 
+type reg = value array
+
+type mem = value array
+
 let bac_caml_nop_id = "bac_caml_nop_id.9999"
 
 module Guard = struct
@@ -61,8 +65,8 @@ let rec add_cont_proc id_t instr body =
       Let ((id_t, Type.Int), e, body)
   in go id_t instr body
 
-let rec tracing_jit (p : prog) (instr : t) (reg : value array) (mem : value array) (jit_args : jit_args) : t =
-  match instr with
+let rec tracing_jit : prog -> t -> reg -> mem -> jit_args -> t =
+  fun p instr reg mem jit_args -> match instr with
   | Ans (exp) ->
     tracing_jit_ans p exp reg mem jit_args
   | Let ((dest, typ), CallDir (id_l, argsr, argst), body) ->
@@ -70,7 +74,7 @@ let rec tracing_jit (p : prog) (instr : t) (reg : value array) (mem : value arra
     let t = tracing_jit p (inline_calldir_exp argsr fundef reg) reg mem jit_args in
     add_cont_proc dest t (tracing_jit p body reg mem jit_args)
   | Let ((dest, typ), instr, body) ->
-    (match tracing_jit_let p instr reg mem with
+    (match optimize_exp p instr reg mem with
      | Specialized v ->
        reg.(int_of_id_t dest) <- v;
        tracing_jit p body reg mem jit_args
@@ -164,15 +168,15 @@ and tracing_jit_ans p e reg mem jit_args = match e with
        ))
   | _ ->
     begin
-      match tracing_jit_let p e reg mem with
+      match optimize_exp p e reg mem with
       | Specialized (v) ->
         Ans (Nop)
       | Not_specialized (e, v) ->
         Ans (e)
     end
 
-and tracing_jit_let (p : prog) (e : exp) (reg : value array) (mem : value array) : jit_result =
-  match e with
+and optimize_exp : prog -> exp -> reg -> mem-> jit_result =
+  fun p e reg mem -> match e with
   | Set n ->
     Specialized (Green n)
   | Mov id_t as exp ->
