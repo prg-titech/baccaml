@@ -42,7 +42,16 @@ module Guard = struct
     | _ -> []
 
   let restore_green reg cont =
-    let free_vars = get_free_vars cont in
+    let rec unique list =
+      let rec go l s =  match l with
+          [] -> s
+        | first :: rest ->
+          if List.exists ~f:(fun e -> e = first) s
+          then go rest s
+          else go rest (s @ [first])
+      in go list []
+    in
+    let free_vars = unique (get_free_vars cont) in
     let rec restore cont = function
       | [] ->
         cont
