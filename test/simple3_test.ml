@@ -34,10 +34,14 @@ let _ = run_test_tt_main begin
         reg.(118) <- Green (100);
         reg.(119) <- Green (0);
         for i = 0 to (Array.length bytecode - 1) do
-          mem.(i * 4) <- Green (bytecode.(i))
+          let n = i * 4 in
+          if n = 44 then
+            mem.(n) <- Red (bytecode.(i))
+          else if n = 48 then
+            mem.(n) <- Red (bytecode.(i))
+          else
+            mem.(i * 4) <- Green (bytecode.(i))
         done;
-        mem.(11 * 4) <- Red (4);
-        mem.(12 * 4) <- Red (5);
         let res = method_jit prog body reg mem method_jit_args in
         print_string (Emit_virtual.to_string_t res);
         print_newline ();
@@ -53,17 +57,21 @@ let _ = run_test_tt_main begin
           loop_header = 6;
           loop_pc_place = 1;
         } in
-        let reg = Array.create 10000 (Red 0) in
-        let mem = Array.create 10000 (Red 0) in
+        let reg = Array.create 100000 (Red 0) in
+        let mem = Array.create 100000 (Red 0) in
         reg.(116) <- Green (0);
         reg.(117) <- Green (6);
         reg.(118) <- Green (100);
         reg.(119) <- Green (0);
         for i = 0 to (Array.length bytecode - 1) do
-          mem.(i * 4) <- Green (bytecode.(i))
+          let n = i * 4 in
+          if n = 44 then
+            mem.(n) <- Red (bytecode.(i))
+          else if n = 48 then
+            mem.(n) <- Red (bytecode.(i))
+          else
+            mem.(i * 4) <- Green (bytecode.(i))
         done;
-        mem.(11 * 4) <- Red (4);
-        mem.(12 * 4) <- Red (5);
         let res = Tracing_jit.tracing_jit prog body reg mem tracing_jit_args in
         print_string (Emit_virtual.to_string_t res);
       end
