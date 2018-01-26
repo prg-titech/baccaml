@@ -32,7 +32,7 @@ let _ = run_test_tt_main begin
         reg.(105) <- Green (0);
         reg.(106) <- Green (7);
         reg.(107) <- Red (100);
-        reg.(108) <- Red (1);
+        reg.(108) <- Red (0);
         for i = 0 to (Array.length bytecode - 1) do
           mem.(i * 4) <- Green (bytecode.(i))
         done;
@@ -56,7 +56,7 @@ let _ = run_test_tt_main begin
         reg.(105) <- Green (0);
         reg.(106) <- Green (7);
         reg.(107) <- Red (100);
-        reg.(108) <- Red (1);
+        reg.(108) <- Red (0);
         for i = 0 to (Array.length bytecode - 1) do
           mem.(i * 4) <- Green (bytecode.(i))
         done;

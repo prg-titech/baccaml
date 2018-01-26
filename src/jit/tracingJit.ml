@@ -51,19 +51,22 @@ end
 
 open Guard
 
-
+let rec add_cont_proc id_t instr body =
+  let rec go id_t instr body = match instr with
+    | Let (a, e, t) ->
+      Let (a, e, go id_t t body)
+    | Ans e ->
+      Let ((id_t, Type.Int), e, body)
+  in go id_t instr body
 
 let rec tracing_jit (p : prog) (instr : t) (reg : value array) (mem : value array) (jit_args : jit_args) : t =
   match instr with
   | Ans (exp) ->
     tracing_jit_ans p exp reg mem jit_args
-  | Let ((dest, typ), CallDir (id_l, argsr, argst), contbody) ->
-    let fundef = rename_fundef (find_fundef p id_l) in
-    inline_calldir argsr dest fundef (tracing_jit p contbody reg mem jit_args) reg
-  | Let ((dest, typ), (IfEq (id_t, id_or_imm, t1, t2) as exp), body)
-  | Let ((dest, typ), (IfGE (id_t, id_or_imm, t1, t2) as exp), body)
-  | Let ((dest, typ), (IfLE (id_t, id_or_imm, t1, t2) as exp), body) ->
-    tracing_jit_if p exp reg mem jit_args
+  | Let ((dest, typ), CallDir (id_l, argsr, argst), body) ->
+    let fundef = (find_fundef p id_l) in
+    let t = tracing_jit p (inline_calldir_exp argsr fundef reg) reg mem jit_args in
+    add_cont_proc dest t (tracing_jit p body reg mem jit_args)
   | Let ((dest, typ), instr, body) ->
     (match tracing_jit_let p instr reg mem with
      | Specialized v ->
@@ -73,7 +76,17 @@ let rec tracing_jit (p : prog) (instr : t) (reg : value array) (mem : value arra
        reg.(int_of_id_t dest) <- v;
        Let ((dest, typ), e, tracing_jit p body reg mem jit_args))
 
-and tracing_jit_if p e reg mem jit_args = match e with
+and tracing_jit_ans p e reg mem jit_args = match e with
+  | CallDir (id_l, args, _) ->
+    let fundef = find_fundef p id_l in
+    let pc = value_of reg.(find_pc args jit_args) in
+    begin match (pc = (jit_args.loop_header)) with
+     | true ->
+       let reds = List.filter ~f:(fun a -> is_red reg.(int_of_id_t a)) args in
+       Ans (CallDir (Id.L (jit_args.trace_name), reds, []))
+     | false ->
+       tracing_jit p (inline_calldir_exp args fundef reg) reg mem jit_args
+    end
   | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) ->
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
@@ -125,23 +138,7 @@ and tracing_jit_if p e reg mem jit_args = match e with
         | _ ->
           failwith "Not supported"
        ))
-  | _ -> failwith "Only if branches should be come here."
-
-
-and tracing_jit_ans (p : prog) (e : exp) (reg : value array) (mem : value array) (jit_args : jit_args) : t =
-  match e with
-  | CallDir (id_l, argsr, _) ->
-    let fundef = find_fundef p id_l in
-    let pc = value_of reg.(find_pc argsr jit_args) in
-    (match (pc = (jit_args.loop_header)) with
-     | true ->
-       let reds = List.filter ~f:(fun a -> is_red reg.(int_of_id_t a)) argsr in
-       Ans (CallDir (Id.L (jit_args.trace_name), reds, []))
-     | false ->
-       tracing_jit p (inline_calldir_exp argsr fundef reg) reg mem jit_args)
-  | IfGE _ | IfEq _ | IfLE _ ->
-    tracing_jit_if p e reg mem jit_args
-  | _ -> Ans e
+  | _ -> Ans (e)
 
 and tracing_jit_let (p : prog) (e : exp) (reg : value array) (mem : value array) : jit_result =
   match e with
