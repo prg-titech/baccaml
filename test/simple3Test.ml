@@ -12,7 +12,7 @@ let Prog (_, fundefs, main) as prog =
   |> Lexing.from_channel
   |> virtualize
 
-let bytecode = [|22; 2; 22; 2; 0; 11; 2; 10; 0; 4; 5; 30|]
+let bytecode = [|22; 2; 22; 2; 0; 11; 12; 9; 13; 10; 0; 4; 5; 11|]
 
 let _ = run_test_tt_main begin
     "simple3_test" >::: [
@@ -29,10 +29,10 @@ let _ = run_test_tt_main begin
         let { body } = fundef in
         let reg = Array.create 10000 (Red 0) in
         let mem = Array.create 10000 (Red 0) in
-        reg.(105) <- Green (0);
-        reg.(106) <- Green (7);
-        reg.(107) <- Red (100);
-        reg.(108) <- Red (0);
+        reg.(116) <- Green (0);
+        reg.(117) <- Green (6);
+        reg.(1118) <- Red (100);
+        reg.(119) <- Red (0);
         for i = 0 to (Array.length bytecode - 1) do
           mem.(i * 4) <- Green (bytecode.(i))
         done;
@@ -48,15 +48,15 @@ let _ = run_test_tt_main begin
           trace_name = "test_trace.1000";
           reds = ["stack.107"; "sp.108"];
           greens = [];
-          loop_header = 7;
+          loop_header = 6;
           loop_pc_place = 1;
         } in
         let reg = Array.create 10000 (Red 0) in
         let mem = Array.create 10000 (Red 0) in
-        reg.(105) <- Green (0);
-        reg.(106) <- Green (7);
-        reg.(107) <- Red (100);
-        reg.(108) <- Red (0);
+        reg.(116) <- Green (0);
+        reg.(117) <- Green (6);
+        reg.(118) <- Red (100);
+        reg.(119) <- Red (0);
         for i = 0 to (Array.length bytecode - 1) do
           mem.(i * 4) <- Green (bytecode.(i))
         done;

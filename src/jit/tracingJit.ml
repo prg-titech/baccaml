@@ -97,7 +97,29 @@ and tracing_jit_ans p e reg mem jit_args = match e with
      | Green (n1), Green (n2) ->
        tracing_jit p (select_branch e n1 n2 t1 t2) reg mem jit_args
      | Green (n1), Red (n2) ->
-       failwith "if (green, red)"
+       let id_r2 = match id_or_imm with
+           V (id) -> id
+         | C _ -> failwith "V (id) should be come here."
+       in
+       (match e with
+        | IfEq _ ->
+          if n1 = n2 then
+            Ans (IfEq (id_r2, C (n1), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
+          else
+            Ans (IfEq (id_r2, C (n1), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
+        | IfLE _ ->
+          if n1 <= n2 then
+            Ans (IfLE (id_r2, C (n1), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
+          else
+            Ans (IfLE (id_r2, C (n1), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
+        | IfGE _ ->
+          if n1 >= n2 then
+            Ans (IfGE (id_r2, C (n1), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
+          else
+            Ans (IfGE (id_r2, C (n1), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
+        | _ ->
+          failwith "Not supported"
+       )
      | Red (n1), Green (n2) ->
        (match e with
         | IfEq _ ->
