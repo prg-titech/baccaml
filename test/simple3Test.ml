@@ -20,7 +20,7 @@ let _ = run_test_tt_main begin
         let fundef = List.hd_exn fundefs in
         let method_jit_args = {
           method_name = "test_method.1000";
-          reds = ["stack.112"; "sp.113"];
+          reds = ["stack.107"; "sp.108"];
           method_start = 0;
           method_end = 6;
           pc_place = 1
@@ -28,11 +28,11 @@ let _ = run_test_tt_main begin
         let { body } = fundef in
         let reg = Array.create 10000 (Red 0) in
         let mem = Array.create 10000 (Red 0) in
-        reg.(110) <- Green (0);
-        reg.(111) <- Green (0);
-        reg.(112) <- Red (100);
-        reg.(113) <- Red (1);
-        let bytecode = [|4; 5; 22; 2; 22; 2; 0; 11; 2; 10; 0; 30|] in
+        reg.(105) <- Green (0);
+        reg.(106) <- Green (7);
+        reg.(107) <- Red (100);
+        reg.(108) <- Red (1);
+        let bytecode = [|22; 2; 22; 2; 0; 11; 2; 10; 0; 4; 5; 30|] in
         for i = 0 to (Array.length bytecode - 1) do
           mem.(i * 4) <- Green (bytecode.(i))
         done;
