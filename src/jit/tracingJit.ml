@@ -6,6 +6,8 @@ open Inlining
 
 exception Not_supported of string
 
+let bac_caml_nop_id = "bac_caml_nop_id.9999"
+
 module Guard = struct
   let select_branch e n1 n2 t1 t2 =
     match e with
@@ -81,11 +83,11 @@ and tracing_jit_ans p e reg mem jit_args = match e with
     let fundef = find_fundef p id_l in
     let pc = value_of reg.(find_pc args jit_args) in
     begin match (pc = (jit_args.loop_header)) with
-     | true ->
-       let reds = List.filter ~f:(fun a -> is_red reg.(int_of_id_t a)) args in
-       Ans (CallDir (Id.L (jit_args.trace_name), reds, []))
-     | false ->
-       tracing_jit p (inline_calldir_exp args fundef reg) reg mem jit_args
+      | true ->
+        let reds = List.filter ~f:(fun a -> is_red reg.(int_of_id_t a)) args in
+        Ans (CallDir (Id.L (jit_args.trace_name), reds, []))
+      | false ->
+        tracing_jit p (inline_calldir_exp args fundef reg) reg mem jit_args
     end
   | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) ->
     let r1 = reg.(int_of_id_t id_t) in
@@ -160,7 +162,14 @@ and tracing_jit_ans p e reg mem jit_args = match e with
         | _ ->
           failwith "Not supported"
        ))
-  | _ -> Ans (e)
+  | _ ->
+    begin
+      match tracing_jit_let p e reg mem with
+      | Specialized (v) ->
+        Ans (Nop)
+      | Not_specialized (e, v) ->
+        Ans (e)
+    end
 
 and tracing_jit_let (p : prog) (e : exp) (reg : value array) (mem : value array) : jit_result =
   match e with
@@ -179,8 +188,10 @@ and tracing_jit_let (p : prog) (e : exp) (reg : value array) (mem : value array)
       | V (id_t) -> reg.(int_of_id_t id_t)
       | C (n) -> Green (n)
     in
+    (* let id_t2 = match id_or_imm with V (id) -> id | C (n) -> string_of_int n in *)
     (match r1, r2 with
      | Green (n1), Green (n2) ->
+       (* Format.printf "Add (%s, %s), %d %d\n" id_t1 id_t2 (value_of r1) (value_of r2); *)
        Specialized (Green (n1 + n2))
      | Red (n1), Green (n2) ->
        Not_specialized (Add (id_t1, C (n2)), Red (n1 + n2))
@@ -221,23 +232,34 @@ and tracing_jit_let (p : prog) (e : exp) (reg : value array) (mem : value array)
           | Red (n1) -> Red (n1 * x))
        | C (n) -> Green (n * x))
     in
+    (* let id_t2 = match id_or_imm with V (id) -> id | C (n) -> string_of_int n in *)
     (match destld, offsetld with
      | Green (n1), Green (n2) ->
-       (match mem.(n1 + n2) with
+       begin match mem.(n1 + n2) with
         | Green n as value ->
+          (* Format.printf "Ld (%s, %s), %d %d => %d (Green): Green, Green\n" id_t id_t2 (value_of destld) (value_of offsetld) n; *)
           Specialized (value)
         | Red n ->
-          let e = Ld (id_t, C (n2), x) in
-          Not_specialized (e, Red n))
+          (* Format.printf "Ld (%s, %s), %d %d => %d (Red): Green, Green\n" id_t id_t2 (value_of destld) (value_of offsetld) n; *)
+          let e = Ld (bac_caml_nop_id, C (n1 + n2), x) in
+          Not_specialized (e, Red n)
+       end
      | Green (n1), Red (n2) -> failwith "Ld (green, red)"
      | Red (n1), Green (n2) ->
-       let n = mem.(n1 + n2) in
-       Not_specialized (Ld (id_t, C (n2), x), n)
+       (* Format.printf "Ld (%s, %s), %d %d => %d: Red, Green\n" id_t id_t2 (value_of destld) (value_of offsetld) (value_of n); *)
+       begin match mem.(n1 + n2) with
+         | Green (n) ->
+           Not_specialized (Ld (id_t, C (n2), x), Red (n))
+         | Red (n) ->
+           Not_specialized (Ld (id_t, C (n2), x), Red (n))
+       end
      | Red (n1), Red (n2) ->
        let n = mem.(n1 + n2) in
-       Not_specialized (exp, n))
-  | St (dest, src, offset, x) as exp ->
-    let dest', src' = reg.(int_of_id_t dest), reg.(int_of_id_t src) in
+       (* Format.printf "Ld (%s, %s), %d %d => %d: Red, Red\n" id_t id_t2 (value_of destld) (value_of offsetld) (value_of n); *)
+       Not_specialized (exp, Red (value_of n)))
+  | St (src, dest, offset, x) ->
+    let src' =reg.(int_of_id_t src) in
+    let dest' = reg.(int_of_id_t dest) in
     let offset' = match offset with
       | V (id_t) ->
         (match reg.(int_of_id_t id_t) with
@@ -245,18 +267,41 @@ and tracing_jit_let (p : prog) (e : exp) (reg : value array) (mem : value array)
          | Red (n) -> Red (n * x))
       | C (n) -> Green (n * x)
     in
-    (match src', offset' with
-     | Green (n1), Green (n2) ->
-       mem.(n1 + n2) <- dest';
-       Specialized (Green (0))
-     | Green (n1), Red (n2) ->
-       failwith "St (green, red)"
-     | Red (n1), Green (n2) ->
-       mem.(n1 + n2) <- dest';
-       Not_specialized (St (dest, src, C (n2), x), Red (0))
-     | Red (n1), Red (n2) ->
-       mem.(n1 + n2) <- dest';
-       Not_specialized (exp, Red (0)))
+    (* dest が green か red で命令を残すか残さないか決める *)
+    begin
+      match dest', offset' with
+      | Green (n1), Green (n2) ->
+        begin
+          match src' with
+            Green (n) ->
+            mem.(n1 + n2) <- src';
+            Specialized (Green (0))
+          | Red (n) ->
+            Not_specialized (St (src, bac_caml_nop_id, C (n1 + n2), x), Red (n))
+        end
+      | Green (n1), Red (n2) ->
+        failwith "St (green, red)"
+      | Red (n1), Green (n2) ->
+        begin
+          match src' with
+          | Green (n) ->
+            mem.(n1 + n2) <- src';
+            Not_specialized (St (src, dest, C (n2), x), Red (0))
+          | Red (n) ->
+            mem.(n1 + n2) <- src';
+            Not_specialized (St (src, bac_caml_nop_id, C (n1 + n2), x), Red (0))
+        end
+      | Red (n1), Red (n2) ->
+        begin
+          match src' with
+          | Green (n) ->
+            mem.(n1 + n2) <- Red (value_of src');
+            Not_specialized (St (src, dest, C (n2), x), Red (0))
+          | Red (n) ->
+            mem.(n1 + n2) <- src';
+            Not_specialized (St (src, bac_caml_nop_id, C (n1 + n2), x), Red (0))
+        end
+    end
   | _ ->
     failwith "Not supported."
 

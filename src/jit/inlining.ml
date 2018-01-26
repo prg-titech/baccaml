@@ -15,17 +15,6 @@ let rec inline_args argsr argst funbody reg =
   | _ ->
     failwith "Un matched pattern."
 
-let rec inline_calldir argsr dest fundef contbody reg =
-  let { args; body } = Renaming.rename_fundef fundef in
-  let rec add_cont_proc id_t instr =
-    match instr with
-    | Let (a, e, t) ->
-      Let (a, e, add_cont_proc id_t t)
-    | Ans e ->
-      Let ((id_t, Type.Int), e, contbody)
-  in
-  add_cont_proc dest (inline_args argsr args body reg)
-
 let rec inline_calldir_exp argsr fundef reg =
   let { args; body } = Renaming.rename_fundef fundef in
   inline_args argsr args body reg

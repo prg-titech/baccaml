@@ -76,9 +76,7 @@ and method_jit_ans p e reg mem method_jit_args = match e with
   | CallDir (Id.L ("min_caml_print_string"), _, _)
   | CallDir (Id.L ("min_caml_print_newline"), _, _) -> Ans (e)
   | CallDir (id_l, argsr, _) ->
-    let { method_name; reds; method_end; pc_place } = method_jit_args in
     let fundef = find_fundef p id_l in
-    let pc = value_of reg.(find_pc argsr pc_place) in
     let t' = inline_calldir argsr fundef reg in
     method_jit p t' reg mem method_jit_args
   | IfLE (id_t, id_or_imm, t1, t2) when ((name_of id_t) = "instr") ->
@@ -168,7 +166,14 @@ and method_jit_ans p e reg mem method_jit_args = match e with
         let t2' = method_jit p t2 regt2 memt2 method_jit_args in
         IfGE (id_t, id_or_imm, t1', t2')
     )
-  | _ -> Ans (e)
+  | _ ->
+    begin
+      match TracingJit.tracing_jit_let p e reg mem with
+      | Specialized (v) ->
+        Ans (e)
+      | Not_specialized (e, v) ->
+        Ans (e)
+    end
 
 let exec_method_jit p instr reg mem method_jit_args =
   let { method_name; reds } = method_jit_args in
