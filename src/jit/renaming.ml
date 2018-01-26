@@ -1,6 +1,6 @@
 open Asm
 open Core
-open JitConfig
+open Jit_config
 
 type rename_env = Id.t -> Id.t
 

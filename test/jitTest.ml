@@ -1,8 +1,8 @@
 open Asm
 open OUnit
 open Type
-open TracingJit
-open JitConfig
+open Tracing_jit
+open Jit_config
 
 
 let jit_args = {

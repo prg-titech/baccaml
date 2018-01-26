@@ -3,10 +3,10 @@ open Core
 open Type
 open Core
 open OUnit
-open MethodJit
-open JitConfig
-open MincamlUtil
-open TestUtil
+open Method_jit
+open Jit_config
+open Mincaml_util
+open Test_util
 
 let Prog (_, fundefs, main) as prog =
   In_channel.create (dir ^ "simple2.ml")
@@ -39,7 +39,7 @@ let _ = run_test_tt_main begin
         reg.(67) <- Green (0);
         reg.(68) <- Green (0);
         let res = exec_method_jit prog body reg mem method_jit_args in
-        print_string (EmitVirtual.to_string_fundef res);
+        print_string (Emit_virtual.to_string_fundef res);
         ()
       end;
       "tracing_jit" >:: begin fun () ->
@@ -57,8 +57,8 @@ let _ = run_test_tt_main begin
         for i = 0 to (Array.length bytecode - 1) do
           mem.(0 + i * 4) <- Green (bytecode.(i))
         done;
-        let res = TracingJit.exec_tracing_jit prog body reg mem tracing_jit_args in
-        print_string (EmitVirtual.to_string_fundef res);
+        let res = Tracing_jit.exec_tracing_jit prog body reg mem tracing_jit_args in
+        print_string (Emit_virtual.to_string_fundef res);
 
         ()
       end

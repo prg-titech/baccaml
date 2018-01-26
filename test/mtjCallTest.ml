@@ -1,9 +1,9 @@
 open Asm
 open Core
-open MethodJit
-open JitConfig
-open MincamlUtil
-open TestUtil
+open Method_jit
+open Jit_config
+open Mincaml_util
+open Test_util
 
 let prog = virtualize (Lexing.from_channel (In_channel.create (dir ^ "mtj-call.ml")))
 
@@ -30,5 +30,5 @@ let _ =
   reg.(158) <- Red (100);
   reg.(159) <- Green (0);
   let res = method_jit prog body reg mem jit_args in
-  print_string (EmitVirtual.to_string_t res);
+  print_string (Emit_virtual.to_string_t res);
   ()

@@ -1,5 +1,5 @@
 open Util
-open JitConfig
+open Jit_config
 
 let dir = "data/"
 

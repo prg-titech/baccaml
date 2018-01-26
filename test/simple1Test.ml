@@ -1,10 +1,10 @@
 open Asm
 open Core
 open OUnit
-open TracingJit
-open JitConfig
-open MincamlUtil
-open TestUtil
+open Tracing_jit
+open Jit_config
+open Mincaml_util
+open Test_util
 
 let jit_args =
   { trace_name = "test_trace.1000"
@@ -41,7 +41,7 @@ let _ = run_test_tt_main begin
         setup mem mem';
         Logger.log_level := Logger.Debug;
         enable_jit := true;
-        print_string (EmitVirtual.to_string_fundef res);
+        print_string (Emit_virtual.to_string_fundef res);
       end
     ]
   end

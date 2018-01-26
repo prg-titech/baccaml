@@ -1,4 +1,4 @@
-open MincamlUtil
+open Mincaml_util
 
 let is_emit_virtual = ref false
 
@@ -15,7 +15,7 @@ let interp_exec f =
   try
     (match outchan with
      | Some (out) ->
-       EmitVirtual.g out (virtualize (Lexing.from_channel inchan));
+       Emit_virtual.g out (virtualize (Lexing.from_channel inchan));
        close_out out
      | None ->
        ignore (interp (Lexing.from_channel inchan)));

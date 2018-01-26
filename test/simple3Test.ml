@@ -1,11 +1,11 @@
 open Asm
 open Core
 open OUnit
-open TracingJit
-open MethodJit
-open JitConfig
-open MincamlUtil
-open TestUtil
+open Tracing_jit
+open Method_jit
+open Jit_config
+open Mincaml_util
+open Test_util
 
 let Prog (_, fundefs, main) as prog =
   In_channel.create (dir ^ "simple3.ml")
@@ -39,7 +39,7 @@ let _ = run_test_tt_main begin
         mem.(11 * 4) <- Red (4);
         mem.(12 * 4) <- Red (5);
         let res = method_jit prog body reg mem method_jit_args in
-        print_string (EmitVirtual.to_string_t res);
+        print_string (Emit_virtual.to_string_t res);
         print_newline ();
         ()
       end;
@@ -64,8 +64,8 @@ let _ = run_test_tt_main begin
         done;
         mem.(11 * 4) <- Red (4);
         mem.(12 * 4) <- Red (5);
-        let res = TracingJit.tracing_jit prog body reg mem tracing_jit_args in
-        print_string (EmitVirtual.to_string_t res);
+        let res = Tracing_jit.tracing_jit prog body reg mem tracing_jit_args in
+        print_string (Emit_virtual.to_string_t res);
       end
     ]
   end

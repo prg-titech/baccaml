@@ -1,4 +1,4 @@
-open MincamlUtil
+open Mincaml_util
 
 let emit_virtual str =
   Id.counter := 0;
@@ -11,7 +11,7 @@ let emit_virtual str =
   |> Alpha.f
   |> Closure.f
   |> Virtual.f
-  |> EmitVirtual.f stdout
+  |> Emit_virtual.f stdout
 
 let str_to_virtual str =
   Id.counter := 0;
@@ -27,4 +27,4 @@ let str_to_virtual str =
 
 let str_to_interp s = ignore (InterpMain.interp (Lexing.from_string s))
 
-let str_to_prog_interp s = EmitVirtual.g stdout (str_to_virtual s)
+let str_to_prog_interp s = Emit_virtual.g stdout (str_to_virtual s)

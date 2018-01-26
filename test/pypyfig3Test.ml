@@ -1,16 +1,16 @@
 open Asm
 open Core
 open OUnit
-open JitConfig
-open TracingJit
-open MincamlUtil
+open Jit_config
+open Tracing_jit
+open Mincaml_util
 
 let _ = run_test_tt_main begin
     "tracing_jit_test" >::: [
       "pypyfig3_test" >::
       begin fun () ->
         let prog =
-          In_channel.create (TestUtil.dir ^ "pypyfig3.ml")
+          In_channel.create (Test_util.dir ^ "pypyfig3.ml")
           |> Lexing.from_channel
           |> virtualize
         in
@@ -48,9 +48,9 @@ let _ = run_test_tt_main begin
         let prog' = Prog ([], fundef :: trace :: [], main) in
         let reg' = Array.create 10000 0 in
         let mem' = Array.create 10000 0 in
-        print_string (EmitVirtual.to_string_fundef trace);
-        TestUtil.setup reg reg'; TestUtil.setup mem mem';
-        ignore (Interp.interp (InterpConfig.to_prog_with_label prog') main reg' mem' jit_args);
+        print_string (Emit_virtual.to_string_fundef trace);
+        Test_util.setup reg reg'; Test_util.setup mem mem';
+        ignore (Interp.interp (Interp_config.to_prog_with_label prog') main reg' mem' jit_args);
         (*prog' |> Simm.f |> RegAlloc.f |> Emit.f (Out_channel.create ("test/pypyfig3.s"));*)
         ()
       end

@@ -1,4 +1,4 @@
-open MincamlUtil
+open Mincaml_util
 
 let compile outchan l =
   virtualize l

@@ -1,7 +1,7 @@
 open Asm
 open Core
 open Inlining
-open JitConfig
+open Jit_config
 open Renaming
 
 
@@ -33,10 +33,6 @@ type method_jit_args =
 
 let can_enter_else = ref true
 
-let inline_calldir argsr fundef reg =
-  let { args; body } = fundef in
-  Inlining.inline_args argsr args body reg
-
 let rec method_jit p instr reg mem method_jit_args =
   match instr with
   | Ans (exp) ->
@@ -46,7 +42,7 @@ let rec method_jit p instr reg mem method_jit_args =
       let rec go cont = function
           [] -> cont
         | hd :: tl ->
-          if is_green reg.(int_of_id_t hd) then
+         if is_green reg.(int_of_id_t hd) then
             Let ((hd, Type.Int),
                  Set (value_of reg.(int_of_id_t hd)),
                  go cont tl)
@@ -60,7 +56,7 @@ let rec method_jit p instr reg mem method_jit_args =
     end
   | Let ((dest, typ), exp, body) ->
     begin
-      match TracingJit.tracing_jit_let p exp reg mem with
+      match Tracing_jit.tracing_jit_let p exp reg mem with
       | Specialized (v) ->
         reg.(int_of_id_t dest) <- v;
         method_jit p body reg mem method_jit_args
@@ -77,7 +73,7 @@ and method_jit_ans p e reg mem method_jit_args = match e with
   | CallDir (Id.L ("min_caml_print_newline"), _, _) -> Ans (e)
   | CallDir (id_l, argsr, _) ->
     let fundef = find_fundef p id_l in
-    let t' = inline_calldir argsr fundef reg in
+    let t' = Inlining.inline_calldir_exp argsr fundef reg in
     method_jit p t' reg mem method_jit_args
   | IfLE (id_t, id_or_imm, t1, t2) when ((name_of id_t) = "instr") ->
     let r1 = value_of reg.(int_of_id_t id_t) in
@@ -168,7 +164,7 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     )
   | _ ->
     begin
-      match TracingJit.tracing_jit_let p e reg mem with
+      match Tracing_jit.tracing_jit_let p e reg mem with
       | Specialized (v) ->
         Ans (e)
       | Not_specialized (e, v) ->

@@ -1,6 +1,6 @@
 open Asm
 open Core
-open JitConfig
+open Jit_config
 open Renaming
 open Inlining
 
