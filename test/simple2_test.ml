@@ -4,6 +4,7 @@ open Type
 open Core
 open OUnit
 open Method_jit
+open Tracing_jit
 open Jit_config
 open Mincaml_util
 open Test_util
@@ -57,7 +58,7 @@ let _ = run_test_tt_main begin
         for i = 0 to (Array.length bytecode - 1) do
           mem.(0 + i * 4) <- Green (bytecode.(i))
         done;
-        let res = Tracing_jit.exec_tracing_jit prog body reg mem tracing_jit_args in
+        let res = exec_tracing_jit prog body reg mem tracing_jit_args in
         print_string (Emit_virtual.to_string_fundef res);
 
         ()

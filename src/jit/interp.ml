@@ -1,6 +1,7 @@
 open Asm
 open Core
 open Interp_config
+open Tracing_jit
 open Jit_config
 
 module Converter = struct

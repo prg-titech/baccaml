@@ -4,7 +4,6 @@ open Inlining
 open Jit_config
 open Renaming
 
-
 let find_pc argsr n = int_of_id_t (List.nth_exn argsr n)
 
 let value_of_id_t reg id_t = reg.(int_of_id_t id_t)
@@ -19,22 +18,8 @@ let print_value = function
   | Green (n) -> Format.eprintf "Green (%d)" n
   | Red (n) -> Format.eprintf "Red (%d)" n
 
-type method_jit_result =
-  | MSpecialized of value
-  | MNot_specialized of exp * value
-
-type method_jit_args =
-  { method_name : string
-  ; reds : string list
-  ; method_start : int
-  ; method_end : int
-  ; pc_place : int
-  }
-
-let can_enter_else = ref true
-
-let rec method_jit p instr reg mem method_jit_args =
-  match instr with
+let rec method_jit : prog -> t -> reg -> mem -> method_jit_args -> t =
+  fun p instr reg mem method_jit_args -> match instr with
   | Ans (exp) ->
     method_jit_ans p exp reg mem method_jit_args
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->

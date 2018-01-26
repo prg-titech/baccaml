@@ -5,15 +5,13 @@ type value =
   | Red of int
   | Green of int
 
+type reg = value array
+
+type mem = value array
+
 type jit_result =
   | Specialized of value
   | Not_specialized of exp * value
-
-let not_specialised exp = Not_specialized (exp, Red (-99))
-
-type jit_branch_result =
-  | Selected of t
-  | Not_selected of exp
 
 type jit_args =
   { trace_name : string
@@ -21,6 +19,14 @@ type jit_args =
   ; greens: string list
   ; loop_header : int
   ; loop_pc_place : int
+  }
+
+type method_jit_args =
+  { method_name : string
+  ; reds : string list
+  ; method_start : int
+  ; method_end : int
+  ; pc_place : int
   }
 
 let dummy_jit_args =
@@ -45,7 +51,7 @@ let is_green = function
   | Red _ -> false
   | Green _ -> true
 
-let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
+let int_of_id_t = function
   | "min_caml_hp" -> failwith ("int_of_id_t min_caml_hp is not supported.")
   | id ->
     match List.last (String.split id ~on:'.') with
@@ -57,13 +63,3 @@ let rec find_fundef prog name =
   match List.find fundefs ~f:(fun fundef -> fundef.name = name) with
   | Some (body) -> body
   | None -> failwith "find_fundef is failed"
-
-let find_pc args jit_args =
-  match List.nth args (jit_args.loop_pc_place) with
-  | Some (s) -> int_of_id_t s
-  | None -> failwith "find_pc is failed"
-
-let find_a args n =
-  match List.nth args n with
-  | Some (s) -> int_of_id_t s
-  | None -> failwith "find_pc is failed"
