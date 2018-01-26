@@ -1,3 +1,5 @@
+task :default => ['build', 'test']
+
 desc 'build'
 task :build => ['compiler', 'interp']
   
