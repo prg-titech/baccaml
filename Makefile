@@ -9,8 +9,8 @@ OCAMLBUILD_OPTIONS = -use-ocamlfind
 COMPILER = min-caml
 INTERPRETER = min-camli
 
-TESTCASES = jitTest interpTest \
-simple1Test simple2Test simple3Test
+TESTCASES = jit_test interp_test pypy_fig3_test \
+simple1_test simple2_test simple3_test
 
 EXAMPLES = print sum-tail gcd sum fib ack even-odd adder \
 funcomp cls-rec cls-bug cls-bug2 cls-reg-bug shuffle \
@@ -45,16 +45,16 @@ test:
 	done
 
 pypytest:
-	@ocamlbuild $(OCAMLBUILD_OPTIONS) test/pypyfig3Test.byte || exit 1
-	./pypyfig3Test.byte
+	@ocamlbuild $(OCAMLBUILD_OPTIONS) test/pypy_fig3_test.byte || exit 1
+	./pypy_fig3_test.byte
 
-simple2test:
-	@ocamlbuild $(OCAMLBUILD_OPTIONS) test/simple2Test.byte || exit 1
-	./simple2Test.byte
+simple2_test:
+	@ocamlbuild $(OCAMLBUILD_OPTIONS) test/simple2_test.byte || exit 1
+	./simple2_test.byte
 
-simple3test:
-	@ocamlbuild $(OCAMLBUILD_OPTIONS) test/simple3Test.byte || exit 1
-	./simple3Test.byte
+simple3_test:
+	@ocamlbuild $(OCAMLBUILD_OPTIONS) test/simple3_test.byte || exit 1
+	./simple3_test.byte
 
 .PHONY: example
 example: $(EXAMPLES:%=example/%.cmp)

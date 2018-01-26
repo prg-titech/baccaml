@@ -60,3 +60,6 @@ min-camli
 
 # ocamlbuild
 _build/
+
+# Rakefile
+.rake_tasks
