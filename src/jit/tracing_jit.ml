@@ -192,20 +192,27 @@ and optimize_exp : prog -> exp -> reg -> mem-> jit_result =
       | V (id_t) -> reg.(int_of_id_t id_t)
       | C (n) -> Green (n)
     in
-    (* let id_t2 = match id_or_imm with V (id) -> id | C (n) -> string_of_int n in *)
+    let id_t2 = match id_or_imm with V (id) -> id | C (n) -> string_of_int n in
     (match r1, r2 with
      | Green (n1), Green (n2) ->
-       (* Format.printf "Add (%s, %s), %d %d\n" id_t1 id_t2 (value_of r1) (value_of r2); *)
+       Format.printf "Add (%s, %s), %d %d: Green, Green\n"
+         id_t1 id_t2 (value_of r1) (value_of r2);
        Specialized (Green (n1 + n2))
      | Red (n1), Green (n2) ->
+       Format.printf "Add (%s, %s), %d %d; Red, Green\n"
+         id_t1 id_t2 (value_of r1) (value_of r2);
        Not_specialized (Add (id_t1, C (n2)), Red (n1 + n2))
      | Green (n1), Red (n2) ->
+       Format.printf "Add (%s, %s), %d %d; Green, Red\n"
+         id_t1 id_t2 (value_of r1) (value_of r2);
        let id_t' = match id_or_imm with
            V (id) -> id
          | C (n) -> failwith "Add (green, red)"
        in
        Not_specialized (Add (id_t', C (n1)), Red (n1 + n2))
      | Red (n1), Red (n2) ->
+       Format.printf "Add (%s, %s), %d %d; Red, Red\n"
+         id_t1 id_t2 (value_of r1) (value_of r2);
        Not_specialized (exp, Red (n1 + n2)))
   | Sub (id_t1, id_or_imm) as exp ->
     let r1 = reg.(int_of_id_t id_t1) in
@@ -236,21 +243,25 @@ and optimize_exp : prog -> exp -> reg -> mem-> jit_result =
           | Red (n1) -> Red (n1 * x))
        | C (n) -> Green (n * x))
     in
-    (* let id_t2 = match id_or_imm with V (id) -> id | C (n) -> string_of_int n in *)
+    let id_t2 = match id_or_imm with V (id) -> id | C (n) -> string_of_int n in
     (match destld, offsetld with
      | Green (n1), Green (n2) ->
        begin match mem.(n1 + n2) with
         | Green n as value ->
-          (* Format.printf "Ld (%s, %s), %d %d => %d (Green): Green, Green\n" id_t id_t2 (value_of destld) (value_of offsetld) n; *)
+          Format.printf "Ld (%s, %s), %d %d => %d (Green): Green, Green\n"
+            id_t id_t2 (value_of destld) (value_of offsetld) n;
           Specialized (value)
         | Red n ->
-          (* Format.printf "Ld (%s, %s), %d %d => %d (Red): Green, Green\n" id_t id_t2 (value_of destld) (value_of offsetld) n; *)
+          Format.printf "Ld (%s, %s), %d %d => %d (Red): Green, Green\n"
+            id_t id_t2 (value_of destld) (value_of offsetld) n;
           let e = Ld (bac_caml_nop_id, C (n1 + n2), x) in
           Not_specialized (e, Red n)
        end
      | Green (n1), Red (n2) -> failwith "Ld (green, red)"
      | Red (n1), Green (n2) ->
-       (* Format.printf "Ld (%s, %s), %d %d => %d: Red, Green\n" id_t id_t2 (value_of destld) (value_of offsetld) (value_of n); *)
+       let n = mem.(n1 + n2) in
+       Format.printf "Ld (%s, %s), %d %d => %d: Red, Green\n"
+         id_t id_t2 (value_of destld) (value_of offsetld) (value_of n);
        begin match mem.(n1 + n2) with
          | Green (n) ->
            Not_specialized (Ld (id_t, C (n2), x), Red (n))
@@ -259,7 +270,8 @@ and optimize_exp : prog -> exp -> reg -> mem-> jit_result =
        end
      | Red (n1), Red (n2) ->
        let n = mem.(n1 + n2) in
-       (* Format.printf "Ld (%s, %s), %d %d => %d: Red, Red\n" id_t id_t2 (value_of destld) (value_of offsetld) (value_of n); *)
+       Format.printf "Ld (%s, %s), %d %d => %d: Red, Red\n"
+         id_t id_t2 (value_of destld) (value_of offsetld) (value_of n);
        Not_specialized (exp, Red (value_of n)))
   | St (src, dest, offset, x) ->
     let src' =reg.(int_of_id_t src) in
