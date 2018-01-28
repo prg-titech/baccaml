@@ -31,7 +31,7 @@ let rec method_jit : prog -> t -> reg -> mem -> method_jit_args -> t =
             Let ((hd, Type.Int),
                  Set (value_of reg.(int_of_id_t hd)),
                  go cont tl)
-          else go cont tl
+         else go cont tl
       in
       let t =
         Let ((dest, typ),
@@ -66,7 +66,8 @@ and method_jit_ans p e reg mem method_jit_args = match e with
       | V (id) -> value_of reg.(int_of_id_t id)
       | C (n) -> n
     in
-    if r1 <= r2 then method_jit p t1 reg mem method_jit_args
+    if r1 <= r2
+    then method_jit p t1 reg mem method_jit_args
     else method_jit p t2 reg mem method_jit_args
   | IfEq (id_t, id_or_imm, t1, t2) when ((name_of id_t) = "instr") ->
     let r1 = value_of reg.(int_of_id_t id_t) in
@@ -74,7 +75,8 @@ and method_jit_ans p e reg mem method_jit_args = match e with
       | V (id) -> value_of reg.(int_of_id_t id)
       | C (n) -> n
     in
-    if r1 = r2 then method_jit p t1 reg mem method_jit_args
+    if r1 = r2
+    then method_jit p t1 reg mem method_jit_args
     else method_jit p t2 reg mem method_jit_args
   | IfGE (id_t, id_or_imm, t1, t2) when ((name_of id_t) = "instr") ->
     let r1 = value_of reg.(int_of_id_t id_t) in
@@ -82,76 +84,59 @@ and method_jit_ans p e reg mem method_jit_args = match e with
       | V (id) -> value_of reg.(int_of_id_t id)
       | C (n) -> n
     in
-    if r1 >= r2 then method_jit p t1 reg mem method_jit_args
+    if r1 >= r2
+    then method_jit p t1 reg mem method_jit_args
     else method_jit p t2 reg mem method_jit_args
   | IfEq (id_t, id_or_imm, t1, t2) ->
     let r2 = value_of_id_or_imm reg id_or_imm in
+    let regt1 = Array.copy reg in
+    let regt2 = Array.copy reg in
+    let memt1 = Array.copy mem in
+    let memt2 = Array.copy mem in
+    let t1' = method_jit p t1 regt1 memt1 method_jit_args in
+    let t2' = method_jit p t2 regt2 memt2 method_jit_args in
     Ans (
       match r2 with
       | Green (n2) ->
-        let regt1 = Array.copy reg in
-        let regt2 = Array.copy reg in
-        let memt1 = Array.copy mem in
-        let memt2 = Array.copy mem in
-        let t1' = method_jit p t1 regt1 memt1 method_jit_args in
-        let t2' = method_jit p t2 regt2 memt2 method_jit_args in
         IfEq (id_t, C (n2), t1', t2')
       | Red (n2) ->
-        let regt1 = Array.copy reg in
-        let regt2 = Array.copy reg in
-        let memt1 = Array.copy mem in
-        let memt2 = Array.copy mem in
-        let t1' = method_jit p t1 regt1 memt1 method_jit_args in
-        let t2' = method_jit p t2 regt2 memt2 method_jit_args in
         IfEq (id_t, id_or_imm, t1', t2')
     )
   | IfLE (id_t, id_or_imm, t1, t2) ->
     let r2 = value_of_id_or_imm reg id_or_imm in
+    let regt1 = Array.copy reg in
+    let regt2 = Array.copy reg in
+    let memt1 = Array.copy mem in
+    let memt2 = Array.copy mem in
+    let t1' = method_jit p t1 regt1 memt1 method_jit_args in
+    let t2' = method_jit p t2 regt2 memt2 method_jit_args in
     Ans (
       match r2 with
       | Green (n2) ->
-        let regt1 = Array.copy reg in
-        let regt2 = Array.copy reg in
-        let memt1 = Array.copy mem in
-        let memt2 = Array.copy mem in
-        let t1' = method_jit p t1 regt1 memt1 method_jit_args in
-        let t2' = method_jit p t2 regt2 memt2 method_jit_args in
         IfLE (id_t, C (n2), t1', t2')
       | Red (n2) ->
-        let regt1 = Array.copy reg in
-        let regt2 = Array.copy reg in
-        let memt1 = Array.copy mem in
-        let memt2 = Array.copy mem in
-        let t1' = method_jit p t1 regt1 memt1 method_jit_args in
-        let t2' = method_jit p t2 regt2 memt2 method_jit_args in
         IfLE (id_t, id_or_imm, t1', t2')
     )
   | IfGE (id_t, id_or_imm, t1, t2) ->
     let r2 = value_of_id_or_imm reg id_or_imm in
+    let regt1 = Array.copy reg in
+    let regt2 = Array.copy reg in
+    let memt1 = Array.copy mem in
+    let memt2 = Array.copy mem in
+    let t1' = method_jit p t1 regt1 memt1 method_jit_args in
+    let t2' = method_jit p t2 regt2 memt2 method_jit_args in
     Ans (
       match r2 with
       | Green (n2) ->
-        let regt1 = Array.copy reg in
-        let regt2 = Array.copy reg in
-        let memt1 = Array.copy mem in
-        let memt2 = Array.copy mem in
-        let t1' = method_jit p t1 regt1 memt1 method_jit_args in
-        let t2' = method_jit p t2 regt2 memt2 method_jit_args in
         IfGE (id_t, C (n2), t1', t2')
       | Red (n2) ->
-        let regt1 = Array.copy reg in
-        let regt2 = Array.copy reg in
-        let memt1 = Array.copy mem in
-        let memt2 = Array.copy mem in
-        let t1' = method_jit p t1 regt1 memt1 method_jit_args in
-        let t2' = method_jit p t2 regt2 memt2 method_jit_args in
         IfGE (id_t, id_or_imm, t1', t2')
     )
   | _ ->
     begin
       match Tracing_jit.optimize_exp p e reg mem with
       | Specialized (v) ->
-        Ans (e)
+        Ans (Nop)
       | Not_specialized (e, v) ->
         Ans (e)
     end
