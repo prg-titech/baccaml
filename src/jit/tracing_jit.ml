@@ -211,7 +211,7 @@ and optimize_exp : prog -> exp -> reg -> mem-> jit_result =
         | Red n ->
           Format.printf "Ld (%s, %s), %d %d => %d (Red): Green, Green\n"
             id_t id_t2 (value_of destld) (value_of offsetld) n;
-          let e = Ld (bac_caml_nop_id, C (n1 + n2), x) in
+          let e = Ld (bac_caml_nop_id, C (n1 + n2), 0) in
           Not_specialized (e, Red n)
        end
      | Green (n1), Red (n2) -> failwith "Ld (green, red)"
@@ -250,7 +250,7 @@ and optimize_exp : prog -> exp -> reg -> mem-> jit_result =
             mem.(n1 + n2) <- src';
             Specialized (Green (0))
           | Red (n) ->
-            Not_specialized (St (src, bac_caml_nop_id, C (n1 + n2), x), Red (n))
+            Not_specialized (St (src, bac_caml_nop_id, C (n1 + n2), 0), Red (n))
         end
       | Green (n1), Red (n2) ->
         failwith "St (green, red)"
