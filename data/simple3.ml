@@ -6,8 +6,8 @@
     | e :: l ->
       print_int e ; print_string " " ; print_list l
   in print_list l
-   in *)
-
+in
+*)
 let rec interp bytecode pc stack sp =
   (* print_stack stack; print_newline (); *)
   let instr = bytecode.(pc) in
@@ -29,21 +29,21 @@ let rec interp bytecode pc stack sp =
     let addr = bytecode.(pc + 1) in
     let n1 = bytecode.(pc + 2) in
     let n2 = bytecode.(pc + 3) in
-    stack.(sp) <- n2;
-    stack.(sp + 1) <- n1;
+    stack.(sp + 1) <- n2;
+    stack.(sp + 2) <- n1;
     let v = interp bytecode addr stack (sp + 2) in
-    stack.(sp) <- v;
-    interp bytecode (pc + 4) stack (sp)
+    stack.(sp + 1) <- v;
+    interp bytecode (pc + 4) stack (sp + 1)
   else if instr = 11 then (* RET *)
     stack.(sp)
   else if instr = 12 then (* if cond then t1 else t2 *)
     let a = stack.(sp) in
     if a >= 0 then
       let t1 = bytecode.(pc + 1) in
-      interp bytecode t1 stack sp
+      interp bytecode t1 stack (sp - 1)
     else
       let t2 = bytecode.(pc + 2) in
-      interp bytecode t2 stack sp
+      interp bytecode t2 stack (sp - 1)
   else if instr = 22 then (* DUP *)
     let n = bytecode.(pc + 1) in
     let v = stack.(sp - n) in
@@ -54,8 +54,8 @@ let rec interp bytecode pc stack sp =
 in
 let code = Array.make 100 0 in
 let stack = Array.make 10 0 in
-code.(0) <- 22; code.(1) <- 2;
-code.(2) <- 22; code.(3) <- 2;
+code.(0) <- 22; code.(1) <- 1;
+code.(2) <- 22; code.(3) <- 1;
 code.(4) <- 0;
 code.(5) <- 11;
 code.(6) <- 12; code.(7) <- 9; code.(8) <- 13;

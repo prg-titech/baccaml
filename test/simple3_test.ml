@@ -29,10 +29,10 @@ let _ = run_test_tt_main begin
         let { body } = fundef in
         let reg = Array.create 10000 (Red 0) in
         let mem = Array.create 10000 (Red 0) in
-        reg.(116) <- Green (0);
-        reg.(117) <- Green (6);
-        reg.(118) <- Green (100);
-        reg.(119) <- Green (0);
+        reg.(126) <- Green (0);
+        reg.(127) <- Green (6);
+        reg.(128) <- Green (100);
+        reg.(129) <- Green (0);
         for i = 0 to (Array.length bytecode - 1) do
           let n = i * 4 in
           if n = 44 then
@@ -59,10 +59,10 @@ let _ = run_test_tt_main begin
         } in
         let reg = Array.create 100000 (Red 0) in
         let mem = Array.create 100000 (Red 0) in
-        reg.(116) <- Green (0);
-        reg.(117) <- Green (6);
-        reg.(118) <- Green (100);
-        reg.(119) <- Green (0);
+        reg.(126) <- Green (0);
+        reg.(127) <- Green (6);
+        reg.(128) <- Green (100);
+        reg.(129) <- Green (0);
         for i = 0 to (Array.length bytecode - 1) do
           let n = i * 4 in
           if n = 44 then
