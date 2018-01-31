@@ -156,7 +156,7 @@ ProgInterp (table = [], fundefs = [
   Let (("Ti53.176", Int), Set (11), 
   Let (("Tu8.177", Unit), St ("Ti53.176", "code.132", "Ti52.175", 4), 
   Let (("Ti54.178", Int), Set (6), 
-  Let (("Ti55.179", Int), Set (0), 
+  Let (("Ti55.179", Int), Set (1), 
   Let (("Ti56.180", Int), CallDir (Id.L ("interp.125"), [code.132; Ti54.178; stack.135; Ti55.179], []), 
   Ans (CallDir (Id.L ("min_caml_print_int"), [Ti56.180], []))))))))))))))))))))))))))))))))))))))))))))))))))))),
  labels = (Id.L (interp.125), 0))

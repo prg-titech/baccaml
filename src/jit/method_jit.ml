@@ -136,7 +136,7 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     begin
       match Tracing_jit.optimize_exp p e reg mem with
       | Specialized (v) ->
-        Ans (Nop)
+        Ans (e)
       | Not_specialized (e, v) ->
         Ans (e)
     end

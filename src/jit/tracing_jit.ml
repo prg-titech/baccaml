@@ -7,7 +7,7 @@ open Inlining
 
 exception Not_supported of string
 
-let bac_caml_nop_id = "bac_caml_nop_id.9999"
+let bac_caml_nop_id = "zero.9999"
 
 let find_pc args jit_args =
   match List.nth args (jit_args.loop_pc_place) with

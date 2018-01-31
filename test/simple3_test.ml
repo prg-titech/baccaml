@@ -32,7 +32,7 @@ let _ = run_test_tt_main begin
         reg.(126) <- Green (0);
         reg.(127) <- Green (6);
         reg.(128) <- Green (100);
-        reg.(129) <- Green (0);
+        reg.(129) <- Green (1);
         for i = 0 to (Array.length bytecode - 1) do
           let n = i * 4 in
           if n = 44 then
@@ -62,7 +62,7 @@ let _ = run_test_tt_main begin
         reg.(126) <- Green (0);
         reg.(127) <- Green (6);
         reg.(128) <- Green (100);
-        reg.(129) <- Green (0);
+        reg.(129) <- Green (1);
         for i = 0 to (Array.length bytecode - 1) do
           let n = i * 4 in
           if n = 44 then

@@ -61,4 +61,4 @@ code.(5) <- 11;
 code.(6) <- 12; code.(7) <- 9; code.(8) <- 13;
 code.(9) <- 10; code.(10) <- 0; code.(11) <- 4; code.(12) <- 5;
 code.(13) <- 11;
-print_int (interp code 6 stack 0)
+print_int (interp code 6 stack 1)
