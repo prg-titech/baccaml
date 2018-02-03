@@ -3,66 +3,44 @@ open Core
 open Interp_config
 open Tracing_jit
 open Jit_config
+open Jit_util
 
-module Converter = struct
-  let int_of_id_t = function (* TODO: レジスタ番号をsringで与える実装に変更 *)
-    | "min_caml_hp" -> raise (Not_supported ("int_of_id_t min_caml_hp is not supported."))
-    | id ->
-      match List.last (String.split id ~on:'.') with
-      | Some (str) -> int_of_string str
-      | None -> int_of_string (List.last_exn (String.split id ~on:'u'))
+let rec find_label_number label = function
+  | [] -> let Id.L s = label in int_of_id_t s
+  | (l, num) :: tl -> if l = label then num else find_label_number label tl
 
-  let string_of_id_or_imm = function
-      Asm.V (id_t) -> id_t
-    | Asm.C (n) -> string_of_int n
-end
+let rec find_label prog num =
+  let ProgWithLabel (_, _, _, labels) = prog in
+  match List.find ~f:(fun (id_l, n) -> n = num) labels with
+  | Some (id, _) -> id
+  | None ->
+    Logger.error (Printf.sprintf "num: %d" num);
+    raise Not_found
 
-open Converter
+let rec lookup_by_id_l prog name =
+  let ProgWithLabel (_, fundefs, _, _) = prog in
+  match List.find ~f:(fun fundef -> (fundef.name = name)) fundefs with
+  | Some (fundef) -> fundef
+  | None ->
+    Logger.error (let Id.L s = name in Printf.sprintf "CallCls %s is not found" s);
+    raise Not_found
 
-module FAO = struct
+let rec lookup_by_id_t prog name =
+  let ProgWithLabel (_, fundefs, _, _) = prog in
+  match List.find ~f:(fun fundef -> (let Id.L s = fundef.name in s) = name) fundefs with
+  | Some (fundef) -> fundef
+  | None ->
+    Logger.error (Printf.sprintf "CallCls %s" name);
+    raise Not_found
 
-  let rec find_label_number label = function
-    | [] -> let Id.L s = label in int_of_id_t s
-    | (l, num) :: tl -> if l = label then num else find_label_number label tl
-
-  let rec find_label prog num =
-    let ProgWithLabel (_, _, _, labels) = prog in
-    match List.find ~f:(fun (id_l, n) -> n = num) labels with
-    | Some (id, _) -> id
-    | None ->
-      Logger.error (Printf.sprintf "num: %d" num);
-      raise Not_found
-
-  let rec lookup_by_id_l prog name =
-    let ProgWithLabel (_, fundefs, _, _) = prog in
-    match List.find ~f:(fun fundef -> (fundef.name = name)) fundefs with
-    | Some (fundef) -> fundef
-    | None ->
-      Logger.error (let Id.L s = name in Printf.sprintf "CallCls %s is not found" s);
-      raise Not_found
-
-  let rec lookup_by_id_t prog name =
-    let ProgWithLabel (_, fundefs, _, _) = prog in
-    match List.find ~f:(fun fundef -> (let Id.L s = fundef.name in s) = name) fundefs with
-    | Some (fundef) -> fundef
-    | None ->
-      Logger.error (Printf.sprintf "CallCls %s" name);
-      raise Not_found
-
-end
-
-module FunCall = struct
-  let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数がしまわれている reg を作る *)
-    let regs_tmp = List.map ~f:int_of_id_t args_tmp in
-    let regs_real = List.map ~f:int_of_id_t args_real in
-    let arr = Array.create register_size 0 in
-    List.iter
-      ~f:(fun (x, y) -> arr.(x) <- reg.(y))
-      (List.zip_exn regs_tmp regs_real);
-    arr
-end
-
-open FunCall
+let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数がしまわれている reg を作る *)
+  let regs_tmp = List.map ~f:int_of_id_t args_tmp in
+  let regs_real = List.map ~f:int_of_id_t args_real in
+  let arr = Array.create register_size 0 in
+  List.iter
+    ~f:(fun (x, y) -> arr.(x) <- reg.(y))
+    (List.zip_exn regs_tmp regs_real);
+  arr
 
 let is_first_dispatch = ref true
 
@@ -102,7 +80,7 @@ and eval_exp prog exp' reg mem jit_args = match exp' with
     (- res)
   | SetL id_l ->
     let ProgWithLabel (_, _, _, labels) = prog in
-    let res = FAO.find_label_number id_l labels in
+    let res = find_label_number id_l labels in
     Logger.debug (Printf.sprintf "SetL (%s: %d)" (let Id.L s = id_l in s) res);
     res
   | Mov "min_caml_hp" ->
@@ -165,7 +143,7 @@ and eval_exp prog exp' reg mem jit_args = match exp' with
        let res = reg.(r1) - n in
        Logger.debug (Printf.sprintf "SubImm (r1: %d, r2: %d, res: %d)" r1 n res);
        res)
-  | Ld ("bac_caml_nop_id.9999", C (n), x) ->
+  | Ld ("zero.9999", C (n), x) ->
     mem.(n)
   | Ld (id_t, id_or_imm, x) ->
     (* id_t + id_or_imm * x の番地から load *)
@@ -180,7 +158,7 @@ and eval_exp prog exp' reg mem jit_args = match exp' with
     let res = mem.(dest + offset) in
     Logger.debug (Printf.sprintf "Ld (id_t: %s, dest: %d, offset: %d, m: %d, res: %d)" id_t dest offset (dest + offset) res);
     res
-  | St (id_t1, "bac_caml_nop_id.9999", C (n), x) ->
+  | St (id_t1, "zero.9999", C (n), x) ->
     mem.(n) <- reg.(int_of_id_t id_t1);
     0
   | St (id_t1, id_t2, id_or_imm, x) ->
@@ -239,9 +217,9 @@ and eval_exp prog exp' reg mem jit_args = match exp' with
   | CallCls (id_t, args, _) ->
     let r1 = reg.(int_of_id_t id_t) in
     let m1 = mem.(r1) in
-    let Id.L id = FAO.find_label prog m1 in
+    let Id.L id = find_label prog m1 in
     Logger.debug (Printf.sprintf "CallCls (id_t: %s, r1: %d, r2: %d, id_l: %s)" id_t r1 m1 id);
-    let fundef = FAO.lookup_by_id_l prog (Id.L (id)) in
+    let fundef = lookup_by_id_l prog (Id.L (id)) in
     let reg' = make_reg reg (fundef.args) args in
     reg'.(int_of_id_t id) <- r1;
     interp prog (fundef.body) reg' mem jit_args
@@ -267,7 +245,7 @@ and eval_exp prog exp' reg mem jit_args = match exp' with
     a
   | CallDir (name, args, _) ->
     (* fundef.args: 仮引数 args: 実引数 *)
-    let fundef = FAO.lookup_by_id_l prog name in
+    let fundef = lookup_by_id_l prog name in
     let reg' = make_reg reg (fundef.args) args in
     let Id.L s = name in Logger.debug (Printf.sprintf "CallDir %s" s);
     interp prog (fundef.body) reg' mem jit_args
