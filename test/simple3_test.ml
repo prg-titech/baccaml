@@ -43,8 +43,8 @@ let _ = run_test_tt_main begin
             mem.(i * 4) <- Green (bytecode.(i))
         done;
         let res = method_jit prog body reg mem method_jit_args in
-        print_string (Emit_virtual.to_string_t res);
-        print_newline ();
+        Out_channel.output_string stdout (Emit_virtual.to_string_t res);
+        Out_channel.newline stdout;
         ()
       end;
       "tracing_jit" >::
