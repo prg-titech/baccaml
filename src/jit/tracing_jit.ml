@@ -2,12 +2,13 @@ open Asm
 open Core
 open Guard
 open Jit_config
+open Jit_util
 open Renaming
 open Inlining
 
 exception Not_supported of string
 
-let bac_caml_nop_id = "zero.9999"
+let zero = "zero.9999"
 
 let find_pc args jit_args =
   match List.nth args (jit_args.loop_pc_place) with
@@ -140,8 +141,10 @@ and optimize_exp : prog -> exp -> reg -> mem-> jit_result =
     let r = reg.(int_of_id_t id_t) in
     (match r with
      | Green (n) ->
+       Format.printf "Set (%d): Green\n" n;
        Specialized (Green (n))
      | Red (n) ->
+       Format.printf "Set (%d): Red\n" n;
        Not_specialized (exp, Red (n)))
   | Add (id_t1, id_or_imm) as exp ->
     let r1 = reg.(int_of_id_t id_t1) in
@@ -177,8 +180,11 @@ and optimize_exp : prog -> exp -> reg -> mem-> jit_result =
       | V (id_t) -> reg.(int_of_id_t id_t)
       | C (n) -> Green (n)
     in
+    let id_t2 = match id_or_imm with V (id) -> id | C (n) -> string_of_int n in
     (match r1, r2 with
      | Green (n1), Green (n2) ->
+       Format.printf "Sub (%s, %s), %d %d; Red, Red\n"
+         id_t1 (string_of_id_or_imm id_or_imm) n1 n2;
        Specialized (Green (n1 - n2))
      | Red (n1), Green (n2) ->
        Not_specialized (Sub (id_t1, C (n2)), Red (n1 - n2))
@@ -211,7 +217,7 @@ and optimize_exp : prog -> exp -> reg -> mem-> jit_result =
         | Red n ->
           Format.printf "Ld (%s, %s), %d %d => %d (Red): Green, Green\n"
             id_t id_t2 (value_of destld) (value_of offsetld) n;
-          let e = Ld (bac_caml_nop_id, C (n1 + n2), 0) in
+          let e = Ld (zero, C (n1 + n2), 0) in
           Not_specialized (e, Red n)
        end
      | Green (n1), Red (n2) -> failwith "Ld (green, red)"
@@ -250,7 +256,7 @@ and optimize_exp : prog -> exp -> reg -> mem-> jit_result =
             mem.(n1 + n2) <- src';
             Specialized (Green (0))
           | Red (n) ->
-            Not_specialized (St (src, bac_caml_nop_id, C (n1 + n2), 0), Red (n))
+            Not_specialized (St (src, zero, C (n1 + n2), 0), Red (n))
         end
       | Green (n1), Red (n2) ->
         failwith "St (green, red)"
@@ -262,7 +268,7 @@ and optimize_exp : prog -> exp -> reg -> mem-> jit_result =
             Not_specialized (St (src, dest, C (n2), x), Red (0))
           | Red (n) ->
             mem.(n1 + n2) <- src';
-            Not_specialized (St (src, bac_caml_nop_id, C (n1 + n2), x), Red (0))
+            Not_specialized (St (src, zero, C (n1 + n2), x), Red (0))
         end
       | Red (n1), Red (n2) ->
         begin
@@ -272,7 +278,7 @@ and optimize_exp : prog -> exp -> reg -> mem-> jit_result =
             Not_specialized (St (src, dest, C (n2), x), Red (0))
           | Red (n) ->
             mem.(n1 + n2) <- src';
-            Not_specialized (St (src, bac_caml_nop_id, C (n1 + n2), x), Red (0))
+            Not_specialized (St (src, zero, C (n1 + n2), x), Red (0))
         end
     end
   | _ ->
