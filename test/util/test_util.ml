@@ -5,4 +5,4 @@ let dir = "data/"
 
 let setup aa bb =
   List.iter (fun (a, i) -> bb.(i) <- value_of a)
-    (List.zip (Array.to_list aa) (List.range 0 (Array.length aa - 1)))
+    (ListUtil.zip (Array.to_list aa) (ListUtil.range 0 (Array.length aa - 1)))

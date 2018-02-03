@@ -81,18 +81,3 @@ module StringUtil = struct
     Str.split (Str.regexp on) str
 
 end
-
-module List = struct
-  include List
-  include ListUtil
-end
-
-module Array = struct
-  include Array
-  include ArrayUtil
-end
-
-module String = struct
-  include String
-  include StringUtil
-end
