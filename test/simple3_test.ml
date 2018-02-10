@@ -45,6 +45,15 @@ let _ = run_test_tt_main begin
         let res = method_jit prog body reg mem method_jit_args in
         Out_channel.output_string stdout (Emit_virtual.to_string_t res);
         Out_channel.newline stdout;
+        let trace = {
+          name = Id.L ("test_trace.1000");
+          args = [];
+          fargs = [];
+          body =res;
+          ret = Type.Int
+        } in
+        let prog' = Prog ([], trace :: fundefs, main) in
+        (* prog' |> Simm.f |> RegAlloc.f |> Emit.f (Out_channel.create ("test/pypyfig3.s")); *)
         ()
       end;
       "tracing_jit" >::
@@ -73,6 +82,15 @@ let _ = run_test_tt_main begin
             mem.(i * 4) <- Green (bytecode.(i))
         done;
         let res = Tracing_jit.tracing_jit prog body reg mem tracing_jit_args in
+        let trace = {
+          name = Id.L ("test_trace.1000");
+          args = [];
+          fargs = [];
+          body =res;
+          ret = Type.Int
+        } in
+        let prog' = Prog ([], trace :: fundefs, main) in
+        (* prog' |> Simm.f |> RegAlloc.f |> Emit.f (Out_channel.create ("test/pypyfig3.s")); *)
         print_string (Emit_virtual.to_string_t res);
       end
     ]

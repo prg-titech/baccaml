@@ -50,8 +50,8 @@ let _ = run_test_tt_main begin
         let mem' = Array.create 10000 0 in
         print_string (Emit_virtual.to_string_fundef trace);
         Test_util.setup reg reg'; Test_util.setup mem mem';
-        ignore (Interp.interp (Interp_config.to_prog_with_label prog') main reg' mem' jit_args);
-        (*prog' |> Simm.f |> RegAlloc.f |> Emit.f (Out_channel.create ("test/pypyfig3.s"));*)
+        (* ignore (Interp.interp (Interp_config.to_prog_with_label prog') main reg' mem' jit_args); *)
+        prog' |> Simm.f |> RegAlloc.f |> Emit.f (Out_channel.create ("test/pypyfig3.s"));
         ()
       end
     ]
