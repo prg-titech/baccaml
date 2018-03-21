@@ -43,8 +43,7 @@ let _ = run_test_tt_main begin
         reg.(68) <- Green (0);
         let res = exec_method_jit prog body reg mem method_jit_args in
         Out_channel.print_endline (Emit_virtual.to_string_fundef res);
-        Jit_compiler.compile (Prog ([], res :: [], trace_main)) "test/simple2_mj.s";
-        ()
+        (* Jit_compiler.compile (Prog ([], res :: [], trace_main)) "test/simple2_mj.s"; *)
       end;
       "tracing_jit" >:: begin fun () ->
         let tracing_jit_args = {
@@ -63,8 +62,7 @@ let _ = run_test_tt_main begin
         done;
         let res = exec_tracing_jit prog body reg mem tracing_jit_args in
         Out_channel.print_endline (Emit_virtual.to_string_fundef res);
-        Jit_compiler.compile (Prog ([], res :: [], trace_main)) "test/simple2_tj.s";
-        ()
+        (* Jit_compiler.compile (Prog ([], res :: [], trace_main)) "test/simple2_tj.s"; *)
       end
     ]
   end

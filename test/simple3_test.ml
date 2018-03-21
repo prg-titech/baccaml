@@ -18,10 +18,11 @@ let _ = run_test_tt_main begin
     "simple3_test" >::: [
       "method_jit" >::
       begin fun () ->
+        Logger.log_level := Logger.Debug;
         let fundef = List.hd_exn fundefs in
         let method_jit_args = {
           method_name = "test_method.1000";
-          reds = ["stack.107"; "sp.108"];
+          reds = [];
           method_start = 0;
           method_end = 6;
           pc_place = 1
@@ -52,8 +53,8 @@ let _ = run_test_tt_main begin
           body =res;
           ret = Type.Int
         } in
-        let prog' = Prog ([], trace :: fundefs, main) in
-        Jit_compiler.compile prog' "test/simple3_mj.s";
+        let prog' = Prog ([], [trace], Ans(Nop)) in
+        (* Jit_compiler.compile prog' "test/simple3_mj.s"; *)
         ()
       end;
       "tracing_jit" >::
@@ -61,7 +62,7 @@ let _ = run_test_tt_main begin
         let { body } = List.hd_exn fundefs in
         let tracing_jit_args = {
           trace_name = "test_trace.1000";
-          reds = ["stack.107"; "sp.108"];
+          reds = [];
           greens = [];
           loop_header = 6;
           loop_pc_place = 1;
@@ -89,10 +90,10 @@ let _ = run_test_tt_main begin
           body =res;
           ret = Type.Int
         } in
-        let prog' = Prog ([], trace :: fundefs, main) in
+        let prog' = Prog ([], [trace], Ans(Nop)) in
         Out_channel.output_string stdout (Emit_virtual.to_string_t res);
         Out_channel.newline stdout;
-        Jit_compiler.compile prog' "test/simple3_tj.s";
+        (* Jit_compiler.compile prog' "test/simple3_tj.s"; *)
       end
     ]
   end

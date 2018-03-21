@@ -49,8 +49,7 @@ let _ = run_test_tt_main begin
         let reg' = Array.create 10000 0 in
         let mem' = Array.create 10000 0 in
         Out_channel.print_endline (Emit_virtual.to_string_fundef trace);
-        Jit_compiler.compile prog' "test/pypy_fig3.s";
-        ()
+        (* Jit_compiler.compile prog' "test/pypy_fig3.s"; *)
       end
     ]
   end
