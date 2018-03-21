@@ -53,7 +53,7 @@ let _ = run_test_tt_main begin
           ret = Type.Int
         } in
         let prog' = Prog ([], trace :: fundefs, main) in
-        Jit_compiler.compile prog' "test/simple3.s";
+        Jit_compiler.compile prog' "test/simple3_mj.s";
         ()
       end;
       "tracing_jit" >::
@@ -90,8 +90,8 @@ let _ = run_test_tt_main begin
           ret = Type.Int
         } in
         let prog' = Prog ([], trace :: fundefs, main) in
-        (* prog' |> Simm.f |> RegAlloc.f |> Emit.f (Out_channel.create ("test/pypyfig3.s")); *)
         print_string (Emit_virtual.to_string_t res);
+        Jit_compiler.compile prog' "test/simple3_tj.s";
       end
     ]
   end
