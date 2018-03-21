@@ -11,5 +11,5 @@ let compile prog fname =
   if exit_code <> 0 then
     failwith (Format.sprintf "compile %s is failed\n" fname)
   else
-    Format.printf "compile %s is succeeded\n" fname;
+    Format.printf "compiling %s is succeeded\n" fname;
     ()
