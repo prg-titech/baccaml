@@ -8,8 +8,6 @@ open Inlining
 
 exception Not_supported of string
 
-let zero = "zero.9999"
-
 let find_pc args jit_args =
   match List.nth args (jit_args.loop_pc_place) with
   | Some (s) -> int_of_id_t s
@@ -206,7 +204,11 @@ and optimize_exp : prog -> exp -> reg -> mem-> jit_result =
           | Red (n1) -> Red (n1 * x))
        | C (n) -> Green (n * x))
     in
-    let id_t2 = match id_or_imm with V (id) -> id | C (n) -> string_of_int n in
+    let id_t2 =
+      match id_or_imm with
+        V (id) -> id
+      | C (n) -> string_of_int n
+    in
     (match destld, offsetld with
      | Green (n1), Green (n2) ->
        begin match mem.(n1 + n2) with

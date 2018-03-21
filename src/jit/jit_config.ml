@@ -39,6 +39,8 @@ let dummy_jit_args =
 
 let enable_jit = ref false
 
+let zero = "zero.0"
+
 let value_of = function
   | Red (n) -> n
   | Green (n) -> n

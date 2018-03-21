@@ -21,7 +21,16 @@ let locate x =
     | y :: zs when x = y -> 0 :: List.map succ (loc zs)
     | y :: zs -> List.map succ (loc zs) in
   loc !stackmap
-let offset x = 4 * List.hd (locate x)
+
+let offset x =
+  if String.equal x Jit_config.zero then 0
+  else
+    try
+      4 * List.hd (locate x)
+    with e ->
+      Format.printf "offset is failed. x: %s\n" x;
+      raise e
+
 let stacksize () = align (List.length !stackmap * 4)
 
 let pp_id_or_imm = function

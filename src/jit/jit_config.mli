@@ -18,6 +18,7 @@ type method_jit_args = {
 }
 val dummy_jit_args : jit_args
 val enable_jit : bool Core.ref
+val zero : Id.t
 val value_of : value -> int
 val is_red : value -> bool
 val is_green : value -> bool
