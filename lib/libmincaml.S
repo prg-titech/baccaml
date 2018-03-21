@@ -259,5 +259,3 @@ min_caml_fnegd:
 .globl min_caml_hp
 min_caml_hp:
 	.long	0x0
-zero.9999:
-	.int	0
