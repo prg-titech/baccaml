@@ -45,11 +45,10 @@ let _ = run_test_tt_main begin
           ; loop_pc_place = 1 }
         in
         let trace = exec_tracing_jit prog instr reg mem jit_args in
-        let prog' = Prog ([], fundef :: trace :: [], main) in
+        let prog' = Prog ([], trace :: [], Ans(Nop)) in
         let reg' = Array.create 10000 0 in
         let mem' = Array.create 10000 0 in
-        print_string (Emit_virtual.to_string_fundef trace);
-        Test_util.setup reg reg'; Test_util.setup mem mem';
+        Out_channel.print_endline (Emit_virtual.to_string_fundef trace);
         Jit_compiler.compile prog' "test/pypy_fig3.s";
         ()
       end

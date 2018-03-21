@@ -90,7 +90,8 @@ let _ = run_test_tt_main begin
           ret = Type.Int
         } in
         let prog' = Prog ([], trace :: fundefs, main) in
-        print_string (Emit_virtual.to_string_t res);
+        Out_channel.output_string stdout (Emit_virtual.to_string_t res);
+        Out_channel.newline stdout;
         Jit_compiler.compile prog' "test/simple3_tj.s";
       end
     ]

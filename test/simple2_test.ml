@@ -20,6 +20,8 @@ let fundef = match List.hd fundefs with
 
 let { body; } = fundef
 
+let trace_main = Ans(Nop)
+
 let bytecode = [|0; 11; 4; 8; 0; 0; 10; 12; 1; 1; 10; 12; 20|]
 
 let _ = run_test_tt_main begin
@@ -40,7 +42,8 @@ let _ = run_test_tt_main begin
         reg.(67) <- Green (0);
         reg.(68) <- Green (0);
         let res = exec_method_jit prog body reg mem method_jit_args in
-        print_string (Emit_virtual.to_string_fundef res);
+        Out_channel.print_endline (Emit_virtual.to_string_fundef res);
+        Jit_compiler.compile (Prog ([], res :: [], trace_main)) "test/simple2_mj.s";
         ()
       end;
       "tracing_jit" >:: begin fun () ->
@@ -59,8 +62,8 @@ let _ = run_test_tt_main begin
           mem.(0 + i * 4) <- Green (bytecode.(i))
         done;
         let res = exec_tracing_jit prog body reg mem tracing_jit_args in
-        print_string (Emit_virtual.to_string_fundef res);
-
+        Out_channel.print_endline (Emit_virtual.to_string_fundef res);
+        Jit_compiler.compile (Prog ([], res :: [], trace_main)) "test/simple2_tj.s";
         ()
       end
     ]
