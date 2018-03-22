@@ -60,8 +60,13 @@ let int_of_id_t = function
     | Some v -> int_of_string v
     | None -> int_of_string id
 
+let string_of_id_or_imm = function
+    V (id_t) -> id_t
+  | C (n) -> string_of_int n
+
 let rec find_fundef prog name =
   let Asm.Prog (_, fundefs, _) = prog in
   match List.find fundefs ~f:(fun fundef -> fundef.name = name) with
   | Some (body) -> body
   | None -> failwith "find_fundef is failed"
+

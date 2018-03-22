@@ -23,4 +23,5 @@ val value_of : value -> int
 val is_red : value -> bool
 val is_green : value -> bool
 val int_of_id_t : Core.String.t -> int
+val string_of_id_or_imm : Asm.id_or_imm -> Core.String.t
 val find_fundef : Asm.prog -> Id.l -> Asm.fundef

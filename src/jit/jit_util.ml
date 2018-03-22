@@ -10,8 +10,3 @@ let int_of_id_t id =
       int_of_string (StringUtil.after_of id '.')
     with _ ->
       int_of_string (StringUtil.after_of id 'u')
-
-
-let string_of_id_or_imm = function
-    Asm.V (id_t) -> id_t
-  | Asm.C (n) -> string_of_int n

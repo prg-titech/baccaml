@@ -41,7 +41,7 @@ let rec method_jit : prog -> t -> reg -> mem -> method_jit_args -> t =
       end
     | Let ((dest, typ), exp, body) ->
       begin
-        match Tracing_jit.optimize_exp p exp reg mem with
+        match Optimizer.optimize_exp p exp reg mem with
         | Specialized (v) ->
           reg.(int_of_id_t dest) <- v;
           method_jit p body reg mem method_jit_args
@@ -158,7 +158,7 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     end
   | _ ->
     begin
-      match Tracing_jit.optimize_exp p e reg mem with
+      match Optimizer.optimize_exp p e reg mem with
       | Specialized (v) ->
         Ans (e)
       | Not_specialized (e, v) ->
