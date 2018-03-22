@@ -30,13 +30,14 @@ let rec tracing_jit : prog -> t -> reg -> mem -> jit_args -> t =
     let t = tracing_jit p (inline_calldir_exp argsr fundef reg) reg mem jit_args in
     add_cont_proc dest t (tracing_jit p body reg mem jit_args)
   | Let ((dest, typ), instr, body) ->
-    (match Optimizer.optimize_exp p instr reg mem with
+    begin match Optimizer.optimize_exp p instr reg mem with
      | Specialized v ->
        reg.(int_of_id_t dest) <- v;
        tracing_jit p body reg mem jit_args
      | Not_specialized (e, v) ->
        reg.(int_of_id_t dest) <- v;
-       Let ((dest, typ), e, tracing_jit p body reg mem jit_args))
+       Let ((dest, typ), e, tracing_jit p body reg mem jit_args)
+    end
 
 and tracing_jit_ans p e reg mem jit_args = match e with
   | CallDir (id_l, args, _) ->
@@ -44,7 +45,7 @@ and tracing_jit_ans p e reg mem jit_args = match e with
     let pc = value_of reg.(find_pc args jit_args) in
     begin match (pc = (jit_args.loop_header)) with
       | true ->
-        let reds = List.filter ~f:(fun a -> is_red reg.(int_of_id_t a)) args in
+        let reds = args |> List.filter ~f:(fun a -> is_red reg.(int_of_id_t a)) in
         Ans (CallDir (Id.L (jit_args.trace_name), reds, []))
       | false ->
         tracing_jit p (inline_calldir_exp args fundef reg) reg mem jit_args

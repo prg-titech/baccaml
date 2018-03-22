@@ -1,4 +1,4 @@
-type value = Red of int | Green of int
+type value = Red of int | Green of int | LightGreen of int
 type reg = value array
 type mem = value array
 type jit_result = Specialized of value | Not_specialized of Asm.exp * value
@@ -22,6 +22,7 @@ val zero : Id.t
 val value_of : value -> int
 val is_red : value -> bool
 val is_green : value -> bool
+val is_light_green : value -> bool
 val int_of_id_t : Core.String.t -> int
 val string_of_id_or_imm : Asm.id_or_imm -> Core.String.t
 val find_fundef : Asm.prog -> Id.l -> Asm.fundef

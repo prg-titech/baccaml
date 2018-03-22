@@ -4,6 +4,7 @@ open Core
 type value =
   | Red of int
   | Green of int
+  | LightGreen of int
 
 type reg = value array
 
@@ -44,14 +45,19 @@ let zero = "zero.0"
 let value_of = function
   | Red (n) -> n
   | Green (n) -> n
+  | LightGreen (n) -> n
 
 let is_red = function
   | Red _ -> true
-  | Green _ -> false
+  | _ -> false
 
 let is_green = function
-  | Red _ -> false
   | Green _ -> true
+  | _ -> false
+
+let is_light_green = function
+  | LightGreen _ -> true
+  | _ -> false
 
 let int_of_id_t = function
   | "min_caml_hp" -> failwith ("int_of_id_t min_caml_hp is not supported.")

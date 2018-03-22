@@ -15,8 +15,9 @@ let jit_value_of_id_or_imm reg = function
 let name_of id = List.hd_exn (String.split id ~on:'.')
 
 let print_value = function
-  | Green (n) -> Format.eprintf "Green (%d)" n
-  | Red (n) -> Format.eprintf "Red (%d)" n
+  | Green (n) -> Format.printf "Green (%d)" n
+  | LightGreen (n) -> Format.printf "LightGreen (%d)" n
+  | Red (n) -> Format.printf "Red (%d)" n
 
 let rec method_jit : prog -> t -> reg -> mem -> method_jit_args -> t =
   fun p instr reg mem method_jit_args -> match instr with
@@ -97,11 +98,11 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     let t1' = method_jit p t1 regt1 memt1 method_jit_args in
     let t2' = method_jit p t2 regt2 memt2 method_jit_args in
     begin match r1, r2 with
-      | Green (n1), Green (n2) ->
+      | Green (n1), Green (n2) | LightGreen (n1), LightGreen (n2) | Green (n1), LightGreen (n2) | LightGreen (n1), Green (n2) ->
         if n1 = n2 then t1' else t2'
-      | Red (n1), Green (n2) ->
+      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
         Ans (IfEq (id_t, C (n2), t1', t2'))
-      | Green (n1), Red (n2) ->
+      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
         let id_t2 = match id_or_imm with
             V (id) -> id
           | C (n) -> failwith "id_or_imm should be string"
@@ -120,11 +121,11 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     let t1' = method_jit p t1 regt1 memt1 method_jit_args in
     let t2' = method_jit p t2 regt2 memt2 method_jit_args in
     begin match r1, r2 with
-      | Green (n1), Green (n2) ->
+      | Green (n1), Green (n2) | LightGreen (n1), LightGreen (n2) | Green (n1), LightGreen (n2) | LightGreen (n1), Green (n2) ->
         if n1 <= n2 then t1' else t2'
-      | Red (n1), Green (n2) ->
+      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
         Ans (IfLE (id_t, C (n2), t1', t2'))
-      | Green (n1), Red (n2) ->
+      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
         let id_t2 = match id_or_imm with
             V (id) -> id
           | C (n) -> failwith "id_or_imm should be string"
@@ -143,11 +144,11 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     let t1' = method_jit p t1 regt1 memt1 method_jit_args in
     let t2' = method_jit p t2 regt2 memt2 method_jit_args in
     begin match r1, r2 with
-      | Green (n1), Green (n2) ->
+      | Green (n1), Green (n2) | LightGreen (n1), LightGreen (n2) | Green (n1), LightGreen (n2) | LightGreen (n1), Green (n2) ->
         if n1 >= n2 then t1' else t2'
-      | Red (n1), Green (n2) ->
+      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
         Ans (IfGE (id_t, C (n2), t1', t2'))
-      | Green (n1), Red (n2) ->
+      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
         let id_t2 = match id_or_imm with
             V (id) -> id
           | C (n) -> failwith "id_or_imm should be string"
