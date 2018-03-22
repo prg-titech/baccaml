@@ -1,13 +1,13 @@
 (* let print_stack st =
-  let l = Array.to_list st in
-  let rec print_list = function
-      [] ->
-      ()
-    | e :: l ->
-      print_int e ; print_string " " ; print_list l
-  in print_list l
-in
-*)
+ *   let l = Array.to_list st in
+ *   let rec print_list = function
+ *       [] ->
+ *       ()
+ *     | e :: l ->
+ *       print_int e ; print_string " " ; print_list l
+ *   in print_list l
+ * in *)
+
 let rec interp bytecode pc stack sp =
   (* print_stack stack; print_newline (); *)
   let instr = bytecode.(pc) in
