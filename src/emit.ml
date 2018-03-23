@@ -256,6 +256,7 @@ and g'_args oc x_reg_cl ys zs =
     (shuffle sw zfrs)
 
 let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
+  Printf.fprintf oc ".globl %s\n" x;
   Printf.fprintf oc "%s:\n" x;
   stackset := S.empty;
   stackmap := [];

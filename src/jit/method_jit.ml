@@ -12,51 +12,54 @@ let jit_value_of_id_or_imm reg = function
   | V (id) -> reg.(int_of_id_t id)
   | C (n) -> Green (n)
 
-let name_of id = List.hd_exn (String.split id ~on:'.')
+let name_of id =
+  match List.hd (String.split id ~on:'.') with
+  | Some (v) -> v
+  | None -> id
 
-let print_value = function
-  | Green (n) -> Format.printf "Green (%d)" n
-  | LightGreen (n) -> Format.printf "LightGreen (%d)" n
-  | Red (n) -> Format.printf "Red (%d)" n
+let contains s1 s2 =
+  let re = Str.regexp_string s2 in
+  try ignore (Str.search_forward re s1 0); true
+  with Not_found -> false
 
-let rec method_jit : prog -> t -> reg -> mem -> method_jit_args -> t =
-  fun p instr reg mem method_jit_args -> match instr with
-    | Ans (exp) ->
-      method_jit_ans p exp reg mem method_jit_args
-    | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
-      begin
-        let rec go cont = function
-            [] -> cont
-          | hd :: tl ->
-            if is_green reg.(int_of_id_t hd) then
-              Let ((hd, Type.Int),
-                   Set (value_of reg.(int_of_id_t hd)),
-                   go cont tl)
-            else go cont tl
-        in
-        let t =
-          Let ((dest, typ),
-               CallDir (id_l, args, fargs),
-               (method_jit p body reg mem method_jit_args))
-        in go t args
-      end
-    | Let ((dest, typ), exp, body) ->
-      begin
-        match Optimizer.optimize_exp p exp reg mem with
-        | Specialized (v) ->
-          reg.(int_of_id_t dest) <- v;
-          method_jit p body reg mem method_jit_args
-        | Not_specialized (e, v) ->
-          reg.(int_of_id_t dest) <- v;
-          Let ((dest, typ),
-               e,
-               method_jit p body reg mem method_jit_args)
-      end
+let string_of_id_l id_l = match id_l with
+  | Id.L (x) -> x
+
+let rec method_jit p instr reg mem method_jit_args = match instr with
+  | Ans (exp) ->
+    method_jit_ans p exp reg mem method_jit_args
+  | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
+    begin
+      let rec go cont = function
+          [] -> cont
+        | hd :: tl ->
+          if is_green reg.(int_of_id_t hd) then
+            Let ((hd, Type.Int),
+                 Set (value_of reg.(int_of_id_t hd)),
+                 go cont tl)
+          else go cont tl
+      in
+      let t =
+        Let ((dest, typ),
+             CallDir (id_l, args, fargs),
+             (method_jit p body reg mem method_jit_args))
+      in go t args
+    end
+  | Let ((dest, typ), exp, body) ->
+    begin match Optimizer.optimize_exp p exp reg mem with
+      | Specialized (v) ->
+        reg.(int_of_id_t dest) <- v;
+        method_jit p body reg mem method_jit_args
+      | Not_specialized (e, v) ->
+        reg.(int_of_id_t dest) <- v;
+        Let ((dest, typ),
+             e,
+             method_jit p body reg mem method_jit_args)
+    end
 
 and method_jit_ans p e reg mem method_jit_args = match e with
-  | CallDir (Id.L ("min_caml_print_int"),  _, _)
-  | CallDir (Id.L ("min_caml_print_string"), _, _)
-  | CallDir (Id.L ("min_caml_print_newline"), _, _) -> Ans (e)
+  | CallDir (id_l, argsr, _) when (contains (string_of_id_l id_l) "min_caml") ->
+    Ans (e)
   | CallDir (id_l, argsr, _) ->
     let fundef = find_fundef p id_l in
     let t' = Inlining.inline_calldir_exp argsr fundef reg in

@@ -21,8 +21,7 @@ let rec add_cont_proc id_t instr body =
       Let ((id_t, Type.Int), e, body)
   in go id_t instr body
 
-let rec tracing_jit : prog -> t -> reg -> mem -> jit_args -> t =
-  fun p instr reg mem jit_args -> match instr with
+let rec tracing_jit p instr reg mem jit_args = match instr with
   | Ans (exp) ->
     tracing_jit_ans p exp reg mem jit_args
   | Let ((dest, typ), CallDir (id_l, argsr, argst), body) ->
@@ -31,12 +30,12 @@ let rec tracing_jit : prog -> t -> reg -> mem -> jit_args -> t =
     add_cont_proc dest t (tracing_jit p body reg mem jit_args)
   | Let ((dest, typ), instr, body) ->
     begin match Optimizer.optimize_exp p instr reg mem with
-     | Specialized v ->
-       reg.(int_of_id_t dest) <- v;
-       tracing_jit p body reg mem jit_args
-     | Not_specialized (e, v) ->
-       reg.(int_of_id_t dest) <- v;
-       Let ((dest, typ), e, tracing_jit p body reg mem jit_args)
+      | Specialized v ->
+        reg.(int_of_id_t dest) <- v;
+        tracing_jit p body reg mem jit_args
+      | Not_specialized (e, v) ->
+        reg.(int_of_id_t dest) <- v;
+        Let ((dest, typ), e, tracing_jit p body reg mem jit_args)
     end
 
 and tracing_jit_ans p e reg mem jit_args = match e with
@@ -124,8 +123,7 @@ and tracing_jit_ans p e reg mem jit_args = match e with
           failwith "Not supported"
        ))
   | _ ->
-    begin
-      match Optimizer.optimize_exp p e reg mem with
+    begin match Optimizer.optimize_exp p e reg mem with
       | Specialized (v) ->
         Ans (Nop)
       | Not_specialized (e, v) ->

@@ -154,8 +154,7 @@ let optimize_exp p e reg mem = match e with
       | LightGreen (n1), LightGreen (n2)
       | LightGreen (n1), Green (n2)
       | Green (n1), LightGreen (n2) ->
-        begin
-          match src' with
+        begin match src' with
           | Green (n) | LightGreen (n) ->
             mem.(n1 + n2) <- src';
             let msg =

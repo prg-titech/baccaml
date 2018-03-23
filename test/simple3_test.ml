@@ -21,7 +21,7 @@ let _ = run_test_tt_main begin
         Logger.log_level := Logger.Debug;
         let fundef = List.hd_exn fundefs in
         let method_jit_args = {
-          method_name = "test_method.1000";
+          method_name = "min_caml_test_trace";
           reds = [];
           method_start = 0;
           method_end = 6;
@@ -47,15 +47,13 @@ let _ = run_test_tt_main begin
         Out_channel.output_string stdout (Emit_virtual.to_string_t res);
         Out_channel.newline stdout;
         let trace = {
-          name = Id.L ("test_trace.1000");
+          name = Id.L ("min_caml_test_trace");
           args = [];
           fargs = [];
           body =res;
           ret = Type.Int
         } in
-        let prog' = Prog ([], [trace], Ans(Nop)) in
-        (* Jit_compiler.compile prog' "test/simple3_mj.s"; *)
-        ()
+        Jit_compiler.compile trace "simple3_mj.s"
       end;
       "tracing_jit" >::
       begin fun () ->
@@ -84,16 +82,15 @@ let _ = run_test_tt_main begin
         done;
         let res = Tracing_jit.tracing_jit prog body reg mem tracing_jit_args in
         let trace = {
-          name = Id.L ("test_trace.1000");
+          name = Id.L ("min_caml_test_trace");
           args = [];
           fargs = [];
           body =res;
           ret = Type.Int
         } in
-        let prog' = Prog ([], [trace], Ans(Nop)) in
         Out_channel.output_string stdout (Emit_virtual.to_string_t res);
         Out_channel.newline stdout;
-        (* Jit_compiler.compile prog' "test/simple3_tj.s"; *)
+        Jit_compiler.compile trace "simple3_tj.s";
       end
     ]
   end
