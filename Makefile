@@ -1,6 +1,6 @@
-default: compiler interp
+.default: build
 
-.all: compiler interp clean example test
+.all: build clean example test
 
 CC = gcc
 CFLAGS = -g -O2 -Wall
@@ -19,15 +19,10 @@ join-reg join-reg2 non-tail-if non-tail-if2 inprod inprod-rec \
 inprod-loop matmul matmul-flat manyargs fib-tail array array2 \
 float tuple
 
-.PHONY: compiler
-compiler:
+.PHONY: build
+build:
 	@ocamlbuild $(OCAMLBUILD_OPTIONS) src/main.byte
 	@mv main.byte min-caml
-
-.PHONY: interp
-interp:
-	@ocamlbuild $(OCAMLBUILD_OPTIONS) src/jit/min-camli.byte
-	@mv min-camli.byte min-camli
 
 .PHONY: clean
 clean:
