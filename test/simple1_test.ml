@@ -7,11 +7,13 @@ open Mincaml_util
 open Test_util
 
 let jit_args =
-  { trace_name = "test_trace.1000"
+  { trace_name = "min_caml_test_trace"
   ; reds = ["a.42"]
   ; greens = []
   ; loop_header = 0
   ; loop_pc_place = 1 }
+
+let _ = Logger.log_level := Logger.Debug
 
 let _ = run_test_tt_main begin
     "tracing_jit_test" >::: [
@@ -36,12 +38,8 @@ let _ = run_test_tt_main begin
         reg.(41) <- Green (0);
         reg.(42) <- Red (100);
         let res = exec_tracing_jit prog body reg mem jit_args in
-        let prog' = Prog ([], fundef :: res :: [], main) in
-        setup reg reg';
-        setup mem mem';
-        Logger.log_level := Logger.Debug;
-        enable_jit := true;
-        print_string (Emit_virtual.to_string_fundef res);
+        print_string (Emit_virtual.to_string_fundef res)
+      ;Jit_compiler.compile res "simple1_tj.s"
       end
     ]
   end
