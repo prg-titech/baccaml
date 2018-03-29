@@ -34,6 +34,17 @@ let interp_exec f =
      | None -> ());
     raise e
 
+let dump_exec f =
+  let inchan = open_in (f ^ ".ml") in
+  let outchan = open_out (f ^ ".dump") in
+  try
+    Emit_virtual.g outchan (virtualize (Lexing.from_channel inchan));
+    close_out outchan;
+  with e ->
+    close_in inchan;
+    close_out outchan;
+    raise e
+
 (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
 let string s = compile stdout (Lexing.from_string s)
 
@@ -58,9 +69,13 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: m
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
      Printf.sprintf "usage: %s [-inline m] [-iter n] ...filenames without \".ml\"..." Sys.argv.(0));
-  List.iter
-    begin fun f ->
-      if !is_interp then ignore (interp_exec f)
-      else ignore (compile_exec f)
-    end
-    !files
+  if (List.length !files) = 0 then
+    failwith "hoge"
+  else
+    List.iter
+      begin fun f ->
+        if !is_interp then ignore (interp_exec f)
+        else if !is_emit_virtual then ignore (dump_exec f)
+        else ignore (compile_exec f)
+      end
+      !files
