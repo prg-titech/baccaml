@@ -1,5 +1,4 @@
 open Asm
-open Core
 open Jit_config
 
 let select_branch e n1 n2 t1 t2 =
@@ -30,24 +29,38 @@ and get_free_vars' = function
   | CallDir (id_l, args, fargs) -> List.append args fargs
   | _ -> []
 
+let rec unique list =
+  let rec go l s =  match l with
+      [] -> s
+    | first :: rest ->
+      if List.exists (fun e -> e = first) s
+      then go rest s
+      else go rest (s @ [first])
+  in go list []
+
 let restore_green reg cont =
-  let rec unique list =
-    let rec go l s =  match l with
-        [] -> s
-      | first :: rest ->
-        if List.exists ~f:(fun e -> e = first) s
-        then go rest s
-        else go rest (s @ [first])
-    in go list []
-  in
   let free_vars = unique (get_free_vars cont) in
   let rec restore cont = function
-    | [] ->
-      cont
+    | [] -> cont
     | hd :: tl ->
       match reg.(int_of_id_t hd) with
       | Green n ->
         Let ((hd, Type.Int), Set (n), restore cont tl)
-      | Red _ ->
+      | _ ->
         restore cont tl
   in restore cont free_vars
+
+let restore_light_green mem cont =
+  let rec restore cont = function
+    | [] -> cont
+    | hd :: tl ->
+      match hd with
+      | LightGreen (n) ->
+        let id' = Id.genid "jit_guard" in
+        Let ((id', Type.Int),
+             Set (n),
+             Let ((Id.id_of_typ (Type.Unit), Type.Unit),
+                  St (id', hd, C (0), 0),
+                  restore cont tl))
+      | _ -> restore cont tl
+  in restore cont (Array.to_list mem)

@@ -140,7 +140,7 @@ let optimize_exp p e reg mem = match e with
        in Logger.debug msg;
        Not_specialized (exp, Red (value_of n)))
   | St (src, dest, offset, x) ->
-    let src' =reg.(int_of_id_t src) in
+    let src' = reg.(int_of_id_t src) in
     let dest' = reg.(int_of_id_t dest) in
     let offset' = match offset with
       | V (id_t) ->
