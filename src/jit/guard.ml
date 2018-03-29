@@ -1,4 +1,5 @@
 open Asm
+open Core
 open Jit_config
 
 let select_branch e n1 n2 t1 t2 =
@@ -33,7 +34,7 @@ let rec unique list =
   let rec go l s =  match l with
       [] -> s
     | first :: rest ->
-      if List.exists (fun e -> e = first) s
+      if List.exists ~f:(fun e -> e = first) s
       then go rest s
       else go rest (s @ [first])
   in go list []
@@ -50,17 +51,17 @@ let restore_green reg cont =
         restore cont tl
   in restore cont free_vars
 
-let restore_light_green mem cont =
-  let rec restore cont = function
-    | [] -> cont
-    | hd :: tl ->
-      match hd with
-      | LightGreen (n) ->
-        let id' = Id.genid "jit_guard" in
-        Let ((id', Type.Int),
-             Set (n),
-             Let ((Id.id_of_typ (Type.Unit), Type.Unit),
-                  St (id', hd, C (0), 0),
-                  restore cont tl))
-      | _ -> restore cont tl
-  in restore cont (Array.to_list mem)
+(* let restore_light_green mem cont =
+ *   let rec restore cont = function
+ *     | [] -> cont
+ *     | (hd, i) :: tl ->
+ *       match hd with
+ *       | LightGreen (n) ->
+ *         let id' = Id.genid "jit_guard" in
+ *         Let ((id', Type.Int),
+ *              Set (n),
+ *              Let ((Id.id_of_typ (Type.Unit), Type.Unit),
+ *                   St (id', hd, C (0), 0),
+ *                   restore cont tl))
+ *       | _ -> restore cont tl
+ *   in restore cont (Array.to_list mem) *)
