@@ -38,8 +38,8 @@ let _ = run_test_tt_main begin
         reg.(41) <- Green (0);
         reg.(42) <- Red (100);
         let res = exec_tracing_jit prog body reg mem jit_args in
-        print_string (Emit_virtual.to_string_fundef res)
-      ;Jit_compiler.compile res "simple1_tj.s"
+        print_string (Emit_virtual.to_string_fundef res);
+        Jit_compiler.compile res "simple1_tj.s"
       end
     ]
   end
