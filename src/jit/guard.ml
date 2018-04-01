@@ -51,17 +51,16 @@ let restore_green reg cont =
         restore cont tl
   in restore cont free_vars
 
-(* let restore_light_green mem cont =
- *   let rec restore cont = function
- *     | [] -> cont
- *     | (hd, i) :: tl ->
- *       match hd with
- *       | LightGreen (n) ->
- *         let id' = Id.genid "jit_guard" in
- *         Let ((id', Type.Int),
- *              Set (n),
- *              Let ((Id.id_of_typ (Type.Unit), Type.Unit),
- *                   St (id', hd, C (0), 0),
- *                   restore cont tl))
- *       | _ -> restore cont tl
- *   in restore cont (Array.to_list mem) *)
+
+(* let restore_green_v2 reg cont = *)
+(*   let size = Array.length reg in *)
+(*   let regi = Array.mapi reg ~f:(fun i r -> (r, i)) in *)
+(*   let rec go reglst cont = match reglst with *)
+(*     | [] -> cont *)
+(*     | (hd, i) :: tl -> *)
+(*       begin match reg.(int_of_id_t hd) with *)
+(*         | Green (n) | LightGreen (n) -> *)
+(*           let id' = "guard." ^ (string_of_int i) in *)
+(*           Let (id', Type.Unit, St) *)
+(*         | _ -> go tl cont *)
+(*       end *)

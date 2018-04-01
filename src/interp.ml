@@ -5,6 +5,8 @@ open Tracing_jit
 open Jit_config
 open Jit_util
 
+let zero = Jit_config.zero
+
 let rec find_label_number label = function
   | [] -> let Id.L s = label in int_of_id_t s
   | (l, num) :: tl -> if l = label then num else find_label_number label tl
@@ -143,7 +145,7 @@ and eval_exp prog exp' reg mem jit_args = match exp' with
        let res = reg.(r1) - n in
        Logger.debug (Printf.sprintf "SubImm (r1: %d, r2: %d, res: %d)" r1 n res);
        res)
-  | Ld ("zero.9999", C (n), x) ->
+  | Ld (zero, C (n), x) ->
     mem.(n)
   | Ld (id_t, id_or_imm, x) ->
     (* id_t + id_or_imm * x の番地から load *)
@@ -158,7 +160,7 @@ and eval_exp prog exp' reg mem jit_args = match exp' with
     let res = mem.(dest + offset) in
     Logger.debug (Printf.sprintf "Ld (id_t: %s, dest: %d, offset: %d, m: %d, res: %d)" id_t dest offset (dest + offset) res);
     res
-  | St (id_t1, "zero.9999", C (n), x) ->
+  | St (id_t1, zero, C (n), x) ->
     mem.(n) <- reg.(int_of_id_t id_t1);
     0
   | St (id_t1, id_t2, id_or_imm, x) ->

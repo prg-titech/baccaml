@@ -15,24 +15,9 @@ let interp l =
 
 let interp_exec f =
   let inchan = open_in (f ^ ".ml") in
-  let outchan =
-    if !is_emit_virtual then Some (open_out (f ^ ".dump"))
-    else None
-  in
-  try
-    (match outchan with
-     | Some (out) ->
-       Emit_virtual.g out (virtualize (Lexing.from_channel inchan));
-       close_out out
-     | None ->
-       ignore (interp (Lexing.from_channel inchan)));
-    close_in inchan;
+  try ignore (interp (Lexing.from_channel inchan)); close_in inchan;
   with e ->
-    close_in inchan;
-    (match outchan with
-     | Some (out) -> close_out out
-     | None -> ());
-    raise e
+    close_in inchan; raise e
 
 let dump_exec f =
   let inchan = open_in (f ^ ".ml") in
