@@ -70,7 +70,7 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: m
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
      Printf.sprintf "usage: %s [-inline m] [-iter n] ...filenames without \".ml\"..." Sys.argv.(0));
   if (List.length !files) = 0 then
-    failwith "hoge"
+    failwith "No target files. Execute as `./min-caml [file]'."
   else
     List.iter
       begin fun f ->
