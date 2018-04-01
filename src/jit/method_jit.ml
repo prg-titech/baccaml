@@ -17,6 +17,9 @@ let name_of id =
   | Some (v) -> v
   | None -> id
 
+let is_opcode id =
+  String.equal (name_of id) "instr"
+
 let contains s1 s2 =
   let re = Str.regexp_string s2 in
   try ignore (Str.search_forward re s1 0); true
@@ -28,6 +31,8 @@ let string_of_id_l id_l = match id_l with
 let rec method_jit p instr reg mem method_jit_args = match instr with
   | Ans (exp) ->
     method_jit_ans p exp reg mem method_jit_args
+  | Let (_, CallDir (Id.L ("min_caml_jit_merge_point"), _, _), body) ->
+    method_jit p body reg mem method_jit_args
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     begin
       let rec go cont = function
@@ -64,7 +69,7 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     let fundef = find_fundef p id_l in
     let t' = Inlining.inline_calldir_exp argsr fundef reg in
     method_jit p t' reg mem method_jit_args
-  | IfLE (id_t, id_or_imm, t1, t2) when ((name_of id_t) = "instr") ->
+  | IfLE (id_t, id_or_imm, t1, t2) when (id_opcode id_t) ->
     let r1 = value_of reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
       | V (id) -> value_of reg.(int_of_id_t id)
@@ -73,7 +78,7 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     if r1 <= r2
     then method_jit p t1 reg mem method_jit_args
     else method_jit p t2 reg mem method_jit_args
-  | IfEq (id_t, id_or_imm, t1, t2) when ((name_of id_t) = "instr") ->
+  | IfEq (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
     let r1 = value_of reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
       | V (id) -> value_of reg.(int_of_id_t id)
@@ -82,7 +87,7 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     if r1 = r2
     then method_jit p t1 reg mem method_jit_args
     else method_jit p t2 reg mem method_jit_args
-  | IfGE (id_t, id_or_imm, t1, t2) when ((name_of id_t) = "instr") ->
+  | IfGE (id_t, id_or_imm, t1, t2) when (is_opcde id_t) ->
     let r1 = value_of reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
       | V (id) -> value_of reg.(int_of_id_t id)

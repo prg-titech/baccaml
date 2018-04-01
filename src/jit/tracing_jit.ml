@@ -63,7 +63,7 @@ and tracing_jit_ans p e reg mem jit_args = match e with
            V (id) -> id
          | C _ -> failwith "V (id) should be come here."
        in
-       (match e with
+       begin match e with
         | IfEq _ ->
           if n1 = n2 then
             Ans (IfEq (id_r2, C (n1), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
@@ -81,7 +81,7 @@ and tracing_jit_ans p e reg mem jit_args = match e with
             Ans (IfGE (id_r2, C (n1), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
         | _ ->
           failwith "Not supported"
-       )
+       end
      | Red (n1), Green (n2) ->
        (match e with
         | IfEq _ ->
