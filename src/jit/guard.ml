@@ -51,16 +51,34 @@ let restore_green reg cont =
         restore cont tl
   in restore cont free_vars
 
+let rec restore_green_reg reg cont =
+  let rec go reglst ~cont:t = match reglst with
+    | [] -> t
+    | (hd, i) :: tl ->
+      begin match hd with
+        | Green (n) | LightGreen (n) ->
+          let id' = Id.gentmp Type.Int in
+          Let ((id', Type.Int), Set (n), go tl t)
+        | _ -> go tl t
+      end
+  in Array.mapi reg ~f:(fun i r -> (r, i))
+     |> Array.to_list
+     |> go ~cont:cont
 
-(* let restore_green_v2 reg cont = *)
-(*   let size = Array.length reg in *)
-(*   let regi = Array.mapi reg ~f:(fun i r -> (r, i)) in *)
-(*   let rec go reglst cont = match reglst with *)
-(*     | [] -> cont *)
-(*     | (hd, i) :: tl -> *)
-(*       begin match reg.(int_of_id_t hd) with *)
-(*         | Green (n) | LightGreen (n) -> *)
-(*           let id' = "guard." ^ (string_of_int i) in *)
-(*           Let (id', Type.Unit, St) *)
-(*         | _ -> go tl cont *)
-(*       end *)
+let restore_green_mem mem cont =
+  let rec go memlst ~cont:t = match memlst with
+    | [] -> t
+    | (hd, i) :: tl ->
+      begin match hd with
+        | Green (n) | LightGreen (n) ->
+          let id' = Id.gentmp Type.Int in
+          let id2' = Id.gentmp Type.Unit in
+          let dest' = "guard." ^ (string_of_int i) in
+          Let ((id', Type.Int), Set (n),
+               Let ((id2', Type.Unit), St (id2', dest', C (0), 0),
+                    go tl t))
+        | _ -> go tl t
+      end
+  in Array.mapi mem ~f:(fun i r -> (r, i))
+     |> Array.to_list
+     |> go ~cont:cont
