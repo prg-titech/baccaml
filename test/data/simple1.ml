@@ -1,5 +1,5 @@
 let rec interpret bytecode pc a =
-  (* if pc = 0 then test_trace a else *)
+  (* if pc = 0 then test_trace a bytecode else *)
   let opcode = bytecode.(pc) in
   if opcode = 0 then (* INCR_A *)
     interpret bytecode (pc + 1) (a + 1)
@@ -17,7 +17,7 @@ let rec interpret bytecode pc a =
   else if opcode = 4 then (* RETURN_A *)
     a
   else
-    -1
+    -100
 in
 let input = Array.make 100 0 in
 input.(0) <- 1;
