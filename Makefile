@@ -32,6 +32,7 @@ clean:
 .PHONY: jit_clean
 jit_clean:
 	@rm -f *.o *.s test/*.o test/*.s
+	@rm -rf *.dSYM
 
 .PHONY: test
 test:
