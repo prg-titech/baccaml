@@ -39,7 +39,8 @@ let _ = run_test_tt_main begin
         reg.(42) <- Red (100);
         let res = exec_tracing_jit prog body reg mem jit_args in
         print_string (Emit_virtual.to_string_fundef res);
-        Jit_compiler.compile res "simple1_tj.s"
+        Jit_emit.emit_asm res "simple1_tj";
+        Jit_emit.emit_trace res "simple1_tj" "interpret.40"
       end
     ]
   end
