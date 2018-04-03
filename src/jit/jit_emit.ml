@@ -8,20 +8,6 @@ end
 let replace input output =
   Str.global_replace (Str.regexp_string input) output
 
-let rec shuffle sw xys =
-  (* remove identical moves *)
-  let _, xys = List.partition (fun (x, y) -> x = y) xys in
-  (* find acyclic moves *)
-  match List.partition (fun (_, y) -> List.mem_assoc y xys) xys with
-  | [], [] -> []
-  | (x, y) :: xys, [] -> (* no acyclic moves; resolve a cyclic move *)
-      (y, sw) :: (x, y) :: shuffle sw (List.map
-                                         (function
-                                           | (y', z) when y = y' -> (sw, z)
-                                           | yz -> yz)
-                                         xys)
-  | xys, acyc -> acyc @ shuffle sw xys
-
 (* 命令列のアセンブリ生成 as String *)
 let rec create_asm = function
   | dest, Ans (exp) -> create_asm' (dest, exp)

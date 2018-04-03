@@ -1,5 +1,6 @@
 val stackset : S.t ref
 val stackmap : S.elt list ref
+val shuffle : 'a -> ('a * 'a) list -> ('a * 'a) list
 val save : string -> unit
 val savef : S.elt -> unit
 val locate : S.elt -> int list
