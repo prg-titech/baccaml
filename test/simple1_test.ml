@@ -39,8 +39,11 @@ let _ = run_test_tt_main begin
         reg.(42) <- Red (100);
         let res = exec_tracing_jit prog body reg mem jit_args in
         print_string (Emit_virtual.to_string_fundef res);
-        Jit_emit.emit_asm res "simple1_tj";
-        Jit_emit.emit_trace res "simple1_tj" "interpret.40"
+        Jit_emit.emit_trace' res "simple1_tj" "interpret.39" "interpret.40"
+        (* In_channel.create "Makefile"
+         * |> In_channel.input_all
+         * |> In_channel.read_all
+         * |> print_endline; *)
       end
     ]
   end
