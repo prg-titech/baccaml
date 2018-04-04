@@ -6,14 +6,14 @@ open Jit_config
 open Mincaml_util
 open Test_util
 
+module JE = Jit_emit
+
 let jit_args =
   { trace_name = "min_caml_test_trace"
   ; reds = ["a.42"]
   ; greens = []
   ; loop_header = 0
   ; loop_pc_place = 1 }
-
-let _ = Logger.log_level := Logger.Debug
 
 let _ = run_test_tt_main begin
     "tracing_jit_test" >::: [
@@ -39,11 +39,7 @@ let _ = run_test_tt_main begin
         reg.(42) <- Red (100);
         let res = exec_tracing_jit prog body reg mem jit_args in
         print_string (Emit_virtual.to_string_fundef res);
-        Jit_emit.emit_trace' res "simple1_tj" "interpret.39" "interpret.40"
-        (* In_channel.create "Makefile"
-         * |> In_channel.input_all
-         * |> In_channel.read_all
-         * |> print_endline; *)
+        JE.emit_trace' ~fundef:res ~fname:"simple1_tj" ~inameo:"interpret.39" ~inamen:"interpret.40"
       end
     ]
   end

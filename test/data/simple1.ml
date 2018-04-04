@@ -23,4 +23,4 @@ let input = Array.make 100 0 in
 input.(0) <- 1;
 input.(1) <- 2; input.(2) <- 0;
 input.(3) <- 4;
-print_int (interpret input 0 10)
+print_int (interpret input 0 10000000000)

@@ -224,7 +224,7 @@ let emit_asm fundef fname =
   |> RegAlloc.h
   |> Emit.h (Core.Out_channel.create (fname ^ ".s"))
 
-let emit_trace fundef fname iname =
+let emit_trace ~fundef ~fname ~iname =
   let { name; body } = fundef |> RegAlloc.h in
   let Id.L (x) = name in
   let oc = Core.Out_channel.create (fname ^ ".s") in
@@ -239,27 +239,25 @@ let emit_trace fundef fname iname =
   Printf.fprintf oc "\tpopl\t%%eax\n";
   Printf.fprintf oc "jmp\t%s" iname
 
-let emit_trace' fundef fname inameo inamen =
+let emit_trace' ~fundef ~fname ~inameo ~inamen =
   let { name; body } = fundef |> RegAlloc.h in
   let Id.L (x) = name in
   let s =
-    Printf.sprintf ".globl %s\n" x ^
-    Printf.sprintf "%s:\n" x ^
-    Printf.sprintf "\tpushl\t%%ebx\n" ^
-    Printf.sprintf ".globl %s1\n" x ^
-    Printf.sprintf "%s1:\n" x ^
-    (create_asm (Tail, body)
-    |> replace "\tjmp\tmin_caml_test_trace" "\tjmp\tmin_caml_test_trace1")  ^
-    Printf.sprintf ".globl %s2\n" x ^
-    Printf.sprintf "%s2:\n" x ^
-    Printf.sprintf "\tpopl\t%%eax\n" ^
-    Printf.sprintf "\tjmp\t%s" inamen
+    Printf.sprintf ".globl %s\n" x
+    ^ Printf.sprintf "%s:\n" x
+    ^ Printf.sprintf "\tpushl\t%%ebx\n"
+    ^ Printf.sprintf ".globl %s1\n" x
+    ^ Printf.sprintf "%s1:\n" x
+    ^ (create_asm (Tail, body)
+       |> replace "\tjmp\tmin_caml_test_trace" "\tjmp\tmin_caml_test_trace1")
+    ^ Printf.sprintf ".globl %s2\n" x
+    ^ Printf.sprintf "%s2:\n" x
+    ^ Printf.sprintf "\tpopl\t%%eax\n"
+    ^ Printf.sprintf "\tjmp\t%s" inamen
   in
-  let replaced_s =
-    replace inameo (Format.sprintf "%s2" x) s
-  in
+  let s' = replace inameo (Format.sprintf "%s2" x) s in
   print_newline ();
-  print_endline replaced_s;
+  print_endline s';
   let oc = open_out (fname ^ ".s") in
-  Printf.fprintf oc "%s" replaced_s;
+  Printf.fprintf oc "%s" s';
   close_out oc
