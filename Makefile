@@ -34,8 +34,8 @@ jit_clean:
 	@rm -f *.o *.s test/*.o test/*.s
 	@rm -rf *.dSYM
 
-.PHONY: test
-test:
+.PHONY: testall
+testall:
 	@for case in $(TESTCASES); do \
 		echo "================================================="; \
 		echo $$case; \
@@ -45,6 +45,17 @@ test:
 		$(MAKE) jit_clean; \
 		./$$case.byte; \
 	done
+
+.PHONY: runtest
+runtest:
+	@ocamlbuild $(OCAMLBUILD_OPTIONS) $(T).byte
+
+.PHONY: gcc
+gcc:
+	./min-caml test/data/$(INTERP) && \
+	gcc -c -m32 $(TRACE).s && \
+	gcc -g -Wall -O2 -m32 lib/libmincaml.S lib/stub.c test/data/$(INTERP).s $(TRACE).o -o $(TRACE)
+	@rm -rf $(TRACE).dSYM
 
 .PHONY: example
 example: $(EXAMPLES:%=example/%.cmp)
