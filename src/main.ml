@@ -23,7 +23,12 @@ let dump_exec f =
   let inchan = open_in (f ^ ".ml") in
   let outchan = open_out (f ^ ".dump") in
   try
-    Emit_virtual.g outchan (virtualize (Lexing.from_channel inchan));
+    Lexing.from_channel inchan
+    |> virtualize
+    |> Emit_virtual.to_string_prog
+    |> print_string
+    |> print_newline;
+    close_in inchan;
     close_out outchan;
   with e ->
     close_in inchan;
