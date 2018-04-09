@@ -1,13 +1,12 @@
 .default: build
 
-.all: build clean example test
+.all: build clean example testall runtest gcc
 
 CC = gcc
 CFLAGS = -g -O2 -Wall
 OCAMLLDFLAGS = -warn-error -31
 OCAMLBUILD_OPTIONS = -use-ocamlfind
 COMPILER = min-caml
-INTERPRETER = min-camli
 
 TESTCASES = jit_test interp_test pypy_fig3_test \
 simple1_test simple2_test simple3_test
@@ -54,8 +53,8 @@ runtest:
 gcc:
 	./min-caml test/data/$(INTERP) && \
 	gcc -c -m32 $(TRACE).s && \
-	gcc -g -Wall -O2 -m32 lib/libmincaml.S lib/stub.c test/data/$(INTERP).s $(TRACE).o -o $(TRACE)
-	@rm -rf $(TRACE).dSYM
+	gcc -g -Wall -O2 -m32 lib/libmincaml.S lib/stub.c test/data/$(INTERP).s $(TRACE).o -o $(TRACE) && \
+	rm -rf $(TRACE).dSYM
 
 .PHONY: example
 example: $(EXAMPLES:%=example/%.cmp)
