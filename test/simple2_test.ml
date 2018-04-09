@@ -9,6 +9,8 @@ open Jit_config
 open Mincaml_util
 open Test_util
 
+module JE = Jit_emit
+
 let Prog (_, fundefs, main) as prog =
   In_channel.create (dir ^ "simple2.ml")
   |> Lexing.from_channel
@@ -28,7 +30,7 @@ let _ = run_test_tt_main begin
     "simple2_test" >::: [
       "method_jit" >:: begin fun () ->
         let method_jit_args = {
-          method_name = "test_method.1000";
+          method_name = "min_caml_test_trace";
           reds = ["a.69"];
           method_start = 0;
           method_end = 12;
@@ -43,11 +45,15 @@ let _ = run_test_tt_main begin
         reg.(68) <- Green (0);
         let res = exec_method_jit prog body reg mem method_jit_args in
         Out_channel.print_endline (Emit_virtual.to_string_fundef res);
-        (* Jit_compiler.compile (Prog ([], res :: [], trace_main)) "test/simple2_mj.s"; *)
+        Jit_emit.emit_trace'
+          ~fundef:res
+          ~fname:"simple2_mj"
+          ~inameo:"interp.66"
+          ~inamen:"interp.67"
       end;
       "tracing_jit" >:: begin fun () ->
         let tracing_jit_args = {
-          trace_name = "test_trace.1000";
+          trace_name = "min_caml_test_trace";
           reds = ["a.69"];
           greens = [];
           loop_header = 0;

@@ -18,7 +18,6 @@ let _ = run_test_tt_main begin
     "simple3_test" >::: [
       "method_jit" >::
       begin fun () ->
-        Logger.log_level := Logger.Debug;
         let fundef = List.hd_exn fundefs in
         let method_jit_args = {
           method_name = "min_caml_test_trace";
@@ -53,13 +52,17 @@ let _ = run_test_tt_main begin
           body =res;
           ret = Type.Int
         } in
-        Jit_compiler.compile trace "simple3_mj.s"
+        Jit_emit.emit_trace'
+          ~fundef:trace
+          ~fname:"simple3_mj"
+          ~inameo:"interp.125"
+          ~inamen:"interp.126"
       end;
       "tracing_jit" >::
       begin fun () ->
         let { body } = List.hd_exn fundefs in
         let tracing_jit_args = {
-          trace_name = "test_trace.1000";
+          trace_name = "min_caml_test_trace";
           reds = [];
           greens = [];
           loop_header = 6;
@@ -89,8 +92,7 @@ let _ = run_test_tt_main begin
           ret = Type.Int
         } in
         Out_channel.output_string stdout (Emit_virtual.to_string_t res);
-        Out_channel.newline stdout;
-        Jit_compiler.compile trace "simple3_tj.s";
+        Out_channel.newline stdout
       end
     ]
   end
