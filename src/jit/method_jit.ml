@@ -28,28 +28,36 @@ let contains s1 s2 =
 let string_of_id_l id_l = match id_l with
   | Id.L (x) -> x
 
+let rec add_cont_proc id_t instr body =
+  let rec go id_t instr body = match instr with
+    | Let (a, e, t) ->
+      Let (a, e, go id_t t body)
+    | Ans e ->
+      Let ((id_t, Type.Int), e, body)
+  in go id_t instr body
+
 let rec method_jit p instr reg mem method_jit_args = match instr with
   | Ans (exp) ->
     method_jit_ans p exp reg mem method_jit_args
   | Let (_, CallDir (Id.L ("min_caml_jit_merge_point"), _, _), body) ->
     method_jit p body reg mem method_jit_args
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
-    begin
-      let rec go cont = function
-          [] -> cont
-        | hd :: tl ->
-          if is_green reg.(int_of_id_t hd) then
-            Let ((hd, Type.Int),
-                 Set (value_of reg.(int_of_id_t hd)),
-                 go cont tl)
-          else go cont tl
-      in
-      let t =
-        Let ((dest, typ),
-             CallDir (id_l, args, fargs),
-             (method_jit p body reg mem method_jit_args))
-      in go t args
-    end
+    let rec restore_args cont = function
+        [] -> cont
+      | hd :: tl ->
+        if is_green reg.(int_of_id_t hd) then
+          Let ((hd, Type.Int),
+               Set (value_of reg.(int_of_id_t hd)),
+               restore_args cont tl)
+        else restore_args cont tl
+    in
+    let fcall =
+      Let ((dest, typ),
+           CallDir (id_l, args, fargs),
+           Ans (Nop))
+    in
+    let t' = method_jit p body reg mem method_jit_args in
+    add_cont_proc (Id.gentmp Type.Unit) (restore_args fcall args) t'
   | Let ((dest, typ), exp, body) ->
     begin match Optimizer.optimize_exp p exp reg mem with
       | Specialized (v) ->
@@ -106,7 +114,10 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     let t1' = method_jit p t1 regt1 memt1 method_jit_args in
     let t2' = method_jit p t2 regt2 memt2 method_jit_args in
     begin match r1, r2 with
-      | Green (n1), Green (n2) | LightGreen (n1), LightGreen (n2) | Green (n1), LightGreen (n2) | LightGreen (n1), Green (n2) ->
+      | Green (n1), Green (n2)
+      | LightGreen (n1), LightGreen (n2)
+      | Green (n1), LightGreen (n2)
+      | LightGreen (n1), Green (n2) ->
         if n1 = n2 then t1' else t2'
       | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
         Ans (IfEq (id_t, C (n2), t1', t2'))
