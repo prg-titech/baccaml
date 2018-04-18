@@ -11,7 +11,6 @@
 let rec interp bytecode pc stack sp =
   (* print_stack stack; print_newline (); *)
   (* if pc = 0 then test_trace () else *)
-  dispatch(
   let instr = bytecode.(pc) in
   if instr = 0 then (* Add *)
     let v2 = stack.(sp) in
@@ -52,7 +51,7 @@ let rec interp bytecode pc stack sp =
     stack.(sp + 1) <- v;
     interp bytecode (pc + 2) stack (sp + 1)
   else
-    -100)
+    -100
 in
 let code = Array.make 100 0 in
 let stack = Array.make 10 0 in
