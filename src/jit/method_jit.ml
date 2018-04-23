@@ -39,11 +39,10 @@ let rec add_cont_proc id_t instr body =
       Let ((id_t, Type.Int), e, body)
   in go id_t instr body
 
-let rec method_jit p instr reg mem method_jit_args = match instr with
+let rec method_jit p instr reg mem method_jit_args =
+  match instr with
   | Ans (exp) ->
     method_jit_ans p exp reg mem method_jit_args
-  | Let (_, CallDir (Id.L ("min_caml_jit_merge_point"), _, _), body) ->
-    method_jit p body reg mem method_jit_args
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     let rec restore_args cont = function
         [] -> cont
@@ -74,17 +73,20 @@ let rec method_jit p instr reg mem method_jit_args = match instr with
     end
 
 and method_jit_ans p e reg mem method_jit_args = match e with
-  | CallDir (id_l, argsr, _) when (contains (string_of_id_l id_l) "min_caml") ->
-    Ans (e)
   | CallDir (id_l, argsr, _) ->
-    let fundef = find_fundef p id_l in
-    let pc = value_of reg.(find_pc argsr method_jit_args) in
-    begin match (pc = (method_jit_args.method_end)) with
-      | true ->
-        Ans (Nop)
-      | false ->
-        let t' = Inlining.inline_calldir_exp argsr fundef reg in
-        method_jit p t' reg mem method_jit_args
+    begin
+      if contains (string_of_id_l id_l) "min_caml"
+      then Ans (e)
+      else
+        let fundef = find_fundef p id_l in
+        let pc = value_of reg.(find_pc argsr method_jit_args) in
+        begin match (pc = (method_jit_args.method_end)) with
+          | true ->
+            Ans (Nop)
+          | false ->
+            let t' = Inlining.inline_calldir_exp argsr fundef reg in
+            method_jit p t' reg mem method_jit_args
+        end
     end
   | IfLE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
     let r1 = value_of reg.(int_of_id_t id_t) in
