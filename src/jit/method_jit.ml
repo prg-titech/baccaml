@@ -51,13 +51,13 @@ let rec method_jit p instr reg mem method_jit_args = match instr with
                restore_args cont tl)
         else restore_args cont tl
     in
-    let fcall =
-      Let ((dest, typ),
-           CallDir (id_l, args, fargs),
-           Ans (Nop))
+    let restored_fcall =
+      restore_args
+        (Let ((dest, typ), CallDir (id_l, args, fargs), Ans (Nop)))
+        args
     in
     let t' = method_jit p body reg mem method_jit_args in
-    add_cont_proc (Id.gentmp Type.Unit) (restore_args fcall args) t'
+    add_cont_proc (Id.gentmp Type.Unit) restored_fcall t'
   | Let ((dest, typ), exp, body) ->
     begin match Optimizer.optimize_exp p exp reg mem with
       | Specialized (v) ->
@@ -140,7 +140,10 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     let t1' = method_jit p t1 regt1 memt1 method_jit_args in
     let t2' = method_jit p t2 regt2 memt2 method_jit_args in
     begin match r1, r2 with
-      | Green (n1), Green (n2) | LightGreen (n1), LightGreen (n2) | Green (n1), LightGreen (n2) | LightGreen (n1), Green (n2) ->
+      | Green (n1), Green (n2)
+      | LightGreen (n1), LightGreen (n2)
+      | Green (n1), LightGreen (n2)
+      | LightGreen (n1), Green (n2) ->
         if n1 <= n2 then t1' else t2'
       | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
         Ans (IfLE (id_t, C (n2), t1', t2'))
@@ -163,7 +166,10 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     let t1' = method_jit p t1 regt1 memt1 method_jit_args in
     let t2' = method_jit p t2 regt2 memt2 method_jit_args in
     begin match r1, r2 with
-      | Green (n1), Green (n2) | LightGreen (n1), LightGreen (n2) | Green (n1), LightGreen (n2) | LightGreen (n1), Green (n2) ->
+      | Green (n1), Green (n2)
+      | LightGreen (n1), LightGreen (n2)
+      | Green (n1), LightGreen (n2)
+      | LightGreen (n1), Green (n2) ->
         if n1 >= n2 then t1' else t2'
       | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
         Ans (IfGE (id_t, C (n2), t1', t2'))
@@ -179,10 +185,8 @@ and method_jit_ans p e reg mem method_jit_args = match e with
   | _ ->
     begin
       match Optimizer.optimize_exp p e reg mem with
-      | Specialized (v) ->
-        Ans (e)
-      | Not_specialized (e, v) ->
-        Ans (e)
+      | Specialized (v) -> Ans (e)
+      | Not_specialized (e, v) -> Ans (e)
     end
 
 let exec_method_jit p instr reg mem method_jit_args =

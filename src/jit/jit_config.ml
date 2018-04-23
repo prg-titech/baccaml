@@ -64,7 +64,7 @@ let int_of_id_t = function
   | id ->
     match List.last (String.split id ~on:'.') with
     | Some v -> int_of_string v
-    | None -> int_of_string id
+    | None -> print_endline id; int_of_string id
 
 let string_of_id_or_imm = function
     V (id_t) -> id_t
