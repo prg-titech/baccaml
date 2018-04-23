@@ -4,7 +4,10 @@ open Inlining
 open Jit_config
 open Renaming
 
-let find_pc argsr n = int_of_id_t (List.nth_exn argsr n)
+let find_pc argsr method_jit_args =
+  match List.nth argsr (method_jit_args.pc_place) with
+  | Some (s) -> int_of_id_t s
+  | None -> failwith "find_pc is failed."
 
 let jit_value_of_id_t reg id_t = reg.(int_of_id_t id_t)
 
@@ -75,8 +78,14 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     Ans (e)
   | CallDir (id_l, argsr, _) ->
     let fundef = find_fundef p id_l in
-    let t' = Inlining.inline_calldir_exp argsr fundef reg in
-    method_jit p t' reg mem method_jit_args
+    let pc = value_of reg.(find_pc argsr method_jit_args) in
+    begin match (pc = (method_jit_args.method_end)) with
+      | true ->
+        Ans (Nop)
+      | false ->
+        let t' = Inlining.inline_calldir_exp argsr fundef reg in
+        method_jit p t' reg mem method_jit_args
+    end
   | IfLE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
     let r1 = value_of reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
