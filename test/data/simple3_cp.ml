@@ -10,7 +10,7 @@
 
 let rec interp bytecode pc stack sp =
   (* print_stack stack; print_newline (); *)
-  if pc = 0 then test_trace () else
+  if pc = 0 then test_trace stack else
   let instr = bytecode.(pc) in
   if instr = 0 then (* Add *)
     let v2 = stack.(sp) in

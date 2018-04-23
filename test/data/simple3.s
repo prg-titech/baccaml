@@ -1,15 +1,11 @@
 .data
 .balign	8
 .text
-.globl interp.127
-interp.127:
-	cmpl	$0, %ebx
-	jne	je_else.283
-	jmp	min_caml_test_trace
-je_else.283:
+.globl interp.125
+interp.125:
 	movl	(%eax,%ebx,4), %esi
 	cmpl	$0, %esi
-	jne	je_else.284
+	jne	je_else.279
 	movl	(%ecx,%edx,4), %esi
 	movl	%edx, %edi
 	subl	$1, %edi
@@ -22,10 +18,10 @@ je_else.283:
 	addl	$1, %ebx
 	subl	$1, %edx
 	movl	0(%ebp), %eax
-	jmp	interp.127
-je_else.284:
+	jmp	interp.125
+je_else.279:
 	cmpl	$1, %esi
-	jne	je_else.285
+	jne	je_else.280
 	movl	(%ecx,%edx,4), %esi
 	movl	%edx, %edi
 	subl	$1, %edi
@@ -38,20 +34,20 @@ je_else.284:
 	addl	$1, %ebx
 	subl	$1, %edx
 	movl	0(%ebp), %eax
-	jmp	interp.127
-je_else.285:
+	jmp	interp.125
+je_else.280:
 	cmpl	$4, %esi
-	jne	je_else.286
+	jne	je_else.281
 	movl	%ebx, %esi
 	addl	$1, %esi
 	movl	(%eax,%esi,4), %esi
 	movl	%esi, (%ecx,%edx,4)
 	addl	$2, %ebx
 	addl	$1, %edx
-	jmp	interp.127
-je_else.286:
+	jmp	interp.125
+je_else.281:
 	cmpl	$10, %esi
-	jne	je_else.287
+	jne	je_else.282
 	movl	%ebx, %esi
 	addl	$1, %esi
 	movl	(%eax,%esi,4), %esi
@@ -77,7 +73,7 @@ je_else.286:
 	movl	%ebx, %edx
 	movl	%esi, %ebx
 	addl	$24, %ebp
-	call	interp.127
+	call	interp.125
 	subl	$24, %ebp
 	movl	16(%ebp), %ebx
 	movl	%ebx, %ecx
@@ -93,30 +89,30 @@ je_else.286:
 	movl	%eax, %ebx
 	movl	%ecx, %eax
 	movl	24(%ebp), %ecx
-	jmp	interp.127
-je_else.287:
+	jmp	interp.125
+je_else.282:
 	cmpl	$11, %esi
-	jne	je_else.288
+	jne	je_else.283
 	movl	(%ecx,%edx,4), %eax
 	ret
-je_else.288:
+je_else.283:
 	cmpl	$12, %esi
-	jne	je_else.289
+	jne	je_else.284
 	movl	(%ecx,%edx,4), %esi
 	cmpl	$0, %esi
-	jl	jge_else.290
+	jl	jge_else.285
 	addl	$1, %ebx
 	movl	(%eax,%ebx,4), %ebx
 	subl	$1, %edx
-	jmp	interp.127
-jge_else.290:
+	jmp	interp.125
+jge_else.285:
 	addl	$2, %ebx
 	movl	(%eax,%ebx,4), %ebx
 	subl	$1, %edx
-	jmp	interp.127
-je_else.289:
+	jmp	interp.125
+je_else.284:
 	cmpl	$22, %esi
-	jne	je_else.291
+	jne	je_else.286
 	movl	%ebx, %esi
 	addl	$1, %esi
 	movl	(%eax,%esi,4), %esi
@@ -128,9 +124,9 @@ je_else.289:
 	movl	%esi, (%ecx,%edi,4)
 	addl	$2, %ebx
 	addl	$1, %edx
-	jmp	interp.127
-je_else.291:
-	movl	$-1, %eax
+	jmp	interp.125
+je_else.286:
+	movl	$-100, %eax
 	ret
 .globl	min_caml_start
 min_caml_start:
@@ -193,7 +189,7 @@ _min_caml_start: # for cygwin
 	movl	%eax, %ebx
 	movl	8(%ebp), %eax
 	addl	$8, %ebp
-	call	interp.127
+	call	interp.125
 	subl	$8, %ebp
 	addl	$8, %ebp
 	call	min_caml_print_int
