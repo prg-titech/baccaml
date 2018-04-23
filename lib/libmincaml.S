@@ -15,6 +15,13 @@
 #define ALIGNSTACK3
 #endif
 .text
+.globl min_caml_print_debug
+min_caml_print_debug:
+  pushl %eax
+  call min_caml_print_int
+  call min_caml_print_newline
+  popl %eax
+  ret
 .globl min_caml_print_newline
 min_caml_print_newline:
 	pushl	%ebp
