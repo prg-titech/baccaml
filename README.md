@@ -1,9 +1,8 @@
-# baccaml 
-
-[![Build Status](https://travis-ci.org/prg-titech/baccaml.svg?branch=develop)](https://travis-ci.org/prg-titech/baccaml)
-
+# baccaml
 
 This is an experimental meta-hybrid JIT compiler using both approach of method and tracing JIT.
+
+This project is forked from [min-caml](https://github.com/esumii/min-caml), an educational mini ML compiler.
 
 ## Setup
 

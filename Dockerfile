@@ -5,7 +5,7 @@ MAINTAINER Yusuke Izawa <yuizalp@gmail.com>
 WORKDIR /tmp
 
 RUN opam init && \
-    opam install -y ounit core && \
+    opam install -y ounit core jbuilder && \
     eval $(opam config env)
 
 COPY . .

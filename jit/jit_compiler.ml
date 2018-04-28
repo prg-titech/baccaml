@@ -1,7 +1,7 @@
-open Asm
+open Mincaml
 open Core
 
-let compile (fundef : fundef) (fname : string) =
+let compile (fundef : Asm.fundef) (fname : string) =
   Format.printf "compiling %s...\n" fname;
   fundef
   |> RegAlloc.h

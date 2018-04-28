@@ -1,8 +1,9 @@
+open Mincaml
+open Baccaml_jit
 open Asm
 open Core
 open OUnit
 open Test_util
-open Test_dependencies
 
 module JE = Jit_emit
 
@@ -17,7 +18,7 @@ let _ = run_test_tt_main begin
     "tracing_jit_test" >::: [
       "simple1_test" >:: begin fun () ->
         let prog =
-          In_channel.create (dir ^ "simple1.ml")
+          In_channel.create ("simple1.ml")
           |> Lexing.from_channel
           |> virtualize
         in

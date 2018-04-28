@@ -8,9 +8,6 @@ OCAMLLDFLAGS = -warn-error -31
 OCAMLBUILD_OPTIONS = -use-ocamlfind
 COMPILER = min-caml
 
-TESTCASES = jit_test interp_test pypy_fig3_test \
-simple1_test simple2_test simple3_test
-
 EXAMPLES = print sum-tail gcd sum fib ack even-odd adder \
 funcomp cls-rec cls-bug cls-bug2 cls-reg-bug shuffle \
 spill spill2 spill3 join-stack join-stack2 join-stack3 \
@@ -18,40 +15,25 @@ join-reg join-reg2 non-tail-if non-tail-if2 inprod inprod-rec \
 inprod-loop matmul matmul-flat manyargs fib-tail array array2 \
 float tuple
 
+MAIN := src/main.exe
+
 .PHONY: build
 build:
-	@ocamlbuild $(OCAMLBUILD_OPTIONS) src/main.byte
-	@mv main.byte min-caml
+	jbuilder build $(MAIN)
+	ln -s _build/default/$(MAIN) .
 
 .PHONY: clean
 clean:
-	@rm -f $(TRASH)
-	ocamlbuild -clean
+	jbuilder clean
 
-.PHONY: jit_clean
+.PHONY: jclean
 jit_clean:
 	@rm -rf *.o *.s test/*.o test/*.s
 	@rm -rf *.dSYM
 
-.PHONY: oclean
-oclean:
-	@rm -rf *.o
-
-.PHONY: testall
-testall:
-	@for case in $(TESTCASES); do \
-		echo "================================================="; \
-		echo $$case; \
-		echo "================================================="; \
-		$(MAKE) jit_clean; \
-		ocamlbuild $(OCAMLBUILD_OPTIONS) test/$$case.byte || exit 1; \
-		$(MAKE) jit_clean; \
-		./$$case.byte; \
-	done
-
-.PHONY: runtest
+.PHONY: test
 runtest:
-	@ocamlbuild $(OCAMLBUILD_OPTIONS) $(T).byte
+	jbuilder runtest
 
 .PHONY: gcc
 gcc:

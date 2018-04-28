@@ -1,4 +1,7 @@
+open Mincaml
 open Mincaml_util
+
+module Logger = Util__.Logger
 
 let is_emit_virtual = ref false
 

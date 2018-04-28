@@ -1,3 +1,4 @@
+open Mincaml
 type value = Red of int | Green of int | LightGreen of int
 type reg = value array
 type mem = value array

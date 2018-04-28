@@ -1,3 +1,4 @@
+open Mincaml
 val method_jit :
   Asm.prog ->
   Asm.t ->

@@ -1,5 +1,5 @@
 let rec interpret bytecode pc a =
-  if pc = 0 then test_trace a bytecode else
+  (* if pc = 0 then test_trace a bytecode else *)
   let opcode = bytecode.(pc) in
   if opcode = 0 then (* INCR_A *)
     interpret bytecode (pc + 1) (a + 1)

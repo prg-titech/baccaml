@@ -1,18 +1,16 @@
+open Mincaml
+open Baccaml_jit
 open Asm
 open Core
 open Type
 open Core
 open OUnit
-open Method_jit
-open Tracing_jit
-open Jit_config
-open Mincaml_util
 open Test_util
 
 module JE = Jit_emit
 
 let Prog (_, fundefs, main) as prog =
-  In_channel.create (dir ^ "simple2.ml")
+  In_channel.create ("simple2.ml")
   |> Lexing.from_channel
   |> virtualize
 
@@ -43,7 +41,7 @@ let _ = run_test_tt_main begin
         done;
         reg.(67) <- Green (0);
         reg.(68) <- Green (0);
-        let res = exec_method_jit prog body reg mem method_jit_args in
+        let res = exec prog body reg mem method_jit_args in
         Out_channel.print_endline (Emit_virtual.to_string_fundef res);
         Jit_emit.emit_trace'
           ~fundef:res

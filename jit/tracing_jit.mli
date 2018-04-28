@@ -1,3 +1,4 @@
+open Mincaml
 exception Not_supported of string
 val tracing_jit :
   Asm.prog ->

@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+open Mincaml
+open Baccaml_jit
+>>>>>>> feature/enable-dune
 open Asm
 open Core
 open Jit_config
@@ -68,13 +73,11 @@ let jit
       else
         ()
     | None ->
-      Printf.sprintf "No functions in %s" f
-      |> No_function_defs
-      |> fun e -> raise e
+      raise (No_function_defs (Printf.sprintf "No functions in %s" f))
+
   with e ->
     In_channel.close inchan;
-    Printf.sprintf "Executing tracing jit is failed in %s" f
-    |> Tracing_jit_failed |> fun e -> raise e
+    raise (Tracing_jit_failed ( Printf.sprintf "Executing tracing jit is failed in %s" f))
 
 let _ =
   let files = ref [] in

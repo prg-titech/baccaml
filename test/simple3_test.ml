@@ -1,14 +1,13 @@
+open Mincaml
+open Baccaml_jit
+open Util
 open Asm
 open Core
 open OUnit
-open Tracing_jit
-open Method_jit
-open Jit_config
-open Mincaml_util
 open Test_util
 
 let Prog (_, fundefs, main) as prog =
-  In_channel.create (dir ^ "simple3.ml")
+  In_channel.create ("simple3.ml")
   |> Lexing.from_channel
   |> virtualize
 

@@ -1,6 +1,7 @@
 open Asm
 open Core
 open Interp_config
+open Util
 
 let zero = "zero.0"
 
