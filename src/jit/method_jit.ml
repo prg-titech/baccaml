@@ -33,16 +33,14 @@ let string_of_id_l id_l = match id_l with
 
 let rec add_cont_proc id_t instr body =
   let rec go id_t instr body = match instr with
-    | Let (a, e, t) ->
-      Let (a, e, go id_t t body)
-    | Ans e ->
-      Let ((id_t, Type.Int), e, body)
+    | Let (a, Nop, t) -> go id_t t body
+    | Let (a, e, t) -> Let (a, e, go id_t t body)
+    | Ans e -> Let ((id_t, Type.Int), e, body)
   in go id_t instr body
 
 let rec method_jit p instr reg mem method_jit_args =
   match instr with
-  | Ans (exp) ->
-    method_jit_ans p exp reg mem method_jit_args
+  | Ans (exp) -> method_jit_ans p exp reg mem method_jit_args
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     let rec restore_args cont = function
         [] -> cont
@@ -67,9 +65,8 @@ let rec method_jit p instr reg mem method_jit_args =
         method_jit p body reg mem method_jit_args
       | Not_specialized (e, v) ->
         reg.(int_of_id_t dest) <- v;
-        Let ((dest, typ),
-             e,
-             method_jit p body reg mem method_jit_args)
+        let t = method_jit p body reg mem method_jit_args in
+        Let ((dest, typ), e, t)
     end
 
 and method_jit_ans p e reg mem method_jit_args = match e with

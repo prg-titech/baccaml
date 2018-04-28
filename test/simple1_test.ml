@@ -1,10 +1,8 @@
 open Asm
 open Core
 open OUnit
-open Tracing_jit
-open Jit_config
-open Mincaml_util
 open Test_util
+open Test_dependencies
 
 module JE = Jit_emit
 

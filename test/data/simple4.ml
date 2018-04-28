@@ -1,5 +1,5 @@
 let rec interp bytecode pc a =
-  if pc = 6 then test_trace a bytecode else
+  (* if pc = 6 then test_trace a bytecode else *)
   let instr = bytecode.(pc) in
   if instr = 0 then (* ADD *)
     interp bytecode (pc + 1) (a + 1)

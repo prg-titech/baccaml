@@ -12,11 +12,8 @@ let setup aa bb =
     (ListUtil.zip (Array.to_list aa) (ListUtil.range 0 (Array.length aa - 1)))
 
 module Test_dependencies = struct
-  open Asm
-  open Core
-  open OUnit
-  open Tracing_jit
-  open Method_jit
-  open Jit_config
-  open Mincaml_util
+  include Tracing_jit
+  include Method_jit
+  include Jit_config
+  include Mincaml_util
 end
