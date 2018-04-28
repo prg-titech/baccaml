@@ -1,8 +1,0 @@
-true: package(core, ppx_jane, oUnit, str)
-true: thread, debug
-"src": include
-"jit": include
-"util": include
-"bin": include
-<{src,test,bin}/**/*.byte>: linkdep(src/float.o), custom, debug
-<{src,test,bin}/**/*.native>: linkdep(src/float.o), debug
