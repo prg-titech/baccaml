@@ -131,12 +131,9 @@ and tracing_jit_ans p e reg mem jit_args = match e with
     end
 
 let exec_tracing_jit p t reg mem jit_args =
-  let res =
-    tracing_jit p t reg mem jit_args
-  in
+  let res = tracing_jit p t reg mem jit_args in
   { name = Id.L (jit_args.trace_name)
   ; args = jit_args.reds
   ; fargs = []
   ; body = res
-  ; ret = Type.Int
-  }
+  ; ret = Type.Int }

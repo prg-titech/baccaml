@@ -1,11 +1,19 @@
 open Asm
 open Core
 open Interp_config
-open Tracing_jit
-open Jit_config
-open Jit_util
 
-let zero = Jit_config.zero
+let zero = "zero.0"
+
+let int_of_id_t = function
+  | "min_caml_hp" -> failwith ("int_of_id_t min_caml_hp is not supported.")
+  | id ->
+    match List.last (String.split id ~on:'.') with
+    | Some v -> int_of_string v
+    | None -> print_endline id; int_of_string id
+
+let string_of_id_or_imm = function
+  | C (n) -> string_of_int n
+  | V (id) -> id
 
 let rec find_label_number label = function
   | [] -> let Id.L s = label in int_of_id_t s
@@ -46,30 +54,31 @@ let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数が
 
 let is_first_dispatch = ref true
 
-let rec interp prog instr reg mem jit_args = match instr with
+let rec interp prog instr reg mem  = match instr with
   | Ans exp ->
-    let res = eval_exp prog exp reg mem jit_args in
+    let res = eval_exp prog exp reg mem  in
     (* Logger.debug (Printf.sprintf "Ans (%d)" res); *)
     res
   | Let (("min_caml_hp", _), exp, t) ->
-    let res = eval_exp prog exp reg mem jit_args in
+    let res = eval_exp prog exp reg mem  in
     Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" "min_caml_hp" !heap res);
     heap := res;
-    interp prog t reg mem jit_args
+    interp prog t reg mem 
   | Let ((id, _), exp, t) ->
     let reg_num = int_of_id_t id in
-    let res = eval_exp prog exp reg mem jit_args in
+    let res = eval_exp prog exp reg mem  in
     Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
     reg.(reg_num) <- res;
-    begin
-      match !enable_jit, !is_first_dispatch with
-      | true, true ->
-        is_first_dispatch := false;
-        interp prog (Ans (CallDir (Id.L jit_args.trace_name, jit_args.reds, []))) reg mem jit_args
-      | _ -> interp prog t reg mem jit_args
-    end
+    interp prog t reg mem 
+(* begin
+ *   match !enable_jit, !is_first_dispatch with
+ *   | true, true ->
+ *     is_first_dispatch := false;
+ *     interp prog (Ans (CallDir (Id.L .trace_name, .reds, []))) reg mem 
+ *   | _ -> interp prog t reg mem 
+ * end *)
 
-and eval_exp prog exp' reg mem jit_args = match exp' with
+and eval_exp prog exp' reg mem  = match exp' with
   | Nop ->
     Logger.debug ("Nop");
     0
@@ -191,9 +200,9 @@ and eval_exp prog exp' reg mem jit_args = match exp' with
     in
     Logger.debug (Printf.sprintf "IfEq (id1: %s, id2: %s, t1: %d, t2: %d)" id1 (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 = r2 then
-      interp prog t1 reg mem jit_args
+      interp prog t1 reg mem 
     else
-      interp prog t2 reg mem jit_args
+      interp prog t2 reg mem 
   | IfLE (id, id_or_imm, t1, t2) ->
     let r1 = match id with "min_caml_hp" -> !heap | _ -> reg.(int_of_id_t id) in
     let r2 = match id_or_imm with
@@ -202,9 +211,9 @@ and eval_exp prog exp' reg mem jit_args = match exp' with
     in
     Logger.debug (Printf.sprintf "IfLE (id: %s, id_or_imm: %s, t1: %d, t2: %d)" id (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 <= r2 then
-      interp prog t1 reg  mem jit_args
+      interp prog t1 reg  mem 
     else
-      interp prog t2 reg  mem jit_args
+      interp prog t2 reg  mem 
   | IfGE (id, id_or_imm, t1, t2) ->
     let r1 = match id with "min_caml_hp" -> !heap | _ -> reg.(int_of_id_t id) in
     let r2 = match id_or_imm with
@@ -213,9 +222,9 @@ and eval_exp prog exp' reg mem jit_args = match exp' with
     in
     Logger.debug (Printf.sprintf "IfGE (id1: %s, id2: %s, t1: %d, t2: %d)" id (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 >= r2 then
-      interp prog t1 reg  mem jit_args
+      interp prog t1 reg  mem 
     else
-      interp prog t2 reg  mem jit_args
+      interp prog t2 reg  mem 
   | CallCls (id_t, args, _) ->
     let r1 = reg.(int_of_id_t id_t) in
     let m1 = mem.(r1) in
@@ -224,7 +233,7 @@ and eval_exp prog exp' reg mem jit_args = match exp' with
     let fundef = lookup_by_id_l prog (Id.L (id)) in
     let reg' = make_reg reg (fundef.args) args in
     reg'.(int_of_id_t id) <- r1;
-    interp prog (fundef.body) reg' mem jit_args
+    interp prog (fundef.body) reg' mem 
   | CallDir (Id.L ("min_caml_print_int"), [arg], _) ->
     let v = reg.(int_of_id_t arg) in
     Logger.debug (Printf.sprintf "CallDir min_caml_print_int %d" v);
@@ -250,7 +259,7 @@ and eval_exp prog exp' reg mem jit_args = match exp' with
     let fundef = lookup_by_id_l prog name in
     let reg' = make_reg reg (fundef.args) args in
     let Id.L s = name in Logger.debug (Printf.sprintf "CallDir %s" s);
-    interp prog (fundef.body) reg' mem jit_args
+    interp prog (fundef.body) reg' mem 
   | _ -> raise (Un_implemented_instruction "Not implemented.")
 
 
@@ -259,11 +268,4 @@ let f prog =
   let mem = Array.create register_size 0 in
   let prog' = to_prog_with_label prog in
   let ProgWithLabel (_, _, instructions, labels) = prog' in
-  let jit_args =
-    { trace_name = ""
-    ; reds = []
-    ; greens = []
-    ; loop_header = 0
-    ; loop_pc_place = 0; }
-  in
-  interp prog' instructions reg mem jit_args
+  interp prog' instructions reg mem

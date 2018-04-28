@@ -1,6 +1,6 @@
 open Asm
-open Core
 open Util
+open Core
 
 let int_of_id_t id =
   if String.equal id "min_caml_hp" then

@@ -1,13 +1,14 @@
 S .
 S src/
-S src/jit/
-S src/util/
+S jit/
+S util/
 S test/
 
 B _build/
 B _build/src/
-B _build/src/jit/
-B _build/src/util/
+B _build/jit/
+B _build/util/
 B _build/test/
+B _build/test/util/
 
 PKG core lwt ppx_jane ounit str
