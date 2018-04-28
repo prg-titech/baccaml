@@ -29,10 +29,3 @@
   (action  (run ${<})
 )))
 
-(alias
- ((name simpletest)
-  (deps (simple4_test.exe))
-  (action  (run ${<})
-)))
-
-
