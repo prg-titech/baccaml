@@ -1,6 +1,6 @@
 .default: build
 
-.all: build clean example testall runtest gcc
+.all: build clean example test gcc
 
 CC = gcc
 CFLAGS = -g -O2 -Wall
@@ -20,7 +20,7 @@ MAIN := src/main.exe
 .PHONY: build
 build:
 	jbuilder build $(MAIN)
-	ln -s _build/default/$(MAIN) .
+	ln -sf _build/default/$(MAIN) .
 
 .PHONY: clean
 clean:
@@ -32,7 +32,7 @@ jit_clean:
 	@rm -rf *.dSYM
 
 .PHONY: test
-runtest:
+test:
 	jbuilder runtest
 
 .PHONY: gcc
