@@ -3,7 +3,7 @@ maintainer: "yuizalp@gmail.com"
 authors: ["Yusuke Izawa"]
 homepage: "https://github.com/prg-titech/baccaml"
 bug-reports: "https://github.com/prg-titech/baccaml/issues"
-dev-repo: "https://github.com/prg-titech/baccaml/issues"
+dev-repo: "https://github.com/prg-titech/baccaml.git"
 license: "Apache 2.0"
 version: 1
 build:
