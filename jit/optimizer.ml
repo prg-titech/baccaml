@@ -1,11 +1,9 @@
 open Core
 
 open Mincaml
-open Asm
 open Util
+open Asm
 open Jit_config
-
-module Logger = Util__.Logger
 
 let optimize_exp p e reg mem = match e with
   | Set n ->
