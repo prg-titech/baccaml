@@ -1,16 +1,14 @@
-<<<<<<< HEAD
-=======
-open Mincaml
-open Baccaml_jit
->>>>>>> feature/enable-dune
-open Asm
 open Core
-open Jit_config
+
+open Mincaml
 open Mincaml_util
+open Baccaml_jit
+open Jit_config
+open Asm
 
 exception No_function_defs of string
 
-exception Tracing_jit_failed of string
+exception Jit_failed of string
 
 module TJ = Tracing_jit
 
@@ -19,6 +17,13 @@ module MJ = Method_jit
 let is_tracing = ref true
 
 let is_method = ref false
+
+let emit (~f : string) (~inameo : string) (~inamen: string) trace =
+  Jit_emit.emit_trace'
+          ~fundef:trace
+          ~fname:(if !is_tracing then f ^ "_tj" else if !is_method then f ^ "_mj" else f)
+          ~inameo:inameo
+          ~inamen:inamen
 
 let jit
     ~fname:f
@@ -36,11 +41,10 @@ let jit
   try
     Lexing.from_channel inchan
     |> virtualize
-    |> Simm.f
     |> fun (Prog (_, fundefs, body) as prog) ->
     match List.hd fundefs with
     | Some { name; args; fargs; body; ret } ->
-      if !is_tracing then
+      begin if !is_tracing then
         let jit_args = {
           trace_name = "min_caml_test_trace";
           reds = reds;
@@ -49,12 +53,6 @@ let jit
           loop_pc_place = pp;
         } in
         TJ.exec_tracing_jit prog body reg mem jit_args
-        |> fun trace ->
-        Jit_emit.emit_trace'
-          ~fundef:trace
-          ~fname:(f ^ "_tj")
-          ~inameo:inameo
-          ~inamen:inamen
       else if !is_method then
         let method_jit_args = {
           method_name = "min_caml_test_trace";
@@ -64,20 +62,15 @@ let jit
           pc_place = pp
         } in
         MJ.exec prog body reg mem method_jit_args
-        |> fun trace ->
-        Jit_emit.emit_trace'
-          ~fundef:trace
-          ~fname:(f ^ "_tj")
-          ~inameo:inameo
-          ~inamen:inamen
       else
-        ()
+        raise @@ Jit_failed (Printf.sprintf "please set is_tracing or is_method true")
+    end
+      |> emit f inameo inamen
     | None ->
-      raise (No_function_defs (Printf.sprintf "No functions in %s" f))
-
+      raise  @@ No_function_defs (Printf.sprintf "No functions in %s" f)
   with e ->
     In_channel.close inchan;
-    raise (Tracing_jit_failed ( Printf.sprintf "Executing tracing jit is failed in %s" f))
+    raise @@ Jit_failed (Printf.sprintf "Executing tracing jit is failed in %s" f)
 
 let _ =
   let files = ref [] in
