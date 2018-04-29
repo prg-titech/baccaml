@@ -20,10 +20,10 @@ let is_method = ref false
 
 let emit (f : string) (inameo : string) (inamen : string) trace =
   Jit_emit.emit_trace'
-          ~fundef:trace
-          ~fname:(if !is_tracing then f ^ "_tj" else if !is_method then f ^ "_mj" else f)
-          ~inameo:inameo
-          ~inamen:inamen
+    ~fundef:trace
+    ~fname:(if !is_tracing then f ^ "_tj" else if !is_method then f ^ "_mj" else f)
+    ~inameo:inameo
+    ~inamen:inamen
 
 let jit
     ~fname:f
@@ -44,27 +44,28 @@ let jit
     |> fun (Prog (_, fundefs, body) as prog) ->
     match List.hd fundefs with
     | Some { name; args; fargs; body; ret } ->
-      begin if !is_tracing then
-        let jit_args = {
-          trace_name = "min_caml_test_trace";
-          reds = reds;
-          greens = greens;
-          loop_header = Option.value loop_header ~default:(failwith "specify loop_header");
-          loop_pc_place = pp;
-        } in
-        TJ.exec_tracing_jit prog body reg mem jit_args
-      else if !is_method then
-        let method_jit_args = {
-          method_name = "min_caml_test_trace";
-          reds = reds;
-          method_start = Option.value method_start ~default:(failwith "specify method_start");
-          method_end = Option.value method_end ~default:(failwith "specify method_end");
-          pc_place = pp
-        } in
-        MJ.exec prog body reg mem method_jit_args
-      else
-        raise @@ Jit_failed (Printf.sprintf "please set is_tracing or is_method true")
-    end
+      begin
+        if !is_tracing then
+          let jit_args = {
+            trace_name = "min_caml_test_trace";
+            reds = reds;
+            greens = greens;
+            loop_header = Option.value loop_header ~default:(failwith "specify loop_header");
+            loop_pc_place = pp;
+          } in
+          TJ.exec_tracing_jit prog body reg mem jit_args
+        else if !is_method then
+          let method_jit_args = {
+            method_name = "min_caml_test_trace";
+            reds = reds;
+            method_start = Option.value method_start ~default:(failwith "specify method_start");
+            method_end = Option.value method_end ~default:(failwith "specify method_end");
+            pc_place = pp
+          } in
+          MJ.exec prog body reg mem method_jit_args
+        else
+          raise @@ Jit_failed (Printf.sprintf "please set is_tracing or is_method true")
+      end
       |> emit f inameo inamen
     | None ->
       raise  @@ No_function_defs (Printf.sprintf "No functions in %s" f)
