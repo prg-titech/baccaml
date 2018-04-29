@@ -18,7 +18,7 @@ let is_tracing = ref true
 
 let is_method = ref false
 
-let emit (~f : string) (~inameo : string) (~inamen: string) trace =
+let emit (f : string) (inameo : string) (inamen : string) trace =
   Jit_emit.emit_trace'
           ~fundef:trace
           ~fname:(if !is_tracing then f ^ "_tj" else if !is_method then f ^ "_mj" else f)
