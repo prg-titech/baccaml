@@ -4,6 +4,7 @@ open Mincaml
 open Mincaml_util
 open Baccaml_jit
 open Jit_config
+open Jit_util
 open Asm
 
 exception No_function_defs of string
@@ -17,6 +18,12 @@ module MJ = Method_jit
 let is_tracing = ref true
 
 let is_method = ref false
+
+let colorize_regs (regs : value array) (reds : string * int list) (greends : string * int list) =
+  ()
+
+let colorize_mems (mems : value array) (reds : string * int list) (greends : string * int list) =
+  ()
 
 let emit (f : string) (inameo : string) (inamen : string) trace =
   Jit_emit.emit_trace'

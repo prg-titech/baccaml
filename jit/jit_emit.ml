@@ -3,10 +3,6 @@ open Util
 open Asm
 open Emit
 
-module String = struct
-  let empty = ""
-end
-
 let replace input output =
   Str.global_replace (Str.regexp_string input) output
 
@@ -19,10 +15,16 @@ let write_string_of_list oc sl =
   List.iter (fun s -> Printf.fprintf oc s) sl
 
 (* 命令列のアセンブリ生成 as String *)
-let rec create_asm = function
-  | dest, Ans (exp) -> create_asm' (dest, exp)
+let rec create_asm (dest, t) =
+  let buf = Buffer.create 10000 in
+  match dest, t with
+  | dest, Ans (exp) ->
+    create_asm' (dest, exp) |> Buffer.add_string buf;
+    Buffer.contents buf
   | dest, Let ((x, t), exp, e) ->
-    create_asm' (NonTail(x), exp) ^ (create_asm (dest, e))
+    create_asm' (NonTail(x), exp) |> Buffer.add_string buf;
+    create_asm (dest, e) |> Buffer.add_string buf;
+    Buffer.contents buf
 
 (* 各命令のアセンブリ生成 as String *)
 and create_asm' = function
@@ -30,9 +32,9 @@ and create_asm' = function
   | NonTail (x), Set (i) -> Printf.sprintf "\tmovl\t$%d, %s\n" i x
   | NonTail (x), SetL (Id.L (y)) -> Printf.sprintf "\tmovl\t$%s, %s\n" y x
   | NonTail (x), Mov (y) ->
-    if x <> y then Printf.sprintf "\tmovl\t%s, %s\n" y x else String.empty
+    if x <> y then Printf.sprintf "\tmovl\t%s, %s\n" y x else ""
   | NonTail(x), Neg (y) ->
-    (if x <> y then Printf.sprintf "\tmovl\t%s, %s\n" y x else String.empty) ^
+    (if x <> y then Printf.sprintf "\tmovl\t%s, %s\n" y x else "") ^
     Printf.sprintf "\tnegl\t%s\n" x
   | NonTail (x), Add (y, z') ->
     if V(x) = z' then
@@ -41,7 +43,7 @@ and create_asm' = function
       begin
         if x <> y
         then Printf.sprintf "\tmovl\t%s, %s\n" y x
-        else String.empty
+        else ""
       end  ^ Printf.sprintf "\taddl\t%s, %s\n" (pp_id_or_imm z') x
   | NonTail (x), Sub (y, z') ->
     if V (x) = z' then
@@ -51,18 +53,18 @@ and create_asm' = function
       begin
         if x <> y
         then Printf.sprintf "\tmovl\t%s, %s\n" y x
-        else String.empty
+        else ""
       end ^ Printf.sprintf "\tsubl\t%s, %s\n" (pp_id_or_imm z') x
   | NonTail (x), Ld (y, V (z), i) -> Printf.sprintf "\tmovl\t(%s,%s,%d), %s\n" y z i x
   | NonTail (x), Ld (y, C (j), i) -> Printf.sprintf "\tmovl\t%d(%s), %s\n" (j * i) y x
   | NonTail (_), St (x, y, V (z), i) -> Printf.sprintf "\tmovl\t%s, (%s,%s,%d)\n" x y z i
   | NonTail (_), St (x, y, C (j), i) -> Printf.sprintf "\tmovl\t%s, %d(%s)\n" x (j * i) y
   | NonTail (x), FMovD (y) ->
-    if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x else String.empty
+    if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x else ""
   | NonTail(x), FNegD(y) ->
     begin
       if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
-      else String.empty
+      else ""
     end ^ Printf.sprintf "\txorpd\tmin_caml_fnegd, %s\n" x
   | NonTail(x), FAddD(y, z) ->
     if x = z then
@@ -70,7 +72,7 @@ and create_asm' = function
     else
       begin
         if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
-        else String.empty
+        else ""
       end ^ Printf.sprintf "\taddsd\t%s, %s\n" z x
   | NonTail(x), FSubD(y, z) ->
     if x = z then (* [XXX] ugly *)
@@ -78,12 +80,12 @@ and create_asm' = function
       Printf.sprintf "\tmovsd\t%s, %d(%s)\n" z ss reg_sp ^
       begin
         if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
-        else String.empty
+        else ""
       end ^ Printf.sprintf "\tsubsd\t%d(%s), %s\n" ss reg_sp x
     else
       begin
         if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
-        else String.empty
+        else ""
       end ^ Printf.sprintf "\tsubsd\t%s, %s\n" z x
   | NonTail(x), FMulD(y, z) ->
     if x = z then
@@ -91,7 +93,7 @@ and create_asm' = function
     else
       begin
         if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
-        else String.empty
+        else ""
       end ^ Printf.sprintf "\tmulsd\t%s, %s\n" z x
   | NonTail(x), FDivD(y, z) ->
     if x = z then
@@ -99,12 +101,12 @@ and create_asm' = function
       Printf.sprintf "\tmovsd\t%s, %d(%s)\n" z ss reg_sp ^
       begin
         if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
-        else String.empty
+        else ""
       end ^ Printf.sprintf "\tdivsd\t%d(%s), %s\n" ss reg_sp x
     else
       begin
         if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
-        else String.empty
+        else ""
       end ^ Printf.sprintf "\tdivsd\t%s, %s\n" z x
   | NonTail(x), LdDF(y, V(z), i) -> Printf.sprintf "\tmovsd\t(%s,%s,%d), %s\n" y z i x
   | NonTail(x), LdDF(y, C(j), i) -> Printf.sprintf "\tmovsd\t%d(%s), %s\n" (j * i) y x
@@ -117,7 +119,7 @@ and create_asm' = function
   | NonTail(_), Save(x, y) when List.mem x allfregs && not (S.mem y !stackset) ->
     savef y;
     Printf.sprintf "\tmovsd\t%s, %d(%s)\n" x (offset y) reg_sp
-  | NonTail(_), Save(x, y) -> assert (S.mem y !stackset); String.empty
+  | NonTail(_), Save(x, y) -> assert (S.mem y !stackset); ""
   | NonTail(x), Restore(y) when List.mem x allregs ->
     Printf.sprintf "\tmovl\t%d(%s), %s\n" (offset y) reg_sp x
   | NonTail(x), Restore(y) ->
@@ -173,35 +175,37 @@ and create_asm' = function
     create_asm'_args [(x, reg_cl)] ys zs ^
     Printf.sprintf "\tjmp\t*(%s)\n" reg_cl
   | Tail, CallDir(Id.L(x), ys, zs) -> (* 末尾呼び出し *)
-    create_asm'_args [] ys zs ^
-    Printf.sprintf "\tjmp\t%s\n" x;
+    Buffer.create 100
+    |> fun buf -> Buffer.add_string buf @@ create_asm'_args [] ys zs
+    |> fun _ -> Buffer.add_string buf @@ Printf.sprintf "\tjmp\t%s\n" x
+    |> fun _ -> Buffer.contents buf
   | NonTail(a), CallCls(x, ys, zs) ->
     create_asm'_args [(x, reg_cl)] ys zs ^
     let ss = stacksize () in
-    (if ss > 0 then Printf.sprintf "\taddl\t$%d, %s\n" ss reg_sp else String.empty) ^
+    (if ss > 0 then Printf.sprintf "\taddl\t$%d, %s\n" ss reg_sp else "") ^
     Printf.sprintf "\tcall\t*(%s)\n" reg_cl ^
-    (if ss > 0 then Printf.sprintf "\tsubl\t$%d, %s\n" ss reg_sp else String.empty) ^
+    (if ss > 0 then Printf.sprintf "\tsubl\t$%d, %s\n" ss reg_sp else "") ^
     if List.mem a allregs && a <> regs.(0) then
       Printf.sprintf "\tmovl\t%s, %s\n" regs.(0) a
     else if List.mem a allfregs && a <> fregs.(0) then
       Printf.sprintf "\tmovsd\t%s, %s\n" fregs.(0) a
     else
-      String.empty
+      ""
   | NonTail(a), CallDir(Id.L(x), ys, zs) ->
     let ss = stacksize () in
     create_asm'_args [] ys zs ^
-    (if ss > 0 then Printf.sprintf "\taddl\t$%d, %s\n" ss reg_sp else String.empty) ^
+    (if ss > 0 then Printf.sprintf "\taddl\t$%d, %s\n" ss reg_sp else "") ^
     Printf.sprintf "\tcall\t%s\n" x ^
-    (if ss > 0 then Printf.sprintf "\tsubl\t$%d, %s\n" ss reg_sp else String.empty) ^
+    (if ss > 0 then Printf.sprintf "\tsubl\t$%d, %s\n" ss reg_sp else "") ^
     if List.mem a allregs && a <> regs.(0) then
       Printf.sprintf "\tmovl\t%s, %s\n" regs.(0) a
     else if List.mem a allfregs && a <> fregs.(0) then
       Printf.sprintf "\tmovsd\t%s, %s\n" fregs.(0) a
     else
-      String.empty
+      ""
 
 and create_asm'_tail_if e1 e2 b bn =
-  let res = ref String.empty in
+  let res = ref "" in
   let b_else = Id.genid (b ^ "_else") in
   res := !res ^ Printf.sprintf "\t%s\t%s\n" bn b_else;
   let stackset_back = !stackset in
@@ -210,7 +214,7 @@ and create_asm'_tail_if e1 e2 b bn =
   !res ^ (create_asm (Tail, e2))
 
 and create_asm'_non_tail_if dest e1 e2 b bn =
-  let res = ref String.empty in
+  let res = ref "" in
   let b_else = Id.genid (b ^ "_else") in
   let b_cont = Id.genid (b ^ "_cont") in
   res := !res ^ Printf.sprintf "\t%s\t%s\n" bn b_else;
@@ -225,7 +229,7 @@ and create_asm'_non_tail_if dest e1 e2 b bn =
   !res
 
 and create_asm'_args x_reg_cl ys zs =
-  let res = ref String.empty in
+  let res = ref "" in
   assert (List.length ys <= Array.length regs - List.length x_reg_cl);
   assert (List.length zs <= Array.length fregs);
   let sw = Printf.sprintf "%d(%s)" (stacksize ()) reg_sp in
@@ -238,7 +242,7 @@ and create_asm'_args x_reg_cl ys zs =
   res :=
     List.fold_left
       (fun s (y, r) -> s ^ Printf.sprintf "\tmovl\t%s, %s\n" y r)
-      String.empty
+      ""
       (shuffle sw yrs);
   let (d, zfrs) =
     List.fold_left
@@ -248,9 +252,9 @@ and create_asm'_args x_reg_cl ys zs =
   in
   !res ^
   (List.fold_left
-    (fun s (z, fr) -> s ^ Printf.sprintf "\tmovsd\t%s, %s\n" z fr)
-    String.empty
-    (shuffle sw zfrs)) ^ (Printf.sprintf "\tpopl\t%%eax\n")
+     (fun s (z, fr) -> s ^ Printf.sprintf "\tmovsd\t%s, %s\n" z fr)
+     ""
+     (shuffle sw zfrs)) ^ (Printf.sprintf "\tpopl\t%%eax\n")
 
 
 let emit_trace' ~fundef ~fname ~inameo ~inamen =

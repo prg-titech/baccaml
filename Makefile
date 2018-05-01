@@ -15,19 +15,20 @@ join-reg join-reg2 non-tail-if non-tail-if2 inprod inprod-rec \
 inprod-loop matmul matmul-flat manyargs fib-tail array array2 \
 float tuple
 
-MAIN := src/main.exe
+MAIN := main.exe
 
 .PHONY: build
 build:
-	jbuilder build $(MAIN)
-	ln -sf _build/default/$(MAIN) .
+	jbuilder build src/$(MAIN)
+	ln -s _build/default/src/$(MAIN) .
+	mv $(MAIN) min-caml
 
 .PHONY: clean
 clean:
 	jbuilder clean
 
 .PHONY: jclean
-jit_clean:
+jclean:
 	@rm -rf *.o *.s test/*.o test/*.s
 	@rm -rf *.dSYM
 
@@ -37,9 +38,9 @@ test:
 
 .PHONY: gcc
 gcc:
-	./min-caml test/data/$(INTERP) && \
-	gcc -c -m32 $(TRACE).s && \
-	gcc -g -Wall -O2 -m32 lib/libmincaml.S lib/stub.c test/data/$(INTERP).s $(TRACE).o -o $(TRACE) && \
+	./main.exe test/$(INTERP)
+	gcc -c -m32 _build/default/test/$(TRACE).s -o _build/default/test/$(TRACE).o
+	gcc -g -Wall -O2 -m32 lib/libmincaml.S lib/stub.c test/$(INTERP).s _build/default/test/$(TRACE).o -o $(TRACE)
 	rm -rf $(TRACE).dSYM
 
 .PHONY: example
