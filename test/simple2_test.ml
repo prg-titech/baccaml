@@ -7,6 +7,8 @@ open Core
 open OUnit
 open Test_util
 
+module TJ = Tracing_jit
+
 module JE = Jit_emit
 
 let Prog (_, fundefs, main) as prog =
@@ -64,7 +66,7 @@ let _ = run_test_tt_main begin
         for i = 0 to (Array.length bytecode - 1) do
           mem.(0 + i * 4) <- Green (bytecode.(i))
         done;
-        let res = exec_tracing_jit prog body reg mem tracing_jit_args in
+        let res = TJ.exec prog body reg mem tracing_jit_args in
         Out_channel.print_endline (Emit_virtual.to_string_fundef res);
         (* Jit_compiler.compile (Prog ([], res :: [], trace_main)) "test/simple2_tj.s"; *)
       end

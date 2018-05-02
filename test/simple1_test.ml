@@ -5,6 +5,8 @@ open Core
 open OUnit
 open Test_util
 
+module TJ = Tracing_jit
+
 module JE = Jit_emit
 
 let jit_args =
@@ -21,6 +23,7 @@ let _ = run_test_tt_main begin
           In_channel.create ("simple1.ml")
           |> Lexing.from_channel
           |> virtualize
+          |> Simm.f
         in
         let Prog (_, fundefs, main) = prog in
         let fundef = List.hd_exn fundefs in
@@ -33,10 +36,10 @@ let _ = run_test_tt_main begin
         mem.(1 * 4) <- Green (2);
         mem.(2 * 4) <- Green (0);
         mem.(3 * 4) <- Green (4);
-        reg.(40) <- Green (0);
-        reg.(41) <- Green (0);
-        reg.(42) <- Red (100);
-        let res = exec_tracing_jit prog body reg mem jit_args in
+        reg.(42) <- Green (0);
+        reg.(43) <- Green (0);
+        reg.(44) <- Red (100);
+        let res = TJ.exec prog body reg mem jit_args in
         print_string (Emit_virtual.to_string_fundef res);
         JE.emit_trace' ~fundef:res ~fname:"simple1_tj" ~inameo:"interpret.39" ~inamen:"interpret.40"
       end

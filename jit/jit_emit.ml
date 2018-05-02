@@ -174,6 +174,8 @@ and create_asm' = function
   | Tail, CallCls(x, ys, zs) -> (* 末尾呼び出し (caml2html: emit_tailcall) *)
     create_asm'_args [(x, reg_cl)] ys zs ^
     Printf.sprintf "\tjmp\t*(%s)\n" reg_cl
+  | _, CallDir (Id.L ("min_caml_jit_dispatch"), _, _) ->
+    ""
   | Tail, CallDir(Id.L(x), ys, zs) -> (* 末尾呼び出し *)
     Buffer.create 100
     |> fun buf -> Buffer.add_string buf @@ create_asm'_args [] ys zs

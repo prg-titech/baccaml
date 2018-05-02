@@ -25,6 +25,8 @@ let rec add_cont_proc id_t instr body =
 let rec tracing_jit p instr reg mem jit_args = match instr with
   | Ans (exp) ->
     tracing_jit_ans p exp reg mem jit_args
+  | Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), _, _), body) ->
+    tracing_jit p body reg mem jit_args
   | Let ((dest, typ), CallDir (id_l, argsr, argst), body) ->
     let fundef = (find_fundef p id_l) in
     let t = tracing_jit p (inline_calldir_exp argsr fundef reg) reg mem jit_args in
@@ -57,9 +59,12 @@ and tracing_jit_ans p e reg mem jit_args = match e with
       | C (n) -> Green (n)
     in
     (match r1, r2 with
-     | Green (n1), Green (n2) ->
+     | Green (n1), Green (n2)
+     | LightGreen (n1), Green (n2)
+     | Green (n1), LightGreen (n2)
+     | LightGreen (n1), LightGreen (n2) ->
        tracing_jit p (select_branch e n1 n2 t1 t2) reg mem jit_args
-     | Green (n1), Red (n2) ->
+     | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
        let id_r2 = match id_or_imm with
            V (id) -> id
          | C _ -> failwith "V (id) should be come here."
@@ -83,7 +88,7 @@ and tracing_jit_ans p e reg mem jit_args = match e with
         | _ ->
           failwith "Not supported"
        end
-     | Red (n1), Green (n2) ->
+     | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
        (match e with
         | IfEq _ ->
           if n1 = n2 then
@@ -131,10 +136,18 @@ and tracing_jit_ans p e reg mem jit_args = match e with
         Ans (e)
     end
 
-let exec_tracing_jit p t reg mem jit_args =
-  let res = tracing_jit p t reg mem jit_args in
-  { name = Id.L (jit_args.trace_name)
-  ; args = jit_args.reds
-  ; fargs = []
-  ; body = res
-  ; ret = Type.Int }
+let exec p t reg mem jit_args =
+  begin match t with
+    | Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), _, _), body) ->
+      let Prog (table, fundefs, t) = p in
+      let p' = Prog (table, fundefs, body) in
+      tracing_jit p' body reg mem jit_args
+    | Ans _ | Let _ ->
+      tracing_jit p t reg mem jit_args
+  end
+  |> fun res ->
+    { name = Id.L (jit_args.trace_name)
+    ; args = jit_args.reds
+    ; fargs = []
+    ; body = res
+    ; ret = Type.Int }
