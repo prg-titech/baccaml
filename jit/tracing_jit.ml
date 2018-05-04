@@ -52,13 +52,13 @@ and tracing_jit_ans p e reg mem jit_args = match e with
       | false ->
         tracing_jit p (inline_calldir_exp args fundef reg) reg mem jit_args
     end
-  | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) ->
+  | IfEq (id_t, id_or_imm, t1, t2) ->
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
       | V (id) -> reg.(int_of_id_t id)
       | C (n) -> Green (n)
     in
-    (match r1, r2 with
+    begin match r1, r2 with
      | Green (n1), Green (n2)
      | LightGreen (n1), Green (n2)
      | Green (n1), LightGreen (n2)
@@ -69,65 +69,86 @@ and tracing_jit_ans p e reg mem jit_args = match e with
            V (id) -> id
          | C _ -> failwith "V (id) should be come here."
        in
-       begin match e with
-        | IfEq _ ->
-          if n1 = n2 then
-            Ans (IfEq (id_r2, C (n1), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
-          else
-            Ans (IfEq (id_r2, C (n1), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
-        | IfLE _ ->
-          if n1 <= n2 then
-            Ans (IfLE (id_r2, C (n1), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
-          else
-            Ans (IfLE (id_r2, C (n1), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
-        | IfGE _ ->
-          if n1 >= n2 then
-            Ans (IfGE (id_r2, C (n1), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
-          else
-            Ans (IfGE (id_r2, C (n1), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
-        | _ ->
-          failwith "Not supported"
-       end
+       if n1 = n2 then
+         Ans (IfEq (id_r2, C (n1), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
+       else
+         Ans (IfEq (id_r2, C (n1), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
-       (match e with
-        | IfEq _ ->
-          if n1 = n2 then
-            Ans (IfEq (id_t, C (n2), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
-          else
-            Ans (IfEq (id_t, C (n2), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
-        | IfLE _ ->
-          if n1 <= n2 then
-            Ans (IfLE (id_t, C (n2), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
-          else
-            Ans (IfLE (id_t, C (n2), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
-        | IfGE _ ->
-          if n1 >= n2 then
-            Ans (IfGE (id_t, C (n2), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
-          else
-            Ans (IfGE (id_t, C (n2), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
-        | _ ->
-          failwith "Not supported"
-       )
+       if n1 = n2 then
+         Ans (IfEq (id_t, C (n2), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
+       else
+         Ans (IfEq (id_t, C (n2), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
      | Red (n1), Red (n2) ->
-       (match e with
-        | IfEq _ ->
-          if n1 = n2 then
-            Ans (IfEq (id_t, id_or_imm, tracing_jit p t1 reg mem jit_args, restore_green reg t2))
-          else
-            Ans (IfEq (id_t, id_or_imm, restore_green reg t1, tracing_jit p t2 reg mem jit_args))
-        | IfLE _ ->
-          if n1 <= n2 then
-            Ans (IfLE (id_t, id_or_imm, tracing_jit p t1 reg mem jit_args, restore_green reg t2))
-          else
-            Ans (IfLE (id_t, id_or_imm, restore_green reg t1, tracing_jit p t2 reg mem jit_args))
-        | IfGE _ ->
-          if n1 >= n2 then
-            Ans (IfGE (id_t, id_or_imm, tracing_jit p t1 reg mem jit_args, restore_green reg t2))
-          else
-            Ans (IfGE (id_t, id_or_imm, restore_green reg t1, tracing_jit p t2 reg mem jit_args))
-        | _ ->
-          failwith "Not supported"
-       ))
+       if n1 = n2 then
+         Ans (IfEq (id_t, id_or_imm, tracing_jit p t1 reg mem jit_args, restore_green reg t2))
+       else
+         Ans (IfEq (id_t, id_or_imm, restore_green reg t1, tracing_jit p t2 reg mem jit_args))
+    end
+  | IfLE (id_t, id_or_imm, t1, t2) ->
+        let r1 = reg.(int_of_id_t id_t) in
+    let r2 = match id_or_imm with
+      | V (id) -> reg.(int_of_id_t id)
+      | C (n) -> Green (n)
+    in
+    begin match r1, r2 with
+     | Green (n1), Green (n2)
+     | LightGreen (n1), Green (n2)
+     | Green (n1), LightGreen (n2)
+     | LightGreen (n1), LightGreen (n2) ->
+       tracing_jit p (select_branch e n1 n2 t1 t2) reg mem jit_args
+     | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
+       let id_r2 = match id_or_imm with
+           V (id) -> id
+         | C _ -> failwith "V (id) should be come here."
+       in
+       if n1 <= n2 then
+         Ans (IfLE (id_r2, C (n1), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
+       else
+         Ans (IfLE (id_r2, C (n1), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
+
+     | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
+       if n1 <= n2 then
+         Ans (IfLE (id_t, C (n2), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
+       else
+         Ans (IfLE (id_t, C (n2), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
+     | Red (n1), Red (n2) ->
+       if n1 <= n2 then
+         Ans (IfLE (id_t, id_or_imm, tracing_jit p t1 reg mem jit_args, restore_green reg t2))
+       else
+         Ans (IfLE (id_t, id_or_imm, restore_green reg t1, tracing_jit p t2 reg mem jit_args))
+    end
+  | IfGE (id_t, id_or_imm, t1, t2) ->
+    let r1 = reg.(int_of_id_t id_t) in
+    let r2 = match id_or_imm with
+      | V (id) -> reg.(int_of_id_t id)
+      | C (n) -> Green (n)
+    in
+    begin match r1, r2 with
+     | Green (n1), Green (n2)
+     | LightGreen (n1), Green (n2)
+     | Green (n1), LightGreen (n2)
+     | LightGreen (n1), LightGreen (n2) ->
+       tracing_jit p (select_branch e n1 n2 t1 t2) reg mem jit_args
+     | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
+       let id_r2 = match id_or_imm with
+           V (id) -> id
+         | C _ -> failwith "V (id) should be come here."
+       in
+       if n1 >= n2 then
+         Ans (IfGE (id_r2, C (n1), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
+       else
+         Ans (IfGE (id_r2, C (n1), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
+     | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
+       if n1 >= n2 then
+         Ans (IfGE (id_t, C (n2), tracing_jit p t1 reg mem jit_args, restore_green reg t2))
+       else
+         Ans (IfGE (id_t, C (n2), restore_green reg t1, tracing_jit p t2 reg mem jit_args))
+     | Red (n1), Red (n2) ->
+       if n1 >= n2 then
+         Ans (IfGE (id_t, id_or_imm, tracing_jit p t1 reg mem jit_args, restore_green reg t2))
+       else
+         Ans (IfGE (id_t, id_or_imm, restore_green reg t1, tracing_jit p t2 reg mem jit_args))
+    end
   | _ ->
     begin match Optimizer.optimize_exp p e reg mem with
       | Specialized (v) ->
@@ -137,8 +158,10 @@ and tracing_jit_ans p e reg mem jit_args = match e with
     end
 
 let exec p t reg mem jit_args =
-  begin match t with
-    | Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), _, _), body) ->
+  Emit_virtual.to_string_t t |> print_endline;
+  begin match Simm.t t with
+    | Let (_, IfEq (_, _,
+                    Ans (CallDir (Id.L ("min_caml_jit_dispatch"), _, _)), _), body) ->
       let Prog (table, fundefs, t) = p in
       let p' = Prog (table, fundefs, body) in
       tracing_jit p' body reg mem jit_args
@@ -146,8 +169,8 @@ let exec p t reg mem jit_args =
       tracing_jit p t reg mem jit_args
   end
   |> fun res ->
-    { name = Id.L (jit_args.trace_name)
-    ; args = jit_args.reds
-    ; fargs = []
-    ; body = res
-    ; ret = Type.Int }
+  { name = Id.L (jit_args.trace_name)
+  ; args = jit_args.reds
+  ; fargs = []
+  ; body = res
+  ; ret = Type.Int }
