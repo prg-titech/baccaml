@@ -5,6 +5,8 @@ open Util
 open Asm
 open Jit_config
 
+exception Not_optimization_supported of string
+
 let optimize_exp p e reg mem = match e with
   | Set n ->
     Specialized (Green n)
@@ -215,4 +217,6 @@ let optimize_exp p e reg mem = match e with
         end
     end
   | _ ->
-    failwith "Not supported."
+    Emit_virtual.to_string_exp e
+    |> Printf.sprintf "%s is not supported in optimization."
+    |> fun s -> raise @@ Not_optimization_supported s
