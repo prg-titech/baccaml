@@ -1,11 +1,12 @@
 .default: build
 
-.all: build clean example test gcc
+.all: build clean jit-clean example test test-one gcc
 
 CC = gcc
 CFLAGS = -g -O2 -Wall
 OCAMLLDFLAGS = -warn-error -31
-OCAMLBUILD_OPTIONS = -use-ocamlfind
+
+MAIN = main.exe
 COMPILER = min-caml
 
 EXAMPLES = print sum-tail gcd sum fib ack even-odd adder \
@@ -15,33 +16,39 @@ join-reg join-reg2 non-tail-if non-tail-if2 inprod inprod-rec \
 inprod-loop matmul matmul-flat manyargs fib-tail array array2 \
 float tuple
 
-MAIN := main.exe
-
 .PHONY: build
 build:
-	jbuilder build src/$(MAIN)
-	ln -s _build/default/src/$(MAIN) .
-	mv $(MAIN) min-caml
+	@jbuilder build src/$(MAIN)
+	@ln -s _build/default/src/$(MAIN) .
+	@mv $(MAIN) $(COMPILER)
 
 .PHONY: clean
 clean:
-	jbuilder clean
+	@jbuilder clean
+	@rm -rf $(TRASH)
 
-.PHONY: jclean
-jclean:
-	@rm -rf *.o *.s test/*.o test/*.s
-	@rm -rf *.dSYM
+.PHONY: jit-clean
+jit-clean:
+	@rm -rf *.o *.s test/*.o test/*.s *.dSYM
+
+.PHONY: clean-all
+clean-all: clean jit-clean
 
 .PHONY: test
 test:
-	jbuilder runtest
+	@jbuilder runtest
+
+.PHONY: test-one
+test-one:
+	@jbuilder build test/$(SPEC).exe
+	@cd _build/default/test || exit && ./$(SPEC).exe
 
 .PHONY: gcc
 gcc:
-	./main.exe test/$(INTERP)
-	gcc -c -m32 _build/default/test/$(TRACE).s -o _build/default/test/$(TRACE).o
-	gcc -g -Wall -O2 -m32 lib/libmincaml.S lib/stub.c test/$(INTERP).s _build/default/test/$(TRACE).o -o $(TRACE)
-	rm -rf $(TRACE).dSYM
+	@./$(COMPILER) test/$(INTERP)
+	@gcc -c -m32 _build/default/test/$(TRACE).s -o _build/default/test/$(TRACE).o
+	@gcc -g -Wall -O2 -m32 lib/libmincaml.S lib/stub.c test/$(INTERP).s _build/default/test/$(TRACE).o -o $(TRACE)
+	@rm -rf $(TRACE).dSYM
 
 .PHONY: example
 example: $(EXAMPLES:%=example/%.cmp)
