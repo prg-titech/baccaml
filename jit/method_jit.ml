@@ -10,6 +10,12 @@ let find_pc argsr method_jit_args =
   | Some (s) -> int_of_id_t s
   | None -> failwith "find_pc is failed."
 
+let rec find_fundef prog name =
+  let Asm.Prog (_, fundefs, _) = prog in
+  match List.find fundefs ~f:(fun fundef -> fundef.name = name) with
+  | Some (body) -> body
+  | None -> failwith "find_fundef is failed"
+
 let jit_value_of_id_t reg id_t = reg.(int_of_id_t id_t)
 
 let jit_value_of_id_or_imm reg = function
@@ -198,11 +204,35 @@ and method_jit_ans p e reg mem method_jit_args = match e with
       | Not_specialized (e, v) -> Ans (e)
     end
 
-let exec p instr reg mem method_jit_args =
-  let { method_name; reds } = method_jit_args in
-  let res = method_jit p instr reg mem method_jit_args in
-  { name = Id.L (method_name)
-  ; args = reds
+let exec p t reg mem jit_args =
+  let t' = Simm.t t in
+  begin match t' with
+    | Let (_, IfEq (_, _,
+                    Ans (CallDir (Id.L ("min_caml_jit_dispatch"), _, _)), _), interp_body) ->
+      let Prog (table, fundefs, main) = p in
+      let { name; args; fargs; ret } =
+        match List.hd fundefs with
+        | Some fundef -> fundef
+        | None -> failwith "List.hd is failed in Tracing_jit.exec"
+      in
+      let fundefs' = List.map fundefs ~f:(fun fundef ->
+          let Id.L (x) = fundef.name in
+          match String.split ~on:'.' x |> List.hd with
+          | Some name' when name' = "interp" ->
+            let { name; args; fargs; ret } = fundef in
+            { name = name; args = args; fargs = fargs; body = interp_body; ret = ret }
+          | _ -> fundef)
+      in
+      let p' = Prog (table, fundefs', main) in
+      (method_jit p' interp_body reg mem jit_args, args)
+    | Ans _ | Let _ ->
+      let Prog (table, fundefs, t) = p in
+      let args = List.hd_exn fundefs |> fun fundef -> fundef.args in
+      (method_jit p t reg mem jit_args, args)
+  end
+  |> fun (res, args) ->
+  { name = Id.L (jit_args.method_name)
+  ; args = jit_args.reds
   ; fargs = []
   ; body = res
   ; ret = Type.Int }

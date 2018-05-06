@@ -32,8 +32,20 @@ and g' env = function (* 各命令の即値最適化 (caml2html: simm13_gprime) 
 
 let t t = g M.empty t
 
+let trim_dispatcher { name = l; args = xs; fargs = ys; body = e; ret = t } = match e with
+  | Let (_, IfEq (x, y, Ans (CallDir (Id.L ("min_caml_jit_dispatch"), args, fargs)), Ans (Nop)), body) ->
+    let body' = Ans (IfEq (x, y,
+                          Ans (CallDir (Id.L ("min_caml_test_trace"), args, fargs)), body))
+    in
+    { name = l; args = xs; fargs = ys; body = body'; ret = t }
+  | _ ->
+    { name = l; args = xs; fargs = ys; body = e; ret = t }
+
 let h { name = l; args = xs; fargs = ys; body = e; ret = t } = (* トップレベル関数の即値最適化 *)
   { name = l; args = xs; fargs = ys; body = g M.empty e; ret = t }
 
-let f (Prog(data, fundefs, e)) = (* プログラム全体の即値最適化 *)
-  Prog(data, List.map h fundefs, g M.empty e)
+let f' (Prog(data, fundefs, e)) =
+  Prog (data, List.map (fun fundef -> fundef |> h |> trim_dispatcher) fundefs , g M.empty e)
+
+let f (Prog(data, fundefs, e)) =
+  Prog (data, List.map h fundefs , g M.empty e)

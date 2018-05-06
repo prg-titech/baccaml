@@ -3,6 +3,8 @@ open Asm
 external gethi : float -> int32 = "gethi"
 external getlo : float -> int32 = "getlo"
 
+exception Offset_failed of string
+
 let stackset = ref S.empty (* すでにSaveされた変数の集合 (caml2html: emit_stackset) *)
 let stackmap = ref [] (* Saveされた変数の、スタックにおける位置 (caml2html: emit_stackmap) *)
 let save x =
@@ -25,11 +27,10 @@ let locate x =
 let offset x =
   if String.equal x "zero.0" then 0
   else
-    try
-      4 * List.hd (locate x)
-    with e ->
-      Format.printf "offset is failed. x: %s\n" x;
-      raise e
+    try 4 * List.hd (locate x)
+    with _ ->
+      let msg = Format.sprintf "offset is failed. x: %s\n" x in
+      raise @@ Offset_failed msg
 
 let stacksize () = align (List.length !stackmap * 4)
 

@@ -14,6 +14,12 @@ let find_pc args jit_args =
   | Some (s) -> int_of_id_t s
   | None -> failwith "find_pc is failed"
 
+let rec find_fundef prog name =
+  let Asm.Prog (_, fundefs, _) = prog in
+  match List.find fundefs ~f:(fun fundef -> fundef.name = name) with
+  | Some (body) -> body
+  | None -> let Id.L (x) = name in failwith @@ Printf.sprintf "find_fundef is failed. name: %s" x
+
 let rec add_cont_proc id_t instr body =
   let rec go id_t instr body = match instr with
     | Let (a, e, t) ->
@@ -25,7 +31,7 @@ let rec add_cont_proc id_t instr body =
 let rec tracing_jit p instr reg mem jit_args = match instr with
   | Ans (exp) ->
     tracing_jit_ans p exp reg mem jit_args
-  | Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), _, _), body) ->
+  | Let (_, IfEq (_, _, Ans (CallDir (Id.L ("min_caml_jit_dispatch"), _, _)), _), body) ->
     tracing_jit p body reg mem jit_args
   | Let ((dest, typ), CallDir (id_l, argsr, argst), body) ->
     let fundef = (find_fundef p id_l) in
@@ -158,17 +164,32 @@ and tracing_jit_ans p e reg mem jit_args = match e with
     end
 
 let exec p t reg mem jit_args =
-  Emit_virtual.to_string_t t |> print_endline;
-  begin match Simm.t t with
+  let t' = Simm.t t in
+  begin match t' with
     | Let (_, IfEq (_, _,
-                    Ans (CallDir (Id.L ("min_caml_jit_dispatch"), _, _)), _), body) ->
-      let Prog (table, fundefs, t) = p in
-      let p' = Prog (table, fundefs, body) in
-      tracing_jit p' body reg mem jit_args
+                    Ans (CallDir (Id.L ("min_caml_jit_dispatch"), _, _)), _), interp_body) ->
+      let Prog (table, fundefs, main) = p in
+      let { name; args; fargs; ret } =
+        match List.hd fundefs with
+        | Some fundef -> fundef
+        | None -> failwith "List.hd is failed in Tracing_jit.exec"
+      in
+      let fundefs' = List.map fundefs ~f:(fun fundef ->
+          let Id.L (x) = fundef.name in
+          match String.split ~on:'.' x |> List.hd with
+          | Some name' when name' = "interp" ->
+            let { name; args; fargs; ret } = fundef in
+            { name = name; args = args; fargs = fargs; body = interp_body; ret = ret }
+          | _ -> fundef)
+      in
+      let p' = Prog (table, fundefs', main) in
+      (tracing_jit p' interp_body reg mem jit_args, args)
     | Ans _ | Let _ ->
-      tracing_jit p t reg mem jit_args
+      let Prog (table, fundefs, t) = p in
+      let args = List.hd_exn fundefs |> fun fundef -> fundef.args in
+      (tracing_jit p t reg mem jit_args, args)
   end
-  |> fun res ->
+  |> fun (res, args) ->
   { name = Id.L (jit_args.trace_name)
   ; args = jit_args.reds
   ; fargs = []

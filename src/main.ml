@@ -8,7 +8,7 @@ let is_interp = ref false
 
 let compile outchan l =
   virtualize l
-  |> Simm.f
+  |> Simm.f'
   |> RegAlloc.f
   |> Emit.f outchan
 
@@ -27,9 +27,9 @@ let dump_exec f =
   try
     Lexing.from_channel inchan
     |> virtualize
+    |> Simm.f'
     |> Emit_virtual.to_string_prog
-    |> print_string
-    |> print_newline;
+    |> print_endline;
     close_in inchan;
     close_out outchan;
   with e ->
