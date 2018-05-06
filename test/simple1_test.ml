@@ -11,7 +11,7 @@ module JE = Jit_emit
 
 let jit_args =
   { trace_name = "min_caml_test_trace"
-  ; reds = ["a.42"]
+  ; reds = ["a.44"]
   ; greens = []
   ; loop_header = 0
   ; loop_pc_place = 1 }

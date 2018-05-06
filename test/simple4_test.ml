@@ -5,6 +5,8 @@ open Core
 open OUnit
 open Test_util
 
+module MJ = Method_jit
+
 let _ =
   Sys.getcwd () |> print_endline
 
@@ -33,7 +35,7 @@ let _ = run_test_tt_main begin
         Emit_virtual.to_string_fundef fundef |> print_endline;
         let method_jit_args = {
           method_name = "min_caml_test_trace";
-          reds = ["a.79"];
+          reds = ["a.81"];
           method_start = 0;
           method_end = 3;
           pc_place = 1
@@ -41,9 +43,9 @@ let _ = run_test_tt_main begin
         let { body } = fundef in
         let reg = Array.create 100000 (Red (0)) in
         let mem = Array.create 100000 (Red (0)) in
-        reg.(77) <- Green (0);
-        reg.(78) <- Green (6);
-        reg.(79) <- Red (0);
+        reg.(79) <- Green (0);
+        reg.(80) <- Green (6);
+        reg.(81) <- Red (0);
         for i = 0 to (Array.length bytecode - 1) do
           let n = i * 4 in
           if n = 20 then mem.(n) <- Red (bytecode.(i))
@@ -57,20 +59,13 @@ let _ = run_test_tt_main begin
          * mem.(24) <- Green (3); mem.(28) <- Green (9); mem.(32) <- Green (12);
          * mem.(36) <- Green (2); mem.(40) <- Green (0); mem.(44) <- Green (12);
          * mem.(48) <- Green (4); *)
-        let res = method_jit prog body reg mem method_jit_args in
-        (Emit_virtual.to_string_t res) |> print_endline;
-        let trace = {
-          name = Id.L "min_caml_test_trace";
-          args = method_jit_args.reds;
-          fargs = [];
-          body = res;
-          ret = Type.Int
-        } in
+        let res = MJ.exec prog body reg mem method_jit_args in
+        (Emit_virtual.to_string_fundef res) |> print_endline;
         Jit_emit.emit_trace'
-          ~fundef:trace
+          ~fundef:res
           ~fname:"simple4_mj"
-          ~inameo:"interp.76"
-          ~inamen:"interp.77";
+          ~inameo:"interp.78"
+          ~inamen:"interp.78";
         ()
       end
     ]

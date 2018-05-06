@@ -1,5 +1,6 @@
 let rec interp code pc a =
-  (* if pc = 0 then test_trace a code else *)
+  jit_dispatch pc 0 code a;
+  (* if pc = 0 then test_trace a bytecode else *)
   let instr = code.(pc) in
   if instr = 0 then (* INCR_A *)
     interp code (pc + 1) (a + 1)

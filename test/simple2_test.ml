@@ -31,7 +31,7 @@ let _ = run_test_tt_main begin
       "method_jit" >:: begin fun () ->
         let method_jit_args = {
           method_name = "min_caml_test_trace";
-          reds = ["a.69"];
+          reds = ["a.71"];
           method_start = 0;
           method_end = 12;
           pc_place = 1
