@@ -31,6 +31,10 @@ clean:
 jit-clean:
 	@rm -rf *.o *.s test/*.o test/*.s *.dSYM
 
+.PHONY: dump-clean
+dump-clean:
+	@rm -rf **/*.dump
+
 .PHONY: clean-all
 clean-all: clean jit-clean
 
@@ -41,7 +45,7 @@ test:
 .PHONY: test-one
 test-one:
 	@jbuilder build test/$(SPEC).exe
-	@cd _build/default/test || exit && ./$(SPEC).exe
+	@cd _build/default/test || exit 1 && ./$(SPEC).exe
 
 .PHONY: gcc
 gcc:
