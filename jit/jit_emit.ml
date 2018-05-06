@@ -265,7 +265,7 @@ let emit_trace' ~fundef ~fname ~inameo ~inamen =
   |> begin fun { name = Id.L (x); body } ->
     Printf.sprintf ".globl %s\n" x ^
     Printf.sprintf "%s:\n" x ^
-    Printf.sprintf "\tpushl\t%%ebx\n" ^
+    Printf.sprintf "\tpushl\t%%eax\n" ^
     Printf.sprintf ".globl %s1\n" x ^
     Printf.sprintf "%s1:\n" x ^
     (create_asm (Tail, body)) ^

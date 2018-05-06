@@ -167,7 +167,10 @@ let exec p t reg mem jit_args =
   let t' = Simm.t t in
   begin match t' with
     | Let (_, IfEq (_, _,
-                    Ans (CallDir (Id.L ("min_caml_jit_dispatch"), _, _)), _), interp_body) ->
+                    Ans (CallDir (Id.L ("min_caml_jit_dispatch"), _, _)),
+                    Ans (Nop)),
+           interp_body) ->
+      print_endline "come";
       let Prog (table, fundefs, main) = p in
       let { name; args; fargs; ret } =
         match List.hd fundefs with

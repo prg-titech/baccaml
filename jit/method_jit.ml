@@ -208,14 +208,11 @@ let exec p t reg mem jit_args =
   let t' = Simm.t t in
   begin match t' with
     | Let (_, IfEq (_, _,
-                    Ans (CallDir (Id.L ("min_caml_jit_dispatch"), _, _)), _), interp_body) ->
+                    Ans (CallDir (Id.L ("min_caml_jit_dispatch"), _, _)),
+                    Ans (Nop)),
+           interp_body) ->
       let Prog (table, fundefs, main) = p in
-      let { name; args; fargs; ret } =
-        match List.hd fundefs with
-        | Some fundef -> fundef
-        | None -> failwith "List.hd is failed in Tracing_jit.exec"
-      in
-      let fundefs' = List.map fundefs ~f:(fun fundef ->
+      let fundefs' = List.map fundefs (fun fundef ->
           let Id.L (x) = fundef.name in
           match String.split ~on:'.' x |> List.hd with
           | Some name' when name' = "interp" ->
@@ -223,15 +220,13 @@ let exec p t reg mem jit_args =
             { name = name; args = args; fargs = fargs; body = interp_body; ret = ret }
           | _ -> fundef)
       in
-      let p' = Prog (table, fundefs', main) in
-      (method_jit p' interp_body reg mem jit_args, args)
+      method_jit (Prog (table, fundefs', main)) interp_body reg mem jit_args
     | Ans _ | Let _ ->
-      let Prog (table, fundefs, t) = p in
-      let args = List.hd_exn fundefs |> fun fundef -> fundef.args in
-      (method_jit p t reg mem jit_args, args)
+      print_endline "come";
+      method_jit p t reg mem jit_args
   end
-  |> fun (res, args) ->
-  { name = Id.L (jit_args.method_name)
+  |> fun res ->
+  { name = Id.L ("min_caml_test_trace")
   ; args = jit_args.reds
   ; fargs = []
   ; body = res
