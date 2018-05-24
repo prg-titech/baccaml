@@ -1,5 +1,5 @@
 let rec interpret bytecode pc a =
-  jit_dispatch pc 0 bytecode a;
+  jit_dispatch (pc = 0) bytecode a;
   (* if pc = 0 then test_trace a bytecode else *)
   let opcode = bytecode.(pc) in
   if opcode = 0 then (* INCR_A *)
@@ -24,4 +24,4 @@ let input = Array.make 100 0 in
 input.(0) <- 1;
 input.(1) <- 2; input.(2) <- 0;
 input.(3) <- 4;
-print_int (interpret input 0 10000000000)
+print_int (interpret input 0 100000000)

@@ -17,11 +17,11 @@
   (action  (run ${<})
 )))
 
-(alias
- ((name runtest)
-  (deps (simple3_test.exe))
-  (action  (run ${<})
-)))
+;; (alias
+;; ((name runtest)
+;;  (deps (simple3_test.exe))
+;;  (action  (run ${<})
+;; )))
 
 (alias
  ((name runtest)

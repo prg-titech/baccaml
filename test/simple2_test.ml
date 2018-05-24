@@ -8,7 +8,7 @@ open OUnit
 open Test_util
 
 module TJ = Tracing_jit
-
+module MJ = Method_jit
 module JE = Jit_emit
 
 let Prog (_, fundefs, main) as prog =
@@ -31,7 +31,7 @@ let _ = run_test_tt_main begin
       "method_jit" >:: begin fun () ->
         let method_jit_args = {
           method_name = "min_caml_test_trace";
-          reds = ["a.71"];
+          reds = ["code.69"; "a.71"];
           method_start = 0;
           method_end = 12;
           pc_place = 1
@@ -41,28 +41,28 @@ let _ = run_test_tt_main begin
         for i = 0 to (Array.length bytecode - 1) do
           mem.(0 + i * 4) <- Green (bytecode.(i))
         done;
-        reg.(67) <- Green (0);
-        reg.(68) <- Green (0);
-        let res = exec prog body reg mem method_jit_args in
-        Out_channel.print_endline (Emit_virtual.to_string_fundef res);
+        reg.(69) <- Green (0);
+        reg.(70) <- Green (0);
+        let res = MJ.exec prog body reg mem method_jit_args in
+        Emit_virtual.to_string_fundef res |> print_endline;
         Jit_emit.emit_trace'
           ~fundef:res
           ~fname:"simple2_mj"
-          ~inameo:"interp.66"
-          ~inamen:"interp.67"
+          ~inameo:"interp.67"
+          ~inamen:"interp.68"
       end;
       "tracing_jit" >:: begin fun () ->
         let tracing_jit_args = {
           trace_name = "min_caml_test_trace";
-          reds = ["a.69"];
+          reds = ["code.69"; "a.71"];
           greens = [];
           loop_header = 0;
           loop_pc_place = 1
         } in
         let reg = Array.create 100000 (Red (0)) in
         let mem = Array.create 100000 (Red (0)) in
-        reg.(67) <- Green (0);
-        reg.(68) <- Green (0);
+        reg.(69) <- Green (0);
+        reg.(70) <- Green (0);
         for i = 0 to (Array.length bytecode - 1) do
           mem.(0 + i * 4) <- Green (bytecode.(i))
         done;

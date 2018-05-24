@@ -8,7 +8,8 @@ let is_interp = ref false
 
 let compile outchan l =
   virtualize l
-  |> Simm.f'
+  |> Trim.f
+  |> Simm.f
   |> RegAlloc.f
   |> Emit.f outchan
 
@@ -23,18 +24,16 @@ let interp_exec f =
 
 let dump_exec f =
   let inchan = open_in (f ^ ".ml") in
-  let outchan = open_out (f ^ ".dump") in
   try
     Lexing.from_channel inchan
     |> virtualize
-    |> Simm.f'
+    |> Trim.f
+    |> Simm.f
     |> Emit_virtual.to_string_prog
     |> print_endline;
     close_in inchan;
-    close_out outchan;
   with e ->
     close_in inchan;
-    close_out outchan;
     raise e
 
 (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)

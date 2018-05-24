@@ -6,10 +6,12 @@ open Core
 open OUnit
 open Test_util
 
+module TJ = Tracing_jit
+module MJ = Method_jit
+
 let Prog (_, fundefs, main) as prog =
   In_channel.create ("simple3.ml")
-  |> Lexing.from_channel
-  |> virtualize
+  |> Lexing.from_channel |> virtualize
 
 let bytecode = [|22; 2; 22; 2; 0; 11; 12; 9; 13; 10; 0; 4; 5; 11|]
 
@@ -41,16 +43,8 @@ let _ = run_test_tt_main begin
           else
             mem.(i * 4) <- Green (bytecode.(i))
         done;
-        let res = method_jit prog body reg mem method_jit_args in
-        Out_channel.output_string stdout (Emit_virtual.to_string_t res);
-        Out_channel.newline stdout;
-        let trace = {
-          name = Id.L ("min_caml_test_trace");
-          args = [];
-          fargs = [];
-          body =res;
-          ret = Type.Int
-        } in
+        let trace = MJ.exec prog body reg mem method_jit_args in
+        Emit_virtual.to_string_fundef trace |> print_endline;
         Jit_emit.emit_trace'
           ~fundef:trace
           ~fname:"simple3_mj"
@@ -82,16 +76,8 @@ let _ = run_test_tt_main begin
           else
             mem.(i * 4) <- Green (bytecode.(i))
         done;
-        let res = Tracing_jit.tracing_jit prog body reg mem tracing_jit_args in
-        let trace = {
-          name = Id.L ("min_caml_test_trace");
-          args = [];
-          fargs = [];
-          body =res;
-          ret = Type.Int
-        } in
-        Out_channel.output_string stdout (Emit_virtual.to_string_t res);
-        Out_channel.newline stdout
+        let trace = TJ.exec prog body reg mem tracing_jit_args in
+        Emit_virtual.to_string_fundef trace |> print_endline;
       end
     ]
   end

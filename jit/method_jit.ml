@@ -84,13 +84,8 @@ and method_jit_ans p e reg mem method_jit_args = match e with
       else
         let fundef = find_fundef p id_l in
         let pc = value_of reg.(find_pc argsr method_jit_args) in
-        begin match (pc = (method_jit_args.method_end)) with
-          | true ->
-            Ans (Nop)
-          | false ->
-            let t' = Inlining.inline_calldir_exp argsr fundef reg in
-            method_jit p t' reg mem method_jit_args
-        end
+        let t' = Inlining.inline_calldir_exp argsr fundef reg in
+        method_jit p t' reg mem method_jit_args
     end
   | IfLE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
     let r1 = value_of reg.(int_of_id_t id_t) in
@@ -200,7 +195,11 @@ and method_jit_ans p e reg mem method_jit_args = match e with
   | _ ->
     begin
       match Optimizer.optimize_exp p e reg mem with
-      | Specialized (v) -> Ans (e)
+      | Specialized (v) ->
+        let id = Id.gentmp Type.Int in
+        Let ((id, Type.Int),
+             Set (value_of v),
+             Ans (Mov (id)))
       | Not_specialized (e, v) -> Ans (e)
     end
 
@@ -222,7 +221,6 @@ let exec p t reg mem jit_args =
       in
       method_jit (Prog (table, fundefs', main)) interp_body reg mem jit_args
     | Ans _ | Let _ ->
-      print_endline "come";
       method_jit p t reg mem jit_args
   end
   |> fun res ->

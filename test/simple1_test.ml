@@ -11,7 +11,7 @@ module JE = Jit_emit
 
 let jit_args =
   { trace_name = "min_caml_test_trace"
-  ; reds = ["a.44"]
+  ; reds = ["a.44"; "bytecode.42"]
   ; greens = []
   ; loop_header = 0
   ; loop_pc_place = 1 }
@@ -41,7 +41,7 @@ let _ = run_test_tt_main begin
         reg.(44) <- Red (100);
         let res = TJ.exec prog body reg mem jit_args in
         print_string (Emit_virtual.to_string_fundef res);
-        JE.emit_trace' ~fundef:res ~fname:"simple1_tj" ~inameo:"interpret.39" ~inamen:"interpret.40"
+        JE.emit_trace' ~fundef:res ~fname:"simple1_tj" ~inameo:"interpret.41" ~inamen:"interpret.41"
       end
     ]
   end

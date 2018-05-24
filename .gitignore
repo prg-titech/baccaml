@@ -38,28 +38,20 @@ src/lexer.ml
 src/parser.ml
 src/parser.mli
 
-/min-rt/ppmdiff
-/min-rt/raytrace
-/min-rt/globals.s
-/min-rt/min-rt
-/min-rt/min-rt.min-caml
-/min-rt/min-rt.s
-/min-rt/min-rt_b
-/min-rt/*.cmp
-/min-rt/*.sld_
-/min-rt/*.cmp
-/example/*
-!/example/*.ml*.v
-/example/*dSYM/
-
 # Build
 min-caml
 min-camli
 *.top
 *.byte
 
-# ocamlbuild
-_build/
+/*
+!/*.ml
+!/*.mli
+!/*/
+/*/**/*
+!/*/**/
+!/*/**/*.ml
+!/*/**/*.mli
 
-# Rakefile
-.rake_tasks
+# dune
+_build

@@ -17,14 +17,14 @@ let write_string_of_list oc sl =
 (* 命令列のアセンブリ生成 as String *)
 let rec create_asm (dest, t) =
   let buf = Buffer.create 10000 in
-  match dest, t with
-  | dest, Ans (exp) ->
-    create_asm' (dest, exp) |> Buffer.add_string buf;
-    Buffer.contents buf
-  | dest, Let ((x, t), exp, e) ->
-    create_asm' (NonTail(x), exp) |> Buffer.add_string buf;
-    create_asm (dest, e) |> Buffer.add_string buf;
-    Buffer.contents buf
+  let rec go = function
+    | dest, Ans (exp) ->
+      create_asm' (dest, exp) |> Buffer.add_string buf
+    | dest, Let ((x, t), exp, e) ->
+      create_asm' (NonTail(x), exp) |> Buffer.add_string buf;
+      go (dest, e)
+  in go (dest, t);
+  Buffer.contents buf
 
 (* 各命令のアセンブリ生成 as String *)
 and create_asm' = function
@@ -179,8 +179,8 @@ and create_asm' = function
   | Tail, CallDir(Id.L(x), ys, zs) -> (* 末尾呼び出し *)
     Buffer.create 100
     |> fun buf -> Buffer.add_string buf @@ create_asm'_args [] ys zs
-    |> fun _ -> Buffer.add_string buf @@ Printf.sprintf "\tjmp\t%s\n" x
-    |> fun _ -> Buffer.contents buf
+                  |> fun _ -> Buffer.add_string buf @@ Printf.sprintf "\tjmp\t%s\n" x
+                              |> fun _ -> Buffer.contents buf
   | NonTail(a), CallCls(x, ys, zs) ->
     create_asm'_args [(x, reg_cl)] ys zs ^
     let ss = stacksize () in
@@ -262,19 +262,21 @@ and create_asm'_args x_reg_cl ys zs =
 let emit_trace' ~fundef ~fname ~inameo ~inamen =
   fundef
   |> RegAlloc.h
-  |> begin fun { name = Id.L (x); body } ->
-    Printf.sprintf ".globl %s\n" x ^
-    Printf.sprintf "%s:\n" x ^
-    Printf.sprintf "\tpushl\t%%eax\n" ^
-    Printf.sprintf ".globl %s1\n" x ^
-    Printf.sprintf "%s1:\n" x ^
-    (create_asm (Tail, body)) ^
-    Printf.sprintf ".globl %s2\n" x ^
-    Printf.sprintf "%s2:\n" x ^
-    Printf.sprintf "\tpopl\t%%eax\n" ^
-    Printf.sprintf "\tjmp\t%s" inamen end
-  |> begin fun s ->
-    Logger.debug s;
-    let oc = open_out (fname ^ ".s") in
-    Printf.fprintf oc "%s" s;
-    close_out oc end
+  |> fun { name = Id.L (x); body } ->
+  let buf = Buffer.create 10000 in
+  Printf.sprintf ".globl %s\n" x |> Buffer.add_string buf;
+  Printf.sprintf "%s:\n" x |> Buffer.add_string buf;
+  Printf.sprintf "\tpushl\t%%eax\n" |> Buffer.add_string buf;
+  Printf.sprintf ".globl %s1\n" x |> Buffer.add_string buf;
+  Printf.sprintf "%s1:\n" x |> Buffer.add_string buf;
+  (create_asm (Tail, body)) |> Buffer.add_string buf;
+  Printf.sprintf ".globl %s2\n" x |> Buffer.add_string buf;
+  Printf.sprintf "%s2:\n" x |> Buffer.add_string buf;
+  Printf.sprintf "\tpopl\t%%eax\n" |> Buffer.add_string buf;
+  Printf.sprintf "\tjmp\t%s" inamen |> Buffer.add_string buf
+  |> fun _ ->
+  let res = Buffer.contents buf in
+  Logger.debug res;
+  let oc = open_out (fname ^ ".s") in
+  Printf.fprintf oc "%s" res;
+  close_out oc
