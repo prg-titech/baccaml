@@ -5,6 +5,8 @@ open Inlining
 open Jit_config
 open Renaming
 
+exception Method_jit_failed of string
+
 let find_pc argsr method_jit_args =
   match List.nth argsr (method_jit_args.pc_place) with
   | Some (s) -> int_of_id_t s
@@ -206,10 +208,14 @@ and method_jit_ans p e reg mem method_jit_args = match e with
 let exec p t reg mem jit_args =
   let t' = Simm.t t in
   begin match t' with
-    | Let (_, IfEq (_, _,
-                    Ans (CallDir (Id.L ("min_caml_jit_dispatch"), _, _)),
-                    Ans (Nop)),
-           interp_body) ->
+    | Let (_, Set (_),
+      Let (_,
+         IfEq (x, y, _, _),
+           Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), args, fargs),
+                interp_body)))
+    | Let (_,  IfEq (x, y, _, _),
+           Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), args, fargs),
+                interp_body)) ->
       let Prog (table, fundefs, main) = p in
       let fundefs' = List.map fundefs (fun fundef ->
           let Id.L (x) = fundef.name in
@@ -221,7 +227,9 @@ let exec p t reg mem jit_args =
       in
       method_jit (Prog (table, fundefs', main)) interp_body reg mem jit_args
     | Ans _ | Let _ ->
-      method_jit p t reg mem jit_args
+      raise @@
+      Method_jit_failed
+        "missing jit_dispatch. please add jit_dispatch ... at the top of your interpreter."
   end
   |> fun res ->
   { name = Id.L ("min_caml_test_trace")

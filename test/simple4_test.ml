@@ -43,9 +43,9 @@ let _ = run_test_tt_main begin
         let { body } = fundef in
         let reg = Array.create 100000 (Red (0)) in
         let mem = Array.create 100000 (Red (0)) in
-        reg.(79) <- Green (0);
-        reg.(80) <- Green (6);
-        reg.(81) <- Red (0);
+        reg.(80) <- Green (0);
+        reg.(81) <- Green (6);
+        reg.(82) <- Red (0);
         for i = 0 to (Array.length bytecode - 1) do
           let n = i * 4 in
           if n = 20 then mem.(n) <- Red (bytecode.(i))

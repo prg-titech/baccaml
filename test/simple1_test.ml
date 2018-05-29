@@ -36,9 +36,9 @@ let _ = run_test_tt_main begin
         mem.(1 * 4) <- Green (2);
         mem.(2 * 4) <- Green (0);
         mem.(3 * 4) <- Green (4);
-        reg.(42) <- Green (0);
         reg.(43) <- Green (0);
-        reg.(44) <- Red (100);
+        reg.(44) <- Green (0);
+        reg.(45) <- Red (100);
         let res = TJ.exec prog body reg mem jit_args in
         print_string (Emit_virtual.to_string_fundef res);
         JE.emit_trace' ~fundef:res ~fname:"simple1_tj" ~inameo:"interpret.41" ~inamen:"interpret.41"

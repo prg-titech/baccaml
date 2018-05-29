@@ -168,13 +168,16 @@ and tracing_jit_ans p e reg mem jit_args = match e with
 
 let exec p t reg mem jit_args =
   let t' = Simm.t t in
-  Emit_virtual.to_string_t t' |> Logger.debug;
+  Emit_virtual.to_string_t t' |> print_endline;
   begin match t' with
-    | Let (_, IfEq (_, _,
-                    Ans (CallDir (Id.L ("min_caml_jit_dispatch"), args, _)),
-                    Ans (Nop)),
-           interp_body) ->
-      List.iter args print_endline;
+    | Let (_, Set (_),
+           Let (_,
+                IfEq (x, y, _, _),
+                Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), args, fargs),
+                     interp_body)))
+    | Let (_,  IfEq (x, y, _, _),
+           Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), args, fargs),
+                interp_body)) ->
       let Prog (table, fundefs, main) = p in
       let fundefs' = List.map fundefs ~f:(fun fundef ->
           let { name = Id.L (x) } = fundef in
@@ -184,8 +187,7 @@ let exec p t reg mem jit_args =
             { name = name; args = args; fargs = fargs; body = interp_body; ret = ret }
           | _ -> fundef)
       in
-      let p' = Prog (table, fundefs', main) in
-      tracing_jit p' interp_body reg mem jit_args, args
+      tracing_jit (Prog (table, fundefs', main)) interp_body reg mem jit_args, args
     | Ans _ | Let _ ->
       raise @@
       Tracing_jit_failed

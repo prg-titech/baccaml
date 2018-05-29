@@ -3,14 +3,18 @@ open Core
 
 let rec trim_jit_dispatcher = function
   (* jit_dispatch (pc = 0) bytecode a *)
-  | Let (_,
+  | Let (_, Set (_),
+      Let (_,
          IfEq (x, y, _, _),
-         Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), args, fargs), body)) ->
+           Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), args, fargs),
+                body)))
+  | Let (_,  IfEq (x, y, _, _),
+         Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), args, fargs),
+              body)) ->
     Ans (
       IfEq (x, y,
             Ans (CallDir (Id.L ("min_caml_test_trace"), List.tl_exn args, fargs)),
-            body
-           ))
+            body))
   | Let (x, exp, body) -> Let (x, exp, trim_jit_dispatcher body)
   | t -> t
   
