@@ -34,8 +34,6 @@ let rec add_cont_proc id_t instr body =
 let rec tracing_jit p instr reg mem jit_args = match instr with
   | Ans (exp) ->
     tracing_jit_ans p exp reg mem jit_args
-  | Let (_, IfEq (_, _, Ans (CallDir (Id.L ("min_caml_jit_dispatch"), _, _)), _), body) ->
-    tracing_jit p body reg mem jit_args
   | Let ((dest, typ), CallDir (id_l, argsr, argst), body) ->
     let fundef = (find_fundef p id_l) in
     let t = tracing_jit p (inline_calldir_exp argsr fundef reg) reg mem jit_args in

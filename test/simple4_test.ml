@@ -35,7 +35,7 @@ let _ = run_test_tt_main begin
         Emit_virtual.to_string_fundef fundef |> print_endline;
         let method_jit_args = {
           method_name = "min_caml_test_trace";
-          reds = ["bytecode.79"; "a.81"];
+          reds = ["bytecode.79"; "a.82"];
           method_start = 0;
           method_end = 3;
           pc_place = 1
