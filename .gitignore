@@ -44,14 +44,7 @@ min-camli
 *.top
 *.byte
 
-/*
-!/*.ml
-!/*.mli
-!/*/
-/*/**/*
-!/*/**/
-!/*/**/*.ml
-!/*/**/*.mli
+test/**/*.s
 
 # dune
 _build
