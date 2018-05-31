@@ -30,8 +30,6 @@ let _ = run_test_tt_main begin
         let { body; } = fundef in
         let reg = Array.create 1000 (Red 0) in
         let mem = Array.create 1000 (Red 0) in
-        let reg' = Array.create 10000 0 in
-        let mem' = Array.create 10000 0 in
         mem.(0 * 4) <- Green (1);
         mem.(1 * 4) <- Green (2);
         mem.(2 * 4) <- Green (0);
@@ -41,7 +39,7 @@ let _ = run_test_tt_main begin
         reg.(45) <- Red (100);
         let res = TJ.exec prog body reg mem jit_args in
         print_string (Emit_virtual.to_string_fundef res);
-        JE.emit_trace' ~fundef:res ~fname:"simple1_tj" ~inameo:"interpret.41" ~inamen:"interpret.41"
+        JE.emit_trace' ~fundef:res ~fname:"simple1_tj" ~inameo:"interpt.42" ~inamen:"interpr.42"
       end
     ]
   end
