@@ -1,5 +1,5 @@
 open Mincaml
-open Mincaml.Mincaml_util
+open Mutil
 open Util
 
 open Core
@@ -58,8 +58,8 @@ let string s = compile stdout (Lexing.from_string s)
 let compile_exec f =
   let flst = String.split ~on:'.' f in
   ignore (match List.last flst with
-  | Some (v) when v = "ml" -> ()
-  | _ -> failwith "No suffix or suffix is not .ml.");
+      | Some (v) when v = "ml" -> ()
+      | _ -> failwith "No suffix or suffix is not .ml.");
   let f' = match flst |> List.hd with
     | Some (v) -> v
     | None -> failwith "No suffix. please add .ml"
