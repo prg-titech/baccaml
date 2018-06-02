@@ -61,12 +61,9 @@ let _ = run_test_tt_main begin
          * mem.(48) <- Green (4); *)
         let res = MJ.exec prog body reg mem method_jit_args in
         (Emit_virtual.to_string_fundef res) |> print_endline;
-        Jit_emit.emit_trace'
-          ~fundef:res
-          ~fname:"simple4_mj"
-          ~inameo:"interp.78"
-          ~inamen:"interp.78";
-        ()
+        Jit_emit.emit_trace
+          res
+          "simple4_mj"
       end
     ]
   end

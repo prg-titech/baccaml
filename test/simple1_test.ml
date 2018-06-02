@@ -39,7 +39,7 @@ let _ = run_test_tt_main begin
         reg.(45) <- Red (100);
         let res = TJ.exec prog body reg mem jit_args in
         print_string (Emit_virtual.to_string_fundef res);
-        JE.emit_trace' ~fundef:res ~fname:"simple1_tj" ~inameo:"interpt.42" ~inamen:"interpr.42"
+        JE.emit_trace res "simple1_tj" "interp.42"
       end
     ]
   end

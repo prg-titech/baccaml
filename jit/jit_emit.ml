@@ -256,7 +256,21 @@ and create_asm'_args x_reg_cl ys zs =
   (List.fold_left
      (fun s (z, fr) -> s ^ Printf.sprintf "\tmovsd\t%s, %s\n" z fr)
      ""
-     (shuffle sw zfrs)) ^ (Printf.sprintf "\tpopl\t%%eax\n")
+     (shuffle sw zfrs))
+
+let emit_trace (fd: fundef) (file: string) (interp: string) =
+  fd
+  |> RegAlloc.h
+  |> fun { name = Id.L (x); body } ->
+  let buf = Buffer.create 10000 in
+  Printf.sprintf ".globl %s\n" x |> Buffer.add_string buf;
+  Printf.sprintf "%s:\n" x |> Buffer.add_string buf;
+  create_asm (Tail, body) |> Buffer.add_string buf;
+  let res = Buffer.contents buf in
+  Logger.debug (print_newline (); "!!EMIT TRACE!!\n" ^ res);
+  let oc = open_out (file ^ ".s") in
+  Printf.fprintf oc "%s" res;
+  close_out oc
 
 
 let emit_trace' ~fundef ~fname ~inameo ~inamen =
@@ -276,7 +290,7 @@ let emit_trace' ~fundef ~fname ~inameo ~inamen =
   Printf.sprintf "\tjmp\t%s" inamen |> Buffer.add_string buf
   |> fun _ ->
   let res = Buffer.contents buf in
-  Logger.debug res;
+  Logger.debug (print_newline (); "!!EMIT TRACE!!\n" ^ res);
   let oc = open_out (fname ^ ".s") in
   Printf.fprintf oc "%s" res;
   close_out oc

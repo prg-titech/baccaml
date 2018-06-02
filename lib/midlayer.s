@@ -2,9 +2,9 @@
 min_caml_test_trace:
 	pushl	%eax
 	call	min_caml_test_trace1
-	popl	%eax
+	popl	%edx
 	ret
 .globl min_caml_test_trace3
 min_caml_test_trace3:
-	movl	4(%esp), %eax
-	jmp	interp.xx
+	popl	%eax
+	jmp	interp.42
