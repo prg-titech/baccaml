@@ -64,6 +64,7 @@ let _ = run_test_tt_main begin
         Jit_emit.emit_trace
           res
           "simple4_mj"
+          "interp.79"
       end
     ]
   end

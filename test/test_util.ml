@@ -6,7 +6,7 @@ open Jit_config
 include Tracing_jit
 include Method_jit
 include Jit_config
-include Mincaml_util
+include Mutil
 
 let () =
   Logger.log_level := Logger.Debug

@@ -30,7 +30,12 @@ let name_of id =
   | None -> id
 
 let is_opcode id =
-  String.equal (name_of id) "instr"
+  List.for_all
+    (String.to_list (name_of id))
+    (fun c -> String.contains "instr" c)
+
+let _ =
+  assert (is_opcode "instr")
 
 let contains s1 s2 =
   let re = Str.regexp_string s2 in
