@@ -207,28 +207,32 @@ and create_asm' = function
       ""
 
 and create_asm'_tail_if e1 e2 b bn =
-  let res = ref "" in
+  let buf = Buffer.create 1000 in
   let b_else = Id.genid (b ^ "_else") in
-  res := !res ^ Printf.sprintf "\t%s\t%s\n" bn b_else;
+  Printf.sprintf "\t%s\t%s\n" bn b_else |> Buffer.add_string buf;
   let stackset_back = !stackset in
-  res := !res ^ (create_asm (Tail, e1)) ^ Printf.sprintf "%s:\n" b_else;
+  create_asm (Tail, e1) |> Buffer.add_string buf;
+  Printf.sprintf "%s:\n" b_else |> Buffer.add_string buf;
   stackset := stackset_back;
-  !res ^ (create_asm (Tail, e2))
+  create_asm (Tail, e2) |> Buffer.add_string buf;
+  Buffer.contents buf
 
 and create_asm'_non_tail_if dest e1 e2 b bn =
-  let res = ref "" in
+  let buf = Buffer.create 1000 in
   let b_else = Id.genid (b ^ "_else") in
   let b_cont = Id.genid (b ^ "_cont") in
-  res := !res ^ Printf.sprintf "\t%s\t%s\n" bn b_else;
+  Printf.sprintf "\t%s\t%s\n" bn b_else |> Buffer.add_string buf;
   let stackset_back = !stackset in
-  res := !res ^ create_asm (dest, e1);
+  create_asm (dest, e1) |> Buffer.add_string buf;
   let stackset1 = !stackset in
-  res := !res ^ Printf.sprintf "\tjmp\t%s\n" b_cont ^ Printf.sprintf "%s:\n" b_else;
+  Printf.sprintf "\tjmp\t%s\n" b_cont |> Buffer.add_string buf;
+  Printf.sprintf "%s:\n" b_else |> Buffer.add_string buf;
   stackset := stackset_back;
-  res := !res ^ create_asm (dest, e2) ^ Printf.sprintf "%s:\n" b_cont;
+  create_asm (dest, e2) |> Buffer.add_string buf;
+  Printf.sprintf "%s:\n" b_cont |> Buffer.add_string buf;
   let stackset2 = !stackset in
   stackset := S.inter stackset1 stackset2;
-  !res
+  Buffer.contents buf
 
 and create_asm'_args x_reg_cl ys zs =
   let res = ref "" in
