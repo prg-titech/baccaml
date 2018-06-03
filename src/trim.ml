@@ -3,6 +3,8 @@ open Core
 
 let flg = ref false
 
+let trace_entry = "min_caml_trace_entry"
+
 let rec trim_jit_dispatcher = function
   (* jit_dispatch (pc = 0) bytecode a *)
   | Let (_, Set (n0),
@@ -13,7 +15,7 @@ let rec trim_jit_dispatcher = function
       if !flg then
         Ans (
           IfEq (x, C (n0),
-               Ans (CallDir (Id.L ("min_caml_test_trace"), List.tl_exn args, fargs)),
+               Ans (CallDir (Id.L (trace_entry), List.tl_exn args, fargs)),
                body))
       else body
     end
@@ -24,7 +26,7 @@ let rec trim_jit_dispatcher = function
       if !flg then
         Ans (
           IfEq (x, C (0),
-                Ans (CallDir (Id.L ("min_caml_test_trace"), List.tl_exn args, fargs)),
+                Ans (CallDir (Id.L (trace_entry), List.tl_exn args, fargs)),
                 body))
       else body
     end
