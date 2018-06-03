@@ -42,16 +42,8 @@ let string s = compile stdout (Lexing.from_string s)
 
 (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file) *)
 let compile_exec f =
-  let flst = String.split ~on:'.' f in
-  ignore (match List.last flst with
-      | Some (v) when v = "ml" -> ()
-      | _ -> failwith "No suffix or suffix is not .ml.");
-  let f' = match flst |> List.hd with
-    | Some (v) -> v
-    | None -> failwith "No suffix. please add .ml"
-  in
-  let inchan = In_channel.create (f' ^ ".ml") in
-  let outchan = Out_channel.create (f' ^ ".s") in
+  let inchan = In_channel.create (f ^ ".ml") in
+  let outchan = Out_channel.create (f ^ ".s") in
   try
     compile outchan (Lexing.from_channel inchan);
     In_channel.close inchan;
@@ -69,7 +61,9 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: m
      ("-debug", Arg.Unit(fun _ -> Logger.log_level := Logger.Debug), "print debug messages")]
     begin fun s ->
       let flst = String.split s ~on:'.' in
-      ignore (if List.last_exn flst <> "ml" then failwith "No suffix. Please add [filename].ml.");
+      ignore (
+        if not (String.equal (List.last_exn flst) "ml") then
+          failwith "No suffix. Please add [filename].ml.");
       files := !files @ [List.hd_exn flst]
     end
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
