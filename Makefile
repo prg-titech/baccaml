@@ -53,7 +53,7 @@ INTERP =
 
 .PHONY: gcc
 gcc:
-	@./$(COMPILER) test/$(INTERP)
+	@./$(COMPILER) test/$(INTERP).ml
 	@gcc -c -m32 _build/default/test/$(TRACE).s -o _build/default/test/$(TRACE).o
 	@gcc -g -Wall -O2 -m32 lib/libmincaml.S lib/stub.c test/$(INTERP).s _build/default/test/$(TRACE).o -o $(TRACE)
 	@rm -rf $(TRACE).dSYM

@@ -272,7 +272,7 @@ let emit_midlayer (file : string) (interp : string) : Buffer.t =
   Printf.sprintf "\tpopl\t%%edx\n" |> Buffer.add_string buf;
   Printf.sprintf "\tret\n" |> Buffer.add_string buf;
   Printf.sprintf ".globl min_caml_mid_layer\n" |> Buffer.add_string buf;
-  Printf.sprintf "\tmin_caml_mid_layer:\n" |> Buffer.add_string buf;
+  Printf.sprintf "min_caml_mid_layer:\n" |> Buffer.add_string buf;
   Printf.sprintf "\tmovl\t4(%%esp), %%eax\n" |> Buffer.add_string buf;
   Printf.sprintf "\tjmp\t%s\n" interp |> Buffer.add_string buf;
   buf
