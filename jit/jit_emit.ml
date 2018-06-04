@@ -262,11 +262,28 @@ and create_asm'_args x_reg_cl ys zs =
      ""
      (shuffle sw zfrs))
 
+
+let emit_midlayer (file : string) (interp : string) : Buffer.t =
+  let buf = Buffer.create 1000 in
+  Printf.sprintf ".globl min_caml_trace_entry\n" |> Buffer.add_string buf;
+  Printf.sprintf "min_caml_trace_entry:\n" |> Buffer.add_string buf;
+  Printf.sprintf "\tpushl\t%%eax\n" |> Buffer.add_string buf;
+  Printf.sprintf "\tcall\tmin_caml_test_trace\n" |> Buffer.add_string buf;
+  Printf.sprintf "\tpopl\t%%edx\n" |> Buffer.add_string buf;
+  Printf.sprintf "\tret\n" |> Buffer.add_string buf;
+  Printf.sprintf ".globl min_caml_mid_layer\n" |> Buffer.add_string buf;
+  Printf.sprintf "\tmin_caml_mid_layer:\n" |> Buffer.add_string buf;
+  Printf.sprintf "\tmovl\t4(%%esp), %%eax\n" |> Buffer.add_string buf;
+  Printf.sprintf "\tjmp\t%s\n" interp |> Buffer.add_string buf;
+  buf
+
+
 let emit_trace (fd: fundef) (file: string) (interp: string) =
   fd
   |> RegAlloc.h
   |> fun { name = Id.L (x); body } ->
   let buf = Buffer.create 10000 in
+  emit_midlayer file interp |> Buffer.add_buffer buf;
   Printf.sprintf ".globl %s\n" x |> Buffer.add_string buf;
   Printf.sprintf "%s:\n" x |> Buffer.add_string buf;
   create_asm (Tail, body) |> Buffer.add_string buf;
