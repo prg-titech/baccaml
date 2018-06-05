@@ -27,17 +27,17 @@ clean:
 	@jbuilder clean
 	@rm -rf $(TRASH)
 
-.PHONY: jit-clean
-jit-clean:
+.PHONY: clean-jit
+clean-jit:
 	@rm -rf *.o *.s test/*.o test/*.s *.dSYM
 	@rm -rf simple*_*j
 
-.PHONY: dump-clean
-dump-clean:
+.PHONY: clean-dump
+clean-dump:
 	@rm -rf **/*.dump
 
 .PHONY: clean-all
-clean-all: clean jit-clean
+clean-all: clean clean-jit clean-dump
 
 .PHONY: test
 test:
