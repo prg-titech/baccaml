@@ -55,8 +55,7 @@ let colorize_regs
     ~vs:(vars : Id.t list)
     ~g:(greens : (int * string) array)
     ~r:(reds : (int * string) array) : value array =
-  List.iter
-    vars
+  List.iter vars
     begin fun var ->
       Array.iter reds
         begin fun (i, s) ->
@@ -82,10 +81,10 @@ let colorize_mem
   mems
 
 let entry
-~fname:(fname : string)
-~iname:(iname: string)
-~reds:(reds : string list)
-~greends:(greens: string list) : unit =
+    ~fname:(fname : string)
+    ~iname:(iname: string)
+    ~reds:(reds : string list)
+    ~greends:(greens: string list) : unit =
   let regs = Array.create 10000 (Red (0)) in
   let mems = Array.create 10000 (Red (0)) in
   ()
@@ -93,8 +92,8 @@ let entry
 let _ =
   let files = ref [] in
   Arg.parse
-    [("--method-jit", Arg.Unit(fun _ -> is_method := true), "enable method jit");
-     ("--tracing-jit", Arg.Unit(fun _ -> is_tracing := true), "enable tracing jit");]
+    [("-mj", Arg.Unit(fun _ -> is_method := true), "enable method jit");
+     ("-tj", Arg.Unit(fun _ -> is_tracing := true), "enable tracing jit");]
     (fun s -> files := !files @ [s])
     ("BacCaml: an experimental meta-hybrid JIT compiler");
   List.iter
