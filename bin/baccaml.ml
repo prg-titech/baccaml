@@ -1,84 +1,94 @@
 open Core
 
 open Mincaml
-open Mincaml_util
+open Mutil
 open Baccaml_jit
 open Jit_config
 open Jit_util
 open Asm
 
 exception No_function_defs of string
-
 exception Jit_failed of string
 
 module TJ = Tracing_jit
-
 module MJ = Method_jit
 
 let is_tracing = ref true
-
 let is_method = ref false
 
-let colorize_regs (regs : value array) (reds : string * int list) (greends : string * int list) =
-  ()
-
-let colorize_mems (mems : value array) (reds : string * int list) (greends : string * int list) =
-  ()
-
-let emit (f : string) (inameo : string) (inamen : string) trace =
-  Jit_emit.emit_trace'
-    ~fundef:trace
-    ~fname:(if !is_tracing then f ^ "_tj" else if !is_method then f ^ "_mj" else f)
-    ~inameo:inameo
-    ~inamen:inamen
-
-let jit
-    ~fname:f
-    ~reds:reds
-    ~greends:greens
-    ~pc_place:pp
-    ?(loop_header=None)
-    ?(method_start=None)
-    ?(method_end=None)
-    ~inameo:inameo
-    ~inamen:inamen =
-  let reg = Array.create ~len:10000 (Red (0)) in
-  let mem = Array.create ~len:10000 (Red (0)) in
-  let inchan = In_channel.create (f ^ ".ml") in
-  try
-    Lexing.from_channel inchan
-    |> virtualize
-    |> fun (Prog (_, fundefs, body) as prog) ->
-    match List.hd fundefs with
-    | Some { name; args; fargs; body; ret } ->
-      begin
-        if !is_tracing then
-          let jit_args = {
-            trace_name = "min_caml_test_trace";
-            reds = reds;
-            greens = greens;
-            loop_header = Option.value loop_header ~default:(failwith "specify loop_header");
-            loop_pc_place = pp;
-          } in
-          TJ.exec_tracing_jit prog body reg mem jit_args
-        else if !is_method then
-          let method_jit_args = {
-            method_name = "min_caml_test_trace";
-            reds = reds;
-            method_start = Option.value method_start ~default:(failwith "specify method_start");
-            method_end = Option.value method_end ~default:(failwith "specify method_end");
-            pc_place = pp
-          } in
-          MJ.exec prog body reg mem method_jit_args
-        else
-          raise @@ Jit_failed (Printf.sprintf "please set is_tracing or is_method true")
+let rec get_all_vars (p : prog) : Id.t list =
+  match p with Prog (tables, fundefs, main) ->
+    List.fold_left
+      fundefs
+      ~f:begin fun acc fundef ->
+        let { args; body } = fundef in
+        acc @ args @ (get_free_vars_t body)
       end
-      |> emit f inameo inamen
-    | None ->
-      raise  @@ No_function_defs (Printf.sprintf "No functions in %s" f)
-  with e ->
-    In_channel.close inchan;
-    raise @@ Jit_failed (Printf.sprintf "Executing tracing jit is failed in %s" f)
+      ~init:[]
+
+and get_free_vars_t (t : t) : Id.t list =
+  match t with
+  | Ans (exp) -> get_free_vars_exp exp
+  | Let ((dest, _), e, t) -> (dest :: (get_free_vars_exp e)) @ (get_free_vars_t t)
+
+and get_free_vars_exp (e : exp) : Id.t list =
+  match e with
+  | Mov (id) -> [id]
+  | Add (id_t, V (id))
+  | Sub (id_t, V (id)) ->  [id_t; id]
+  | Add (id_t, C _) | Sub (id_t, C _) -> [id_t]
+  | Ld (dest, V (offset), _) -> [dest; offset]
+  | Ld (dest, C (_), _) -> [dest]
+  | St (src, dest, V (offset), _) -> [src; dest; offset]
+  | St (src, dest, C (_), _) -> [src; dest]
+  | IfEq (id_t1, V (id_t2), _, _)
+  | IfLE (id_t1, V (id_t2), _, _)
+  | IfGE (id_t1, V (id_t2), _, _) -> [id_t1; id_t2]
+  | IfEq (id_t1, C (_), _, _)
+  | IfLE (id_t1, C (_), _, _)
+  | IfGE (id_t1, C (_), _, _) -> [id_t1]
+  | CallDir (id_l, args, fargs) -> args
+  | _ -> []
+
+let colorize_regs
+    ~rgs:(regs : value array)
+    ~vs:(vars : Id.t list)
+    ~g:(greens : (int * string) array)
+    ~r:(reds : (int * string) array) : value array =
+  List.iter
+    vars
+    begin fun var ->
+      Array.iter reds
+        begin fun (i, s) ->
+          if s = var then regs.(int_of_id_t var) <- Red (i)
+        end;
+      Array.iter greens
+      begin fun (i, s) ->
+        if s = var then regs.(int_of_id_t var) <- Green (i)
+      end;
+    end;
+    regs
+
+let colorize_mem
+    ~mems:(mems : value array)
+    ~prgs:(program : int array)
+    ~g:(greens : (int * string) array)
+    ~r:(reds : (int * string) array)
+    ~bc:(bytecode : int) : value array =
+  for i = 0 to (Array.length program - 1) do
+    let n = i * 4 in
+    mems.(bytecode + n) <- Green (program.(i))
+  done;
+  mems
+
+let entry
+~fname:(fname : string)
+~iname:(iname: string)
+~reds:(reds : string list)
+~greends:(greens: string list) : unit =
+  let regs = Array.create 10000 (Red (0)) in
+  let mems = Array.create 10000 (Red (0)) in
+  ()
 
 let _ =
   let files = ref [] in
