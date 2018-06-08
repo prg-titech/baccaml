@@ -172,39 +172,50 @@ and create_asm' = function
     (Printf.sprintf "\tcomisd\t%s, %s\n" y x) ^
     create_asm'_non_tail_if (NonTail(z)) e1 e2 "jbe" "ja"
   | Tail, CallCls(x, ys, zs) -> (* 末尾呼び出し (caml2html: emit_tailcall) *)
-    create_asm'_args [(x, reg_cl)] ys zs ^
-    Printf.sprintf "\tjmp\t*(%s)\n" reg_cl
-  | _, CallDir (Id.L ("min_caml_jit_dispatch"), _, _) ->
-    ""
+    Buffer.create 100
+    |> fun buf -> Buffer.add_string buf @@ (create_asm'_args [(x, reg_cl)] ys zs)
+    |> fun _ -> Buffer.add_string buf @@ Printf.sprintf "\tjmp\t*(%s)\n" reg_cl
+    |> fun _ -> Buffer.contents buf
   | Tail, CallDir(Id.L(x), ys, zs) -> (* 末尾呼び出し *)
     Buffer.create 100
-    |> fun buf -> Buffer.add_string buf @@ create_asm'_args [] ys zs
-                  |> fun _ -> Buffer.add_string buf @@ Printf.sprintf "\tjmp\t%s\n" x
-                              |> fun _ -> Buffer.contents buf
+    |> fun buf -> 
+      Buffer.add_string buf @@ create_asm'_args [] ys zs;
+      Buffer.add_string buf @@ (
+        if List.for_all (fun c -> String.contains x c) ['i'; 'n'; 't'; 'e'; 'r'; 'p'] then
+          Printf.sprintf "\tjmp\t%s\n" "min_caml_mid_layer"
+        else
+          Printf.sprintf "\tjmp\t%s\n" x);
+      Buffer.contents buf
   | NonTail(a), CallCls(x, ys, zs) ->
-    create_asm'_args [(x, reg_cl)] ys zs ^
-    let ss = stacksize () in
-    (if ss > 0 then Printf.sprintf "\taddl\t$%d, %s\n" ss reg_sp else "") ^
-    Printf.sprintf "\tcall\t*(%s)\n" reg_cl ^
-    (if ss > 0 then Printf.sprintf "\tsubl\t$%d, %s\n" ss reg_sp else "") ^
-    if List.mem a allregs && a <> regs.(0) then
-      Printf.sprintf "\tmovl\t%s, %s\n" regs.(0) a
-    else if List.mem a allfregs && a <> fregs.(0) then
-      Printf.sprintf "\tmovsd\t%s, %s\n" fregs.(0) a
-    else
-      ""
+    Buffer.create 100
+    |> fun buf ->
+      Buffer.add_string buf @@ create_asm'_args [(x, reg_cl)] ys zs;
+      let ss = stacksize () in
+      if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\taddl\t$%d, %s\n" ss reg_sp;
+      Buffer.add_string buf @@ Printf.sprintf "\tcall\t*(%s)\n" reg_cl;
+      if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\tsubl\t$%d, %s\n" ss reg_sp;
+      (if List.mem a allregs && a <> regs.(0) then
+        Buffer.add_string buf @@ Printf.sprintf "\tmovl\t%s, %s\n" regs.(0) a
+      else if List.mem a allfregs && a <> fregs.(0) then
+        Buffer.add_string buf @@ Printf.sprintf "\tmovsd\t%s, %s\n" fregs.(0) a);
+      Buffer.contents buf
   | NonTail(a), CallDir(Id.L(x), ys, zs) ->
-    let ss = stacksize () in
-    create_asm'_args [] ys zs ^
-    (if ss > 0 then Printf.sprintf "\taddl\t$%d, %s\n" ss reg_sp else "") ^
-    Printf.sprintf "\tcall\t%s\n" x ^
-    (if ss > 0 then Printf.sprintf "\tsubl\t$%d, %s\n" ss reg_sp else "") ^
-    if List.mem a allregs && a <> regs.(0) then
-      Printf.sprintf "\tmovl\t%s, %s\n" regs.(0) a
-    else if List.mem a allfregs && a <> fregs.(0) then
-      Printf.sprintf "\tmovsd\t%s, %s\n" fregs.(0) a
-    else
-      ""
+    Buffer.create 100
+    |> fun buf ->
+      let ss = stacksize () in
+      Buffer.add_string buf @@ create_asm'_args [] ys zs;
+      if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\taddl\t$%d, %s\n" ss reg_sp;
+      Buffer.add_string buf @@ (
+        if List.for_all (fun c -> String.contains x c) ['i'; 'n'; 't'; 'e'; 'r'; 'p'] then
+          Printf.sprintf "\tcall\t%s\n" "min_caml_mid_layer"
+        else
+          Printf.sprintf "\tcall\t%s\n" x);
+      if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\tsubl\t$%d, %s\n" ss reg_sp;
+      (if List.mem a allregs && a <> regs.(0) then 
+        Buffer.add_string buf @@ Printf.sprintf "\tmovl\t%s, %s\n" regs.(0) a
+      else if List.mem a allfregs && a <> fregs.(0) then
+        Buffer.add_string buf @@ Printf.sprintf "\tmovsd\t%s, %s\n" fregs.(0) a);
+      Buffer.contents buf
 
 and create_asm'_tail_if e1 e2 b bn =
   let buf = Buffer.create 1000 in
