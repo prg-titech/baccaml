@@ -127,14 +127,23 @@ and create_asm' = function
     Printf.sprintf "\tmovsd\t%d(%s), %s\n" (offset y) reg_sp x
   (* 末尾だったら計算結果を第一レジスタにセットしてret (caml2html: emit_tailret) *)
   | Tail, (Nop | St _ | StDF _ | Comment _ | Save _ as exp) ->
-    create_asm' (NonTail (Id.gentmp Type.Unit), exp) ^
-    Printf.sprintf "\tret\n";
+    Buffer.create 100
+    |> fun buf ->
+    Buffer.add_string buf @@ create_asm' (NonTail (Id.gentmp Type.Unit), exp);
+    Buffer.add_string buf @@ Printf.sprintf "\tret\n";
+    Buffer.contents buf
   | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Ld _ as exp) ->
-    create_asm' (NonTail(regs.(0)), exp) ^
-    Printf.sprintf "\tret\n"
+    Buffer.create 100
+    |> fun buf ->
+    Buffer.add_string buf @@  create_asm' (NonTail(regs.(0)), exp);
+    Buffer.add_string buf @@ Printf.sprintf "\tret\n";
+    Buffer.contents buf
   | Tail, (FMovD _ | FNegD _ | FAddD _ | FSubD _ | FMulD _ | FDivD _ | LdDF _  as exp) ->
-    create_asm' (NonTail(fregs.(0)), exp) ^
-    Printf.sprintf "\tret\n";
+    Buffer.create 100
+    |> fun buf ->
+    Buffer.add_string buf @@ create_asm' (NonTail(fregs.(0)), exp);
+    Buffer.add_string buf @@ Printf.sprintf "\tret\n";
+    Buffer.contents buf
   | Tail, (Restore(x) as exp) ->
     (match locate x with
      | [i] -> create_asm' (NonTail(regs.(0)), exp)
@@ -284,7 +293,7 @@ let emit_midlayer (file : string) (interp : string) : Buffer.t =
   Printf.sprintf "\tret\n" |> Buffer.add_string buf;
   Printf.sprintf ".globl min_caml_mid_layer\n" |> Buffer.add_string buf;
   Printf.sprintf "min_caml_mid_layer:\n" |> Buffer.add_string buf;
-  Printf.sprintf "\tmovl\t4(%%esp), %%eax\n" |> Buffer.add_string buf;
+  Printf.sprintf "\tmovl\t%d(%%esp), %%eax\n" (4) |> Buffer.add_string buf;
   Printf.sprintf "\tjmp\t%s\n" interp |> Buffer.add_string buf;
   buf
 
