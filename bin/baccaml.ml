@@ -62,17 +62,15 @@ let colorize_regs
           if s = var then regs.(int_of_id_t var) <- Red (i)
         end;
       Array.iter greens
-      begin fun (i, s) ->
-        if s = var then regs.(int_of_id_t var) <- Green (i)
-      end;
+        begin fun (i, s) ->
+          if s = var then regs.(int_of_id_t var) <- Green (i)
+        end;
     end;
-    regs
+  regs
 
-let colorize_mem
+let colorize_pgm
     ~mems:(mems : value array)
     ~prgs:(program : int array)
-    ~g:(greens : (int * string) array)
-    ~r:(reds : (int * string) array)
     ~bc:(bytecode : int) : value array =
   for i = 0 to (Array.length program - 1) do
     let n = i * 4 in
@@ -83,11 +81,29 @@ let colorize_mem
 let entry
     ~fname:(fname : string)
     ~iname:(iname: string)
-    ~reds:(reds : string list)
-    ~greends:(greens: string list) : unit =
+    ~reds:(reds : (int * string) array)
+    ~greends:(greens: (int * string) array)
+    ~pgm:(program : int array)
+    ~bc:(bytecode : int)
+    ~args:(args : jit_args)
+    ~p:(p : prog) : unit =
   let regs = Array.create 10000 (Red (0)) in
   let mems = Array.create 10000 (Red (0)) in
-  ()
+  let Prog (_, fundefs, main) = p in
+  let t = match fundefs with
+    | [fundef] -> fundef.body
+    | _ -> assert false
+  in
+  let vars = get_all_vars p in
+  let regs' = colorize_regs ~rgs:regs ~vs:vars ~g:greens ~r:reds in
+  let mems' = colorize_pgm ~mems:mems ~prgs:program ~bc:bytecode in
+  let trace =
+    if !is_tracing then
+      TJ.exec p t regs' mems' args
+    else
+      assert false
+  in
+  Jit_emit.emit_trace trace fname iname
 
 let _ =
   let files = ref [] in
