@@ -8,16 +8,16 @@ open Renaming
 
 exception Method_jit_failed of string
 
-let find_pc argsr jargs =
+let find_pc (argsr : Id.t list) (jargs : method_jit_args) =
   match List.nth argsr (jargs.pc_place) with
-  | Some (s) -> int_of_id_t s
-  | None -> failwith "find_pc is failed."
+  | Some (v) -> int_of_id_t v
+  | None -> failwith "find_pc in Method_jit is failed."
 
 let rec find_fundef prog name =
   let Asm.Prog (_, fundefs, _) = prog in
   match List.find fundefs ~f:(fun fundef -> fundef.name = name) with
   | Some (body) -> body
-  | None -> failwith "find_fundef is failed"
+  | None -> failwith "find_fundef in Method jit is failed"
 
 let jit_value_of_id_t reg id_t = reg.(int_of_id_t id_t)
 
@@ -41,7 +41,7 @@ let _ =
 let contains s1 s2 =
   let re = Str.regexp_string s2 in
   try ignore (Str.search_forward re s1 0); true
-  with Not_found -> false
+  with _ -> false
 
 let string_of_id_l id_l = match id_l with
   | Id.L (x) -> x
@@ -55,7 +55,7 @@ let rec add_cont_proc id_t instr body =
 
 let rec method_jit p instr reg mem jargs =
   match instr with
-  | Ans (exp) -> method_jit_ans p exp reg mem jargs
+  | Ans (exp) -> method_jit_exp p exp reg mem jargs
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     let rec restore_args cont = function
         [] -> cont
@@ -84,16 +84,19 @@ let rec method_jit p instr reg mem jargs =
         Let ((dest, typ), e, t)
     end
 
-and method_jit_ans p e reg mem jargs = match e with
+and method_jit_exp p e reg mem jargs = match e with
   | CallDir (id_l, argsr, _) ->
     begin
       if contains (string_of_id_l id_l) "min_caml"
       then Ans (e)
       else
         let fundef = find_fundef p id_l in
-        let pc = value_of reg.(find_pc argsr jargs) in
-        let t' = Inlining.inline_calldir_exp argsr fundef reg in
-        method_jit p t' reg mem jargs
+        let pc = reg.(find_pc argsr jargs) |> value_of in
+        let t = Inlining.inline_calldir_exp argsr fundef reg in
+        if List.exists (jargs.backedge_pcs) (fun i -> i = pc) then
+          Ans (e)
+        else
+          method_jit p t reg mem jargs
     end
   | IfLE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
     let r1 = value_of reg.(int_of_id_t id_t) in
@@ -219,10 +222,10 @@ let exec p t reg mem jit_args =
   in
   begin match t' with
     | Let (_, Set (_),
-      Let (_,
-         IfEq (x, y, _, _),
-           Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), args, fargs),
-                interp_body)))
+           Let (_,
+                IfEq (x, y, _, _),
+                Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), args, fargs),
+                     interp_body)))
     | Let (_,  IfEq (x, y, _, _),
            Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), args, fargs),
                 interp_body)) ->

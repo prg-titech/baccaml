@@ -16,19 +16,20 @@ type jit_result =
   | Not_specialized of exp * value
 
 type tracing_jit_args =
-  { trace_name : string
-  ; reds : string list
-  ; greens: string list
-  ; loop_header : int
-  ; loop_pc_place : int
+  { trace_name : string;
+    reds : string list;
+    greens: string list;
+    loop_header : int;
+    loop_pc_place : int
   }
 
 type method_jit_args =
-  { method_name : string
-  ; reds : string list
-  ; method_start : int
-  ; method_end : int
-  ; pc_place : int
+  { method_name : string;
+    reds : string list;
+    method_start : int;
+    method_end : int;
+    pc_place : int;
+    backedge_pcs : int list
   }
 
 type jit_args =
@@ -38,5 +39,7 @@ type jit_args =
 type trace_result =
   | Tracing_success of fundef
   | Method_success of fundef
+
+
 
 let zero = "zero.0"
