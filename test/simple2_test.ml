@@ -45,20 +45,20 @@ let _ = run_test_tt_main begin
         reg.(71) <- Green (0);
         let res = MJ.exec prog body reg mem method_jit_args in
         Emit_virtual.to_string_fundef res |> print_endline;
-        Jit_emit.emit_trace'
-          ~fundef:res
-          ~fname:"simple2_mj"
-          ~inameo:"interp.67"
-          ~inamen:"interp.69"
+        Jit_emit.emit_trace
+          res
+          "simple2_mj"
+          "interp.69"
+          ~mj:true ~tj:false
       end;
       "tracing_jit" >:: begin fun () ->
         let tracing_jit_args = Tracing_jit_args (
-          { trace_name = "min_caml_test_trace";
-            reds = ["code.70"; "a.72"];
-            greens = [];
-            loop_header = 0;
-            loop_pc_place = 1
-          }) in
+            { trace_name = "min_caml_test_trace";
+              reds = ["code.70"; "a.72"];
+              greens = [];
+              loop_header = 0;
+              loop_pc_place = 1
+            }) in
         let reg = Array.create 100000 (Red (0)) in
         let mem = Array.create 100000 (Red (0)) in
         reg.(70) <- Green (0);
@@ -67,8 +67,7 @@ let _ = run_test_tt_main begin
           mem.(0 + i * 4) <- Green (bytecode.(i))
         done;
         let res = TJ.exec prog body reg mem tracing_jit_args in
-        Out_channel.print_endline (Emit_virtual.to_string_fundef res);
-        (* Jit_compiler.compile (Prog ([], res :: [], trace_main)) "test/simple2_tj.s"; *)
+        print_endline (Emit_virtual.to_string_fundef res)
       end
     ]
   end

@@ -283,7 +283,7 @@ and create_asm'_args x_reg_cl ys zs =
      (shuffle sw zfrs))
 
 
-let emit_midlayer (file : string) (interp : string) : Buffer.t =
+let emit_midlayer_tj (file : string) (interp : string) : Buffer.t =
   let buf = Buffer.create 1000 in
   Printf.sprintf ".globl min_caml_trace_entry\n" |> Buffer.add_string buf;
   Printf.sprintf "min_caml_trace_entry:\n" |> Buffer.add_string buf;
@@ -298,40 +298,37 @@ let emit_midlayer (file : string) (interp : string) : Buffer.t =
   buf
 
 
-let emit_trace (fd: fundef) (file: string) (interp: string) =
+let emit_midlayer_mj (file : string) (interp : string) : Buffer.t =
+  let buf = Buffer.create 1000 in
+  Printf.sprintf ".globl min_caml_trace_entry\n" |> Buffer.add_string buf;
+  Printf.sprintf "min_caml_trace_entry:\n" |> Buffer.add_string buf;
+  Printf.sprintf "\tpushl\t%%eax\n" |> Buffer.add_string buf;
+  Printf.sprintf "\tcall\tmin_caml_test_trace\n" |> Buffer.add_string buf;
+  Printf.sprintf "\tpopl\t%%edx\n" |> Buffer.add_string buf;
+  Printf.sprintf "\tret\n" |> Buffer.add_string buf;
+  Printf.sprintf ".globl min_caml_mid_layer\n" |> Buffer.add_string buf;
+  Printf.sprintf "min_caml_mid_layer:\n" |> Buffer.add_string buf;
+  Printf.sprintf "\tmovl\t%d(%%esp), %%eax\n" (8) |> Buffer.add_string buf;
+  Printf.sprintf "\tjmp\t%s\n" interp |> Buffer.add_string buf;
+  buf
+
+
+let emit_trace (fd: fundef) (file: string) (interp: string) ?tj:(tj=false) ?mj:(mj=false) =
   fd
   |> RegAlloc.h
   |> fun { name = Id.L (x); body } ->
   let buf = Buffer.create 10000 in
-  emit_midlayer file interp |> Buffer.add_buffer buf;
+  (if tj then
+    emit_midlayer_tj file interp |> Buffer.add_buffer buf
+  else if mj then
+    emit_midlayer_mj file interp |> Buffer.add_buffer buf
+  else
+    assert false);
   Printf.sprintf ".globl %s\n" x |> Buffer.add_string buf;
   Printf.sprintf "%s:\n" x |> Buffer.add_string buf;
   create_asm (Tail, body) |> Buffer.add_string buf;
   let res = Buffer.contents buf in
   Logger.debug (print_newline (); "!!EMIT TRACE!!\n" ^ res);
   let oc = open_out (file ^ ".s") in
-  Printf.fprintf oc "%s" res;
-  close_out oc
-
-
-let emit_trace' ~fundef ~fname ~inameo ~inamen =
-  fundef
-  |> RegAlloc.h
-  |> fun { name = Id.L (x); body } ->
-  let buf = Buffer.create 10000 in
-  Printf.sprintf ".globl %s\n" x |> Buffer.add_string buf;
-  Printf.sprintf "%s:\n" x |> Buffer.add_string buf;
-  Printf.sprintf "\tpushl\t%%eax\n" |> Buffer.add_string buf;
-  Printf.sprintf ".globl %s1\n" x |> Buffer.add_string buf;
-  Printf.sprintf "%s1:\n" x |> Buffer.add_string buf;
-  (create_asm (Tail, body)) |> Buffer.add_string buf;
-  Printf.sprintf ".globl %s2\n" x |> Buffer.add_string buf;
-  Printf.sprintf "%s2:\n" x |> Buffer.add_string buf;
-  Printf.sprintf "\tpopl\t%%eax\n" |> Buffer.add_string buf;
-  Printf.sprintf "\tjmp\t%s" inamen |> Buffer.add_string buf
-  |> fun _ ->
-  let res = Buffer.contents buf in
-  Logger.debug (print_newline (); "!!EMIT TRACE!!\n" ^ res);
-  let oc = open_out (fname ^ ".s") in
   Printf.fprintf oc "%s" res;
   close_out oc
