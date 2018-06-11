@@ -100,6 +100,8 @@ let entry
   let trace =
     if !is_tracing then
       TJ.exec p t regs' mems' args
+    else if !is_method then
+      MJ.exec p t regs' mems' args
     else
       assert false
   in
