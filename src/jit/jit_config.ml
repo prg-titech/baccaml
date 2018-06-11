@@ -22,7 +22,6 @@ type tracing_jit_args =
     loop_header : int;
     loop_pc_place : int
   }
-
 type method_jit_args =
   { method_name : string;
     reds : string list;
@@ -39,7 +38,5 @@ type jit_args =
 type trace_result =
   | Tracing_success of fundef
   | Method_success of fundef
-
-
 
 let zero = "zero.0"

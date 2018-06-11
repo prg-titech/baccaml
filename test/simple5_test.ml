@@ -40,7 +40,7 @@ let _ = run_test_tt_main begin
             method_start = 0;
             method_end = 3;
             pc_place = 1;
-            backedge_pcs = [4]
+            backedge_pcs = [6]
           }) in
         let { body } = fundef in
         let reg = Array.create 100000 (Red (0)) in

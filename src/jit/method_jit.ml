@@ -6,6 +6,8 @@ open Jit_config
 open Jit_util
 open Renaming
 
+module TJ = Tracing_jit
+
 exception Method_jit_failed of string
 
 let find_pc (argsr : Id.t list) (jargs : method_jit_args) =
@@ -90,11 +92,20 @@ and method_jit_exp p e reg mem jargs = match e with
       if contains (string_of_id_l id_l) "min_caml"
       then Ans (e)
       else
+        let { method_name; reds; method_start; method_end; pc_place; backedge_pcs } = jargs in
         let fundef = find_fundef p id_l in
         let pc = reg.(find_pc argsr jargs) |> value_of in
         let t = Inlining.inline_calldir_exp argsr fundef reg in
-        if List.exists (jargs.backedge_pcs) (fun i -> i = pc) then
-          Ans (e)
+        if List.exists (backedge_pcs) (fun i -> i = pc) then
+          let tjargs = {
+            trace_name = method_name;
+            reds = reds;
+            greens = [];
+            loop_header = 6;
+            loop_pc_place = pc_place
+          } in
+          print_endline (Printf.sprintf "pc: %d" pc);
+          TJ.tracing_jit p t reg mem tjargs
         else
           method_jit p t reg mem jargs
     end

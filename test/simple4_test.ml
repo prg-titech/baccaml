@@ -38,7 +38,8 @@ let _ = run_test_tt_main begin
             reds = ["bytecode.79"; "a.82"];
             method_start = 0;
             method_end = 3;
-            pc_place = 1
+            pc_place = 1;
+            backedge_pcs = []
           }) in
         let { body } = fundef in
         let reg = Array.create 100000 (Red (0)) in
