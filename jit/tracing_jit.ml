@@ -168,7 +168,11 @@ and tracing_jit_ans p e reg mem jit_args = match e with
 
 let exec p t reg mem jit_args =
   let t' = Simm.t t in
-  Emit_virtual.to_string_t t' |> print_endline;
+  let jit_args' =
+    match jit_args with
+      Tracing_jit_args t -> t
+    | Method_jit_args m -> assert false
+  in
   begin match t' with
     | Let (_, Set (_),
            Let (_,
@@ -187,15 +191,21 @@ let exec p t reg mem jit_args =
             { name = name; args = args; fargs = fargs; body = interp_body; ret = ret }
           | _ -> fundef)
       in
-      tracing_jit (Prog (table, fundefs', main)) interp_body reg mem jit_args, args
+      tracing_jit
+        (Prog (table, fundefs', main))
+        interp_body
+        reg
+        mem
+        jit_args',
+      jit_args'
     | Ans _ | Let _ ->
       raise @@
       Tracing_jit_failed
         "missing jit_dispatch. please add jit_dispatch ... at the top of your interpreter."
   end
   |> fun (res, args) ->
-  { name = Id.L (jit_args.trace_name)
-  ; args = args
-  ; fargs = []
-  ; body = res
-  ; ret = Type.Int }
+  { name = Id.L (args.trace_name)
+    ; args = args.reds
+    ; fargs = []
+    ; body = res
+    ; ret = Type.Int }

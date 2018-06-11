@@ -15,7 +15,7 @@ type jit_result =
   | Specialized of value
   | Not_specialized of exp * value
 
-type jit_args =
+type tracing_jit_args =
   { trace_name : string
   ; reds : string list
   ; greens: string list
@@ -31,42 +31,8 @@ type method_jit_args =
   ; pc_place : int
   }
 
-let dummy_jit_args =
-  { trace_name = "dummy_jit_args.1000"
-  ; reds = []
-  ; greens = []
-  ; loop_header = 0
-  ; loop_pc_place = 0
-  }
-
-let enable_jit = ref false
+type jit_args =
+  | Tracing_jit_args of tracing_jit_args
+  | Method_jit_args of method_jit_args
 
 let zero = "zero.0"
-
-let value_of = function
-  | Red (n) -> n
-  | Green (n) -> n
-  | LightGreen (n) -> n
-
-let is_red = function
-  | Red _ -> true
-  | _ -> false
-
-let is_green = function
-  | Green _ -> true
-  | _ -> false
-
-let is_light_green = function
-  | LightGreen _ -> true
-  | _ -> false
-
-let int_of_id_t = function
-  | "min_caml_hp" -> failwith ("int_of_id_t min_caml_hp is not supported.")
-  | id ->
-    match List.last (String.split id ~on:'.') with
-    | Some v -> int_of_string v
-    | None -> print_endline id; int_of_string id
-
-let string_of_id_or_imm = function
-    V (id_t) -> id_t
-  | C (n) -> string_of_int n

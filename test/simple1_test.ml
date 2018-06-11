@@ -10,11 +10,12 @@ module TJ = Tracing_jit
 module JE = Jit_emit
 
 let jit_args =
-  { trace_name = "min_caml_test_trace"
-  ; reds = ["a.44"; "bytecode.42"]
-  ; greens = []
-  ; loop_header = 0
-  ; loop_pc_place = 1 }
+  Tracing_jit_args (
+    { trace_name = "min_caml_test_trace"
+    ; reds = ["ytecode.43"; "a.45"]
+    ; greens = []
+    ; loop_header = 0
+    ; loop_pc_place = 1 })
 
 let _ = run_test_tt_main begin
     "tracing_jit_test" >::: [

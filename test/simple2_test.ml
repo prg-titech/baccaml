@@ -29,13 +29,13 @@ let bytecode = [|0; 11; 4; 8; 0; 0; 10; 12; 1; 1; 10; 12; 20|]
 let _ = run_test_tt_main begin
     "simple2_test" >::: [
       "method_jit" >:: begin fun () ->
-        let method_jit_args = {
-          method_name = "min_caml_test_trace";
-          reds = ["code.70"; "a.72"];
-          method_start = 0;
-          method_end = 12;
-          pc_place = 1
-        } in
+        let method_jit_args = Method_jit_args (
+            { method_name = "min_caml_test_trace";
+              reds = ["code.70"; "a.72"];
+              method_start = 0;
+              method_end = 12;
+              pc_place = 1
+            }) in
         let reg = Array.create 10000 (Red (0)) in
         let mem = Array.create 10000 (Red (0)) in
         for i = 0 to (Array.length bytecode - 1) do
@@ -52,13 +52,13 @@ let _ = run_test_tt_main begin
           ~inamen:"interp.69"
       end;
       "tracing_jit" >:: begin fun () ->
-        let tracing_jit_args = {
-          trace_name = "min_caml_test_trace";
-          reds = ["code.70"; "a.72"];
-          greens = [];
-          loop_header = 0;
-          loop_pc_place = 1
-        } in
+        let tracing_jit_args = Tracing_jit_args (
+          { trace_name = "min_caml_test_trace";
+            reds = ["code.70"; "a.72"];
+            greens = [];
+            loop_header = 0;
+            loop_pc_place = 1
+          }) in
         let reg = Array.create 100000 (Red (0)) in
         let mem = Array.create 100000 (Red (0)) in
         reg.(70) <- Green (0);

@@ -3,12 +3,13 @@ open Asm
 open Core
 open Inlining
 open Jit_config
+open Jit_util
 open Renaming
 
 exception Method_jit_failed of string
 
-let find_pc argsr method_jit_args =
-  match List.nth argsr (method_jit_args.pc_place) with
+let find_pc argsr jargs =
+  match List.nth argsr (jargs.pc_place) with
   | Some (s) -> int_of_id_t s
   | None -> failwith "find_pc is failed."
 
@@ -52,9 +53,9 @@ let rec add_cont_proc id_t instr body =
     | Ans e -> Let ((id_t, Type.Int), e, body)
   in go id_t instr body
 
-let rec method_jit p instr reg mem method_jit_args =
+let rec method_jit p instr reg mem jargs =
   match instr with
-  | Ans (exp) -> method_jit_ans p exp reg mem method_jit_args
+  | Ans (exp) -> method_jit_ans p exp reg mem jargs
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     let rec restore_args cont = function
         [] -> cont
@@ -70,29 +71,29 @@ let rec method_jit p instr reg mem method_jit_args =
         (Let ((dest, typ), CallDir (id_l, args, fargs), Ans (Nop)))
         args
     in
-    let t' = method_jit p body reg mem method_jit_args in
+    let t' = method_jit p body reg mem jargs in
     add_cont_proc (Id.gentmp Type.Unit) restored_fcall t'
   | Let ((dest, typ), exp, body) ->
     begin match Optimizer.optimize_exp p exp reg mem with
       | Specialized (v) ->
         reg.(int_of_id_t dest) <- v;
-        method_jit p body reg mem method_jit_args
+        method_jit p body reg mem jargs
       | Not_specialized (e, v) ->
         reg.(int_of_id_t dest) <- v;
-        let t = method_jit p body reg mem method_jit_args in
+        let t = method_jit p body reg mem jargs in
         Let ((dest, typ), e, t)
     end
 
-and method_jit_ans p e reg mem method_jit_args = match e with
+and method_jit_ans p e reg mem jargs = match e with
   | CallDir (id_l, argsr, _) ->
     begin
       if contains (string_of_id_l id_l) "min_caml"
       then Ans (e)
       else
         let fundef = find_fundef p id_l in
-        let pc = value_of reg.(find_pc argsr method_jit_args) in
+        let pc = value_of reg.(find_pc argsr jargs) in
         let t' = Inlining.inline_calldir_exp argsr fundef reg in
-        method_jit p t' reg mem method_jit_args
+        method_jit p t' reg mem jargs
     end
   | IfLE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
     let r1 = value_of reg.(int_of_id_t id_t) in
@@ -101,8 +102,8 @@ and method_jit_ans p e reg mem method_jit_args = match e with
       | C (n) -> n
     in
     if r1 <= r2
-    then method_jit p t1 reg mem method_jit_args
-    else method_jit p t2 reg mem method_jit_args
+    then method_jit p t1 reg mem jargs
+    else method_jit p t2 reg mem jargs
   | IfEq (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
     let r1 = value_of reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
@@ -110,8 +111,8 @@ and method_jit_ans p e reg mem method_jit_args = match e with
       | C (n) -> n
     in
     if r1 = r2
-    then method_jit p t1 reg mem method_jit_args
-    else method_jit p t2 reg mem method_jit_args
+    then method_jit p t1 reg mem jargs
+    else method_jit p t2 reg mem jargs
   | IfGE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
     let r1 = value_of reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
@@ -119,8 +120,8 @@ and method_jit_ans p e reg mem method_jit_args = match e with
       | C (n) -> n
     in
     if r1 >= r2
-    then method_jit p t1 reg mem method_jit_args
-    else method_jit p t2 reg mem method_jit_args
+    then method_jit p t1 reg mem jargs
+    else method_jit p t2 reg mem jargs
   | IfEq (id_t, id_or_imm, t1, t2) ->
     let r1 = jit_value_of_id_t reg id_t in
     let r2 = jit_value_of_id_or_imm reg id_or_imm in
@@ -128,8 +129,8 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     let regt2 = Array.copy reg in
     let memt1 = Array.copy mem in
     let memt2 = Array.copy mem in
-    let t1' = method_jit p t1 regt1 memt1 method_jit_args in
-    let t2' = method_jit p t2 regt2 memt2 method_jit_args in
+    let t1' = method_jit p t1 regt1 memt1 jargs in
+    let t2' = method_jit p t2 regt2 memt2 jargs in
     begin match r1, r2 with
       | Green (n1), Green (n2)
       | LightGreen (n1), LightGreen (n2)
@@ -154,8 +155,8 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     let regt2 = Array.copy reg in
     let memt1 = Array.copy mem in
     let memt2 = Array.copy mem in
-    let t1' = method_jit p t1 regt1 memt1 method_jit_args in
-    let t2' = method_jit p t2 regt2 memt2 method_jit_args in
+    let t1' = method_jit p t1 regt1 memt1 jargs in
+    let t2' = method_jit p t2 regt2 memt2 jargs in
     begin match r1, r2 with
       | Green (n1), Green (n2)
       | LightGreen (n1), LightGreen (n2)
@@ -180,8 +181,8 @@ and method_jit_ans p e reg mem method_jit_args = match e with
     let regt2 = Array.copy reg in
     let memt1 = Array.copy mem in
     let memt2 = Array.copy mem in
-    let t1' = method_jit p t1 regt1 memt1 method_jit_args in
-    let t2' = method_jit p t2 regt2 memt2 method_jit_args in
+    let t1' = method_jit p t1 regt1 memt1 jargs in
+    let t2' = method_jit p t2 regt2 memt2 jargs in
     begin match r1, r2 with
       | Green (n1), Green (n2)
       | LightGreen (n1), LightGreen (n2)
@@ -212,6 +213,10 @@ and method_jit_ans p e reg mem method_jit_args = match e with
 
 let exec p t reg mem jit_args =
   let t' = Simm.t t in
+  let jit_args' = match jit_args with
+      Tracing_jit_args v -> assert false
+    | Method_jit_args m -> m
+  in
   begin match t' with
     | Let (_, Set (_),
       Let (_,
@@ -230,15 +235,15 @@ let exec p t reg mem jit_args =
             { name = name; args = args; fargs = fargs; body = interp_body; ret = ret }
           | _ -> fundef)
       in
-      method_jit (Prog (table, fundefs', main)) interp_body reg mem jit_args
+      method_jit (Prog (table, fundefs', main)) interp_body reg mem jit_args', jit_args'
     | Ans _ | Let _ ->
       raise @@
       Method_jit_failed
         "missing jit_dispatch. please add jit_dispatch ... at the top of your interpreter."
   end
-  |> fun res ->
+  |> fun (res, args) ->
   { name = Id.L ("min_caml_test_trace")
-  ; args = jit_args.reds
+  ; args = args.reds
   ; fargs = []
   ; body = res
   ; ret = Type.Int }

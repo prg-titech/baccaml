@@ -14,7 +14,7 @@ let Prog (_, fundefs, main) as prog =
   In_channel.create ("simple4.ml")
   |> Lexing.from_channel
   |> virtualize
-;;
+
 
 let bytecode =
   [|1;
@@ -25,7 +25,7 @@ let bytecode =
     3; 9; 12;
     2; 0; 12;
     4|]
-;;
+
 
 let _ = run_test_tt_main begin
     "simple4_test" >::: [
@@ -33,13 +33,13 @@ let _ = run_test_tt_main begin
       begin fun () ->
         let fundef = List.hd_exn fundefs in
         Emit_virtual.to_string_fundef fundef |> print_endline;
-        let method_jit_args = {
+        let method_jit_args = Method_jit_args ({
           method_name = "min_caml_test_trace";
           reds = ["bytecode.79"; "a.82"];
           method_start = 0;
           method_end = 3;
           pc_place = 1
-        } in
+        }) in
         let { body } = fundef in
         let reg = Array.create 100000 (Red (0)) in
         let mem = Array.create 100000 (Red (0)) in

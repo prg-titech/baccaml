@@ -2,6 +2,7 @@ open Mincaml
 open Asm
 open Core
 open Jit_config
+open Jit_util
 open Renaming
 
 let rec inline_args argsr argst funbody reg =

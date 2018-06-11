@@ -2,6 +2,7 @@ open Mincaml
 open Baccaml_jit
 open Util
 open Jit_config
+open Jit_util
 
 include Tracing_jit
 include Method_jit

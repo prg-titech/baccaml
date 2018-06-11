@@ -2,6 +2,7 @@ open Mincaml
 open Asm
 open Core
 open Jit_config
+open Jit_util
 
 let remove_elt e l =
   let rec go l acc = match l with

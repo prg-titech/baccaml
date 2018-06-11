@@ -2,6 +2,7 @@ open Mincaml
 open Asm
 open Core
 open Jit_config
+open Jit_util
 
 let select_branch e n1 n2 t1 t2 =
   match e with

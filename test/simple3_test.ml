@@ -20,13 +20,13 @@ let _ = run_test_tt_main begin
       "method_jit" >::
       begin fun () ->
         let fundef = List.hd_exn fundefs in
-        let method_jit_args = {
+        let method_jit_args = Method_jit_args ({
           method_name = "min_caml_test_trace";
           reds = [];
           method_start = 0;
           method_end = 6;
           pc_place = 1
-        } in
+        }) in
         let { body } = fundef in
         let reg = Array.create 10000 (Red 0) in
         let mem = Array.create 10000 (Red 0) in
@@ -54,13 +54,13 @@ let _ = run_test_tt_main begin
       "tracing_jit" >::
       begin fun () ->
         let { body } = List.hd_exn fundefs in
-        let tracing_jit_args = {
+        let tracing_jit_args = Tracing_jit_args ({
           trace_name = "min_caml_test_trace";
           reds = [];
           greens = [];
           loop_header = 6;
           loop_pc_place = 1;
-        } in
+        }) in
         let reg = Array.create 100000 (Red 0) in
         let mem = Array.create 100000 (Red 0) in
         reg.(126) <- Green (0);
