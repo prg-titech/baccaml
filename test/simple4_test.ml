@@ -51,21 +51,14 @@ let _ = run_test_tt_main begin
           if n = 20 then mem.(n) <- Red (bytecode.(i))
           else mem.(n) <- Green (bytecode.(i))
         done;
-        (* mem.(0) <- Green (1);
-         * mem.(4) <- Green (1);
-         * mem.(8) <- Green (0);
-         * mem.(12) <- Green (4);
-         * mem.(16) <- Green (5); mem.(20) <- Red (10);
-         * mem.(24) <- Green (3); mem.(28) <- Green (9); mem.(32) <- Green (12);
-         * mem.(36) <- Green (2); mem.(40) <- Green (0); mem.(44) <- Green (12);
-         * mem.(48) <- Green (4); *)
         let res = MJ.exec prog body reg mem method_jit_args in
-        (Emit_virtual.to_string_fundef res) |> print_endline;
+        (match res with
+         | Tracing_success res' | Method_success res' ->
+           (Emit_virtual.to_string_fundef res') |> print_endline);
         Jit_emit.emit_trace
           res
           "simple4_mj"
           "interp.79"
-          ~mj:true ~tj:false
       end
     ]
   end

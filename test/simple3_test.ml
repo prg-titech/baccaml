@@ -44,12 +44,13 @@ let _ = run_test_tt_main begin
             mem.(i * 4) <- Green (bytecode.(i))
         done;
         let trace = MJ.exec prog body reg mem method_jit_args in
-        Emit_virtual.to_string_fundef trace |> print_endline;
+        (match trace with
+         | Tracing_success res' | Method_success res' ->
+           Emit_virtual.to_string_fundef res' |> print_endline);
         Jit_emit.emit_trace
           trace
           "simple3_mj"
           "interp.126"
-          ~mj:true ~tj:false
       end;
       "tracing_jit" >::
       begin fun () ->
@@ -77,7 +78,9 @@ let _ = run_test_tt_main begin
             mem.(i * 4) <- Green (bytecode.(i))
         done;
         let trace = TJ.exec prog body reg mem tracing_jit_args in
-        Emit_virtual.to_string_fundef trace |> print_endline;
+        (match trace with
+         | Tracing_success res' | Method_success res' ->
+           Emit_virtual.to_string_fundef res' |> print_endline)
       end
     ]
   end

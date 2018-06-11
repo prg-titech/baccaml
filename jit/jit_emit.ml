@@ -2,6 +2,7 @@ open Mincaml
 open Util
 open Asm
 open Emit
+open Jit_config
 
 let replace input output =
   Str.global_replace (Str.regexp_string input) output
@@ -183,48 +184,48 @@ and create_asm' = function
   | Tail, CallCls(x, ys, zs) -> (* 末尾呼び出し (caml2html: emit_tailcall) *)
     Buffer.create 100
     |> fun buf -> Buffer.add_string buf @@ (create_asm'_args [(x, reg_cl)] ys zs)
-    |> fun _ -> Buffer.add_string buf @@ Printf.sprintf "\tjmp\t*(%s)\n" reg_cl
-    |> fun _ -> Buffer.contents buf
+                  |> fun _ -> Buffer.add_string buf @@ Printf.sprintf "\tjmp\t*(%s)\n" reg_cl
+                              |> fun _ -> Buffer.contents buf
   | Tail, CallDir(Id.L(x), ys, zs) -> (* 末尾呼び出し *)
     Buffer.create 100
     |> fun buf -> 
-      Buffer.add_string buf @@ create_asm'_args [] ys zs;
-      Buffer.add_string buf @@ (
-        if List.for_all (fun c -> String.contains x c) ['i'; 'n'; 't'; 'e'; 'r'; 'p'] then
-          Printf.sprintf "\tjmp\t%s\n" "min_caml_mid_layer"
-        else
-          Printf.sprintf "\tjmp\t%s\n" x);
-      Buffer.contents buf
+    Buffer.add_string buf @@ create_asm'_args [] ys zs;
+    Buffer.add_string buf @@ (
+      if List.for_all (fun c -> String.contains x c) ['i'; 'n'; 't'; 'e'; 'r'; 'p'] then
+        Printf.sprintf "\tjmp\t%s\n" "min_caml_mid_layer"
+      else
+        Printf.sprintf "\tjmp\t%s\n" x);
+    Buffer.contents buf
   | NonTail(a), CallCls(x, ys, zs) ->
     Buffer.create 100
     |> fun buf ->
-      Buffer.add_string buf @@ create_asm'_args [(x, reg_cl)] ys zs;
-      let ss = stacksize () in
-      if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\taddl\t$%d, %s\n" ss reg_sp;
-      Buffer.add_string buf @@ Printf.sprintf "\tcall\t*(%s)\n" reg_cl;
-      if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\tsubl\t$%d, %s\n" ss reg_sp;
-      (if List.mem a allregs && a <> regs.(0) then
-        Buffer.add_string buf @@ Printf.sprintf "\tmovl\t%s, %s\n" regs.(0) a
-      else if List.mem a allfregs && a <> fregs.(0) then
-        Buffer.add_string buf @@ Printf.sprintf "\tmovsd\t%s, %s\n" fregs.(0) a);
-      Buffer.contents buf
+    Buffer.add_string buf @@ create_asm'_args [(x, reg_cl)] ys zs;
+    let ss = stacksize () in
+    if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\taddl\t$%d, %s\n" ss reg_sp;
+    Buffer.add_string buf @@ Printf.sprintf "\tcall\t*(%s)\n" reg_cl;
+    if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\tsubl\t$%d, %s\n" ss reg_sp;
+    (if List.mem a allregs && a <> regs.(0) then
+       Buffer.add_string buf @@ Printf.sprintf "\tmovl\t%s, %s\n" regs.(0) a
+     else if List.mem a allfregs && a <> fregs.(0) then
+       Buffer.add_string buf @@ Printf.sprintf "\tmovsd\t%s, %s\n" fregs.(0) a);
+    Buffer.contents buf
   | NonTail(a), CallDir(Id.L(x), ys, zs) ->
     Buffer.create 100
     |> fun buf ->
-      let ss = stacksize () in
-      Buffer.add_string buf @@ create_asm'_args [] ys zs;
-      if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\taddl\t$%d, %s\n" ss reg_sp;
-      Buffer.add_string buf @@ (
-        if List.for_all (fun c -> String.contains x c) ['i'; 'n'; 't'; 'e'; 'r'; 'p'] then
-          Printf.sprintf "\tcall\t%s\n" "min_caml_mid_layer"
-        else
-          Printf.sprintf "\tcall\t%s\n" x);
-      if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\tsubl\t$%d, %s\n" ss reg_sp;
-      (if List.mem a allregs && a <> regs.(0) then 
-        Buffer.add_string buf @@ Printf.sprintf "\tmovl\t%s, %s\n" regs.(0) a
-      else if List.mem a allfregs && a <> fregs.(0) then
-        Buffer.add_string buf @@ Printf.sprintf "\tmovsd\t%s, %s\n" fregs.(0) a);
-      Buffer.contents buf
+    let ss = stacksize () in
+    Buffer.add_string buf @@ create_asm'_args [] ys zs;
+    if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\taddl\t$%d, %s\n" ss reg_sp;
+    Buffer.add_string buf @@ (
+      if List.for_all (fun c -> String.contains x c) ['i'; 'n'; 't'; 'e'; 'r'; 'p'] then
+        Printf.sprintf "\tcall\t%s\n" "min_caml_mid_layer"
+      else
+        Printf.sprintf "\tcall\t%s\n" x);
+    if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\tsubl\t$%d, %s\n" ss reg_sp;
+    (if List.mem a allregs && a <> regs.(0) then 
+       Buffer.add_string buf @@ Printf.sprintf "\tmovl\t%s, %s\n" regs.(0) a
+     else if List.mem a allfregs && a <> fregs.(0) then
+       Buffer.add_string buf @@ Printf.sprintf "\tmovsd\t%s, %s\n" fregs.(0) a);
+    Buffer.contents buf
 
 and create_asm'_tail_if e1 e2 b bn =
   let buf = Buffer.create 1000 in
@@ -283,7 +284,7 @@ and create_asm'_args x_reg_cl ys zs =
      (shuffle sw zfrs))
 
 
-let emit_midlayer_tj (file : string) (interp : string) : Buffer.t =
+let emit_midlayer (tr : trace_result) (file : string) (interp : string) : Buffer.t =
   let buf = Buffer.create 1000 in
   Printf.sprintf ".globl min_caml_trace_entry\n" |> Buffer.add_string buf;
   Printf.sprintf "min_caml_trace_entry:\n" |> Buffer.add_string buf;
@@ -293,37 +294,23 @@ let emit_midlayer_tj (file : string) (interp : string) : Buffer.t =
   Printf.sprintf "\tret\n" |> Buffer.add_string buf;
   Printf.sprintf ".globl min_caml_mid_layer\n" |> Buffer.add_string buf;
   Printf.sprintf "min_caml_mid_layer:\n" |> Buffer.add_string buf;
-  Printf.sprintf "\tmovl\t%d(%%esp), %%eax\n" (4) |> Buffer.add_string buf;
+  begin match tr with
+    | Tracing_success _ ->
+      Printf.sprintf "\tmovl\t%d(%%esp), %%eax\n" (4) |> Buffer.add_string buf
+    | Method_success _ ->
+      Printf.sprintf "\tmovl\t%d(%%esp), %%eax\n" (8) |> Buffer.add_string buf
+  end;
   Printf.sprintf "\tjmp\t%s\n" interp |> Buffer.add_string buf;
   buf
 
 
-let emit_midlayer_mj (file : string) (interp : string) : Buffer.t =
-  let buf = Buffer.create 1000 in
-  Printf.sprintf ".globl min_caml_trace_entry\n" |> Buffer.add_string buf;
-  Printf.sprintf "min_caml_trace_entry:\n" |> Buffer.add_string buf;
-  Printf.sprintf "\tpushl\t%%eax\n" |> Buffer.add_string buf;
-  Printf.sprintf "\tcall\tmin_caml_test_trace\n" |> Buffer.add_string buf;
-  Printf.sprintf "\tpopl\t%%edx\n" |> Buffer.add_string buf;
-  Printf.sprintf "\tret\n" |> Buffer.add_string buf;
-  Printf.sprintf ".globl min_caml_mid_layer\n" |> Buffer.add_string buf;
-  Printf.sprintf "min_caml_mid_layer:\n" |> Buffer.add_string buf;
-  Printf.sprintf "\tmovl\t%d(%%esp), %%eax\n" (8) |> Buffer.add_string buf;
-  Printf.sprintf "\tjmp\t%s\n" interp |> Buffer.add_string buf;
-  buf
-
-
-let emit_trace (fd: fundef) (file: string) (interp: string) ?tj:(tj=false) ?mj:(mj=false) =
+let emit_trace (tr: trace_result) (file: string) (interp: string)  =
+  let fd = match tr with Tracing_success v | Method_success v -> v in
   fd
   |> RegAlloc.h
   |> fun { name = Id.L (x); body } ->
   let buf = Buffer.create 10000 in
-  (if tj then
-    emit_midlayer_tj file interp |> Buffer.add_buffer buf
-  else if mj then
-    emit_midlayer_mj file interp |> Buffer.add_buffer buf
-  else
-    assert false);
+  emit_midlayer tr file interp |> Buffer.add_buffer buf;
   Printf.sprintf ".globl %s\n" x |> Buffer.add_string buf;
   Printf.sprintf "%s:\n" x |> Buffer.add_string buf;
   create_asm (Tail, body) |> Buffer.add_string buf;

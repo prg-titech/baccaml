@@ -242,8 +242,9 @@ let exec p t reg mem jit_args =
         "missing jit_dispatch. please add jit_dispatch ... at the top of your interpreter."
   end
   |> fun (res, args) ->
-  { name = Id.L ("min_caml_test_trace")
-  ; args = args.reds
-  ; fargs = []
-  ; body = res
-  ; ret = Type.Int }
+  Method_success (
+    { name = Id.L ("min_caml_test_trace")
+    ; args = args.reds
+    ; fargs = []
+    ; body = res
+    ; ret = Type.Int })

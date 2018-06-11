@@ -39,8 +39,9 @@ let _ = run_test_tt_main begin
         reg.(44) <- Green (0);
         reg.(45) <- Red (100);
         let res = TJ.exec prog body reg mem jit_args in
-        print_string (Emit_virtual.to_string_fundef res);
-        JE.emit_trace res "simple1_tj" "interp.42" ~tj:true ~mj:false
+        (match res with Tracing_success v | Method_success v ->
+          print_string (Emit_virtual.to_string_fundef v));
+        JE.emit_trace res "simple1_tj" "interp.42"
       end
     ]
   end

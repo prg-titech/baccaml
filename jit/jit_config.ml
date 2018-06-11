@@ -35,4 +35,8 @@ type jit_args =
   | Tracing_jit_args of tracing_jit_args
   | Method_jit_args of method_jit_args
 
+type trace_result =
+  | Tracing_success of fundef
+  | Method_success of fundef
+
 let zero = "zero.0"

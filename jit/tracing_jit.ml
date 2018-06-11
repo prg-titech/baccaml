@@ -204,8 +204,9 @@ let exec p t reg mem jit_args =
         "missing jit_dispatch. please add jit_dispatch ... at the top of your interpreter."
   end
   |> fun (res, args) ->
-  { name = Id.L (args.trace_name)
+  Tracing_success (
+    { name = Id.L (args.trace_name)
     ; args = args.reds
     ; fargs = []
     ; body = res
-    ; ret = Type.Int }
+    ; ret = Type.Int })

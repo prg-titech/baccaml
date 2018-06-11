@@ -1,2 +1,2 @@
 open Mincaml
-val emit_trace : Asm.fundef -> string -> string -> ?tj:bool -> ?mj:bool -> unit
+val emit_trace : Jit_config.trace_result-> string -> string -> unit
