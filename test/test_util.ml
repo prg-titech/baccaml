@@ -1,6 +1,9 @@
+open Core
+
 open Mincaml
 open Baccaml_jit
 open Util
+open Xutil
 open Jit_config
 open Jit_util
 
@@ -14,8 +17,8 @@ let () =
 
 let setup aa bb =
   List.iter
-    (fun (a, i) -> bb.(i) <- value_of a)
-    (ListUtil.zip (Array.to_list aa) (ListUtil.range 0 (Array.length aa - 1)))
+    ~f:(fun (a, i) -> bb.(i) <- value_of a)
+    (List.zip (Array.to_list aa) (List.range 0 (Array.length aa - 1)))
 
 module Test_dependencies = struct
 
