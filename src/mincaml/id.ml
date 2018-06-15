@@ -1,5 +1,8 @@
 type t = string (* 変数の名前 (caml2html: id_t) *)
+[@@deriving show]
+
 type l = L of string (* トップレベル関数やグローバル配列のラベル (caml2html: id_l) *)
+[@@deriving show]
 
 let rec pp_list = function
   | [] -> ""

@@ -1,11 +1,30 @@
-open Mincaml
-open Mutil
-open Util
-
 open Core
 
-let emit_virtual_flg = ref false
+open Mincaml
+open Util
+
+let limit = ref 1000
+let ev_flg = ref false
 let interp_flg = ref false
+
+let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
+  Format.eprintf "iteration %d@." n;
+  if n = 0 then e else
+    let e' = Beta.f e |> Assoc.f |> Inline.f |> ConstFold.f |> Elim.f in
+    if e = e' then e else iter (n - 1) e'
+
+let virtualize l =
+  Id.counter := 0;
+  Typing.extenv := M.empty;
+  Parser.exp Lexer.token l
+  |> Typing.f
+  |> KNormal.f
+  |> fun t -> if !ev_flg then print_endline @@ KNormal.show t; t
+  |> iter !limit
+  |> Alpha.f
+  |> Closure.f
+  |> fun prog -> if !ev_flg then print_endline @@ Closure.show_prog prog; prog
+  |> Virtual.f
 
 let interp l =
   virtualize l |> Interp.f
@@ -21,9 +40,10 @@ let dump_exec f =
   try
     Lexing.from_channel inchan
     |> virtualize   
-    |> Trim.f         
+    |> Trim.f
     |> Simm.f
-    |> Emit_virtual.to_string_prog
+    (* |> Emit_virtual.to_string_progg *)
+    |> Asm.show_prog
     |> print_endline;
     In_channel.close inchan;
   with e ->
@@ -55,7 +75,7 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: m
   Arg.parse
     [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
      ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated");
-     ("-dump", Arg.Unit(fun _ -> emit_virtual_flg := true), "emit virtual machine code");
+     ("-dump", Arg.Unit(fun _ -> ev_flg := true), "emit virtual machine code");
      ("-i", Arg.Unit(fun _ -> interp_flg := true), "execute as interpreter");
      ("-trim", Arg.Unit(fun _ -> Trim.flg := true), "trim jit dispatcher");
      ("-debug", Arg.Unit(fun _ -> Logger.log_level := Logger.Debug), "print debug messages")]
@@ -75,7 +95,7 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: m
     List.iter
       ~f:begin fun f ->
         if !interp_flg then ignore (interp_exec f)
-        else if !emit_virtual_flg then ignore (dump_exec f)
+        else if !ev_flg then ignore (dump_exec f)
         else ignore (compile_exec f)
       end
       !files

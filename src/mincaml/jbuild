@@ -3,6 +3,8 @@
 (ocamllex (lexer))
 (ocamlyacc (parser))
 
+; (menhir ((modules (parser))))
+
 (library
  ((name           mincaml)
   (modules        (:standard \ main anchor))

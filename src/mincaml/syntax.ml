@@ -24,4 +24,9 @@ type t = (* MinCamlの構文を表現するデータ型 (caml2html: syntax_t) *)
   | Array of t * t
   | Get of t * t
   | Put of t * t * t
+  | JitMergePoint of Id.t * t list
+  | CanEnterJit of Id.t * t list
+[@@deriving show]
+
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
+[@@deriving show]

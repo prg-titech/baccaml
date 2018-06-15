@@ -1,4 +1,6 @@
 type closure = { entry : Id.l; actual_fv : Id.t list }
+[@@deriving show]
+
 type t = (* クロージャ変換後の式 (caml2html: closure_t) *)
   | Unit
   | Int of int
@@ -23,11 +25,15 @@ type t = (* クロージャ変換後の式 (caml2html: closure_t) *)
   | Get of Id.t * Id.t
   | Put of Id.t * Id.t * Id.t
   | ExtArray of Id.l
+[@@deriving show]
+
 type fundef = { name : Id.l * Type.t;
                 args : (Id.t * Type.t) list;
                 formal_fv : (Id.t * Type.t) list;
-                body : t }
+                body : t } [@@deriving show]
+
 type prog = Prog of fundef list * t
+[@@deriving show]
 
 let rec fv = function
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
@@ -99,6 +105,8 @@ let rec g env known = function (* クロージャ変換ルーチン本体 (caml2
   | KNormal.Put(x, y, z) -> Put(x, y, z)
   | KNormal.ExtArray(x) -> ExtArray(Id.L(x))
   | KNormal.ExtFunApp(x, ys) -> AppDir(Id.L("min_caml_" ^ x), ys)
+  | KNormal.JitMergePoint(x, ys) -> AppDir(Id.L(x), ys)
+  | KNormal.CanEnterJit(x, ys) -> AppDir(Id.L(x), ys)
 
 let f e =
   toplevel := [];
