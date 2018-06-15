@@ -6,7 +6,7 @@ This project is forked from [min-caml](https://github.com/esumii/min-caml), an e
 
 ## BacCaml Project
 
-- [BacCaml](https://github.com/prg-titech/baccaml): meta JIT Compiler
+- [BacCaml](https://github.com/prg-titech/baccaml): meta JIT compiler
 - [Armin](https://github.com/prg-titech/armin): interface language for BacCaml
 
 ## Usage
