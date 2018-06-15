@@ -16,7 +16,7 @@ This project is forked from [min-caml](https://github.com/esumii/min-caml), an e
 	For build BacCaml:
 
 	```bash
-	$ opam install -y core ounit
+	$ opam install -y core ppx_deriving ounit
 	```
 
 	For your developing environment:
