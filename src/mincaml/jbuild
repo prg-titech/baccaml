@@ -1,18 +1,22 @@
 (jbuild_version 1)
 
 (ocamllex (lexer))
-(ocamlyacc (parser))
+
+(menhir
+ ((modules (parser))
+ ))
 
 (library
  ((name           mincaml)
   (modules        (:standard \ main anchor))
   (libraries      (str core util))
-  (c_names        (float))))
+  (c_names        (float))
+  (preprocess
+   (pps (ppx_deriving.show)))
+))
 
-(executable ; 実行形式
- (; 実行形式の名前
- (name           main)
- ; Mainモジュールのみをコンパイルする
- (modules        Main)
- ; 依存ライブラリ: 上で定義したMinCamlモジュール
- (libraries      (mincaml))))
+(executable
+ ((name           main)
+  (modules        Main)
+  (libraries      (mincaml))
+))
