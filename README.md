@@ -1,31 +1,38 @@
-# baccaml
+# BacCaml
 
 This is an experimental meta-hybrid JIT compiler using both approach of method and tracing JIT.
 
 This project is forked from [min-caml](https://github.com/esumii/min-caml), an educational mini ML compiler.
 
-## Setup
+## BacCaml Project
 
-For build BacCaml:
+- [BacCaml](https://github.com/prg-titech/baccaml): meta JIT Compiler
+- [Armin](https://github.com/prg-titech/armin): interface language for BacCaml
 
-```bash
-$ opam install -y core ounit
-```
+## Usage
 
-For your developing environment:
+- Setup
 
-```bash
-$ opam install -y tuareg merlin ocp-indent utop
-```
+	For build BacCaml:
 
-## Build
+	```bash
+	$ opam install -y core ounit
+	```
 
-``` bash
-$ make
-```
+	For your developing environment:
 
-## Test
+	```bash
+	$ opam install -y tuareg merlin ocp-indent utop
+	```
 
-``` bash
-$ make test
-```
+- Build
+
+	``` bash
+	$ make
+	```
+
+- Test
+
+	``` bash
+	$ make test
+	```
