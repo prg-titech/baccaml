@@ -20,6 +20,7 @@
 *.cache
 *.omakedb
 
+# merlin
 .merlin
 
 # Symlink to Architecture-Specific Files
@@ -48,3 +49,4 @@ test/**/*.s
 
 # dune
 _build
+*.install

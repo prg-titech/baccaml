@@ -1,8 +1,0 @@
-llib: [
-  "_build/install/default/lib/baccaml/META" {"META"}
-  "_build/install/default/lib/baccaml/opam" {"opam"}
-]
-doc: [
-  "_build/install/default/doc/baccaml/README.md"
-  "_build/install/default/doc/baccaml/LICENSE"
-]

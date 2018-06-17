@@ -11,6 +11,7 @@
 let rec interp bytecode pc stack sp =
   (* print_stack stack; print_newline (); *)
   (* if pc = 0 then test_trace () else *)
+  jit_merge_point (pc=0) bytecode stack;
   let instr = bytecode.(pc) in
   if instr = 0 then (* Add *)
     let v2 = stack.(sp) in
