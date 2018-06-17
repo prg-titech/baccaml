@@ -104,7 +104,6 @@ and method_jit_exp p e reg mem jargs = match e with
             loop_header = 6;
             loop_pc_place = pc_place
           } in
-          print_endline (Printf.sprintf "pc: %d" pc);
           TJ.tracing_jit p t reg mem tjargs
         else
           method_jit p t reg mem jargs

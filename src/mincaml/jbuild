@@ -16,6 +16,7 @@
 
 (executable
  ((name           main)
+  (public_name    Main)
   (modules        Main)
   (libraries      (mincaml))
 ))

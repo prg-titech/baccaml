@@ -18,7 +18,7 @@ float tuple
 
 .PHONY: build
 build:
-	@jbuilder build src/mincaml/$(MAIN)
+	@jbuilder build
 	@ln -s _build/default/src/mincaml/$(MAIN) .
 	@mv $(MAIN) $(COMPILER)
 
