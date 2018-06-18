@@ -12,4 +12,5 @@ depends: [
   "jbuilder" {build}
   "core"
   "str"
+  "ppx_deriving"
 ]
