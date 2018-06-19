@@ -1,5 +1,5 @@
 open Mincaml
-open Baccaml
+open Baccaml_jit
 open Util
 open Asm
 open Core

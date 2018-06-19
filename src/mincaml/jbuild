@@ -7,6 +7,7 @@
 
 (library
  ((name           mincaml)
+  (public_name    baccaml.mincaml)
   (modules        (:standard \ main anchor))
   (libraries      (str core util))
   (c_names        (float))

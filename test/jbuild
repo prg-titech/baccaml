@@ -2,11 +2,30 @@
 
 (executables
  ((names (simple1_test simple2_test simple3_test simple4_test simple5_test))
-  (libraries (core str oUnit mincaml baccaml))
- ))
+  (libraries (core str oUnit mincaml baccaml_jit))
+))
 
 (alias
  ((name runtest)
-  (deps (simple1_test.exe simple2_test.exe simple4_test.exe simple5_test.exe))
+  (deps (simple1_test.exe))
+  (action  (run ${<})
+)))
+
+
+(alias
+ ((name runtest)
+  (deps (simple2_test.exe))
+  (action  (run ${<})
+)))
+
+(alias
+ ((name runtest)
+  (deps (simple4_test.exe))
+  (action  (run ${<})
+)))
+
+(alias
+ ((name runtest)
+  (deps (simple5_test.exe))
   (action  (run ${<})
 )))

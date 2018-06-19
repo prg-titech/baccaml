@@ -1,6 +1,7 @@
 (jbuild_version 1)
 
 (library
- ((name          baccaml)
+ ((name          baccaml_jit)
+  (public_name   baccaml.jit)
   (libraries     (core str util mincaml)
   )))

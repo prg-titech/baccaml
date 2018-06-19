@@ -1,7 +1,7 @@
 (jbuild_version 1)
 
 (executable
- ((name      baccaml)
-  (public_name baccaml)
-  (libraries (baccaml mincaml)
+ ((name        baccaml)
+  (public_name baccaml.main)
+  (libraries (baccaml_jit mincaml)
 )))
