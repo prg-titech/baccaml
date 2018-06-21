@@ -34,14 +34,15 @@ let _ = run_test_tt_main begin
       begin fun () ->
         let fundef = List.hd_exn fundefs in
         Emit_virtual.to_string_fundef fundef |> print_endline;
-        let method_jit_args = Method_jit_args ({
-            method_name = "min_caml_test_trace";
-            reds = ["bytecode.89"; "a.91"];
-            method_start = 0;
-            method_end = 3;
-            pc_place = 1;
-            backedge_pcs = [6]
-          }) in
+        let method_jit_args = Method_jit_args (
+            { method_name = "min_caml_test_trace";
+              reds = ["bytecode.89"; "a.91"];
+              method_start = 0;
+              method_end = 3;
+              pc_place = 1;
+              loop_headers = [4];
+              backedge_pcs = [6]
+            }) in
         let { body } = fundef in
         let reg = Array.create 100000 (Red (0)) in
         let mem = Array.create 100000 (Red (0)) in

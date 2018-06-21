@@ -35,6 +35,7 @@ let _ = run_test_tt_main begin
               method_start = 0;
               method_end = 12;
               pc_place = 1;
+              loop_headers = [];
               backedge_pcs = []
             }) in
         let reg = Array.create 10000 (Red (0)) in

@@ -39,6 +39,7 @@ let _ = run_test_tt_main begin
             method_start = 0;
             method_end = 3;
             pc_place = 1;
+            loop_headers = [];
             backedge_pcs = []
           }) in
         let { body } = fundef in

@@ -19,11 +19,9 @@ let virtualize l =
   Parser.exp Lexer.token l
   |> Typing.f
   |> KNormal.f
-  |> fun t -> if !ev_flg then print_endline @@ KNormal.show t; t
   |> iter !limit
   |> Alpha.f
   |> Closure.f
-  |> fun prog -> if !ev_flg then print_endline @@ Closure.show_prog prog; prog
   |> Virtual.f
 
 let interp l =
@@ -42,8 +40,7 @@ let dump_exec f =
     |> virtualize   
     |> Trim.f
     |> Simm.f
-    (* |> Emit_virtual.to_string_progg *)
-    |> Asm.show_prog
+    |> Emit_virtual.to_string_prog
     |> print_endline;
     In_channel.close inchan;
   with e ->

@@ -16,19 +16,21 @@ type jit_result =
   | Not_specialized of exp * value
 
 type tracing_jit_args =
-  { trace_name : string;
-    reds : string list;
-    greens: string list;
-    loop_header : int;
-    loop_pc_place : int
+  { mutable trace_name : string;
+    mutable reds : string list;
+    mutable greens: string list;
+    mutable loop_header : int;
+    mutable loop_pc_place : int
   }
+  
 type method_jit_args =
-  { method_name : string;
-    reds : string list;
-    method_start : int;
-    method_end : int;
-    pc_place : int;
-    backedge_pcs : int list
+  { mutable method_name : string;
+    mutable reds : string list;
+    mutable method_start : int;
+    mutable method_end : int;
+    mutable pc_place : int;
+    mutable loop_headers : int list;
+    mutable backedge_pcs : int list
   }
 
 type jit_args =

@@ -17,9 +17,7 @@ let int_of_id_t id =
 
 
 let value_of = function
-  | Red (n) -> n
-  | Green (n) -> n
-  | LightGreen (n) -> n
+  | Red (n) | Green (n) | LightGreen (n) -> n
 
 let is_red = function
   | Red _ -> true
