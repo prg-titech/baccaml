@@ -1,8 +1,15 @@
-# BacCaml
+<div align=center>
+<img src="image/baccaml.png" width=400>
+</div>
 
+---
+
+<div style="text-align: center;">
 This is an experimental meta-hybrid JIT compiler using both approach of method and tracing JIT.
+This project is forked from <a href="https://github.com/esumii/min-caml">min-caml</a>, an educational mini ML compiler.
+</div>
 
-This project is forked from [min-caml](https://github.com/esumii/min-caml), an educational mini ML compiler.
+---
 
 ## BacCaml Project
 
