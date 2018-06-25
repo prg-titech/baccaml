@@ -11,10 +11,29 @@ module TJ = Tracing_jit
 
 exception Method_jit_failed of string
 
-let find_pc (argsr : Id.t list) (jargs : method_jit_args) =
+let contains s1 s2 =
+  let re = Str.regexp_string s2 in
+  try ignore (Str.search_forward re s1 0); true
+  with _ -> false
+
+let string_of_id_l id_l = match id_l with
+  | Id.L (x) -> x
+
+let find_pc_addr (argsr : Id.t list) (jargs : method_jit_args) =
   match List.nth argsr (jargs.pc_place) with
   | Some (v) -> int_of_id_t v
   | None -> failwith "find_pc in Method_jit is failed."
+
+let find_pc_with_p (p : prog) (reg : reg) (jargs : method_jit_args) =
+  let Prog (_, fundefs, _) = p in
+  let { args } =
+    match List.find fundefs ~f:(fun { name } ->
+        contains (string_of_id_l name) "interp")
+    with
+    | Some (fundef) -> fundef
+    | None -> failwith "find fundef is failed in method jit."
+  in
+  find_pc_addr args jargs |> Array.get reg |> value_of
 
 let rec find_fundef prog name =
   let Asm.Prog (_, fundefs, _) = prog in
@@ -41,20 +60,16 @@ let is_opcode id =
 let _ =
   assert (is_opcode "instr")
 
-let contains s1 s2 =
-  let re = Str.regexp_string s2 in
-  try ignore (Str.search_forward re s1 0); true
-  with _ -> false
-
-let string_of_id_l id_l = match id_l with
-  | Id.L (x) -> x
-
 let rec add_cont_proc id_t instr body =
   let rec go id_t instr body = match instr with
     | Let (a, Nop, t) -> go id_t t body
     | Let (a, e, t) -> Let (a, e, go id_t t body)
     | Ans e -> Let ((id_t, Type.Int), e, body)
-  in go id_t instr body
+  in go id_t instr body    
+    
+
+let rec method_jit_entry p reg mem jargs =
+  let
 
 let rec method_jit p instr reg mem jargs =
   match instr with
@@ -87,19 +102,9 @@ let rec method_jit p instr reg mem jargs =
         Let ((dest, typ), e, t)
     end
 
-and method_jit_exp p e reg mem jargs =
+
+and method_jit_if p e reg mem jargs =
   match e with
-  | CallDir (id_l, argsr, _) when (contains (string_of_id_l id_l) "min_caml") ->
-    Ans (e)
-  | CallDir (id_l, argsr, _) ->
-    let { method_name; reds; method_start; method_end; pc_place; backedge_pcs } = jargs in
-    let fundef = find_fundef p id_l in
-    let pc = reg.(find_pc argsr jargs) |> value_of in
-    if List.exists (backedge_pcs) (fun i -> i = pc) then
-      Ans (e)
-    else
-      let t = Inlining.inline_calldir_exp argsr fundef reg in
-      method_jit p t reg mem jargs
   | IfLE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
     let r1 = value_of reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
@@ -205,6 +210,18 @@ and method_jit_exp p e reg mem jargs =
       | Red (n1), Red (n2) ->
         Ans (IfGE (id_t, id_or_imm, t1', t2'))
     end
+  | _ -> failwith "method_jit_if should accept conditional branches."
+
+and method_jit_exp p e reg mem jargs =
+  match e with
+  | CallDir (id_l, argsr, _) when (contains (string_of_id_l id_l) "min_caml") ->
+    Ans (e)
+  | CallDir (id_l, argsr, _) ->
+    let fundef = find_fundef p id_l in
+    let t = Inlining.inline_calldir_exp argsr fundef reg in
+    method_jit p t reg mem jargs
+  | IfEq _ | IfGE _ | IfLE _ ->
+    method_jit_if p e reg mem jargs
   | _ ->
     begin match Optimizer.optimize_exp p e reg mem with
       | Specialized (v) ->
@@ -215,48 +232,45 @@ and method_jit_exp p e reg mem jargs =
       | Not_specialized (e, v) -> Ans (e)
     end
 
-let rec method_jit_entry p instr reg mem jargs =
-  let loops =
-    let rec find_loop_end p exp reg mem jargs =
-      [], ()
-    in
-    let rec find_loop p instr reg mem jargs =
-      match instr with
-      | Ans (exp) ->
-        method_jit_exp p exp reg mem jargs
-      | Let ((dest, typ), exp, body) ->
-        let { loop_headers } = jargs in
-        let pc =
-          let Prog (_, fundefs, _) = p in
-          let { args } =
-            match List.find fundefs ~f:(fun { name } ->
-                contains (string_of_id_l name) "interp")
-            with
-            | Some (fundef) -> fundef
-            | None -> failwith "find fundef is failed in method jit."
-          in
-          find_pc args jargs |> Array.get reg |> value_of
-        in
-        if List.exists loop_headers (fun i -> i = pc) then
-          match Optimizer.optimize_exp p exp reg mem with
-          | Specialized (v) ->
-            reg.(int_of_id_t dest) <- v;
-            let loop, following = find_loop_end p body reg mem jargs in
-            loop :: (find_loop p following reg mem jargs)
-          | Not_specialized (e, v) ->
-            reg.(int_of_id_t dest) <- v;
-            let loop, following = find_loop_end p body reg mem jargs in
-            loop :: (find_loop p following reg mem jargs)
-        else
-          match Optimizer.optimize_exp p exp reg mem with
-          | Specialized (v) ->
-            reg.(int_of_id_t dest) <- v;
-            find_loop p body reg mem jargs
-          | Not_specialized (e, v) ->
-            reg.(int_of_id_t dest) <- v;
-            find_loop p body reg mem jargs
-    in
-    ()
+
+and find_loop p t reg mem jargs =
+  match t with
+  | Ans (exp) ->
+    find_loop_exp p exp reg mem jargs
+  | Let ((dest, typ), exp, body) ->
+    begin match Optimizer.optimize_exp p exp reg mem with
+      | Specialized (v) ->
+        reg.(int_of_id_t dest) <- v;
+        method_jit p body reg mem jargs
+      | Not_specialized (e, v) ->
+        reg.(int_of_id_t dest) <- v;
+        let t = method_jit p body reg mem jargs in
+        Let ((dest, typ), e, t)
+    end
+
+
+and find_loop_exp p e reg mem jargs =
+  match e with
+  | CallDir (id_l, argsr, _) ->
+    let { backedge_pcs } = jargs in
+    let pc = reg.(find_pc_addr argsr jargs) |> value_of in
+    if List.exists backedge_pcs (fun i -> i = pc) then
+      Ans (e)
+    else
+      let fundef = find_fundef p id_l in
+      let t = Inlining.inline_calldir_exp argsr fundef reg in
+      find_loop p t reg mem jargs
+  | IfGE _ | IfLE _ | IfEq _ ->
+    method_jit_if p e reg mem jargs
+  | _ ->
+    begin match Optimizer.optimize_exp p e reg mem with
+      | Specialized (v) ->
+        let id = Id.gentmp Type.Int in
+        Let ((id, Type.Int),
+             Set (value_of v),
+             Ans (Mov (id)))
+      | Not_specialized (e, v) -> Ans (e)
+    end
 
 
 let exec p t reg mem jit_args =
