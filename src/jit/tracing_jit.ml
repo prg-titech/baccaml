@@ -177,10 +177,10 @@ let exec p t reg mem jit_args =
     | Let (_, Set (_),
            Let (_,
                 IfEq (x, y, _, _),
-                Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), args, fargs),
+                Let (_, CallDir (Id.L (_), args, fargs),
                      interp_body)))
     | Let (_,  IfEq (x, y, _, _),
-           Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), args, fargs),
+           Let (_, CallDir (Id.L (_), args, fargs),
                 interp_body)) ->
       let Prog (table, fundefs, main) = p in
       let fundefs' = List.map fundefs ~f:(fun fundef ->

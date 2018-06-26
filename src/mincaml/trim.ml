@@ -1,7 +1,7 @@
 open Asm
 open Core
 
-let flg = ref false
+let flg = ref true
 
 let trace_entry = "min_caml_trace_entry"
 
@@ -48,7 +48,7 @@ let rec trim_jmp = function
     end
   | Let (_, IfEq (x, y, Ans (Set (n1)), Ans (Set (n2))),
          Let (_, CallDir (Id.L ("jit_merge_point"), args, fargs),
-              body)) when !flg ->
+              body)) ->
     begin
       if !flg then
         Ans (
@@ -64,7 +64,7 @@ let f (Prog (table, fundefs, main)) =
   let fundefs' =
     List.map fundefs
       ~f:(fun { name; args; fargs; body; ret } ->
-          let body' = trim_jmp body in
+          let body' = trim_jit_dispatcher body in
           { name = name
           ; args = args
           ; fargs = fargs
