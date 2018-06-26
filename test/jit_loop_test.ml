@@ -1,10 +1,10 @@
-open Core
 open OUnit
 open Mincaml
 open Asm
 open Util
 open Baccaml_jit
 open Jit_config
+open Jit_util
 
 module MJ = Method_jit
 
@@ -21,8 +21,8 @@ let _ = run_test_tt_main begin
                                     Let (("y.12", Type.Int), Sub ("ans.11", C (100)),
                                          Ans (Mov ("y.12"))))))) in
         let p = Prog ([], [], Ans (Nop)) in
-        let reg = Array.create 100 (Red (0)) in
-        let mem = Array.create 100 (Red (0)) in
+        let reg = Array.make 100 (Red (0)) in
+        let mem = Array.make 100 (Red (0)) in
         let mjargs =  Method_jit_args (
             { method_name = "min_caml_test_trace";
               reds = ["bytecode.89"; "a.91"];
@@ -33,23 +33,23 @@ let _ = run_test_tt_main begin
               backedge_pcs = [6]
             })
         in
-        let res = Method_jit.find_loop p t reg mem mjargs in
+        let res = Method_jit_loop.find_loop p t reg mem mjargs in
         print_endline (Asm.show res)
       end;
       "test2" >::
       begin fun () ->
         Logger.log_level := Logger.Debug;
         let p =
-          In_channel.create ((Sys.getcwd ()) ^ "/test/jit_loop.ml")
+          open_in ((Sys.getcwd ()) ^ "/test/jit_loop.ml")
           |> Lexing.from_channel
           |> Mutil.virtualize
           |> Simm.f
         in
         let Prog (_, fundefs, main) = p in
-        let fundef = List.hd_exn fundefs in
+        let fundef = List.hd fundefs in
         let { body; } = fundef in
-        let reg = Array.create 100000 (Red 0) in
-        let mem = Array.create 100000 (Red 0) in
+        let reg = Array.make 10000 (Red (-1)) in
+        let mem = Array.make 10000 (Red (-1)) in
         let method_jit_args =
           Method_jit_args (
             { method_name = "min_caml_test_trace";
@@ -62,21 +62,27 @@ let _ = run_test_tt_main begin
             })
         in
         reg.(77) <- Green (0);
-        reg.(78) <- Green (3);
+        reg.(78) <- Green (4);
         reg.(79) <- Red (100);
         for i = 0 to (Array.length bytecode - 1) do
-          mem.(77 + 4 * i) <- Green (bytecode.(i))
+          let n = 4 * i in
+          mem.(n) <- Green (bytecode.(i))
         done;
-        Trim.flg := true;
-        let t = match body |> Trim.trim_jmp with
+        let t = match body |> Trim.trim_jmp |> Trim.trim_jit_dispatcher with
           | Ans (IfEq (_, _, Ans (CallDir _), body')) -> body'
           | _ -> body
         in
-        let fundef' = { name = fundef.name; args = fundef.args; fargs = fundef.fargs; body = t; ret = fundef.ret } in
-        Emit_virtual.to_string_fundef fundef' |> print_endline;
+        Emit_virtual.to_string_t t |> print_endline;
+        let fundef' =
+          { name = fundef.name;
+            args = fundef.args;
+            fargs = fundef.fargs;
+            body = t;
+            ret = fundef.ret
+          } in
         let p' = Prog ([], [fundef'], main) in
-        let f = MJ.find_loop p' t reg mem method_jit_args in
-        Asm.show f |> print_endline;
+        let f = Method_jit.method_jit p' t reg mem method_jit_args in
+        Emit_virtual.to_string_t f |> print_endline;
         ()
       end
     ]

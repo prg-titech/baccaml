@@ -21,6 +21,13 @@ let rec add_cont_proc id_t instr body =
 let rec method_jit p instr reg mem jargs =
   match instr with
   | Ans (exp) -> method_jit_exp p exp reg mem jargs
+  | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), _, _), body) ->
+    Logger.debug "min_caml_loop_start";
+    Let ((dest, typ), CallDir (Id.L ("min_caml_loop_func_start"), [], []),
+         method_jit p body reg mem jargs)
+  | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), _, _), body) ->
+    Logger.debug "min_caml_loop_end";
+    Ans (CallDir (Id.L ("min_caml_loop_end_func"), [], []))
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     let rec restore_args cont = function
         [] -> cont
@@ -47,6 +54,24 @@ let rec method_jit p instr reg mem jargs =
         reg.(int_of_id_t dest) <- v;
         let t = method_jit p body reg mem jargs in
         Let ((dest, typ), e, t)
+    end
+
+and method_jit_exp p e reg mem jargs =
+  match e with
+  | CallDir (id_l, argsr, _) ->
+    let fundef = find_fundef p id_l in
+    let t = Inlining.inline_calldir_exp argsr fundef reg in
+    method_jit p t reg mem jargs
+  | IfEq _ | IfGE _ | IfLE _ ->
+    method_jit_if p e reg mem jargs
+  | _ ->
+    begin match Optimizer.optimize_exp p e reg mem with
+      | Specialized (v) ->
+        let id = Id.gentmp Type.Int in
+        Let ((id, Type.Int),
+             Set (value_of v),
+             Ans (Mov (id)))
+      | Not_specialized (e, v) -> Ans (e)
     end
 
 and method_jit_if p e reg mem jargs =
@@ -157,26 +182,6 @@ and method_jit_if p e reg mem jargs =
         Ans (IfGE (id_t, id_or_imm, t1', t2'))
     end
   | _ -> failwith "method_jit_if should accept conditional branches."
-
-and method_jit_exp p e reg mem jargs =
-  match e with
-  | CallDir (id_l, argsr, _) when (contains (string_of_id_l id_l) "min_caml") ->
-    Ans (e)
-  | CallDir (id_l, argsr, _) ->
-    let fundef = find_fundef p id_l in
-    let t = Inlining.inline_calldir_exp argsr fundef reg in
-    method_jit p t reg mem jargs
-  | IfEq _ | IfGE _ | IfLE _ ->
-    method_jit_if p e reg mem jargs
-  | _ ->
-    begin match Optimizer.optimize_exp p e reg mem with
-      | Specialized (v) ->
-        let id = Id.gentmp Type.Int in
-        Let ((id, Type.Int),
-             Set (value_of v),
-             Ans (Mov (id)))
-      | Not_specialized (e, v) -> Ans (e)
-    end
 
 let exec p t reg mem jit_args =
   let t' = Simm.t t |> Trim.trim_jmp in

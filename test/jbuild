@@ -24,8 +24,8 @@
   (action  (run ${<})
 )))
 
-(alias
- ((name runtest)
-  (deps (simple5_test.exe))
-  (action  (run ${<})
-)))
+; (alias
+;  ((name runtest)
+;   (deps (simple5_test.exe))
+;   (action  (run ${<})
+; )))

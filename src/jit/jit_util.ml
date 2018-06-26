@@ -40,6 +40,11 @@ let string_of_id_or_imm = function
 let string_of_id_l = function
   | Id.L (x) -> x
 
+let string_of_value = function
+  | Green (n) -> Printf.sprintf "Green (%d)" n
+  | LightGreen (n) -> Printf.sprintf "LightGreen (%d)" n
+  | Red (n) -> Printf.sprintf "Red (%d)" n
+
 let contains s1 s2 =
   let re = Str.regexp_string s2 in
   try ignore (Str.search_forward re s1 0); true

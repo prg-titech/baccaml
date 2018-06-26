@@ -40,20 +40,20 @@ let optimize_exp p e reg mem = match e with
      | LightGreen (n1), Green (n2)
      | Green (n1), LightGreen (n2) ->
        let msg =
-         Format.sprintf "Add (%s, %s), %d %d: Green, Green"
-           id_t1 id_t2 (value_of r1) (value_of r2)
+         Format.sprintf "Add (%s, %s), %d %d ==> %d: Green, Green"
+           id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2)
        in Logger.debug msg;
        Specialized (Green (n1 + n2))
      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
        let msg =
-         Format.sprintf "Add (%s, %s), %d %d; Red, Green"
-           id_t1 id_t2 (value_of r1) (value_of r2)
+         Format.sprintf "Add (%s, %s), %d %d ==> %d; Red, Green"
+           id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2)
        in Logger.debug msg;
        Not_specialized (Add (id_t1, C (n2)), Red (n1 + n2))
      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
        let msg =
-         Format.sprintf "Add (%s, %s), %d %d; Green, Red"
-           id_t1 id_t2 (value_of r1) (value_of r2)
+         Format.sprintf "Add (%s, %s), %d %d ==> %d; Green, Red"
+           id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2)
        in Logger.debug msg;
        let id_t' = match id_or_imm with
            V (id) -> id
@@ -61,8 +61,8 @@ let optimize_exp p e reg mem = match e with
        in
        Not_specialized (Add (id_t', C (n1)), Red (n1 + n2))
      | Red (n1), Red (n2) ->
-       let msg = Format.sprintf "Add (%s, %s), %d %d; Red, Red"
-           id_t1 id_t2 (value_of r1) (value_of r2)
+       let msg = Format.sprintf "Add (%s, %s), %d %d ==> %d; Red, Red"
+           id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2)
        in Logger.debug msg;
        Not_specialized (exp, Red (n1 + n2)))
   | Sub (id_t1, id_or_imm) as exp ->

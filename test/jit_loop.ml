@@ -18,8 +18,7 @@ let rec interp bytecode pc a =
     interp bytecode t a
   else if instr = 4 then        (* LOOP_S *)
     (loop_start pc;
-    interp bytecode (pc + 1) a
-    ) 
+    interp bytecode (pc + 1) a)
   else if instr = 5 then        (* LOOP_E *)
     (loop_end pc;
      interp bytecode (pc + 1) a)
