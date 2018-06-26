@@ -9,6 +9,7 @@ open Jit_util
 exception Not_optimization_supported of string
 
 let optimize_exp p e reg mem = match e with
+  | Nop -> Specialized (Red 0)
   | Set n ->
     Specialized (Green n)
   | Mov id_t as exp ->
