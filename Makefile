@@ -22,6 +22,10 @@ build:
 	@ln -s _build/default/src/mincaml/$(MAIN) .
 	@mv $(MAIN) $(COMPILER)
 
+.PHONY: setup
+setup:
+	@opam install -y merlin ocp-indent tuareg utop core jbuilder ppx_deriving
+
 .PHONY: clean
 clean:
 	@jbuilder clean
