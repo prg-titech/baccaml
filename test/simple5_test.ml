@@ -1,9 +1,12 @@
-open Mincaml
-open Baccaml_jit
-open Asm
 open Core
 open OUnit
-open Test_util
+
+open Mincaml
+open Asm
+open Mutil
+
+open Baccaml_jit
+open Jit_config
 
 module MJ = Method_jit
 
@@ -56,7 +59,8 @@ let _ = run_test_tt_main begin
         done;
         let res = MJ.exec prog body reg mem method_jit_args in
         (match res with
-         | Tracing_success res' | Method_success res' ->
+         | Tracing_success res'
+         | Method_success res' ->
            (Emit_virtual.to_string_fundef res') |> print_endline);
         Jit_emit.emit_trace
           res

@@ -238,8 +238,74 @@ and method_jit_exp p e reg mem jargs =
       | Not_specialized (e, v) -> Ans (e)
     end
 
-let rec find_loop_end p t reg mem jargs =
-  let rec find_loop_end_if p e reg mem jargs =
+let rec find_loop p t reg mem jargs =
+  match t with
+  | Ans (IfEq (_, _, Ans CallDir (Id.L ("min_caml_trace_entry"), _, _), body)) ->
+    find_loop_start p body reg mem jargs
+  | _ ->
+    find_loop_start p t reg mem jargs
+
+and find_loop_start p t reg mem jargs =
+  match t with
+  | Let (x, CallDir (Id.L ("min_caml_loop_start"), rargs, fargs), body) ->
+    Let (x, CallDir (Id.L ("min_caml_loop_start"), rargs, fargs), find_loop_end p body reg mem jargs)
+  | Let (_, _, body) ->
+    find_loop_start p body reg mem jargs
+  | Ans (exp) ->
+    begin match exp with
+      | CallDir (id_l, argsr, _) when (contains (string_of_id_l id_l) "min_caml") ->
+        Ans (exp)
+      | CallDir (id_l, argsr, _) ->
+        let fundef = find_fundef p id_l in
+        let t = Inlining.inline_calldir_exp argsr fundef reg in
+        find_loop_start p t reg mem jargs
+      | IfEq _ | IfGE _ | IfLE _ ->
+        find_loop_end_if p exp reg mem jargs
+      | _ ->
+        begin match Optimizer.optimize_exp p exp reg mem with
+          | Specialized (v) ->
+            let id = Id.gentmp Type.Int in
+            Let ((id, Type.Int),
+                 Set (value_of v),
+                 Ans (Mov (id)))
+          | Not_specialized (e, v) -> Ans (e)
+        end
+    end
+
+and find_loop_end p t reg mem jargs =
+  match t with
+  | Ans (exp) ->
+    begin match exp with
+    | IfGE _ | IfLE _ | IfEq _ ->
+      find_loop_end_if p exp reg mem jargs
+    | CallDir (id_l, argsr, _) ->
+      let fundef = find_fundef p id_l in
+      let t = Inlining.inline_calldir_exp argsr fundef reg in
+      find_loop_end p t reg mem jargs
+    | _ ->
+      begin match Optimizer.optimize_exp p exp reg mem with
+      | Specialized (v) ->
+        let id = Id.gentmp Type.Int in
+        Let ((id, Type.Int),
+             Set (value_of v),
+             Ans (Mov (id)))
+      |  Not_specialized (e, v) ->
+        Ans (e)
+      end
+    end
+  | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), rargsr, fargs), body) ->
+    Ans (CallDir (Id.L ("min_caml_loop_end"), rargsr, fargs))
+  | Let ((dest, typ), exp, body) ->
+    begin match Optimizer.optimize_exp p exp reg mem with
+      | Specialized (v) ->
+        reg.(int_of_id_t dest) <- v;
+        find_loop_end p body reg mem jargs
+      | Not_specialized (e, v) ->
+        reg.(int_of_id_t dest) <- v;
+        Let ((dest, typ), e, find_loop_end p body reg mem jargs)
+    end
+    
+and find_loop_end_if p e reg mem jargs =
   match e with
   | IfLE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
     let r1 = value_of reg.(int_of_id_t id_t) in
@@ -347,65 +413,17 @@ let rec find_loop_end p t reg mem jargs =
         Ans (IfGE (id_t, id_or_imm, t1', t2'))
     end
   | _ -> failwith "method_jit_if should accept conditional branches."
-  in
-  match t with
-  | Ans (exp) ->
-    begin match exp with
-    | IfGE _ | IfLE _ | IfEq _ ->
-      find_loop_end_if p exp reg mem jargs
-    | CallDir (id_l, argsr, _) ->
-      let fundef = find_fundef p id_l in
-      let t = Inlining.inline_calldir_exp argsr fundef reg in
-      find_loop_end p t reg mem jargs
-    | _ ->
-      begin match Optimizer.optimize_exp p exp reg mem with
-      | Specialized (v) ->
-        let id = Id.gentmp Type.Int in
-        Let ((id, Type.Int),
-             Set (value_of v),
-             Ans (Mov (id)))
-      |  Not_specialized (e, v) ->
-        Ans (e)
-      end
-    end
-  | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), rargsr, fargs), body) ->
-    Ans (CallDir (Id.L ("min_caml_loop_end"), rargsr, fargs))
-  | Let ((dest, typ), exp, body) ->
-    begin match Optimizer.optimize_exp p exp reg mem with
-      | Specialized (v) ->
-        reg.(int_of_id_t dest) <- v;
-        find_loop_end p body reg mem jargs
-      | Not_specialized (e, v) ->
-        reg.(int_of_id_t dest) <- v;
-        Let ((dest, typ), e, find_loop_end p body reg mem jargs)
-    end
-
-let rec find_loop p t reg mem jargs =
-  let rec find_loop_start p t reg mem jargs =
-    match t with
-    | Let (x, CallDir (Id.L ("min_caml_loop_start"), rargs, fargs), body) ->
-      Let (x, CallDir (Id.L ("min_caml_loop_start"), rargs, fargs), find_loop_end p body reg mem jargs)
-    | Let (_, _, body) ->
-      find_loop_start p body reg mem jargs
-    | Ans (exp) ->
-      assert false
-  in
-  find_loop_start p t reg mem jargs
 
 let exec p t reg mem jit_args =
-  let t' = Simm.t t in
+  let t' = Simm.t t |> Trim.trim_jmp in
+  Emit_virtual.to_string_t t' |> print_endline;
   let jit_args' = match jit_args with
       Tracing_jit_args v -> assert false
     | Method_jit_args m -> m
   in
   begin match t' with
-    | Let (_, Set (_),
-           Let (_,
-                IfEq (x, y, _, _),
-                Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), args, fargs),
-                     interp_body)))
     | Let (_,  IfEq (x, y, _, _),
-           Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), args, fargs),
+           Let (_, CallDir (Id.L ("min_caml_trace_entry"), args, fargs),
                 interp_body)) ->
       let Prog (table, fundefs, main) = p in
       let fundefs' = List.map fundefs (fun fundef ->

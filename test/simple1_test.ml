@@ -1,12 +1,13 @@
-open Mincaml
-open Baccaml_jit
-open Asm
 open Core
 open OUnit
-open Test_util
+
+open Mincaml
+open Asm
+
+open Baccaml_jit
+open Jit_config
 
 module TJ = Tracing_jit
-
 module JE = Jit_emit
 
 let jit_args =
@@ -23,7 +24,7 @@ let _ = run_test_tt_main begin
         let prog =
           In_channel.create ("simple1.ml")
           |> Lexing.from_channel
-          |> virtualize
+          |> Mutil.virtualize
           |> Simm.f
         in
         let Prog (_, fundefs, main) = prog in

@@ -167,7 +167,7 @@ and tracing_jit_ans p e reg mem jit_args = match e with
     end
 
 let exec p t reg mem jit_args =
-  let t' = Simm.t t in
+  let t' = Simm.t t |> Trim.trim_jmp in
   let jit_args' =
     match jit_args with
       Tracing_jit_args t -> t
