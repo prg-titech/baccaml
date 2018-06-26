@@ -36,7 +36,6 @@ let _ = run_test_tt_main begin
       "method_jit" >::
       begin fun () ->
         let fundef = List.hd_exn fundefs in
-        Emit_virtual.to_string_fundef fundef |> print_endline;
         let method_jit_args = Method_jit_args (
             { method_name = "min_caml_test_trace";
               reds = ["bytecode.89"; "a.91"];
