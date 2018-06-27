@@ -1,7 +1,7 @@
-open Mincaml
-open Util
-open Asm
 open Core
+open Mincaml
+open Asm
+open Util
 open Inlining
 open Jit_config
 open Jit_util
@@ -27,7 +27,7 @@ let rec method_jit p instr reg mem jargs =
          method_jit p body reg mem jargs)
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), _, _), body) ->
     Logger.debug "min_caml_loop_end";
-    Ans (CallDir (Id.L ("min_caml_loop_end_func"), [], []))
+    Ans (CallDir (Id.L ("min_caml_loop_func_end"), [], []))
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     let rec restore_args cont = function
         [] -> cont
@@ -59,6 +59,7 @@ let rec method_jit p instr reg mem jargs =
 and method_jit_exp p e reg mem jargs =
   match e with
   | CallDir (id_l, argsr, _) ->
+    Logger.debug (Printf.sprintf "CallDir (%s)" (string_of_id_l id_l));
     let fundef = find_fundef p id_l in
     let t = Inlining.inline_calldir_exp argsr fundef reg in
     method_jit p t reg mem jargs
@@ -77,6 +78,7 @@ and method_jit_exp p e reg mem jargs =
 and method_jit_if p e reg mem jargs =
   match e with
   | IfLE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
+    Logger.debug (Printf.sprintf "IfLE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
     let r1 = value_of reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
       | V (id) -> value_of reg.(int_of_id_t id)
@@ -86,6 +88,7 @@ and method_jit_if p e reg mem jargs =
     then method_jit p t1 reg mem jargs
     else method_jit p t2 reg mem jargs
   | IfEq (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
+    Logger.debug (Printf.sprintf "IfEq (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
     let r1 = value_of reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
       | V (id) -> value_of reg.(int_of_id_t id)
@@ -95,6 +98,7 @@ and method_jit_if p e reg mem jargs =
     then method_jit p t1 reg mem jargs
     else method_jit p t2 reg mem jargs
   | IfGE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
+    Logger.debug (Printf.sprintf "IfGE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
     let r1 = value_of reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
       | V (id) -> value_of reg.(int_of_id_t id)
@@ -104,6 +108,7 @@ and method_jit_if p e reg mem jargs =
     then method_jit p t1 reg mem jargs
     else method_jit p t2 reg mem jargs
   | IfEq (id_t, id_or_imm, t1, t2) ->
+    Logger.debug (Printf.sprintf "IfEq (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
     let r1 = jit_value_of_id_t reg id_t in
     let r2 = jit_value_of_id_or_imm reg id_or_imm in
     let regt1 = Array.copy reg in
@@ -130,6 +135,7 @@ and method_jit_if p e reg mem jargs =
         Ans (IfEq (id_t, id_or_imm, t1', t2'))
     end
   | IfLE (id_t, id_or_imm, t1, t2) ->
+    Logger.debug (Printf.sprintf "IfLE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
     let r1 = jit_value_of_id_t reg id_t in
     let r2 = jit_value_of_id_or_imm reg id_or_imm in
     let regt1 = Array.copy reg in
@@ -156,6 +162,7 @@ and method_jit_if p e reg mem jargs =
         Ans (IfLE (id_t, id_or_imm, t1', t2'))
     end
   | IfGE (id_t, id_or_imm, t1, t2) ->
+    Logger.debug (Printf.sprintf "IfGE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
     let r1 = jit_value_of_id_t reg id_t in
     let r2 = jit_value_of_id_or_imm reg id_or_imm in
     let regt1 = Array.copy reg in

@@ -64,7 +64,7 @@ let f (Prog (table, fundefs, main)) =
   let fundefs' =
     List.map fundefs
       ~f:(fun { name; args; fargs; body; ret } ->
-          let body' = trim_jit_dispatcher body in
+          let body' = body |> trim_jmp |> trim_jit_dispatcher in
           { name = name
           ; args = args
           ; fargs = fargs

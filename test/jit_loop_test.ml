@@ -62,7 +62,7 @@ let _ = run_test_tt_main begin
             })
         in
         reg.(77) <- Green (0);
-        reg.(78) <- Green (4);
+        reg.(78) <- Green (3);
         reg.(79) <- Red (100);
         for i = 0 to (Array.length bytecode - 1) do
           let n = 4 * i in
