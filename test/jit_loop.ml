@@ -20,7 +20,7 @@ let rec interp bytecode pc a =
     (loop_start pc;
     interp bytecode (pc + 1) a)
   else if instr = 5 then        (* LOOP_E *)
-    (loop_end pc;
+    (loop_end a 0;
      interp bytecode (pc + 1) a)
   else if instr = 6 then        (* CALL *)
     let t = bytecode.(pc + 1) in

@@ -25,9 +25,14 @@ let rec method_jit p instr reg mem jargs =
     Logger.debug "min_caml_loop_start";
     Let ((dest, typ), CallDir (Id.L ("min_caml_loop_func_start"), [], []),
          method_jit p body reg mem jargs)
-  | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), _, _), body) ->
+  | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), args, _), body) ->
     Logger.debug "min_caml_loop_end";
-    Ans (CallDir (Id.L ("min_caml_loop_func_end"), [], []))
+    let [r1; r2] = args in
+    Ans (
+      IfEq (r1, C (reg.(int_of_id_t r2) |> value_of),
+            Ans (CallDir (Id.L ("loop_exit"), [], [])),
+            Ans (CallDir (Id.L ("min_caml_loop_func_end"), args, []))
+           ))
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     let rec restore_args cont = function
         [] -> cont

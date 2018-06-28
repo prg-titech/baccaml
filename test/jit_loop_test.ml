@@ -8,13 +8,22 @@ open Jit_util
 
 module MJ = Method_jit
 
+let print_list f lst =
+  let rec loop f = function
+    | [] -> ()
+    | hd :: tl -> f hd; print_string "; "; loop f tl
+  in
+  print_string "["; loop f lst; print_string "]"
+
 let bytecode = [|1; 1; 7; 4; 6; 0; 5; 2; 3; 7|]
 
 let _ = run_test_tt_main begin
     "mj_loop_test" >::: [
       "test1" >::
       begin fun () ->
-        let t = Let ((Id.gentmp Type.Unit, Type.Unit), CallDir (Id.L "min_caml_loop_start", [], []),
+        Logger.log_level := Logger.Debug;
+        let t =
+          Let ((Id.gentmp Type.Unit, Type.Unit), CallDir (Id.L "min_caml_loop_start", [], []),
                      Let (("x.10", Type.Int), Add ("a.9", V ("b.8")),
                           Let (("ans.11", Type.Int), Add ("x.10", V ("x.10")),
                                Let ((Id.gentmp Type.Unit, Type.Unit), CallDir (Id.L "min_caml_loop_end", [], []),
@@ -33,8 +42,8 @@ let _ = run_test_tt_main begin
               backedge_pcs = [6]
             })
         in
-        let res = Method_jit_loop.find_loop p t reg mem mjargs in
-        print_endline (Asm.show res)
+        let res = Method_jit_loop.find_loop_start_pc p reg mem t in
+        print_list print_int res
       end;
       "test2" >::
       begin fun () ->
@@ -61,9 +70,9 @@ let _ = run_test_tt_main begin
               backedge_pcs = [0]
             })
         in
-        reg.(77) <- Green (0);
-        reg.(78) <- Green (3);
-        reg.(79) <- Red (100);
+        reg.(78) <- Green (0);
+        reg.(79) <- Green (3);
+        reg.(80) <- Red (100);
         for i = 0 to (Array.length bytecode - 1) do
           let n = 4 * i in
           mem.(n) <- Green (bytecode.(i))
@@ -83,6 +92,10 @@ let _ = run_test_tt_main begin
         let p' = Prog ([], [fundef'], main) in
         let f = Method_jit.method_jit p' t reg mem method_jit_args in
         Emit_virtual.to_string_t f |> print_endline;
+        ()
+      end;
+      "test3" >::
+      begin fun () ->
         ()
       end
     ]
