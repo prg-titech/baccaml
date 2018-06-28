@@ -1,6 +1,5 @@
 open Mincaml
 open Asm
-open Baccaml_jit
 open Jit_config
 
 let rec unique list =
@@ -38,12 +37,14 @@ let colorize_reg redstbl greenstbl reg fundef t =
   let free_vars = get_free_vars t |> unique in (* x.11 :: y.12 :: ..  *)
   let free_vars_with_id = List.map (fun var -> split var) (free_vars @ args) in (* (x, 11) :: (y, 12) :: *)
   List.iter (fun (var, id) ->
-      try
+      (try
         let value = Hashtbl.find redstbl var in
         reg.(int_of_string id) <- Red (value);
-        let value' = Hashtbl.find greenstbl var in
-        reg.(int_of_string id) <- Green (value')
-      with Not_found -> ()
+       with Not_found -> ());
+      (try 
+         let value' = Hashtbl.find greenstbl var in
+         reg.(int_of_string id) <- Green (value')
+       with Not_found -> ())
     ) free_vars_with_id
 
 let _ =

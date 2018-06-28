@@ -1,11 +1,7 @@
 (jbuild_version 1)
 
-; (executable
-;  ((name        baccaml)
-;   (public_name baccaml.main)
-;   (libraries (baccaml_jit mincaml)
-; )))
-
 (executable
-  ((name colorizer)
-  (libraries (baccaml_jit mincaml core str))))
+ ((name        baccaml)
+  (public_name baccaml.main)
+  (libraries (baccaml_jit mincaml)
+)))

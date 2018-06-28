@@ -70,27 +70,27 @@ let _ = run_test_tt_main begin
               backedge_pcs = [0]
             })
         in
-        reg.(78) <- Green (0);
-        reg.(79) <- Green (3);
-        reg.(80) <- Red (100);
-        for i = 0 to (Array.length bytecode - 1) do
-          let n = 4 * i in
-          mem.(n) <- Green (bytecode.(i))
-        done;
-        let t = match body |> Trim.trim_jmp |> Trim.trim_jit_dispatcher with
+        let t' =
+          match body
+                |> Trim.trim_jmp
+                |> Trim.trim_jit_dispatcher
+          with
           | Ans (IfEq (_, _, Ans (CallDir _), body')) -> body'
           | _ -> body
         in
-        Emit_virtual.to_string_t t |> print_endline;
+        Emit_virtual.to_string_t t' |> print_endline;
         let fundef' =
-          { name = fundef.name;
-            args = fundef.args;
-            fargs = fundef.fargs;
-            body = t;
-            ret = fundef.ret
-          } in
+          { name = fundef.name; args = fundef.args; fargs = fundef.fargs; body = t'; ret = fundef.ret }
+        in           
         let p' = Prog ([], [fundef'], main) in
-        let f = Method_jit.method_jit p' t reg mem method_jit_args in
+        let redtbl = Hashtbl.create 100 in
+        let greentbl = Hashtbl.create 100 in
+        Hashtbl.add greentbl "bytecode" 0;
+        Hashtbl.add greentbl "pc" 3;
+        Hashtbl.add redtbl "a" 100;
+        Colorizer.colorize_reg redtbl greentbl reg fundef' t';
+        Colorizer.colorize_pgm bytecode 0 mem;
+        let f = Method_jit.method_jit p' t' reg mem method_jit_args in
         Emit_virtual.to_string_t f |> print_endline;
         ()
       end;
