@@ -197,8 +197,9 @@ and method_jit_if p e reg mem jargs =
     end
   | _ -> failwith "method_jit_if should accept conditional branches."
 
-let exec p t reg mem jit_args =
-  let t' = Simm.t t |> Trim.trim_jmp in
+
+let prep p t reg mem jit_args =
+  let t' = Simm.t t |> Trim.trim_jmp |> Trim.trim_jit_dispatcher in
   Emit_virtual.to_string_t t' |> print_endline;
   let jit_args' = match jit_args with
       Tracing_jit_args v -> assert false
@@ -206,12 +207,14 @@ let exec p t reg mem jit_args =
   in
   begin match t' with
     | Let (_, Set (_),
-           Let (_,  IfEq (x, y, _, _),
+           Let (_,  IfEq (_, _, _, _),
            Let (_, CallDir (Id.L (_), args, fargs),
                 interp_body)))
-    | Let (_,  IfEq (x, y, _, _),
+    | Let (_,  IfEq (_, _, _, _),
            Let (_, CallDir (Id.L (_), args, fargs),
-                interp_body)) ->
+                interp_body))
+    | Ans (IfEq (_, _, Ans (CallDir (Id.L (_), args, fargs)),
+                 interp_body)) ->
       let Prog (table, fundefs, main) = p in
       let fundefs' = List.map fundefs (fun fundef ->
           let Id.L (x) = fundef.name in
@@ -221,16 +224,20 @@ let exec p t reg mem jit_args =
             { name = name; args = args; fargs = fargs; body = interp_body; ret = ret }
           | _ -> fundef)
       in
-      method_jit (Prog (table, fundefs', main)) interp_body reg mem jit_args', jit_args'
-    | Ans _ | Let _ ->
+      fundefs', interp_body, jit_args'
+    | _ ->
       raise @@
       Method_jit_failed
         "missing jit_dispatch. please add jit_dispatch ... at the top of your interpreter."
   end
-  |> fun (res, args) ->
+
+let exec p t reg mem jit_args =
+  let Prog (table, _, main) = p in
+  let (fundefs', interp_body, jit_args') = prep p t reg mem jit_args in
+  let res = (method_jit (Prog (table, fundefs', main)) interp_body reg mem jit_args') in
   Method_success (
     { name = Id.L ("min_caml_test_trace")
-    ; args = args.reds
+    ; args = jit_args'.reds
     ; fargs = []
     ; body = res
     ; ret = Type.Int })
