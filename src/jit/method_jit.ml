@@ -23,11 +23,14 @@ let rec method_jit p instr reg mem jargs =
   | Ans (exp) -> method_jit_exp p exp reg mem jargs
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), _, _), body) ->
     Logger.debug "min_caml_loop_start";
-    Let ((dest, typ), CallDir (Id.L ("min_caml_loop_func_start"), [], []),
-         method_jit p body reg mem jargs)
+    let t  =
+      Let ((dest, typ), CallDir (Id.L ("min_caml_loop_func_start"), [], []),
+           method_jit p body reg mem jargs)
+    in t
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), args, _), body) ->
     Logger.debug "min_caml_loop_end";
-    let [r1; r2] = args in
+    let r1 = List.hd_exn args in
+    let r2 = List.tl_exn args |> List.hd_exn in
     Ans (
       IfEq (r1, C (reg.(int_of_id_t r2) |> value_of),
             Ans (CallDir (Id.L ("loop_exit"), [], [])),

@@ -15,8 +15,6 @@ let print_list f lst =
   in
   print_string "["; loop f lst; print_string "]"
 
-let bytecode = [|1; 1; 7; 4; 6; 0; 5; 2; 3; 7|]
-
 let _ = run_test_tt_main begin
     "mj_loop_test" >::: [
       "test1" >::
@@ -48,6 +46,7 @@ let _ = run_test_tt_main begin
       "test2" >::
       begin fun () ->
         Logger.log_level := Logger.Debug;
+        let bytecode = [|1; 1; 7; 4; 2; 8; 6; 0; 5; 3; 3 |] in
         let p =
           open_in ((Sys.getcwd ()) ^ "/test/jit_loop.ml")
           |> Lexing.from_channel
@@ -78,11 +77,9 @@ let _ = run_test_tt_main begin
           | Ans (IfEq (_, _, Ans (CallDir _), body')) -> body'
           | _ -> body
         in
-        Emit_virtual.to_string_t t' |> print_endline;
         let fundef' =
           { name = fundef.name; args = fundef.args; fargs = fundef.fargs; body = t'; ret = fundef.ret }
         in           
-        let p' = Prog ([], [fundef'], main) in
         let redtbl = Hashtbl.create 100 in
         let greentbl = Hashtbl.create 100 in
         Hashtbl.add greentbl "bytecode" 0;
@@ -90,8 +87,11 @@ let _ = run_test_tt_main begin
         Hashtbl.add redtbl "a" 100;
         Colorizer.colorize_reg redtbl greentbl reg fundef' t';
         Colorizer.colorize_pgm bytecode 0 mem;
-        let f = Method_jit.method_jit p' t' reg mem method_jit_args in
-        Emit_virtual.to_string_t f |> print_endline;
+        let res = match Method_jit.exec p body reg mem method_jit_args with
+          | Method_success fundef -> fundef
+          | Tracing_success fundef -> fundef
+        in
+        Emit_virtual.to_string_fundef res |> print_endline;
         ()
       end;
       "test3" >::

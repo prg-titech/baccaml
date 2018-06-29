@@ -1,5 +1,5 @@
 let rec interp bytecode pc a =
-  jit_merge_point bytecode (pc=3);
+  jit_dispatch bytecode (pc=3);
   let instr = bytecode.(pc) in
   if instr = 0 then             (* ADD *)
     let b = bytecode.(pc + 1) in
@@ -13,6 +13,7 @@ let rec interp bytecode pc a =
       interp bytecode t a
     else
       interp bytecode (pc + 2) a
+      
   else if instr = 3 then        (* JUMP *)
     let t = bytecode.(pc + 1) in
     interp bytecode t a
@@ -34,8 +35,9 @@ let code = Array.make 100 (-1) in
 code.(0) <- 1; code.(1) <- 1;
 code.(2) <- 7;
 code.(3) <- 4;
-code.(4) <- 6; code.(5) <- 0;
-code.(6) <- 5;
-code.(7) <- 2; code.(8) <- 3;
-code.(9) <- 7;
+code.(4) <- 2; code.(5) <- 8;
+code.(6) <- 6; code.(7) <- 0;
+code.(8) <- 5;
+code.(9) <- 3; code.(10) <- 3;
+code.(11) <- 7;
 print_int (interp code 3 100)
