@@ -30,22 +30,13 @@ let _ = run_test_tt_main begin
         let p = Prog ([], [], Ans (Nop)) in
         let reg = Array.make 100 (Red (0)) in
         let mem = Array.make 100 (Red (0)) in
-        let mjargs =  Method_jit_args (
-            { method_name = "min_caml_test_trace";
-              reds = ["bytecode.89"; "a.91"];
-              method_start = 0;
-              method_end = 3;
-              pc_place = 1;
-              loop_headers = [4];
-              backedge_pcs = [6]
-            })
-        in
         let res = Method_jit_loop.find_loop_start_pc p reg mem t in
         print_list print_int res
       end;
       "test2" >::
       begin fun () ->
         Logger.log_level := Logger.Debug;
+        (* preprocesses *)
         let bytecode = [|1; 1; 7; 1; 10; 4; 2; 13; 6; 0; 5; 3; 5; 7 |] in
         let p =
           open_in ((Sys.getcwd ()) ^ "/test/jit_loop.ml")
@@ -69,34 +60,34 @@ let _ = run_test_tt_main begin
               backedge_pcs = [0]
             })
         in
-        let t' =
-          match body
-                |> Trim.trim_jmp
-                |> Trim.trim_jit_dispatcher
-          with
-          | Ans (IfEq (_, _, Ans (CallDir _), body')) -> body'
-          | _ -> body
+        (* execute preprocessor *)
+        let fundefs', interp_body, jit_args' =
+          Method_jit.prep p body reg mem method_jit_args
         in
-        let fundef' =
-          { name = fundef.name; args = fundef.args; fargs = fundef.fargs; body = t'; ret = fundef.ret }
-        in           
+        
+        let fundef' = List.hd fundefs' in
         let redtbl = Hashtbl.create 100 in
         let greentbl = Hashtbl.create 100 in
         Hashtbl.add greentbl "bytecode" 0;
         Hashtbl.add greentbl "pc" 3;
         Hashtbl.add redtbl "a" 100;
-        Colorizer.colorize_reg redtbl greentbl reg fundef' t';
+        Colorizer.colorize_reg redtbl greentbl reg fundef' interp_body;
         Colorizer.colorize_pgm bytecode 0 mem;
+
+        (* execute function jit *)
         let res = match Method_jit.exec p body reg mem method_jit_args with
-          | Method_success fundef -> fundef
-          | Tracing_success fundef -> fundef
+          | Method_success fundef | Tracing_success fundef -> fundef
         in
-        Emit_virtual.to_string_fundef res |> print_endline;
+        print_endline "[RESULT]" |> fun () -> Asm.show_fundef res |> print_endline;
+
+        (* extract loop function *)
+        let loop = Method_jit.find_loop "test_loop_fun" res.body in
+        print_endline "[LOOP FUNCTION]" |> fun () -> Asm.show loop |> print_endline;
+        
+        (* extract non loop function *)
+        let nonloop = Method_jit.find_nonloop "test_loop_fun" res.body in
+        print_endline "[NONLOOP FUNCTION]" |> fun () -> Asm.show nonloop |> print_endline;
         ()
       end;
-      "test3" >::
-      begin fun () ->
-        ()
-      end
     ]
   end

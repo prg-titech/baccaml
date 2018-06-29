@@ -17,10 +17,10 @@ let rec interp bytecode pc a =
     let t = bytecode.(pc + 1) in
     interp bytecode t a
   else if instr = 4 then        (* LOOP_S *)
-    (loop_start pc;
+    (loop_start a;
     interp bytecode (pc + 1) a)
   else if instr = 5 then        (* LOOP_E *)
-    (loop_end pc;
+    (loop_end a;
      interp bytecode (pc + 1) a)
   else if instr = 6 then        (* CALL *)
     let t = bytecode.(pc + 1) in

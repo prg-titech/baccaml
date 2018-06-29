@@ -7,9 +7,11 @@ open Jit_config
 open Jit_util
 open Renaming
 
-module TJ = Tracing_jit
-
 exception Method_jit_failed of string
+
+let loop_start_l = Id.L ("min_caml_loop_start")
+let loop_end_l = Id.L ("min_caml_loop_end")
+let loop_start_count = ref 0
 
 let rec add_cont_proc id_t instr body =
   let rec go id_t instr body = match instr with
@@ -18,184 +20,262 @@ let rec add_cont_proc id_t instr body =
     | Ans e -> Let ((id_t, Type.Int), e, body)
   in go id_t instr body
 
-let loop_start_count = ref 0
-
-let rec method_jit p instr reg mem jargs =
-  match instr with
-  | Ans (exp) -> method_jit_exp p exp reg mem jargs
-  | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), _, _), body) ->
-    Logger.debug "min_caml_loop_start";
-    if !loop_start_count = 0 then
-      (loop_start_count := !loop_start_count + 1;
-       Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"),[], []),
-            method_jit p body reg mem jargs))
-    else
-      Ans (CallDir (Id.L ("min_caml_loop_fun_end"), [], []))
-  | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), args, _), body) ->
-    Logger.debug "min_caml_loop_end";
-    method_jit p body reg mem jargs
-  | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
-    let rec restore_args cont = function
-        [] -> cont
-      | hd :: tl ->
-        if is_green reg.(int_of_id_t hd) then
-          Let ((hd, Type.Int),
-               Set (value_of reg.(int_of_id_t hd)),
-               restore_args cont tl)
-        else restore_args cont tl
-    in
-    let restored_fcall =
-      restore_args
-        (Let ((dest, typ), CallDir (id_l, args, fargs), Ans (Nop)))
-        args
-    in
-    let t' = method_jit p body reg mem jargs in
-    add_cont_proc (Id.gentmp Type.Unit) restored_fcall t'
+let rec find_loop name = function
+  | Let ((dest, typ), CallDir (id_l, args, fargs), body) when id_l = loop_start_l ->
+    find_loop_t name body
+  | Let ((dest, typ), CallDir (id_l, args, fargs), body) when id_l = loop_end_l ->
+    Ans (CallDir (Id.L (name), args, fargs))
   | Let ((dest, typ), exp, body) ->
-    begin match Optimizer.optimize_exp p exp reg mem with
-      | Specialized (v) ->
-        reg.(int_of_id_t dest) <- v;
-        method_jit p body reg mem jargs
-      | Not_specialized (e, v) ->
-        reg.(int_of_id_t dest) <- v;
-        let t = method_jit p body reg mem jargs in
-        Let ((dest, typ), e, t)
-    end
+    find_loop name body
+  | Ans (exp) ->
+    find_loop_exp name exp
 
-and method_jit_exp p e reg mem jargs =
-  match e with
-  | CallDir (id_l, argsr, _) ->
-    Logger.debug (Printf.sprintf "CallDir (%s)" (string_of_id_l id_l));
-    let fundef = find_fundef p id_l in
-    let t = Inlining.inline_calldir_exp argsr fundef reg in
-    method_jit p t reg mem jargs
-  | IfEq _ | IfGE _ | IfLE _ ->
-    method_jit_if p e reg mem jargs
-  | _ ->
-    begin match Optimizer.optimize_exp p e reg mem with
-      | Specialized (v) ->
-        let id = Id.gentmp Type.Int in
-        Let ((id, Type.Int),
-             Set (value_of v),
-             Ans (Mov (id)))
-      | Not_specialized (e, v) -> Ans (e)
+and find_loop_exp name = function
+  | IfEq (id_t, id_or_imm, t1, t2)
+  | IfLE (id_t, id_or_imm, t1, t2)
+  | IfGE (id_t, id_or_imm, t1, t2) ->
+    begin match find_loop_t name t1 with
+      | t -> t
+      | exception Not_found ->
+        match find_loop_t name t2 with
+        | t -> t
+        | exception Not_found -> raise Not_found
     end
+  | CallDir (loop_end_l, args, fargs) ->
+    Ans (CallDir (Id.L (name), args, fargs))
+  | _ -> raise Not_found
 
-and method_jit_if p e reg mem jargs =
-  match e with
-  | IfLE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
-    Logger.debug (Printf.sprintf "IfLE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
-    let r1 = value_of reg.(int_of_id_t id_t) in
-    let r2 = match id_or_imm with
-      | V (id) -> value_of reg.(int_of_id_t id)
-      | C (n) -> n
-    in
-    if r1 <= r2
-    then method_jit p t1 reg mem jargs
-    else method_jit p t2 reg mem jargs
-  | IfEq (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
-    Logger.debug (Printf.sprintf "IfEq (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
-    let r1 = value_of reg.(int_of_id_t id_t) in
-    let r2 = match id_or_imm with
-      | V (id) -> value_of reg.(int_of_id_t id)
-      | C (n) -> n
-    in
-    if r1 = r2
-    then method_jit p t1 reg mem jargs
-    else method_jit p t2 reg mem jargs
-  | IfGE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
-    Logger.debug (Printf.sprintf "IfGE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
-    let r1 = value_of reg.(int_of_id_t id_t) in
-    let r2 = match id_or_imm with
-      | V (id) -> value_of reg.(int_of_id_t id)
-      | C (n) -> n
-    in
-    if r1 >= r2
-    then method_jit p t1 reg mem jargs
-    else method_jit p t2 reg mem jargs
+and find_loop_t name = function
+  | Let ((dest, typ), CallDir (id_l, args, fargs), body) when id_l = loop_end_l ->
+    Ans (CallDir (Id.L (name), args, fargs))
+  | Let ((dest, typ), exp, body) -> Let ((dest, typ), exp, find_loop_t name body)
+  | Ans (exp) -> find_loop_exp name exp
+
+let rec find_nonloop name = function
+  | Let ((dest, typ), CallDir (id_l, args, fargs), body) when id_l = loop_start_l->
+    find_nonloop name body      
+  | Let ((dest, typ), CallDir (id_l, args, fargs), body) when id_l = loop_end_l ->
+    body
+  | Let ((dest, typ), exp, body) ->
+    Let ((dest, typ), exp, find_nonloop name body)
+  | Ans (exp) ->
+    find_nonloop_exp name exp
+
+and find_nonloop_exp name = function
   | IfEq (id_t, id_or_imm, t1, t2) ->
-    Logger.debug (Printf.sprintf "IfEq (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
-    let r1 = jit_value_of_id_t reg id_t in
-    let r2 = jit_value_of_id_or_imm reg id_or_imm in
-    let regt1 = Array.copy reg in
-    let regt2 = Array.copy reg in
-    let memt1 = Array.copy mem in
-    let memt2 = Array.copy mem in
-    let t1' = method_jit p t1 regt1 memt1 jargs in
-    let t2' = method_jit p t2 regt2 memt2 jargs in
-    begin match r1, r2 with
-      | Green (n1), Green (n2)
-      | LightGreen (n1), LightGreen (n2)
-      | Green (n1), LightGreen (n2)
-      | LightGreen (n1), Green (n2) ->
-        if n1 = n2 then t1' else t2'
-      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
-        Ans (IfEq (id_t, C (n2), t1', t2'))
-      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
-        let id_t2 = match id_or_imm with
-            V (id) -> id
-          | C (n) -> failwith "id_or_imm should be string"
-        in
-        Ans (IfEq (id_t2, C (n1), t1', t2'))
-      | Red (n1), Red (n2) ->
-        Ans (IfEq (id_t, id_or_imm, t1', t2'))
+    begin match find_loop name t1 with
+      | _ ->
+        Ans (IfEq (id_t, id_or_imm,
+                   Ans (CallDir (Id.L (name), [], [])),
+                   t2))
+      | exception Not_found ->
+        Ans (IfEq (id_t, id_or_imm,
+                   t1,
+                   Ans (CallDir (Id.L (name), [], []))))
     end
   | IfLE (id_t, id_or_imm, t1, t2) ->
-    show t2 |> print_endline;
-    Logger.debug (Printf.sprintf "IfLE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
-    let r1 = jit_value_of_id_t reg id_t in
-    let r2 = jit_value_of_id_or_imm reg id_or_imm in
-    let regt1 = Array.copy reg in
-    let regt2 = Array.copy reg in
-    let memt1 = Array.copy mem in
-    let memt2 = Array.copy mem in
-    let t1' = method_jit p t1 regt1 memt1 jargs in
-    let t2' = method_jit p t2 regt2 memt2 jargs in
-    begin match r1, r2 with
-      | Green (n1), Green (n2)
-      | LightGreen (n1), LightGreen (n2)
-      | Green (n1), LightGreen (n2)
-      | LightGreen (n1), Green (n2) ->
-        if n1 <= n2 then t1' else t2'
-      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
-        Ans (IfLE (id_t, C (n2), t1', t2'))
-      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
-        let id_t2 = match id_or_imm with
-            V (id) -> id
-          | C (n) -> failwith "id_or_imm should be string"
-        in
-        Ans (IfLE (id_t2, C (n1), t1', t2'))
-      | Red (n1), Red (n2) ->
-        Ans (IfLE (id_t, id_or_imm, t1', t2'))
-    end
+      begin match find_loop name t1 with
+        | _ ->
+          Ans (IfLE (id_t, id_or_imm,
+                     Ans (CallDir (Id.L (name), [], [])),
+                     t2))
+        | exception Not_found ->
+          Ans (IfLE (id_t, id_or_imm,
+                     t1,
+                     Ans (CallDir (Id.L (name), [], []))))
+      end
   | IfGE (id_t, id_or_imm, t1, t2) ->
-    Logger.debug (Printf.sprintf "IfGE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
-    let r1 = jit_value_of_id_t reg id_t in
-    let r2 = jit_value_of_id_or_imm reg id_or_imm in
-    let regt1 = Array.copy reg in
-    let regt2 = Array.copy reg in
-    let memt1 = Array.copy mem in
-    let memt2 = Array.copy mem in
-    let t1' = method_jit p t1 regt1 memt1 jargs in
-    let t2' = method_jit p t2 regt2 memt2 jargs in
-    begin match r1, r2 with
-      | Green (n1), Green (n2)
-      | LightGreen (n1), LightGreen (n2)
-      | Green (n1), LightGreen (n2)
-      | LightGreen (n1), Green (n2) ->
-        if n1 >= n2 then t1' else t2'
-      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
-        Ans (IfGE (id_t, C (n2), t1', t2'))
-      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
-        let id_t2 = match id_or_imm with
-            V (id) -> id
-          | C (n) -> failwith "id_or_imm should be string"
-        in
-        Ans (IfGE (id_t2, C (n1), t1', t2'))
-      | Red (n1), Red (n2) ->
-        Ans (IfGE (id_t, id_or_imm, t1', t2'))
-    end
-  | _ -> failwith "method_jit_if should accept conditional branches."
+      begin match find_loop name t1 with
+        | _ ->
+          Ans (IfGE (id_t, id_or_imm,
+                     Ans (CallDir (Id.L (name), [], [])),
+                     t2))
+        | exception Not_found ->
+          Ans (IfGE (id_t, id_or_imm,
+                     t1,
+                     Ans (CallDir (Id.L (name), [], []))))
+      end
+  | exp -> Ans (exp)
+
+
+
+      let rec method_jit p instr reg mem jargs =
+        match instr with
+        | Ans (exp) -> method_jit_exp p exp reg mem jargs
+        | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), args, fargs), body) ->
+          Logger.debug "min_caml_loop_start";
+          if !loop_start_count = 0 then
+            (loop_start_count := !loop_start_count + 1;
+             Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), args, fargs),
+                  method_jit p body reg mem jargs))
+          else
+            (loop_start_count := 0;       
+             Ans (CallDir (Id.L ("min_caml_loop_restartd"), args, fargs)))
+        | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), args, fargs), body) ->
+          Logger.debug "min_caml_loop_end";
+          Ans (CallDir (Id.L "min_caml_loop_end", args, fargs))
+        | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
+          let rec restore_args cont = function
+              [] -> cont
+            | hd :: tl ->
+              if is_green reg.(int_of_id_t hd) then
+                Let ((hd, Type.Int),
+                     Set (value_of reg.(int_of_id_t hd)),
+                     restore_args cont tl)
+              else restore_args cont tl
+          in
+          let restored_fcall =
+            restore_args
+              (Let ((dest, typ), CallDir (id_l, args, fargs), Ans (Nop)))
+              args
+          in
+          let t' = method_jit p body reg mem jargs in
+          add_cont_proc (Id.gentmp Type.Unit) restored_fcall t'
+        | Let ((dest, typ), exp, body) ->
+          begin match Optimizer.optimize_exp p exp reg mem with
+            | Specialized (v) ->
+              reg.(int_of_id_t dest) <- v;
+              method_jit p body reg mem jargs
+            | Not_specialized (e, v) ->
+              reg.(int_of_id_t dest) <- v;
+              let t = method_jit p body reg mem jargs in
+              Let ((dest, typ), e, t)
+          end
+
+      and method_jit_exp p e reg mem jargs =
+        match e with
+        | CallDir (id_l, argsr, _) ->
+          Logger.debug (Printf.sprintf "CallDir (%s)" (string_of_id_l id_l));
+          let fundef = find_fundef p id_l in
+          let t = Inlining.inline_calldir_exp argsr fundef reg in
+          method_jit p t reg mem jargs
+        | IfEq _ | IfGE _ | IfLE _ ->
+          method_jit_if p e reg mem jargs
+        | _ ->
+          begin match Optimizer.optimize_exp p e reg mem with
+            | Specialized (v) ->
+              let id = Id.gentmp Type.Int in
+              Let ((id, Type.Int),
+                   Set (value_of v),
+                   Ans (Mov (id)))
+            | Not_specialized (e, v) -> Ans (e)
+          end
+
+      and method_jit_if p e reg mem jargs =
+        match e with
+        | IfLE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
+          Logger.debug (Printf.sprintf "IfLE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
+          let r1 = value_of reg.(int_of_id_t id_t) in
+          let r2 = match id_or_imm with
+            | V (id) -> value_of reg.(int_of_id_t id)
+            | C (n) -> n
+          in
+          if r1 <= r2
+          then method_jit p t1 reg mem jargs
+          else method_jit p t2 reg mem jargs
+        | IfEq (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
+          Logger.debug (Printf.sprintf "IfEq (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
+          let r1 = value_of reg.(int_of_id_t id_t) in
+          let r2 = match id_or_imm with
+            | V (id) -> value_of reg.(int_of_id_t id)
+            | C (n) -> n
+          in
+          if r1 = r2
+          then method_jit p t1 reg mem jargs
+          else method_jit p t2 reg mem jargs
+        | IfGE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
+          Logger.debug (Printf.sprintf "IfGE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
+          let r1 = value_of reg.(int_of_id_t id_t) in
+          let r2 = match id_or_imm with
+            | V (id) -> value_of reg.(int_of_id_t id)
+            | C (n) -> n
+          in
+          if r1 >= r2
+          then method_jit p t1 reg mem jargs
+          else method_jit p t2 reg mem jargs
+        | IfEq (id_t, id_or_imm, t1, t2) ->
+          Logger.debug (Printf.sprintf "IfEq (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
+          let r1 = jit_value_of_id_t reg id_t in
+          let r2 = jit_value_of_id_or_imm reg id_or_imm in
+          let regt1 = Array.copy reg in
+          let regt2 = Array.copy reg in
+          let memt1 = Array.copy mem in
+          let memt2 = Array.copy mem in
+          let t1' = method_jit p t1 regt1 memt1 jargs in
+          let t2' = method_jit p t2 regt2 memt2 jargs in
+          begin match r1, r2 with
+            | Green (n1), Green (n2)
+            | LightGreen (n1), LightGreen (n2)
+            | Green (n1), LightGreen (n2)
+            | LightGreen (n1), Green (n2) ->
+              if n1 = n2 then t1' else t2'
+            | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
+              Ans (IfEq (id_t, C (n2), t1', t2'))
+            | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
+              let id_t2 = match id_or_imm with
+                  V (id) -> id
+                | C (n) -> failwith "id_or_imm should be string"
+              in
+              Ans (IfEq (id_t2, C (n1), t1', t2'))
+            | Red (n1), Red (n2) ->
+              Ans (IfEq (id_t, id_or_imm, t1', t2'))
+          end
+        | IfLE (id_t, id_or_imm, t1, t2) ->
+          show t2 |> print_endline;
+          Logger.debug (Printf.sprintf "IfLE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
+          let r1 = jit_value_of_id_t reg id_t in
+          let r2 = jit_value_of_id_or_imm reg id_or_imm in
+          let regt1 = Array.copy reg in
+          let regt2 = Array.copy reg in
+          let memt1 = Array.copy mem in
+          let memt2 = Array.copy mem in
+          let t1' = method_jit p t1 regt1 memt1 jargs in
+          let t2' = method_jit p t2 regt2 memt2 jargs in
+          begin match r1, r2 with
+            | Green (n1), Green (n2)
+            | LightGreen (n1), LightGreen (n2)
+            | Green (n1), LightGreen (n2)
+            | LightGreen (n1), Green (n2) ->
+              if n1 <= n2 then t1' else t2'
+            | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
+              Ans (IfLE (id_t, C (n2), t1', t2'))
+            | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
+              let id_t2 = match id_or_imm with
+                  V (id) -> id
+                | C (n) -> failwith "id_or_imm should be string"
+              in
+              Ans (IfLE (id_t2, C (n1), t1', t2'))
+            | Red (n1), Red (n2) ->
+              Ans (IfLE (id_t, id_or_imm, t1', t2'))
+          end
+        | IfGE (id_t, id_or_imm, t1, t2) ->
+          Logger.debug (Printf.sprintf "IfGE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
+          let r1 = jit_value_of_id_t reg id_t in
+          let r2 = jit_value_of_id_or_imm reg id_or_imm in
+          let regt1 = Array.copy reg in
+          let regt2 = Array.copy reg in
+          let memt1 = Array.copy mem in
+          let memt2 = Array.copy mem in
+          let t1' = method_jit p t1 regt1 memt1 jargs in
+          let t2' = method_jit p t2 regt2 memt2 jargs in
+          begin match r1, r2 with
+            | Green (n1), Green (n2)
+            | LightGreen (n1), LightGreen (n2)
+            | Green (n1), LightGreen (n2)
+            | LightGreen (n1), Green (n2) ->
+              if n1 >= n2 then t1' else t2'
+            | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
+              Ans (IfGE (id_t, C (n2), t1', t2'))
+            | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
+              let id_t2 = match id_or_imm with
+                  V (id) -> id
+                | C (n) -> failwith "id_or_imm should be string"
+              in
+              Ans (IfGE (id_t2, C (n1), t1', t2'))
+            | Red (n1), Red (n2) ->
+              Ans (IfGE (id_t, id_or_imm, t1', t2'))
+          end
+        | _ -> failwith "method_jit_if should accept conditional branches."
 
 
 let prep p t reg mem jit_args =
