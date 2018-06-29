@@ -18,24 +18,22 @@ let rec add_cont_proc id_t instr body =
     | Ans e -> Let ((id_t, Type.Int), e, body)
   in go id_t instr body
 
+let loop_start_count = ref 0
+
 let rec method_jit p instr reg mem jargs =
   match instr with
   | Ans (exp) -> method_jit_exp p exp reg mem jargs
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), _, _), body) ->
     Logger.debug "min_caml_loop_start";
-    let t  =
-      Let ((dest, typ), CallDir (Id.L ("min_caml_loop_func_start"), [], []),
-           method_jit p body reg mem jargs)
-    in t
+    if !loop_start_count = 0 then
+      (loop_start_count := !loop_start_count + 1;
+       Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"),[], []),
+            method_jit p body reg mem jargs))
+    else
+      Ans (CallDir (Id.L ("min_caml_loop_fun_end"), [], []))
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), args, _), body) ->
     Logger.debug "min_caml_loop_end";
-    let r1 = List.hd_exn args in
-    let r2 = List.tl_exn args |> List.hd_exn in
-    Ans (
-      IfEq (r1, C (reg.(int_of_id_t r2) |> value_of),
-            Ans (CallDir (Id.L ("loop_exit"), [], [])),
-            Ans (CallDir (Id.L ("min_caml_loop_func_end"), args, []))
-           ))
+    method_jit p body reg mem jargs
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     let rec restore_args cont = function
         [] -> cont
@@ -143,6 +141,7 @@ and method_jit_if p e reg mem jargs =
         Ans (IfEq (id_t, id_or_imm, t1', t2'))
     end
   | IfLE (id_t, id_or_imm, t1, t2) ->
+    show t2 |> print_endline;
     Logger.debug (Printf.sprintf "IfLE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
     let r1 = jit_value_of_id_t reg id_t in
     let r2 = jit_value_of_id_or_imm reg id_or_imm in

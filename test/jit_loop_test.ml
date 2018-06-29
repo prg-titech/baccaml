@@ -46,7 +46,7 @@ let _ = run_test_tt_main begin
       "test2" >::
       begin fun () ->
         Logger.log_level := Logger.Debug;
-        let bytecode = [|1; 1; 7; 4; 2; 8; 6; 0; 5; 3; 3 |] in
+        let bytecode = [|1; 1; 7; 1; 10; 4; 2; 13; 6; 0; 5; 3; 5; 7 |] in
         let p =
           open_in ((Sys.getcwd ()) ^ "/test/jit_loop.ml")
           |> Lexing.from_channel
