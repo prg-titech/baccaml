@@ -20,15 +20,11 @@ let rec add_cont_proc id_t instr body =
     | Ans e -> Let ((id_t, Type.Int), e, body)
   in go id_t instr body
 
-let rec find_loop name = function
-  | Let ((dest, typ), CallDir (id_l, args, fargs), body) when id_l = loop_start_l ->
-    find_loop_t name body
+let rec find_loop_t name = function
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) when id_l = loop_end_l ->
     Ans (CallDir (Id.L (name), args, fargs))
-  | Let ((dest, typ), exp, body) ->
-    find_loop name body
-  | Ans (exp) ->
-    find_loop_exp name exp
+  | Let ((dest, typ), exp, body) -> Let ((dest, typ), exp, find_loop_t name body)
+  | Ans (exp) -> find_loop_exp name exp
 
 and find_loop_exp name = function
   | IfEq (id_t, id_or_imm, t1, t2)
@@ -45,55 +41,60 @@ and find_loop_exp name = function
     Ans (CallDir (Id.L (name), args, fargs))
   | _ -> raise Not_found
 
-and find_loop_t name = function
+let rec find_loop name = function
+  | Let ((dest, typ), CallDir (id_l, args, fargs), body) when id_l = loop_start_l ->
+    { name = Id.L (name); args = args; fargs = fargs; body = find_loop_t name body; ret = Type.Int }    
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) when id_l = loop_end_l ->
-    Ans (CallDir (Id.L (name), args, fargs))
-  | Let ((dest, typ), exp, body) -> Let ((dest, typ), exp, find_loop_t name body)
-  | Ans (exp) -> find_loop_exp name exp
+    raise Not_found
+  | Let ((dest, typ), exp, body) ->
+    find_loop name body
+  | Ans (exp) ->
+    raise Not_found
 
 let rec find_nonloop name = function
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) when id_l = loop_start_l->
     find_nonloop name body      
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) when id_l = loop_end_l ->
-    body
+    raise Not_found
   | Let ((dest, typ), exp, body) ->
     Let ((dest, typ), exp, find_nonloop name body)
   | Ans (exp) ->
-    find_nonloop_exp name exp
+    try find_nonloop_exp name exp with
+    | Not_found -> Ans(Nop)
 
 and find_nonloop_exp name = function
   | IfEq (id_t, id_or_imm, t1, t2) ->
     begin match find_loop name t1 with
       | _ ->
         Ans (IfEq (id_t, id_or_imm,
-                   Ans (CallDir (Id.L (name), [], [])),
-                   t2))
-      | exception Not_found ->
-        Ans (IfEq (id_t, id_or_imm,
                    t1,
                    Ans (CallDir (Id.L (name), [], []))))
+      | exception Not_found ->
+        Ans (IfEq (id_t, id_or_imm,
+                   Ans (CallDir (Id.L (name), [], [])),
+                   t2))
     end
   | IfLE (id_t, id_or_imm, t1, t2) ->
       begin match find_loop name t1 with
         | _ ->
           Ans (IfLE (id_t, id_or_imm,
-                     Ans (CallDir (Id.L (name), [], [])),
-                     t2))
-        | exception Not_found ->
-          Ans (IfLE (id_t, id_or_imm,
                      t1,
                      Ans (CallDir (Id.L (name), [], []))))
+        | exception Not_found ->
+          Ans (IfLE (id_t, id_or_imm,
+                     Ans (CallDir (Id.L (name), [], [])),
+                     t2))
       end
   | IfGE (id_t, id_or_imm, t1, t2) ->
       begin match find_loop name t1 with
         | _ ->
           Ans (IfGE (id_t, id_or_imm,
-                     Ans (CallDir (Id.L (name), [], [])),
-                     t2))
-        | exception Not_found ->
-          Ans (IfGE (id_t, id_or_imm,
                      t1,
                      Ans (CallDir (Id.L (name), [], []))))
+        | exception Not_found ->
+          Ans (IfGE (id_t, id_or_imm,
+                     Ans (CallDir (Id.L (name), [], [])),
+                     t2))
       end
   | exp -> Ans (exp)
 

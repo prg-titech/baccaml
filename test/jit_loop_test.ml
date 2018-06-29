@@ -82,11 +82,11 @@ let _ = run_test_tt_main begin
 
         (* extract loop function *)
         let loop = Method_jit.find_loop "test_loop_fun" res.body in
-        print_endline "[LOOP FUNCTION]" |> fun () -> Asm.show loop |> print_endline;
+        print_endline "[LOOP FUNCTION]" |> fun () -> Asm.show_fundef loop |> print_endline;
         
         (* extract non loop function *)
         let nonloop = Method_jit.find_nonloop "test_loop_fun" res.body in
-        print_endline "[NONLOOP FUNCTION]" |> fun () -> Asm.show nonloop |> print_endline;
+        print_endline "[NONLOOP FUNCTION]" |> fun () -> Emit_virtual.to_string_t nonloop |> print_endline;
         ()
       end;
     ]
