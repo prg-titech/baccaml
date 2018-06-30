@@ -333,19 +333,19 @@ let prep p t jit_args =
   end
 
 
-let prep' ~p:prog ~n:name ~reds:red_args =
-  let Prog (table, fundefs, main) = prog in
+let prep' ~prog:p ~name:n ~red_args:reds =
+  let Prog (table, fundefs, main) = p in
   let { body } = List.find_exn ~f:(fun { name = Id.L (x) } ->
       String.split ~on:'.' x |> List.hd_exn |> contains "interp"
     ) fundefs
   in
-  let mj_args = create_mj_args name red_args prog in
-  prep prog body mj_args
+  let mj_args = create_mj_args n reds p in
+  prep p body mj_args
 
 
 let exec p t reg mem jit_args =
   let Prog (table, _, main) = p in
-  let (fundefs', interp_body, jit_args') = prep' ~p:p ~n:"min_caml_test_trace" ~reds:["bytecode"; "a"] in
+  let (fundefs', interp_body, jit_args') = prep' ~prog:p ~name:"min_caml_test_trace" ~red_args:["bytecode"; "a"] in
   let res = (method_jit (Prog (table, fundefs', main)) interp_body reg mem jit_args') in
   Method_success (
     { name = Id.L ("min_caml_test_trace")

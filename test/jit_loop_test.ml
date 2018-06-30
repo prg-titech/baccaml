@@ -44,9 +44,6 @@ let _ = run_test_tt_main begin
           |> Mutil.virtualize
           |> Simm.f
         in
-        let Prog (_, fundefs, main) = p in
-        let fundef = List.hd fundefs in
-        let { body; } = fundef in
         let reg = Array.make 10000 (Red (-1)) in
         let mem = Array.make 10000 (Red (-1)) in
 
@@ -63,7 +60,7 @@ let _ = run_test_tt_main begin
         Colorizer.colorize_pgm bytecode 0 mem;
         
         (* execute function jit *)
-        let res = match Method_jit.exec p body reg mem () with
+        let res = match Method_jit.exec p (fundef'.body) reg mem () with
           | Method_success fundef | Tracing_success fundef -> fundef
         in
         print_endline "[RESULT]" |> fun () -> Asm.show_fundef res |> print_endline;
@@ -75,8 +72,9 @@ let _ = run_test_tt_main begin
         (* extract non loop function *)
         let nonloop = Method_jit.find_nonloop "test_loop_fun" res in
         print_endline "[NONLOOP FUNCTION]" |> fun () -> Asm.show_fundef nonloop |> print_endline;
-
         
+        Jit_emit.emit_trace (Method_success (nonloop)) "nonloop" "interp.88";
+        Jit_emit.emit_trace (Method_success (loop)) "loop" "interp.88";
         ()
       end;
     ]
