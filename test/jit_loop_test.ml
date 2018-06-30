@@ -51,10 +51,7 @@ let _ = run_test_tt_main begin
         let mem = Array.make 10000 (Red (-1)) in
 
         (* execute preprocessor *)
-
-        let method_jit_args = Method_jit.create_mj_args "min_caml_test_trace" ["bytecode"; "a"] p in
-
-        let fundefs', interp_body, jit_args' = Method_jit.prep p body reg mem method_jit_args in
+        let fundefs', interp_body, jit_args' = Method_jit.prep' p "min_caml_test_trace" ["bytecode"; "a"] in
         
         let fundef' = List.hd fundefs' in
         let redtbl = Hashtbl.create 100 in
@@ -66,7 +63,7 @@ let _ = run_test_tt_main begin
         Colorizer.colorize_pgm bytecode 0 mem;
         
         (* execute function jit *)
-        let res = match Method_jit.exec p body reg mem method_jit_args with
+        let res = match Method_jit.exec p body reg mem () with
           | Method_success fundef | Tracing_success fundef -> fundef
         in
         print_endline "[RESULT]" |> fun () -> Asm.show_fundef res |> print_endline;
@@ -78,6 +75,8 @@ let _ = run_test_tt_main begin
         (* extract non loop function *)
         let nonloop = Method_jit.find_nonloop "test_loop_fun" res in
         print_endline "[NONLOOP FUNCTION]" |> fun () -> Asm.show_fundef nonloop |> print_endline;
+
+        
         ()
       end;
     ]

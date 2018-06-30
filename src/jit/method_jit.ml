@@ -287,7 +287,6 @@ let create_mj_reds trace_args (Prog (_, fundefs, _)) =
     List.exists ~f:(fun trace_arg -> trace_arg = arg_name) trace_args
   end args
 
-
 let create_mj_args name trace_args p =
   Method_jit_args (
     { method_name = name;
@@ -297,10 +296,10 @@ let create_mj_args name trace_args p =
       pc_place = 1;
       loop_headers = [];
       backedge_pcs = []
-    })
+    }
+  )
 
-
-let prep p t reg mem jit_args =
+let prep p t jit_args =
   let t' = Simm.t t |> Trim.trim_jmp |> Trim.trim_jit_dispatcher in
   Emit_virtual.to_string_t t' |> print_endline;
   let jit_args' = match jit_args with
@@ -333,9 +332,20 @@ let prep p t reg mem jit_args =
         "missing jit_dispatch. please add jit_dispatch ... at the top of your interpreter."
   end
 
+
+let prep' ~p:prog ~n:name ~reds:red_args =
+  let Prog (table, fundefs, main) = prog in
+  let { body } = List.find_exn ~f:(fun { name = Id.L (x) } ->
+      String.split ~on:'.' x |> List.hd_exn |> contains "interp"
+    ) fundefs
+  in
+  let mj_args = create_mj_args name red_args prog in
+  prep prog body mj_args
+
+
 let exec p t reg mem jit_args =
   let Prog (table, _, main) = p in
-  let (fundefs', interp_body, jit_args') = prep p t reg mem jit_args in
+  let (fundefs', interp_body, jit_args') = prep' ~p:p ~n:"min_caml_test_trace" ~reds:["bytecode"; "a"] in
   let res = (method_jit (Prog (table, fundefs', main)) interp_body reg mem jit_args') in
   Method_success (
     { name = Id.L ("min_caml_test_trace")
