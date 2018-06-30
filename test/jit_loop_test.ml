@@ -49,21 +49,12 @@ let _ = run_test_tt_main begin
         let { body; } = fundef in
         let reg = Array.make 10000 (Red (-1)) in
         let mem = Array.make 10000 (Red (-1)) in
-        let method_jit_args =
-          Method_jit_args (
-            { method_name = "min_caml_test_trace";
-              reds = ["bytecode.72"; "a.74"];
-              method_start = 0;
-              method_end = 3;
-              pc_place = 1;
-              loop_headers = [0];
-              backedge_pcs = [0]
-            })
-        in
+
         (* execute preprocessor *)
-        let fundefs', interp_body, jit_args' =
-          Method_jit.prep p body reg mem method_jit_args
-        in
+
+        let method_jit_args = Method_jit.create_mj_args "min_caml_test_trace" ["bytecode"; "a"] p in
+
+        let fundefs', interp_body, jit_args' = Method_jit.prep p body reg mem method_jit_args in
         
         let fundef' = List.hd fundefs' in
         let redtbl = Hashtbl.create 100 in
@@ -73,7 +64,7 @@ let _ = run_test_tt_main begin
         Hashtbl.add redtbl "a" 100;
         Colorizer.colorize_reg redtbl greentbl reg fundef' interp_body;
         Colorizer.colorize_pgm bytecode 0 mem;
-
+        
         (* execute function jit *)
         let res = match Method_jit.exec p body reg mem method_jit_args with
           | Method_success fundef | Tracing_success fundef -> fundef

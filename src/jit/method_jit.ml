@@ -108,13 +108,8 @@ let rec method_jit p instr reg mem jargs =
   | Ans (exp) -> method_jit_exp p exp reg mem jargs
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), args, fargs), body) ->
     Logger.debug "min_caml_loop_start";
-    if !loop_start_count = 0 then
-      (loop_start_count := !loop_start_count + 1;
-       Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), args, fargs),
-            method_jit p body reg mem jargs))
-    else
-      (loop_start_count := 0;       
-       Ans (CallDir (Id.L ("min_caml_loop_restartd"), args, fargs)))
+    Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), args, fargs),
+            method_jit p body reg mem jargs)
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), args, fargs), body) ->
     Logger.debug "min_caml_loop_end";
     Ans (CallDir (Id.L "min_caml_loop_end", args, fargs))
@@ -225,7 +220,6 @@ and method_jit_if p e reg mem jargs =
         Ans (IfEq (id_t, id_or_imm, t1', t2'))
     end
   | IfLE (id_t, id_or_imm, t1, t2) ->
-    show t2 |> print_endline;
     Logger.debug (Printf.sprintf "IfLE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
     let r1 = jit_value_of_id_t reg id_t in
     let r2 = jit_value_of_id_or_imm reg id_or_imm in
@@ -280,6 +274,30 @@ and method_jit_if p e reg mem jargs =
         Ans (IfGE (id_t, id_or_imm, t1', t2'))
     end
   | _ -> failwith "method_jit_if should accept conditional branches."
+
+
+let create_mj_reds trace_args (Prog (_, fundefs, _)) =
+  let interp = List.find_exn ~f:begin fun { name = Id.L (x) } ->
+      (String.split ~on:'.' x |> List.hd_exn) = "interp"
+    end fundefs      
+  in
+  let { args } = interp in
+  List.filter ~f:begin fun arg ->
+    let arg_name = List.hd_exn (String.split ~on:'.' arg) in
+    List.exists ~f:(fun trace_arg -> trace_arg = arg_name) trace_args
+  end args
+
+
+let create_mj_args name trace_args p =
+  Method_jit_args (
+    { method_name = name;
+      reds = create_mj_reds trace_args p;
+      method_start = 0;
+      method_end = 0;
+      pc_place = 1;
+      loop_headers = [];
+      backedge_pcs = []
+    })
 
 
 let prep p t reg mem jit_args =
