@@ -256,7 +256,7 @@ and create_asm'_non_tail_if dest e1 e2 b bn =
   Buffer.contents buf
 
 and create_asm'_args x_reg_cl ys zs =
-  let res = ref "" in
+  let buf = Buffer.create 100 in
   assert (List.length ys <= Array.length regs - List.length x_reg_cl);
   assert (List.length zs <= Array.length fregs);
   let sw = Printf.sprintf "%d(%s)" (stacksize ()) reg_sp in
@@ -266,23 +266,29 @@ and create_asm'_args x_reg_cl ys zs =
       (0, x_reg_cl)
       ys
   in
-  res :=
-    List.fold_left
-      (fun s (y, r) -> s ^ Printf.sprintf "\tmovl\t%s, %s\n" y r)
-      ""
-      (shuffle sw yrs);
+  List.iter
+    (fun (y, r) -> Printf.sprintf "\tmovl\t%s, %s\n" y r |> Buffer.add_string buf)
+    (shuffle sw yrs);
   let (d, zfrs) =
     List.fold_left
       (fun (d, zfrs) z -> (d + 1, (z, fregs.(d)) :: zfrs))
       (0, [])
       zs
   in
-  !res ^
-  (List.fold_left
-     (fun s (z, fr) -> s ^ Printf.sprintf "\tmovsd\t%s, %s\n" z fr)
-     ""
-     (shuffle sw zfrs))
+  List.iter
+    (fun (z, fr) -> Printf.sprintf "\tmovsd\t%s, %s\n" z fr |> Buffer.add_string buf)
+    (shuffle sw zfrs);
+  Buffer.contents buf
 
+let emit_fundef fundef =
+  let { name = Id.L (x); body } = RegAlloc.h fundef in
+  let buf = Buffer.create 1000 in
+  stackset := S.empty;
+  stackmap := [];
+  Printf.sprintf ".globl %s\n" x |> Buffer.add_string buf;
+  Printf.sprintf "%s:\n" x |> Buffer.add_string buf;  
+  create_asm (Tail, body) |> Buffer.add_string buf;
+  buf
 
 let emit_midlayer (tr : trace_result) (file : string) (interp : string) : Buffer.t =
   let buf = Buffer.create 1000 in
@@ -303,9 +309,10 @@ let emit_midlayer (tr : trace_result) (file : string) (interp : string) : Buffer
   Printf.sprintf "\tjmp\t%s\n" interp |> Buffer.add_string buf;
   buf
 
-
 let emit_trace (tr: trace_result) (file: string) (interp: string)  =
   let fd = match tr with Tracing_success v | Method_success v -> v in
+  stackset := S.empty;
+  stackmap := [];
   fd
   |> RegAlloc.h
   |> fun { name = Id.L (x); body } ->
@@ -317,5 +324,26 @@ let emit_trace (tr: trace_result) (file: string) (interp: string)  =
   let res = Buffer.contents buf in
   Logger.debug (print_newline (); "!!EMIT TRACE!!\n" ^ res);
   let oc = open_out (file ^ ".s") in
+  Printf.fprintf oc "%s" res;
+  close_out oc
+
+let emit_result_mj ~prog:p ~traces:trs ~file:f =
+  let Prog (_, fundefs, _) = p in
+  let interp_name =
+    List.find (fun { name = Id.L (x)} ->
+      String.split_on_char '.' x
+      |> List.hd
+      |> fun s -> (String.equal "interp" s) || (String.equal "interpret" s)
+      ) fundefs
+    |> fun { name = Id.L (x) } -> x
+  in
+  let buf = Buffer.create 10000 in  
+  List.iter (fun fundef ->
+      emit_fundef fundef |> Buffer.add_buffer buf
+    ) trs;
+  emit_midlayer (Method_success (List.hd trs)) f interp_name |> Buffer.add_buffer buf;
+  let res = Buffer.contents buf in
+  Logger.debug (print_newline (); "!!EMIT TRACE!!\n" ^ res);
+  let oc = open_out (f ^ ".s") in
   Printf.fprintf oc "%s" res;
   close_out oc

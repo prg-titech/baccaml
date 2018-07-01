@@ -332,7 +332,6 @@ let prep p t jit_args =
         "missing jit_dispatch. please add jit_dispatch ... at the top of your interpreter."
   end
 
-
 let prep' ~prog:p ~name:n ~red_args:reds =
   let Prog (table, fundefs, main) = p in
   let { body } = List.find_exn ~f:(fun { name = Id.L (x) } ->
@@ -341,7 +340,6 @@ let prep' ~prog:p ~name:n ~red_args:reds =
   in
   let mj_args = create_mj_args n reds p in
   prep p body mj_args
-
 
 let exec p t reg mem jit_args =
   let Prog (table, _, main) = p in
