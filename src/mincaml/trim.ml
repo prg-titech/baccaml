@@ -1,7 +1,7 @@
 open Asm
 open Core
 
-let flg = ref true
+let flg = ref false
 
 let trace_entry = "min_caml_trace_entry"
 
