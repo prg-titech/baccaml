@@ -48,7 +48,7 @@ let _ = run_test_tt_main begin
         let mem = Array.make 10000 (Red (-1)) in
 
         (* execute preprocessor *)
-        let fundefs', interp_body, jit_args' = Method_jit.prep' p "min_caml_test_trace" ["bytecode"; "a"] in
+        let fundefs', interp_body, jit_args' = Method_jit.prep' p "min_caml_test_trace" ["a"] in
         
         let fundef' = List.hd fundefs' in
         let redtbl = Hashtbl.create 100 in
@@ -73,8 +73,14 @@ let _ = run_test_tt_main begin
         let nonloop = Method_jit.find_nonloop "test_loop_fun" res in
         print_endline "[NONLOOP FUNCTION]" |> fun () -> Asm.show_fundef nonloop |> print_endline;
         
-        Jit_emit.emit_trace (Method_success (nonloop)) "nonloop" "interp.88";
-        Jit_emit.emit_trace (Method_success (loop)) "loop" "interp.88";
+        (* Jit_emit.emit_trace (Method_success (nonloop)) "nonloop" "interp.88";
+         * Jit_emit.emit_trace (Method_success (loop)) "loop" "interp.88"; *)
+
+        (* Jit_emit.emit_fundef loop |> Buffer.contents |> print_endline;
+         * print_newline ();
+         * Jit_emit.emit_fundef nonloop |> Buffer.contents |> print_endline; *)
+
+        Jit_emit.emit_result_mj ~prog:p ~traces:([loop; nonloop]) ~file:"jit_loop_test";
         ()
       end;
     ]
