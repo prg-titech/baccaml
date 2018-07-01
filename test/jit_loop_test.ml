@@ -59,11 +59,11 @@ let _ = run_test_tt_main begin
         print_endline "[RESULT]" |> fun () -> Emit_virtual.to_string_fundef res |> print_endline;
 
         (* extract loop function *)
-        let loop = Method_jit.find_loop "test_loop_fun" res.body in
+        let loop = Mj_loop.find_loop "test_loop_fun" res.body in
         print_endline "[LOOP FUNCTION]" |> fun () -> Emit_virtual.to_string_fundef loop |> print_endline;
         
         (* extract non loop function *)
-        let nonloop = Method_jit.find_nonloop "test_loop_fun" res in
+        let nonloop = Mj_loop.find_nonloop "test_loop_fun" res in
         print_endline "[NONLOOP FUNCTION]" |> fun () -> Emit_virtual.to_string_fundef nonloop |> print_endline;
         
         (* Jit_emit.emit_trace (Method_success (nonloop)) "nonloop" "interp.88";
