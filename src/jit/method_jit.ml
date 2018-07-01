@@ -29,31 +29,121 @@ let rec find_loop_t name = function
 and find_loop_exp name = function
   | IfEq (id_t, id_or_imm, t1, t2)
   | IfLE (id_t, id_or_imm, t1, t2)
-  | IfGE (id_t, id_or_imm, t1, t2) ->
+  | IfGE (id_t, id_or_imm, t1, t2) as exp ->
     begin match find_loop_t name t1 with
-      | t -> t
+      | t ->
+        begin match exp with
+          | IfEq _ ->
+            Ans (IfEq (id_t, id_or_imm,
+                       t,
+                       Ans (CallDir (Id.L ("min_caml_test_trace"), [], []))
+                      ))
+          | IfLE _ ->
+            Ans (IfLE (id_t, id_or_imm,
+                       t,
+                       Ans (CallDir (Id.L ("min_caml_test_trace"), [], []))
+                      ))
+          | IfGE _ ->
+            Ans (IfGE (id_t, id_or_imm,
+                       t,
+                       Ans (CallDir (Id.L ("min_caml_test_trace"), [], []))
+                      ))
+          | _ -> assert false
+        end
       | exception Not_found ->
         match find_loop_t name t2 with
-        | t -> t
-        | exception Not_found -> raise Not_found
+        | t ->
+          begin match exp with
+          | IfEq _ ->
+            Ans (IfEq (id_t, id_or_imm,
+                       Ans (CallDir (Id.L ("min_caml_test_trace"), [], [])),
+                       t                       
+                      ))
+          | IfLE _ ->
+            Ans (IfLE (id_t, id_or_imm,
+                       Ans (CallDir (Id.L ("min_caml_test_trace"), [], [])),
+                       t
+                      ))
+          | IfGE _ ->
+            Ans (IfGE (id_t, id_or_imm,
+                       Ans (CallDir (Id.L ("min_caml_test_trace"), [], [])),
+                       t                       
+                      ))
+          | _ -> assert false
+        end
+        | exception Not_found ->
+          Logger.debug "find_loop_exp in if branch is failed.";
+          raise Not_found
     end
-  | CallDir (loop_end_l, args, fargs) ->
+  | CallDir (id_l, args, fargs) when id_l = loop_end_l ->
     Ans (CallDir (Id.L (name), args, fargs))
-  | _ -> raise Not_found
+  | exp -> raise Not_found
 
 let rec find_loop name = function
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) when id_l = loop_start_l ->
-    { name = Id.L (name); args = args; fargs = fargs; body = find_loop_t name body; ret = Type.Int }    
+    Logger.debug "find_loop start";
+    { name = Id.L (name); args = args; fargs = fargs; body = find_loop_t name body; ret = Type.Int }
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) when id_l = loop_end_l ->
+    Logger.debug "find_loop failed.";
     raise Not_found
   | Let ((dest, typ), exp, body) ->
     find_loop name body
   | Ans (exp) ->
-    raise Not_found
+    begin match exp with
+      | IfEq (id_t, id_or_imm, t1, t2)
+      | IfLE (id_t, id_or_imm, t1, t2)
+      | IfGE (id_t, id_or_imm, t1, t2) ->
+        begin match find_loop name t1 with
+          | { name; args; fargs; body; ret } ->
+            let body' =
+              match exp with
+              | IfEq _ ->
+                Ans (IfEq (id_t, id_or_imm,
+                           body,
+                           Ans (CallDir (Id.L ("min_caml_test_trace"), args, fargs))))
+              | IfLE _ ->
+                Ans (IfLE (id_t, id_or_imm,
+                           body,
+                           Ans (CallDir (Id.L ("min_caml_test_trace"), args, fargs))))
+              | IfGE _ ->
+                Ans (IfGE (id_t, id_or_imm,
+                           body,
+                           Ans (CallDir (Id.L ("min_caml_test_trace"), args, fargs))))
+              | _ -> assert false                
+            in
+            { name = name; args = args; fargs = fargs; body = body'; ret = ret }
+          | exception Not_found ->
+            match find_loop name t2 with
+            | { name; args; fargs; body; ret } ->
+              let body' =
+                match exp with
+                | IfEq _ ->
+                  Ans (IfEq (id_t, id_or_imm,
+                             Ans (CallDir (Id.L ("min_caml_test_trace"), args, fargs)),
+                             body
+                            ))
+                | IfLE _ ->
+                  Ans (IfLE (id_t, id_or_imm,
+                             Ans (CallDir (Id.L ("min_caml_test_trace"), args, fargs)),
+                             body
+                            ))
+                | IfGE _ ->
+                  Ans (IfGE (id_t, id_or_imm,
+                             Ans (CallDir (Id.L ("min_caml_test_trace"), args, fargs)),
+                             body
+                            ))
+                | _ -> assert false
+            in
+            { name = name; args = args; fargs = fargs; body = body'; ret = ret }
+            | exception Not_found -> raise Not_found
+        end
+      | _ -> raise Not_found
+    end    
+    
 
 let rec find_nonloop_t name = function
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) when id_l = loop_start_l->
-    find_nonloop_t name body      
+    find_nonloop_t name body
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) when id_l = loop_end_l ->
     raise Not_found
   | Let ((dest, typ), exp, body) ->
@@ -109,7 +199,7 @@ let rec method_jit p instr reg mem jargs =
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), args, fargs), body) ->
     Logger.debug "min_caml_loop_start";
     Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), args, fargs),
-            method_jit p body reg mem jargs)
+         method_jit p body reg mem jargs)
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), args, fargs), body) ->
     Logger.debug "min_caml_loop_end";
     Ans (CallDir (Id.L "min_caml_loop_end", args, fargs))
