@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/prg-titech/baccaml.svg?branch=develop)](https://travis-ci.org/prg-titech/baccaml)
+
 <div align=center>
 <img src="image/baccaml.png" width=400>
 </div>
@@ -8,8 +10,6 @@
 This is an experimental meta-hybrid JIT compiler using both approach of method and tracing JIT.
 This project is forked from <a href="https://github.com/esumii/min-caml">min-caml</a>, an educational mini ML compiler.
 </div>
-
----
 
 ## BacCaml Project
 
