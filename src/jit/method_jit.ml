@@ -57,7 +57,7 @@ and find_loop_exp name = function
           | IfEq _ ->
             Ans (IfEq (id_t, id_or_imm,
                        Ans (CallDir (Id.L ("min_caml_test_trace"), [], [])),
-                       t                       
+                       t
                       ))
           | IfLE _ ->
             Ans (IfLE (id_t, id_or_imm,
@@ -67,7 +67,7 @@ and find_loop_exp name = function
           | IfGE _ ->
             Ans (IfGE (id_t, id_or_imm,
                        Ans (CallDir (Id.L ("min_caml_test_trace"), [], [])),
-                       t                       
+                       t
                       ))
           | _ -> assert false
         end
@@ -109,7 +109,7 @@ let rec find_loop name = function
                 Ans (IfGE (id_t, id_or_imm,
                            body,
                            Ans (CallDir (Id.L ("min_caml_test_trace"), args, fargs))))
-              | _ -> assert false                
+              | _ -> assert false
             in
             { name = name; args = args; fargs = fargs; body = body'; ret = ret }
           | exception Not_found ->
@@ -138,55 +138,101 @@ let rec find_loop name = function
             | exception Not_found -> raise Not_found
         end
       | _ -> raise Not_found
-    end    
-    
+    end
 
 let rec find_nonloop_t name = function
-  | Let ((dest, typ), CallDir (id_l, args, fargs), body) when id_l = loop_start_l->
-    find_nonloop_t name body
-  | Let ((dest, typ), CallDir (id_l, args, fargs), body) when id_l = loop_end_l ->
+  | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), args, fargs), body) ->
+    Let ((dest, Type.Int),
+         CallDir (Id.L (name), args, fargs),
+         find_nonloop_t name body)
+  | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), args, fargs), body) ->
     raise Not_found
   | Let ((dest, typ), exp, body) ->
     Let ((dest, typ), exp, find_nonloop_t name body)
   | Ans (exp) ->
-    try find_nonloop_exp name exp with
-    | Not_found -> Ans(Nop)
+    try find_nonloop_exp' name exp with
+    | Not_found -> Ans (Nop)
 
 and find_nonloop_exp name = function
-  | IfEq (id_t, id_or_imm, t1, t2) ->
-    begin match find_loop name t1 with
-      | _ ->
-        Ans (IfEq (id_t, id_or_imm,
-                   t1,
-                   Ans (CallDir (Id.L (name), [id_t], []))))
-      | exception Not_found ->
-        Ans (IfEq (id_t, id_or_imm,
-                   Ans (CallDir (Id.L (name), [id_t], [])),
-                   t2))
-    end
+  | CallDir (Id.L ("min_caml_loop_end"), _, _) ->
+    raise Not_found
+  | IfEq (id_t, id_or_imm, t1, t2)
+  | IfGE (id_t, id_or_imm, t1, t2)
   | IfLE (id_t, id_or_imm, t1, t2) ->
-    begin match find_loop name t1 with
-      | _ ->
-        Ans (IfLE (id_t, id_or_imm,
-                   t1,
-                   Ans (CallDir (Id.L (name), [id_t], []))))
-      | exception Not_found ->
-        Ans (IfLE (id_t, id_or_imm,
-                   Ans (CallDir (Id.L (name), [id_t], [])),
-                   t2))
-    end
-  | IfGE (id_t, id_or_imm, t1, t2) ->
-    begin match find_loop name t1 with
-      | _ ->
-        Ans (IfGE (id_t, id_or_imm,
-                   t1,
-                   Ans (CallDir (Id.L (name), [id_t], []))))
-      | exception Not_found ->
-        Ans (IfGE (id_t, id_or_imm,
-                   Ans (CallDir (Id.L (name), [id_t], [])),
-                   t2))
+    begin match find_loop_t name t1 with
+      | t ->
+        begin match find_loop_t name t2 with
+          | t -> raise Not_found
+          | exception Not_found -> t2
+        end
+      | exception Not_found -> t1
     end
   | exp -> Ans (exp)
+
+and find_nonloop_exp' name = function
+  | CallDir (Id.L ("min_caml_loop_end"), _, _) ->
+    raise Not_found
+  | IfEq (id_t, id_or_imm, t1, t2)
+  | IfGE (id_t, id_or_imm, t1, t2)
+  | IfLE (id_t, id_or_imm, t1, t2) as exp ->
+    begin match find_loop_t name t1 with
+      | t ->
+        begin match exp with
+          | IfEq _ ->
+            Ans (
+              IfEq (
+                id_t, id_or_imm,
+                Ans (CallDir (Id.L (name), [id_t], [])),
+                t2
+              ))
+          | IfLE _ ->
+            Ans (
+              IfLE (
+                id_t, id_or_imm,
+                Ans (CallDir (Id.L (name), [id_t], [])),
+                t2
+              ))
+          | IfGE _ ->
+            Ans (
+              IfGE (
+                id_t, id_or_imm,
+                Ans (CallDir (Id.L (name), [id_t], [])),
+                t2
+              ))
+          | _ -> assert false
+        end
+      | exception Not_found ->
+        begin match find_loop_t name t2 with
+          | t ->
+            begin match exp with
+              | IfEq _ ->
+                Ans (
+                  IfEq (
+                    id_t, id_or_imm,
+                    Ans (CallDir (Id.L (name), [id_t], [])),
+                    t1
+                  ))
+              | IfLE _ ->
+                Ans (
+                  IfLE (
+                    id_t, id_or_imm,
+                    Ans (CallDir (Id.L (name), [id_t], [])),
+                    t1
+                  ))
+              | IfGE _ ->
+                Ans (
+                  IfGE (
+                    id_t, id_or_imm,
+                    Ans (CallDir (Id.L (name), [id_t], [])),
+                    t1
+                  ))
+              | _ -> assert false
+            end
+          | exception Not_found -> raise Not_found
+        end
+    end
+  | exp -> Ans (exp)
+
 
 
 let find_nonloop name ({ name = name; args = args; fargs = fargs; body = body; ret = ret }) =
@@ -369,7 +415,7 @@ and method_jit_if p e reg mem jargs =
 let create_mj_reds trace_args (Prog (_, fundefs, _)) =
   let interp = List.find_exn ~f:begin fun { name = Id.L (x) } ->
       (String.split ~on:'.' x |> List.hd_exn) = "interp"
-    end fundefs      
+    end fundefs
   in
   let { args } = interp in
   List.filter ~f:begin fun arg ->
