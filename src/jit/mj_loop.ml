@@ -222,3 +222,70 @@ and find_nonloop_exp' name = function
 let find_nonloop name ({ name = name; args = args; fargs = fargs; body = body; ret = ret }) =
   let body' = find_nonloop_t "test_loop_fun" body in
   { name = name; args = args; fargs = fargs; body = body'; ret = ret }
+
+
+let rec before_loop_start name = function
+  | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), args, fargs), body) ->
+    Ans (CallDir (Id.L (name), args, fargs))
+  | Let ((dest, typ), exp, body) ->
+    Let ((dest, typ), exp, before_loop_start name body)
+  | Ans (exp) -> raise Not_found
+
+type loop_condition =
+  | If_equal of Id.t * id_or_imm
+  | If_less of  Id.t * id_or_imm
+  | If_greater of Id.t * id_or_imm
+
+let rec get_loop_end_args = function
+  | Ans (CallDir (Id.L ("min_caml_loop_end"), args, fargs)) -> Some (args, fargs)
+  | Ans (exp) -> get_loop_end_args' exp
+  | Let (_, CallDir (Id.L ("min_caml_loop_end"), args, fargs), body) -> Some (args, fargs)
+  | Let (_, exp, body) -> get_loop_end_args body
+
+and get_loop_end_args' = function
+  | IfEq (_, _, t1, t2) | IfLE (_, _, t1, t2) | IfGE (_, _, t1, t2) ->
+    begin match get_loop_end_args t1 with
+      | Some (a, f) -> Some (a, f)
+      | None -> begin match get_loop_end_args t2 with
+          | Some (a, f) -> Some (a, f)
+          | None -> None
+        end
+    end
+  | _ -> None
+
+let rec after_loop_end' = function
+  | Ans (exp) ->
+    begin match after_loop_end_exp exp with
+      | If_equal (id_t, id_or_imm), t -> t
+      | If_less (id_t, id_or_imm), t -> t
+      | If_greater (id_t, id_or_imm), t -> t
+    end
+  | Let ((dest, typ), exp, body) ->
+    after_loop_end' body
+
+and after_loop_end_exp exp =
+  let dummy = "dummy" in
+  match exp with
+  | IfEq (id_t, id_or_imm, t1, t2)  ->
+    (match find_loop_t dummy t1 with
+     | _ -> If_equal (id_t, id_or_imm), t2
+     | exception Not_found -> If_equal (id_t, id_or_imm), t1)
+  | IfLE (id_t, id_or_imm, t1, t2) ->
+    (match find_loop_t dummy t1 with
+     | _ -> If_less (id_t, id_or_imm), t2
+     | exception Not_found -> If_less (id_t, id_or_imm), t1)
+  | IfGE (id_t, id_or_imm, t1, t2) ->
+    (match find_loop_t dummy t1 with
+     | _ -> If_greater (id_t, id_or_imm), t2
+     | exception Not_found -> If_greater (id_t, id_or_imm), t1)
+  | CallDir (Id.L ("min_caml_loop_end"), args, fargs) ->
+    assert false
+  | exp -> assert false
+
+let rec after_loop_end name ({ name = _; args = args; fargs = fargs; body = body; ret = ret }) =
+  let args', fargs' = match get_loop_end_args body with
+    | Some (a, f) -> a, f
+    | None -> failwith "getting args/fargs of CallDir (Id.L min_caml_loop_end) is failed."
+  in
+  let body' = after_loop_end' body in
+  { name = Id.L (name); args = args'; fargs = fargs'; body = body'; ret = ret }
