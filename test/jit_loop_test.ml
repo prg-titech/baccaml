@@ -66,8 +66,8 @@ let _ = run_test_tt_main begin
         let nonloop = Mj_loop.find_nonloop "test_loop_fun" res in
         print_endline "[NONLOOP FUNCTION]" |> fun () -> Emit_virtual.to_string_fundef nonloop |> print_endline;
 
-        let after_loop = Mj_loop.after_loop_end "after_loop" res in
-        print_endline "[AFTER LOOP]" |> fun () -> Emit_virtual.to_string_fundef after_loop |> print_endline;
+        (* let after_loop = Mj_loop.after_loop_end "after_loop" res in
+         * print_endline "[AFTER LOOP]" |> fun () -> Emit_virtual.to_string_fundef after_loop |> print_endline; *)
 
         (* Jit_emit.emit_trace (Method_success (nonloop)) "nonloop" "interp.88";
          * Jit_emit.emit_trace (Method_success (loop)) "loop" "interp.88"; *)
