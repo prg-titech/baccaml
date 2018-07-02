@@ -83,7 +83,7 @@ let _ = run_test_tt_main begin
       "test2" >::
       begin fun () ->
         Logger.log_level := Logger.Debug;
-        let reg, mem = Array.make 10000 (Red (-1)), Array.make 10000 (Red (-1)) in
+        let reg, mem = Array.make 1000000 (Red (-1)), Array.make 1000000 (Red (-1)) in
         (* execute preprocessor *)
         let fundefs', interp_body, jit_args' = Method_jit.prep' p "min_caml_test_trace" ["a"] in
 
@@ -101,12 +101,12 @@ let _ = run_test_tt_main begin
           let Prog (t, fs, m) = p in
           Prog (t, fundefs', m)
         in
-        let x = Method_jit_loop.run p' reg mem (interp_body) in
+        let x = Method_jit_loop.run p reg mem "min_caml_test_trace" ["a"] in
         print_endline "[EXPERIMENT]"; List.iter (fun t ->
-            print_endline "-------------------";
-            Emit_virtual.to_string_t t
+            print_endline "----------------------";
+            Emit_virtual.to_string_fundef t
             |> print_endline;
-            print_endline "-------------------"
+            print_endline "----------------------"
           ) x;
         ()
       end
