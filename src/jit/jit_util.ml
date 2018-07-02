@@ -16,7 +16,7 @@ let int_of_id_t id =
     | _ ->
       match int_of_string_opt (Xutil.String.after_of id 'u') with
       | Some (i) -> i
-      | _ -> failwith (Printf.sprintf "int_of_id_t (%s) is failed" id)      
+      | _ -> failwith (Printf.sprintf "int_of_id_t (%s) is failed" id)
 
 let value_of = function
   | Red (n) | Green (n) | LightGreen (n) -> n
@@ -101,3 +101,18 @@ let is_opcode id =
 
 let _ =
   assert (is_opcode "instr")
+
+let rec add_cont_proc id_t instr body =
+  let rec go id_t instr body = match instr with
+    | Let (a, Nop, t) -> go id_t t body
+    | Let (a, e, t) -> Let (a, e, go id_t t body)
+    | Ans e -> Let ((id_t, Type.Int), e, body)
+  in go id_t instr body
+
+module Operands = struct
+  let (|||) e (n1, n2) = match e with
+    | IfEq _ -> n1 = n2
+    | IfLE _ -> n1 <= n2
+    | IfGE _ -> n1 >= n2
+    | _ -> assert false
+end

@@ -5,16 +5,10 @@ open Util
 open Inlining
 open Jit_config
 open Jit_util
+open Operands
 open Renaming
 
 exception Method_jit_failed of string
-
-let rec add_cont_proc id_t instr body =
-  let rec go id_t instr body = match instr with
-    | Let (a, Nop, t) -> go id_t t body
-    | Let (a, e, t) -> Let (a, e, go id_t t body)
-    | Ans e -> Let ((id_t, Type.Int), e, body)
-  in go id_t instr body
 
 let rec method_jit p instr reg mem jargs =
   match instr with
@@ -75,37 +69,21 @@ and method_jit_exp p e reg mem jargs =
 
 and method_jit_if p e reg mem jargs =
   match e with
-  | IfLE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
-    Logger.debug (Printf.sprintf "IfLE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
-    let r1 = value_of reg.(int_of_id_t id_t) in
-    let r2 = match id_or_imm with
-      | V (id) -> value_of reg.(int_of_id_t id)
-      | C (n) -> n
-    in
-    if r1 <= r2
-    then method_jit p t1 reg mem jargs
-    else method_jit p t2 reg mem jargs
-  | IfEq (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
-    Logger.debug (Printf.sprintf "IfEq (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
-    let r1 = value_of reg.(int_of_id_t id_t) in
-    let r2 = match id_or_imm with
-      | V (id) -> value_of reg.(int_of_id_t id)
-      | C (n) -> n
-    in
-    if r1 = r2
-    then method_jit p t1 reg mem jargs
-    else method_jit p t2 reg mem jargs
+  | IfLE (id_t, id_or_imm, t1, t2)
+  | IfEq (id_t, id_or_imm, t1, t2)
   | IfGE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
-    Logger.debug (Printf.sprintf "IfGE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
+    Logger.debug (Printf.sprintf "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
     let r1 = value_of reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
       | V (id) -> value_of reg.(int_of_id_t id)
       | C (n) -> n
     in
-    if r1 >= r2
+    if e ||| (r1, r2)
     then method_jit p t1 reg mem jargs
     else method_jit p t2 reg mem jargs
-  | IfEq (id_t, id_or_imm, t1, t2) ->
+  | IfEq (id_t, id_or_imm, t1, t2)
+  | IfLE (id_t, id_or_imm, t1, t2)
+  | IfGE (id_t, id_or_imm, t1, t2)->
     Logger.debug (Printf.sprintf "IfEq (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
     let r1 = jit_value_of_id_t reg id_t in
     let r2 = jit_value_of_id_or_imm reg id_or_imm in
@@ -120,7 +98,7 @@ and method_jit_if p e reg mem jargs =
       | LightGreen (n1), LightGreen (n2)
       | Green (n1), LightGreen (n2)
       | LightGreen (n1), Green (n2) ->
-        if n1 = n2 then t1' else t2'
+        if e ||| (n1, n2) then t1' else t2'
       | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
         Ans (IfEq (id_t, C (n2), t1', t2'))
       | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
@@ -131,60 +109,6 @@ and method_jit_if p e reg mem jargs =
         Ans (IfEq (id_t2, C (n1), t1', t2'))
       | Red (n1), Red (n2) ->
         Ans (IfEq (id_t, id_or_imm, t1', t2'))
-    end
-  | IfLE (id_t, id_or_imm, t1, t2) ->
-    Logger.debug (Printf.sprintf "IfLE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
-    let r1 = jit_value_of_id_t reg id_t in
-    let r2 = jit_value_of_id_or_imm reg id_or_imm in
-    let regt1 = Array.copy reg in
-    let regt2 = Array.copy reg in
-    let memt1 = Array.copy mem in
-    let memt2 = Array.copy mem in
-    let t1' = method_jit p t1 regt1 memt1 jargs in
-    let t2' = method_jit p t2 regt2 memt2 jargs in
-    begin match r1, r2 with
-      | Green (n1), Green (n2)
-      | LightGreen (n1), LightGreen (n2)
-      | Green (n1), LightGreen (n2)
-      | LightGreen (n1), Green (n2) ->
-        if n1 <= n2 then t1' else t2'
-      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
-        Ans (IfLE (id_t, C (n2), t1', t2'))
-      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
-        let id_t2 = match id_or_imm with
-            V (id) -> id
-          | C (n) -> failwith "id_or_imm should be string"
-        in
-        Ans (IfLE (id_t2, C (n1), t1', t2'))
-      | Red (n1), Red (n2) ->
-        Ans (IfLE (id_t, id_or_imm, t1', t2'))
-    end
-  | IfGE (id_t, id_or_imm, t1, t2) ->
-    Logger.debug (Printf.sprintf "IfGE (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
-    let r1 = jit_value_of_id_t reg id_t in
-    let r2 = jit_value_of_id_or_imm reg id_or_imm in
-    let regt1 = Array.copy reg in
-    let regt2 = Array.copy reg in
-    let memt1 = Array.copy mem in
-    let memt2 = Array.copy mem in
-    let t1' = method_jit p t1 regt1 memt1 jargs in
-    let t2' = method_jit p t2 regt2 memt2 jargs in
-    begin match r1, r2 with
-      | Green (n1), Green (n2)
-      | LightGreen (n1), LightGreen (n2)
-      | Green (n1), LightGreen (n2)
-      | LightGreen (n1), Green (n2) ->
-        if n1 >= n2 then t1' else t2'
-      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
-        Ans (IfGE (id_t, C (n2), t1', t2'))
-      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
-        let id_t2 = match id_or_imm with
-            V (id) -> id
-          | C (n) -> failwith "id_or_imm should be string"
-        in
-        Ans (IfGE (id_t2, C (n1), t1', t2'))
-      | Red (n1), Red (n2) ->
-        Ans (IfGE (id_t, id_or_imm, t1', t2'))
     end
   | _ -> failwith "method_jit_if should accept conditional branches."
 
