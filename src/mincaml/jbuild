@@ -6,8 +6,8 @@
 ; (menhir ((modules (parser))))
 
 (library
- ((name           mincaml)
-  (public_name    baccaml.mincaml)
+ ((name           minCaml)
+  (public_name    baccaml.minCaml)
   (modules        (:standard \ main anchor))
   (libraries      (str core util))
   (c_names        (float))
@@ -19,5 +19,5 @@
  ((name           main)
   (public_name    Main)
   (modules        Main)
-  (libraries      (mincaml))
+  (libraries      (minCaml))
 ))

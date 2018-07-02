@@ -3,7 +3,7 @@ open Core
 open OUnit
 open Jit_config
 open Tracing_jit
-open Mincaml_util
+open MinCaml_util
 
 let _ = run_test_tt_main begin
     "tracing_jit_test" >::: [

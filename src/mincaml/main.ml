@@ -1,6 +1,6 @@
 open Core
 
-open Mincaml
+open MinCaml
 open Util
 
 let limit = ref 1000

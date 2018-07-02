@@ -1,5 +1,5 @@
 open Core
-open Mincaml
+open MinCaml
 open Asm
 open Util
 open Inlining
@@ -41,7 +41,7 @@ let rec mj p reg mem fenv t =
         args
     in
     let t' = mj p reg mem fenv body in
-    add_cont_proc (Id.gentmp Type.Int) restored_call (fst t'), snd t'
+    connect (Id.gentmp Type.Int) restored_call (fst t'), snd t'
   | Let ((dest, typ), exp, body) ->
     begin match exp with
       | _ ->

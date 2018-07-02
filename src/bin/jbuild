@@ -3,5 +3,5 @@
 (executable
  ((name        baccaml)
   (public_name baccaml.main)
-  (libraries (baccaml_jit mincaml)
+  (libraries (baccaml_jit minCaml)
 )))

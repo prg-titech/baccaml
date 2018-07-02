@@ -1,4 +1,4 @@
-open Mincaml
+open MinCaml
 open Util
 open Asm
 open Core
@@ -25,7 +25,7 @@ let rec find_fundef prog name =
      let Id.L (x) = name in
      failwith @@ Printf.sprintf "find_fundef is failed. name: %s" x
 
-let rec add_cont_proc id_t instr body =
+let rec connect id_t instr body =
   let rec go id_t instr body = match instr with
     | Let (a, e, t) ->
       Let (a, e, go id_t t body)
@@ -39,7 +39,7 @@ let rec tracing_jit p instr reg mem jit_args = match instr with
   | Let ((dest, typ), CallDir (id_l, argsr, argst), body) ->
     let fundef = (find_fundef p id_l) in
     let t = tracing_jit p (inline_calldir_exp argsr fundef reg) reg mem jit_args in
-    add_cont_proc dest t (tracing_jit p body reg mem jit_args)
+    connect dest t (tracing_jit p body reg mem jit_args)
   | Let ((dest, typ), instr, body) ->
     begin match Optimizer.optimize_exp p instr reg mem with
       | Specialized v ->

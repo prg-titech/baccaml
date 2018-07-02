@@ -1,5 +1,5 @@
 open OUnit
-open Mincaml
+open MinCaml
 open Asm
 open Util
 open Baccaml_jit

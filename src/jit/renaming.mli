@@ -1,4 +1,4 @@
-open Mincaml
+open MinCaml
 type rename_env = Id.t -> Id.t
 val empty_env : string -> 'a
 val extend_env : (string -> string) -> string -> string -> string

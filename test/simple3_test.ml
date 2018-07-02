@@ -1,4 +1,4 @@
-open Mincaml
+open MinCaml
 open Baccaml_jit
 open Util
 open Asm

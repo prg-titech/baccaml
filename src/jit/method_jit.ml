@@ -1,5 +1,5 @@
 open Core
-open Mincaml
+open MinCaml
 open Asm
 open Util
 open Inlining
@@ -36,7 +36,7 @@ let rec method_jit p instr reg mem jargs =
         args
     in
     let t' = method_jit p body reg mem jargs in
-    add_cont_proc (Id.gentmp Type.Unit) restored_fcall t'
+    connect (Id.gentmp Type.Unit) restored_fcall t'
   | Let ((dest, typ), exp, body) ->
     begin match Optimizer.optimize_exp p exp reg mem with
       | Specialized (v) ->

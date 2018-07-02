@@ -1,6 +1,6 @@
 open Core
 
-open Mincaml
+open MinCaml
 open Mutil
 open Baccaml_jit
 open Jit_config

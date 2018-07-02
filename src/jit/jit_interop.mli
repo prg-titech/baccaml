@@ -1,4 +1,4 @@
-open Mincaml
+open MinCaml
 val find_red_in_body : Asm.t -> Core.String.t Core.List.t -> Id.t Core.List.t
 val find_red_in_fundefs :
   Asm.fundef Core.List.t -> Core.String.t Core.List.t -> Id.t Core.List.t

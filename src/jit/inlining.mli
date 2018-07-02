@@ -1,4 +1,4 @@
-open Mincaml
+open MinCaml
 val inline_args :
   Core.String.t list ->
   Core.String.t list -> Asm.t -> 'a Core.Array.t -> Asm.t

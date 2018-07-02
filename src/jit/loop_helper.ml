@@ -1,5 +1,5 @@
 open Core
-open Mincaml
+open MinCaml
 open Util
 open Asm
 

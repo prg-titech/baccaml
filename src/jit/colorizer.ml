@@ -1,4 +1,4 @@
-open Mincaml
+open MinCaml
 open Asm
 open Jit_config
 

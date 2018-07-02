@@ -1,5 +1,5 @@
 open Core
-open Mincaml
+open MinCaml
 open Asm
 open Util
 open Jit_config
@@ -99,7 +99,7 @@ let is_opcode id =
 let _ =
   assert (is_opcode "instr")
 
-let rec add_cont_proc id_t instr body =
+let rec connect id_t instr body =
   let rec go id_t instr body = match instr with
     | Let (a, Nop, t) -> go id_t t body
     | Let (a, e, t) -> Let (a, e, go id_t t body)

@@ -1,7 +1,7 @@
 open Core
 open OUnit
 
-open Mincaml
+open MinCaml
 open Asm
 
 open Baccaml_jit
