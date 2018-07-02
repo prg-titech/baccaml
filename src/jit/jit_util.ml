@@ -1,10 +1,7 @@
 open Core
-
 open Mincaml
 open Asm
-
 open Util
-
 open Jit_config
 
 let int_of_id_t id =

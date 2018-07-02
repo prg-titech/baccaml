@@ -15,37 +15,38 @@ let print_list f lst =
   in
   print_string "["; loop f lst; print_string "]"
 
+(* preprocesses *)
+let bytecode =
+  [|1; 1;
+    7;
+    1; 10;
+    4;
+    2; 13;
+    6; 0;
+    5;
+    3; 5;
+    7 |]
+
+let p =
+  open_in ((Sys.getcwd ()) ^ "/test/jit_loop.ml")
+  |> Lexing.from_channel
+  |> Mutil.virtualize
+  |> Simm.f
+
 let _ = run_test_tt_main begin
     "mj_loop_test" >::: [
       "test1" >::
       begin fun () ->
         Logger.log_level := Logger.Debug;
-        (* preprocesses *)
-        let bytecode =
-          [|1; 1;
-            7;
-            1; 10;
-            4;
-            2; 13;
-            6; 0;
-            5;
-            3; 5;
-            7 |] in
-        let p =
-          open_in ((Sys.getcwd ()) ^ "/test/jit_loop.ml")
-          |> Lexing.from_channel
-          |> Mutil.virtualize
-          |> Simm.f
-        in
-        let reg = Array.make 10000 (Red (-1)) in
-        let mem = Array.make 10000 (Red (-1)) in
 
+        let reg, mem = Array.make 10000 (Red (-1)), Array.make 10000 (Red (-1)) in
         (* execute preprocessor *)
         let fundefs', interp_body, jit_args' = Method_jit.prep' p "min_caml_test_trace" ["a"] in
 
         let fundef' = List.hd fundefs' in
         let redtbl = Hashtbl.create 100 in
         let greentbl = Hashtbl.create 100 in
+
         Hashtbl.add greentbl "bytecode" 0;
         Hashtbl.add greentbl "pc" 3;
         Hashtbl.add redtbl "a" 100;
@@ -79,5 +80,31 @@ let _ = run_test_tt_main begin
         Jit_emit.emit_result_mj ~prog:p ~traces:([loop; nonloop]) ~file:"jit_loop_test";
         ()
       end;
+      "test2" >::
+      begin fun () ->
+        Logger.log_level := Logger.Debug;
+        let reg, mem = Array.make 10000 (Red (-1)), Array.make 10000 (Red (-1)) in
+        (* execute preprocessor *)
+        let fundefs', interp_body, jit_args' = Method_jit.prep' p "min_caml_test_trace" ["a"] in
+
+        let fundef' = List.hd fundefs' in
+        let redtbl = Hashtbl.create 100 in
+        let greentbl = Hashtbl.create 100 in
+
+        Hashtbl.add greentbl "bytecode" 0;
+        Hashtbl.add greentbl "pc" 3;
+        Hashtbl.add redtbl "a" 100;
+        Colorizer.colorize_reg redtbl greentbl reg fundef' interp_body;
+        Colorizer.colorize_pgm bytecode 0 mem;
+
+        let p' =
+          let Prog (t, fs, m) = p in
+          Prog (t, fundefs', m)
+        in
+        let x = Method_jit_loop.run p' reg mem (interp_body) in
+        print_endline "[EXPERIMENT]"; Emit_virtual.to_string_t (fst x) |> print_endline;
+        print_endline "[EXPERIMENT]"; List.iter (fun t -> Emit_virtual.to_string_t t |> print_endline) (snd x);
+        ()
+      end
     ]
   end
