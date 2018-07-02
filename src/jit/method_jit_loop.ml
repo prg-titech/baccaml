@@ -39,8 +39,7 @@ let rec mj p reg mem fenv name t =
     Ans (CallDir (Id.L (fname), args, fargs)), extended_fenv
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), args, fargs), body) ->
     Logger.debug "min_caml_loop_end";
-    let extended_fenv = extend_fenv name args body fenv in
-    Ans (CallDir (Id.L (name), args, fargs)), extended_fenv
+    Ans (CallDir (Id.L (name), args, fargs)), M.empty
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     let restored_call =
       restore_args
@@ -78,8 +77,8 @@ and mj_exp p reg mem fenv name exp =
         let id = Id.gentmp Type.Int in
         Let ((id, Type.Int),
              Set (value_of v),
-             Ans (Mov (id))), fenv
-      | Not_specialized (e, v) -> Ans (e), fenv
+             Ans (Mov (id))), M.empty
+      | Not_specialized (e, v) -> Ans (e), M.empty
     end
 
 and mj_if p reg mem fenv name exp =
@@ -187,3 +186,20 @@ let run p reg mem name reds =
     let res, fenv' = mj p' reg mem fenv' n t in
     { name = Id.L (n); args = ag; fargs = []; body = res; ret = Type.Int }
   end (M.bindings fenv')
+
+let run_while p reg mem name reds =
+  let Prog (tbl, _, m) = p in
+  let (fdfs, ibody, reds) = prep ~prog:p ~name:name ~red_args:reds in
+  let p' = Prog (tbl, fdfs, m) in
+  let rec loop p reg mem fenv name args t =
+    let res, fenv' = mj p reg mem fenv name t in
+    match M.choose_opt fenv' with
+    | Some (n, (ag, t')) ->
+      (res, name, reds) :: (loop p reg mem M.empty n ag t')
+    | None ->
+      (res, name, args) :: []
+  in
+  let loops = loop p' reg mem M.empty name reds ibody in
+  List.map begin fun (body, name, args) ->
+    { name = Id.L (name); args = args; fargs = []; body = body; ret = Type.Int }
+  end loops

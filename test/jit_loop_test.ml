@@ -97,17 +97,20 @@ let _ = run_test_tt_main begin
         Colorizer.colorize_reg redtbl greentbl reg fundef' interp_body;
         Colorizer.colorize_pgm bytecode 0 mem;
 
-        let p' =
-          let Prog (t, fs, m) = p in
-          Prog (t, fundefs', m)
-        in
+        let reg', mem' = Array.copy reg, Array.copy mem in
         let x = Method_jit_loop.run p reg mem "min_caml_test_trace" ["a"] in
         print_endline "[EXPERIMENT]"; List.iter (fun t ->
             print_endline "----------------------";
-            Emit_virtual.to_string_fundef t
-            |> print_endline;
+            Emit_virtual.to_string_fundef t |> print_endline;
             print_endline "----------------------"
           ) x;
+
+        let y = Method_jit_loop.run_while p reg' mem' "min_caml_test_trace" ["a"] in
+        print_endline "[EXPERIMENT]"; List.iter (fun fundef ->
+            print_endline "----------------------";
+            Emit_virtual.to_string_fundef fundef |> print_endline;
+            print_endline "----------------------"
+          ) y;
         ()
       end
     ]
