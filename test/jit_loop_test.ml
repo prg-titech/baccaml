@@ -60,11 +60,11 @@ let _ = run_test_tt_main begin
         print_endline "[RESULT]" |> fun () -> Emit_virtual.to_string_fundef res |> print_endline;
 
         (* extract loop function *)
-        let loop = Mj_loop.find_loop "test_loop_fun" res.body in
+        let loop = Loop_helper.find_loop "test_loop_fun" res.body in
         print_endline "[LOOP FUNCTION]" |> fun () -> Emit_virtual.to_string_fundef loop |> print_endline;
 
         (* extract non loop function *)
-        let nonloop = Mj_loop.find_nonloop "test_loop_fun" res in
+        let nonloop = Loop_helper.find_nonloop "test_loop_fun" res in
         print_endline "[NONLOOP FUNCTION]" |> fun () -> Emit_virtual.to_string_fundef nonloop |> print_endline;
 
         (* let after_loop = Mj_loop.after_loop_end "after_loop" res in
