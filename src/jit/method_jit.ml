@@ -78,7 +78,7 @@ and method_jit_if p e reg mem jargs =
       | V (id) -> value_of reg.(int_of_id_t id)
       | C (n) -> n
     in
-    if e ||| (r1, r2)
+    if e |*| (r1, r2)
     then method_jit p t1 reg mem jargs
     else method_jit p t2 reg mem jargs
   | IfEq (id_t, id_or_imm, t1, t2)
@@ -98,17 +98,17 @@ and method_jit_if p e reg mem jargs =
       | LightGreen (n1), LightGreen (n2)
       | Green (n1), LightGreen (n2)
       | LightGreen (n1), Green (n2) ->
-        if e ||| (n1, n2) then t1' else t2'
+        if e |*| (n1, n2) then t1' else t2'
       | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
-        Ans (IfEq (id_t, C (n2), t1', t2'))
+        Ans (e |%| (id_t, C (n2), t1', t2'))
       | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
         let id_t2 = match id_or_imm with
             V (id) -> id
           | C (n) -> failwith "id_or_imm should be string"
         in
-        Ans (IfEq (id_t2, C (n1), t1', t2'))
+        Ans (e |%| (id_t2, C (n1), t1', t2'))
       | Red (n1), Red (n2) ->
-        Ans (IfEq (id_t, id_or_imm, t1', t2'))
+        Ans (e |%| (id_t, id_or_imm, t1', t2'))
     end
   | _ -> failwith "method_jit_if should accept conditional branches."
 

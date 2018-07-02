@@ -86,7 +86,7 @@ and mj_if p reg mem fenv exp =
       | V (id) -> value_of reg.(int_of_id_t id)
       | C (n) -> n
     in
-    if exp ||| (r1, r2)
+    if exp |*| (r1, r2)
     then mj p reg mem fenv t1
     else mj p reg mem fenv t2
   | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) ->
@@ -102,17 +102,18 @@ and mj_if p reg mem fenv exp =
       | LightGreen (n1), LightGreen (n2)
       | Green (n1), LightGreen (n2)
       | LightGreen (n1), Green (n2) ->
-        if exp ||| (n1, n2) then t1' else t2'
+        if exp |*| (n1, n2) then t1' else t2'
       | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
-        Ans (IfEq (id_t, C (n2), fst t1', fst t2')), snd t1'
+        (* Ans (IfEq (id_t, C (n2), fst t1', fst t2')), snd t1' *)
+        Ans (exp |%| (id_t, C (n2), fst t1', fst t2')), snd t1'
       | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
         let id_t2 = match id_or_imm with
             V (id) -> id
           | C (n) -> failwith "id_or_imm should be string"
         in
-        Ans (IfEq (id_t2, C (n1), fst t1', fst t2')), snd t1'
+        Ans (exp |%|  (id_t2, C (n1), fst t1', fst t2')), snd t1'
       | Red (n1), Red (n2) ->
-        Ans (IfEq (id_t, id_or_imm, fst t1', fst t2')), snd t1'
+        Ans (exp |%| (id_t, id_or_imm, fst t1', fst t2')), snd t1'
     end
   | _ -> failwith "method_jit_if should accept conditional branches."
 
