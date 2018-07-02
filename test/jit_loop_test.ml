@@ -102,8 +102,12 @@ let _ = run_test_tt_main begin
           Prog (t, fundefs', m)
         in
         let x = Method_jit_loop.run p' reg mem (interp_body) in
-        print_endline "[EXPERIMENT]"; Emit_virtual.to_string_t (fst x) |> print_endline;
-        print_endline "[EXPERIMENT]"; List.iter (fun t -> Emit_virtual.to_string_t t |> print_endline) (snd x);
+        print_endline "[EXPERIMENT]"; List.iter (fun t ->
+            print_endline "-------------------";
+            Emit_virtual.to_string_t t
+            |> print_endline;
+            print_endline "-------------------"
+          ) x;
         ()
       end
     ]

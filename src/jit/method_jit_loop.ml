@@ -1,4 +1,3 @@
-open Core
 open MinCaml
 open Asm
 open Util
@@ -7,6 +6,15 @@ open Renaming
 open Jit_config
 open Jit_util
 open Operands
+
+module M = Map.Make(String)
+
+let empty_fenv () = M.empty
+
+let extend_fenv name func fenv = M.add name func fenv
+
+let gen_fname id = id
+
 
 let rec restore_args cont reg = function
     [] -> cont
@@ -17,22 +25,20 @@ let rec restore_args cont reg = function
            restore_args cont reg tl)
     else restore_args cont reg tl
 
-let empty_fenv () = []
-
-let extend_fenv func fenv = func :: fenv
-
 let rec mj p reg mem fenv t =
   match t with
   | Ans (exp) ->
     mj_exp p reg mem fenv exp
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), args, fargs), body) ->
     Logger.debug "min_caml_loop_start";
-    let extended_fenv = extend_fenv body fenv in
-    Ans (CallDir (Id.L ("test_loop_start"), args, fargs)), extended_fenv
+    let fname = gen_fname "loop_start" in
+    let extended_fenv = extend_fenv (fname) body fenv in
+    Ans (CallDir (Id.L (fname), args, fargs)), extended_fenv
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), args, fargs), body) ->
     Logger.debug "min_caml_loop_end";
-    let extended_fenv = extend_fenv body fenv in
-    Ans (CallDir (Id.L ("test_loop_end"), args, fargs)), extended_fenv
+    let fname = gen_fname "loop_end" in
+    let extended_fenv = extend_fenv (fname) body fenv in
+    Ans (CallDir (Id.L (fname), args, fargs)), extended_fenv
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     let restored_call =
       restore_args
@@ -57,9 +63,6 @@ let rec mj p reg mem fenv t =
 
 and mj_exp p reg mem fenv exp =
   match exp with
-  | CallDir (Id.L ("min_caml_loop_end"), args, fargs) ->
-    Logger.debug "min_caml_loop_end";
-    Ans (CallDir (Id.L ("test_loop"), args, fargs)), fenv
   | CallDir (id_l, args, fargs) ->
     Logger.debug (Printf.sprintf "CallDir (%s)" (string_of_id_l id_l));
     let fundef = find_fundef p id_l in
@@ -118,6 +121,9 @@ and mj_if p reg mem fenv exp =
   | _ -> failwith "method_jit_if should accept conditional branches."
 
 let run p reg mem t =
-  let res, fenv' =  mj p reg mem [] t in
-  res,
-  List.map fenv' (fun t -> mj p reg mem [] t |> fst)
+  let res, fenv =  mj p reg mem (M.empty) t in
+  res ::
+  List.map begin fun (name, t) ->
+    let res, fenv' = mj p reg mem fenv t in
+    res
+  end (M.bindings fenv)
