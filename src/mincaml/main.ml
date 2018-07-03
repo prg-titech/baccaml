@@ -37,7 +37,7 @@ let dump_exec f =
   let inchan = In_channel.create (f ^ ".ml") in
   try
     Lexing.from_channel inchan
-    |> virtualize   
+    |> virtualize
     |> Trim.f
     |> Simm.f
     |> Emit_virtual.to_string_prog
@@ -50,7 +50,7 @@ let dump_exec f =
 let compile outchan l =
   virtualize l
   |> Trim.f
-  |> Simm.f
+  |> Simm.f  
   |> RegAlloc.f
   |> Emit.f outchan
 

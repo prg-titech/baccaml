@@ -1,5 +1,5 @@
 let rec interp bytecode pc a =
-  jit_dispatch bytecode (pc=3);
+  jit_dispatch (pc=3) bytecode a;
   let instr = bytecode.(pc) in
   if instr = 0 then             (* ADD *)
     let b = bytecode.(pc + 1) in
