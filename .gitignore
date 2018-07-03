@@ -50,3 +50,5 @@ test/**/*.s
 # dune
 _build
 *.install
+
+*.dSYM/
