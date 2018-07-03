@@ -40,4 +40,4 @@ code.(8) <- 6; code.(9) <- 0;
 code.(10) <- 5;
 code.(11) <- 3; code.(12) <- 5;
 code.(13) <- 7;
-print_int (interp code 3 100000000000000)
+print_int (interp code 3 2147483647)
