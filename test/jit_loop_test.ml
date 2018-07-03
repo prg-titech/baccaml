@@ -38,51 +38,6 @@ let _ = run_test_tt_main begin
       "test1" >::
       begin fun () ->
         Logger.log_level := Logger.Debug;
-
-        let reg, mem = Array.make 10000 (Red (-1)), Array.make 10000 (Red (-1)) in
-        (* execute preprocessor *)
-        let fundefs', interp_body, jit_args' = Method_jit.prep' p "min_caml_test_trace" ["a"] in
-
-        let fundef' = List.hd fundefs' in
-        let redtbl = Hashtbl.create 100 in
-        let greentbl = Hashtbl.create 100 in
-
-        Hashtbl.add greentbl "bytecode" 0;
-        Hashtbl.add greentbl "pc" 3;
-        Hashtbl.add redtbl "a" 100;
-        Colorizer.colorize_reg redtbl greentbl reg fundef' interp_body;
-        Colorizer.colorize_pgm bytecode 0 mem;
-
-        (* execute function jit *)
-        let res = match Method_jit.exec p (fundef'.body) reg mem () with
-          | Method_success fundef | Tracing_success fundef -> fundef
-        in
-        print_endline "[RESULT]" |> fun () -> Emit_virtual.to_string_fundef res |> print_endline;
-
-        (* extract loop function *)
-        let loop = Loop_helper.find_loop "test_loop_fun" res.body in
-        print_endline "[LOOP FUNCTION]" |> fun () -> Emit_virtual.to_string_fundef loop |> print_endline;
-
-        (* extract non loop function *)
-        let nonloop = Loop_helper.find_nonloop "test_loop_fun" res in
-        print_endline "[NONLOOP FUNCTION]" |> fun () -> Emit_virtual.to_string_fundef nonloop |> print_endline;
-
-        (* let after_loop = Mj_loop.after_loop_end "after_loop" res in
-         * print_endline "[AFTER LOOP]" |> fun () -> Emit_virtual.to_string_fundef after_loop |> print_endline; *)
-
-        (* Jit_emit.emit_trace (Method_success (nonloop)) "nonloop" "interp.88";
-         * Jit_emit.emit_trace (Method_success (loop)) "loop" "interp.88"; *)
-
-        (* Jit_emit.emit_fundef loop |> Buffer.contents |> print_endline;
-         * print_newline ();
-         * Jit_emit.emit_fundef nonloop |> Buffer.contents |> print_endline; *)
-
-        (* Jit_emit.emit_result_mj ~prog:p ~traces:([loop; nonloop]) ~file:"jit_loop_test"; *)
-        ()
-      end;
-      "test2" >::
-      begin fun () ->
-        Logger.log_level := Logger.Debug;
         let reg, mem = Array.make 1000000 (Red (-1)), Array.make 1000000 (Red (-1)) in
         (* execute preprocessor *)
         let fundefs', interp_body, jit_args' = Method_jit.prep' p "min_caml_test_trace" ["a"] in
