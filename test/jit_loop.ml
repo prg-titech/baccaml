@@ -1,5 +1,5 @@
 let rec interp bytecode pc a =
-  jit_dispatch (pc=3) bytecode a;
+  jit_dispatch bytecode a (pc=3);
   let instr = bytecode.(pc) in
   if instr = 0 then             (* ADD *)
     let b = bytecode.(pc + 1) in
@@ -9,7 +9,7 @@ let rec interp bytecode pc a =
     interp bytecode (pc + 2) (a - b)
   else if instr = 2 then        (* JUMP_IF *)
     let t = bytecode.(pc + 1) in
-    if a > 0 then
+    if a < 0 then
       interp bytecode t a
     else
       interp bytecode (pc + 2) a
@@ -18,7 +18,7 @@ let rec interp bytecode pc a =
     interp bytecode t a
   else if instr = 4 then        (* LOOP_S *)
     (loop_start a;
-    interp bytecode (pc + 1) a)
+     interp bytecode (pc + 1) a)
   else if instr = 5 then        (* LOOP_E *)
     (loop_end a;
      interp bytecode (pc + 1) a)

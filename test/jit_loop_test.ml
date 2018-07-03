@@ -77,7 +77,7 @@ let _ = run_test_tt_main begin
          * print_newline ();
          * Jit_emit.emit_fundef nonloop |> Buffer.contents |> print_endline; *)
 
-        Jit_emit.emit_result_mj ~prog:p ~traces:([loop; nonloop]) ~file:"jit_loop_test";
+        (* Jit_emit.emit_result_mj ~prog:p ~traces:([loop; nonloop]) ~file:"jit_loop_test"; *)
         ()
       end;
       "test2" >::
@@ -105,12 +105,14 @@ let _ = run_test_tt_main begin
             print_endline "----------------------"
           ) x;
 
-        let y = Method_jit_loop.run_while p reg' mem' "min_caml_test_trace" ["a"] in
+        let y = Method_jit_loop.run_while p reg' mem' "min_caml_test_trace" ["byteocde"; "a"] in
         print_endline "[EXPERIMENT]"; List.iter (fun fundef ->
             print_endline "----------------------";
             Emit_virtual.to_string_fundef fundef |> print_endline;
             print_endline "----------------------"
           ) y;
+
+        Jit_emit.emit_result_mj ~prog:p ~traces:y ~file:"jit_loop_test";
         ()
       end
     ]
