@@ -98,14 +98,14 @@ let _ = run_test_tt_main begin
         Colorizer.colorize_pgm bytecode 0 mem;
 
         let reg', mem' = Array.copy reg, Array.copy mem in
-        let x = Method_jit_loop.run p reg mem "min_caml_test_trace" ["a"] in
+        let x = Method_jit_loop.run p reg mem "min_caml_test_trace" ["bytecode"; "a"] in
         print_endline "[EXPERIMENT]"; List.iter (fun t ->
             print_endline "----------------------";
             Emit_virtual.to_string_fundef t |> print_endline;
             print_endline "----------------------"
           ) x;
 
-        let y = Method_jit_loop.run_while p reg' mem' "min_caml_test_trace" ["byteocde"; "a"] in
+        let y = Method_jit_loop.run_while p reg' mem' "min_caml_test_trace" ["bytecode"; "a"] in
         print_endline "[EXPERIMENT]"; List.iter (fun fundef ->
             print_endline "----------------------";
             Emit_virtual.to_string_fundef fundef |> print_endline;

@@ -13,7 +13,7 @@ let rec convert = function
       | Let ((dest, typ), CallDir (id_l, args, fargs), body)
         when (id_l = Id.L "min_caml_jit_dispatch" || id_l = Id.L "jit_merge_point") ->
         Ans (IfEq (x, C(n),
-                   Ans (CallDir (Id.L ("min_caml_trace_entry"), List.rev args |> List.tl_exn |> List.rev, fargs)),
+                   Ans (CallDir (Id.L ("min_caml_trace_entry"), List.tl_exn args, fargs)),
                    body
                   ))
       | t -> t
