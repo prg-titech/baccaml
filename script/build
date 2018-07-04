@@ -1,7 +1,6 @@
 #!/bin/sh
-make
-jbuilder build test/$2.ml
-_build/default/test/$2.exe
-./min-caml test/$1.ml
-gcc -c -g -m32 -O2 $2.s; gcc -g -m32 -Wall lib/libmincaml.s lib/stub.c test/$1.s $2.o -o $2
-#./$2
+jbuilder build && \
+    jbuilder build test/$2.exe && \
+    _build/default/test/$2.exe && \
+    ./min-caml test/$1.ml && \
+    gcc -c -g -m32 -O2 $2.s; gcc -g -m32 -Wall lib/libmincaml.s lib/stub.c test/$1.s $2.o -o $2 #\ && ./$2
