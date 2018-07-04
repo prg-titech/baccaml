@@ -52,7 +52,7 @@ let rec mj p reg mem fenv name t =
   | Let ((dest, typ), exp, body) ->
     begin match exp with
       | _ ->
-        match Optimizer.optimize_exp p exp reg mem with
+        match Optimizer.run p exp reg mem with
         | Specialized (v) ->
           reg.(int_of_id_t dest) <- v;
           mj p reg mem fenv name body
@@ -72,7 +72,7 @@ and mj_exp p reg mem fenv name exp =
   | IfEq _ | IfGE _ | IfLE _ as exp ->
     mj_if p reg mem fenv name exp
   | _ ->
-    begin match Optimizer.optimize_exp p exp reg mem with
+    begin match Optimizer.run p exp reg mem with
       | Specialized (v) ->
         let id = Id.gentmp Type.Int in
         Let ((id, Type.Int),
