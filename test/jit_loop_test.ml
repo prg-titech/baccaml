@@ -6,8 +6,6 @@ open Baccaml_jit
 open Jit_config
 open Jit_util
 
-module MJ = Method_jit
-
 let print_list f lst =
   let rec loop f = function
     | [] -> ()
