@@ -9,5 +9,8 @@ RUN opam init && \
     ounit \
     core \
     ppx_deriving \
+    fmt \
+    logs \
+    menhir \
     jbuilder && \
     eval $(opam config env)
