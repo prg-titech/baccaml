@@ -20,7 +20,7 @@ float tuple
 build:
 	@jbuilder build
 	@ln -sf _build/default/src/mincaml/$(MAIN) .
-	@ln -sf _build/default/src/armin/src/armin.exe .
+	@ln -sf _build/default/src/armin/armin.exe .
 	@mv $(MAIN) $(COMPILER)
 
 .PHONY: setup

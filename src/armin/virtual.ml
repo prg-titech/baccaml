@@ -9,7 +9,7 @@ type inst =
   | JUMP_IF_ZERO (* addr *)
   | CALL (* fun-id *)
   | RET
-  | DUP (* n *)   
+  | DUP (* n *)
   | HALT
   | FRAME_RESET (* o l n *)
   | POP1
@@ -24,8 +24,19 @@ let log s = if !log_flg then print_endline ("[INFO] " ^ s)
 let max_stack_depth = 1024
 
 (* the next array determines the opcode *)
-let insts = [| ADD; SUB; MUL; LT; CONST; JUMP_IF_ZERO; (* LOAD; STORE; *) CALL; RET;
-               DUP; HALT; FRAME_RESET; POP1; |]
+let insts =
+  [| ADD;
+     SUB;
+     MUL;
+     LT;
+     CONST;
+     JUMP_IF_ZERO;
+     CALL;
+     RET;
+     DUP;
+     HALT;
+     FRAME_RESET;
+     POP1; |]
 
 let index_of element array =
   fst(List.find (fun (_,v) -> v=element)
@@ -37,7 +48,7 @@ let int_of_inst = function
 let string_of = function
   | Literal n -> Printf.sprintf "Literal %d" n
   | Ldef n    -> Printf.sprintf "Ldef %s" n
-  | Lref n    -> Printf.sprintf "Lref %s" n 
+  | Lref n    -> Printf.sprintf "Lref %s" n
   | i         -> string_of_int(int_of_inst i)
 
 (* operand stack
@@ -109,14 +120,14 @@ let rec interp  code pc stack =
 
   if pc<0 then fst(pop stack) else
     let i,pc = fetch code pc in
-    match insts.(i) with 
+    match insts.(i) with
     | ADD ->
       log "ADD";
       let v2,stack = pop stack in
       let v1,stack = pop stack in
       let    stack = push stack (v1+v2) in
       interp  code pc stack
-    | SUB -> 
+    | SUB ->
       log "SUB";
       let v2,stack = pop stack in
       let v1,stack = pop stack in
@@ -141,7 +152,7 @@ let rec interp  code pc stack =
     | JUMP_IF_ZERO (* addr *) ->
       log "JUMP_IF_ZERO";
       let addr,pc = fetch code pc in
-      let v,stack = pop stack in 
+      let v,stack = pop stack in
       (* interp  code (if v=0 then addr else pc) stack *)
       if v=0
       then interp code addr stack
@@ -194,12 +205,12 @@ let rec interp  code pc stack =
       failwith "unknown instruction."
 
 (* run the given program by calling the function id 0 *)
-type fundef_bin_t = int array 
+type fundef_bin_t = int array
 let run_bin : fundef_bin_t -> int = fun fundefs ->
   let stack = (push (make_stack ()) (-987)) in
-  interp fundefs 0 stack 
+  interp fundefs 0 stack
 
 (* convert the given program into binary, and then run *)
-type fundef_asm_t = inst array 
+type fundef_asm_t = inst array
 let run_asm : fundef_asm_t -> int = fun fundefs ->
   run_bin (Array.map int_of_inst fundefs)
