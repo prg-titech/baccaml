@@ -1,0 +1,27 @@
+(jbuild_version 1)
+
+
+(executable
+  ((name virtual_test)
+   (modules (Virtual_test))
+   (libraries (myFront core str))
+))
+
+(executable
+  ((name compiler_test)
+   (modules (Compiler_test))
+   (libraries (myFront core str))
+))
+
+
+(alias
+ ((name runtest)
+  (deps (virtual_test.exe))
+  (action (run ${<}))
+))
+
+(alias
+ ((name runtest)
+  (deps (compiler_test.exe))
+  (action (run ${<}))
+))
