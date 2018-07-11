@@ -42,6 +42,7 @@ src/parser.mli
 # Build
 min-caml
 min-camli
+*.exe
 *.top
 *.byte
 
