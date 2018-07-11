@@ -1,0 +1,52 @@
+(jbuild_version 1)
+
+
+(ocamllex (lexer))
+(menhir ((modules (parser))))
+
+(library
+ ((name myFront)
+  (modules (:standard \ armin toplevel virtual_test compiler_test))
+  (libraries (core str fmt logs))
+  (preprocess
+   (pps (ppx_deriving.show)))
+))
+
+(executable
+ ((name armin)
+  (public_name baccaml.armin)
+  (modules (Armin))
+  (libraries (myFront core str))
+))
+
+(executable
+ ((name toplevel)
+  (public_name baccaml.atop)
+  (modules (Toplevel))
+  (libraries (myFront core str))
+))
+
+(executable
+  ((name virtual_test)
+   (modules (Virtual_test))
+   (libraries (myFront core str))
+))
+
+(executable
+  ((name compiler_test)
+   (modules (Compiler_test))
+   (libraries (myFront core str))
+))
+
+
+(alias
+ ((name runtest)
+  (deps (virtual_test.exe))
+  (action (run ${<}))
+))
+
+(alias
+ ((name runtest)
+  (deps (compiler_test.exe))
+  (action (run ${<}))
+))
