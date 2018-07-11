@@ -2,7 +2,7 @@ open Core
 open MinCaml
 open Util
 open Xutil
-open Baccaml_jit
+open BacCaml
 open Jit_config
 open Jit_util
 

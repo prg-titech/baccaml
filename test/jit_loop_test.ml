@@ -2,7 +2,7 @@ open OUnit
 open MinCaml
 open Asm
 open Util
-open Baccaml_jit
+open BacCaml
 open Jit_config
 open Jit_util
 
