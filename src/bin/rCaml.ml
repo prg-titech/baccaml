@@ -2,7 +2,7 @@ open Core
 
 open MinCaml
 open Mutil
-open Baccaml_jit
+open BacCaml
 open Jit_config
 open Jit_util
 open Asm
@@ -117,4 +117,3 @@ let _ =
   List.iter
     ~f:(fun f -> ())
     !files
-
