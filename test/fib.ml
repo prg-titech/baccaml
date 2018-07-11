@@ -6,9 +6,9 @@ let print_array f arr =
   print_string "|] " in
 
 let rec interp bytecode pc stack sp =
-  print_string @@ "pc: " ^ (string_of_int pc) ^ " sp: " ^ (string_of_int sp);
-  print_array print_int stack; print_newline ();
   let instr = bytecode.(pc) in
+  Printf.printf "is: %d\tsp: %d\tpc: %d\t" instr sp pc;
+  print_array print_int stack; print_newline ();
   if instr = 0 then             (* ADD *)
     let v2 = stack.(sp - 1) in  (* sp: sp - 1 *)
     let v1 = stack.(sp - 2) in  (* sp: sp - 2 *)
@@ -47,9 +47,8 @@ let rec interp bytecode pc stack sp =
     let n = bytecode.(pc + 1) in
     let v = stack.(sp - 1) in   (* sp: sp - 1 *)
     let pc2 = stack.(sp - 2) in (* sp: sp - 2 *)
-    let sp2 = sp - 2 - n in     (* sp: sp' - n = sp - 2 - n *)
-    stack.(sp2) <- v;           (* sp: sp - 2 - n + 1 = sp - 1 - n *)
-    interp bytecode pc2 stack (sp2 + 1)
+    stack.(sp - n - 2) <- v;    (* sp: sp - 2 - n + 1 = sp - 1 - n *)
+    interp bytecode pc2 stack (sp - n - 1)
   else if instr = 8 then        (* DUP *)
     let n = bytecode.(pc + 1) in
     let v = stack.(sp - n - 1) in
@@ -69,7 +68,10 @@ let rec interp bytecode pc stack sp =
     -1000 in
 
 let (===) res expected =
-  if res = expected then print_string "PASS " else print_string "FAIL ";
+  if res = expected then
+    Printf.printf "PASS "
+  else
+    Printf.printf "FAIL ";
   Printf.printf "expected: %d, result: %d\n" expected res in
 
 (* simple test *)
@@ -107,16 +109,32 @@ let stack_call = Array.make 10 0 in
 (interp code_call 0 stack_call 0) === 30;
 
 (* jump if and call test *)
+(* CONST 1
+   CONST 2
+   ADD
+   DUP 0
+   JUMP_IF_ZERO 13
+   CALL 14
+   JUMP 5
+   HALT
+   DUP 1
+   CONST 1
+   DUB
+   RET 1
+ *)
 let code_jmp_if = [|
   4; 1;
   4; 2;
   0;
   8; 0;
-  5; 14;
-  4; 1;
-  1;
+  5; 13;
+  6; 14;
   11; 5;
   9;
+  8; 1;
+  4; 1;
+  1;
+  7; 1;
 |] in
 
 let stack_jmp_if = Array.make 10 0 in
