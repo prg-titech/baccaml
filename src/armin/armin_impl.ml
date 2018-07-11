@@ -3,6 +3,12 @@ open Compiler
 
 exception Error of string
 
+let compile_insts lst =
+  List.mapi ~f:begin fun pc inst ->
+    Printf.sprintf "code.(%d) <- %d;\n" pc inst
+  end lst
+  |> String.concat ~sep:""
+
 let exec e =
   Logs.debug (fun m -> m "AST ==> %s" (Syntax.show_exp e));
 
@@ -20,9 +26,12 @@ let exec e =
     | Failure msg -> raise @@ Error msg
     | e -> raise @@ Error "Conversion to instruction number is failed."
   in
-  Logs.info (fun m ->
-      m ~header:"BYTECODE" "[| %s |]"
-        (String.concat ~sep:"; " (List.map ~f:string_of_int insts_nums)));
+  print_endline (
+    "[|" ^
+    String.concat ~sep:"; " (List.map ~f:string_of_int insts_nums) ^
+    "|]"
+  );
+  print_endline (compile_insts insts_nums);
 
   let stack = Array.create (Virtual.max_stack_depth) 0 in
   let sp = 0 in

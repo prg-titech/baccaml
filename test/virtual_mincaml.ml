@@ -42,17 +42,44 @@ let rec interp bytecode pc stack sp =
     interp bytecode (pc + 2) stack (sp + 1)
   else if instr = 9 then        (* HALT *)
     stack.(sp - 1)
-  else if instr = 10 then       (* MUL *)
-    let v2 = stack.(sp - 1) in
-    let v1 = stack.(sp - 2) in
-    stack.(sp - 2) <- v1 * v2;
-    interp bytecode (pc + 1) stack (sp - 1)
-  else if instr = 11 then       (* JUMP *)
-    let addr = bytecode.(pc + 1) in
-    interp bytecode addr stack sp
   else
     -1000 in
 
 let code = Array.make 50 0 in
 let stack = Array.make 50 0 in
+code.(0) <- 4;
+code.(1) <- 10;
+code.(2) <- 6;
+code.(3) <- 5;
+code.(4) <- 9;
+code.(5) <- 8;
+code.(6) <- 1;
+code.(7) <- 4;
+code.(8) <- 2;
+code.(9) <- 3;
+code.(10) <- 5;
+code.(11) <- 18;
+code.(12) <- 8;
+code.(13) <- 1;
+code.(14) <- 4;
+code.(15) <- 0;
+code.(16) <- 5;
+code.(17) <- 33;
+code.(18) <- 8;
+code.(19) <- 1;
+code.(20) <- 4;
+code.(21) <- 1;
+code.(22) <- 1;
+code.(23) <- 6;
+code.(24) <- 5;
+code.(25) <- 8;
+code.(26) <- 2;
+code.(27) <- 4;
+code.(28) <- 2;
+code.(29) <- 1;
+code.(30) <- 6;
+code.(31) <- 5;
+code.(32) <- 0;
+code.(33) <- 7;
+code.(34) <- 1;
 print_int (interp code 0 stack 0)
