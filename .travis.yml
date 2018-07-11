@@ -6,7 +6,7 @@ services:
   - docker
 
 before_install:
-  - docker pull micchon/baccaml:latest
+  - docker pull micchon/baccaml
 
 script:
   - docker run -u root -v $(pwd):/tmp --rm -it micchon/baccaml:0.1 /home/opam/.opam/4.05.0/bin/jbuilder runtest
