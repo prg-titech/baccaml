@@ -35,10 +35,10 @@ let _ = run_test_tt_main begin
     "mj_loop_test" >::: [
       "test1" >::
       begin fun () ->
-        Logger.log_level := Logger.Debug;
         let reg, mem = Array.make 1000000 (Red (-1)), Array.make 1000000 (Red (-1)) in
         (* execute preprocessor *)
-        let fundefs', interp_body, jit_args' = Method_jit.prep' p "min_caml_test_trace" ["a"] in
+        let fundefs', interp_body, jit_args' =
+          Method_jit_loop.prep ~prog:p ~name:"min_caml_test_trace" ~red_args:["a"] in
 
         let fundef' = List.hd fundefs' in
         let redtbl = Hashtbl.create 100 in
@@ -52,17 +52,17 @@ let _ = run_test_tt_main begin
 
         let reg', mem' = Array.copy reg, Array.copy mem in
         let x = Method_jit_loop.run p reg mem "min_caml_test_trace" ["bytecode"; "a"] in
-        print_endline "[EXPERIMENT]"; List.iter (fun t ->
-            print_endline "----------------------";
-            Emit_virtual.to_string_fundef t |> print_endline;
-            print_endline "----------------------"
+        Logger.debug "[EXPERIMENT]"; List.iter (fun t ->
+            Logger.debug "----------------------";
+            Emit_virtual.to_string_fundef t |> Logger.debug;
+            Logger.debug "----------------------"
           ) x;
 
         let y = Method_jit_loop.run_while p reg' mem' "min_caml_test_trace" ["bytecode"; "a"] in
-        print_endline "[EXPERIMENT]"; List.iter (fun fundef ->
-            print_endline "----------------------";
-            Emit_virtual.to_string_fundef fundef |> print_endline;
-            print_endline "----------------------"
+        Logger.debug "[EXPERIMENT]"; List.iter (fun fundef ->
+            Logger.debug "----------------------";
+            Emit_virtual.to_string_fundef fundef |> Logger.debug;
+            Logger.debug "----------------------"
           ) y;
 
         Jit_emit.emit_result_mj ~prog:p ~traces:y ~file:"jit_loop_test";

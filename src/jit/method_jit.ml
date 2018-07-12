@@ -138,7 +138,6 @@ let create_mj_args name trace_args p =
 
 let prep p t jit_args =
   let t' = Simm.t t |> Trim.trim_jmp |> Trim.trim_jit_dispatcher in
-  Emit_virtual.to_string_t t' |> print_endline;
   let jit_args' = match jit_args with
       Tracing_jit_args v -> assert false
     | Method_jit_args m -> m
