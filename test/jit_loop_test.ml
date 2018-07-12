@@ -1,4 +1,3 @@
-open OUnit
 open MinCaml
 open Asm
 open Util
@@ -31,42 +30,43 @@ let p =
   |> Mutil.virtualize
   |> Simm.f
 
-let _ = run_test_tt_main begin
-    "mj_loop_test" >::: [
-      "test1" >::
-      begin fun () ->
-        let reg, mem = Array.make 1000000 (Red (-1)), Array.make 1000000 (Red (-1)) in
-        (* execute preprocessor *)
-        let fundefs', interp_body, jit_args' =
-          Method_jit_loop.prep ~prog:p ~name:"min_caml_test_trace" ~red_args:["a"] in
+let main =
+  let reg, mem = Array.make 1000000 (Red (-1)), Array.make 1000000 (Red (-1)) in
+  (* execute preprocessor *)
+  let fundefs', interp_body, jit_args' =
+    Method_jit_loop.prep ~prog:p ~name:"min_caml_test_trace" ~red_args:["a"] in
 
-        let fundef' = List.hd fundefs' in
-        let redtbl = Hashtbl.create 100 in
-        let greentbl = Hashtbl.create 100 in
+  let fundef' = List.hd fundefs' in
+  let redtbl = Hashtbl.create 100 in
+  let greentbl = Hashtbl.create 100 in
 
-        Hashtbl.add greentbl "bytecode" 0;
-        Hashtbl.add greentbl "pc" 3;
-        Hashtbl.add redtbl "a" 100;
-        Colorizer.colorize_reg redtbl greentbl reg fundef' interp_body;
-        Colorizer.colorize_pgm bytecode 0 mem;
+  Hashtbl.add greentbl "bytecode" 0;
+  Hashtbl.add greentbl "pc" 3;
+  Hashtbl.add redtbl "a" 100;
+  Colorizer.colorize_reg redtbl greentbl reg fundef' interp_body;
+  Colorizer.colorize_pgm bytecode 0 mem;
 
-        let reg', mem' = Array.copy reg, Array.copy mem in
-        let x = Method_jit_loop.run p reg mem "min_caml_test_trace" ["bytecode"; "a"] in
-        Logger.debug "[EXPERIMENT]"; List.iter (fun t ->
-            Logger.debug "----------------------";
-            Emit_virtual.to_string_fundef t |> Logger.debug;
-            Logger.debug "----------------------"
-          ) x;
+  let reg', mem' = Array.copy reg, Array.copy mem in
+  let x = Method_jit_loop.run p reg mem "min_caml_test_trace" ["bytecode"; "a"] in
+  Logger.debug "[EXPERIMENT]"; List.iter (fun t ->
+      Logger.debug "----------------------";
+      Emit_virtual.to_string_fundef t |> Logger.debug;
+      Logger.debug "----------------------"
+    ) x;
 
-        let y = Method_jit_loop.run_while p reg' mem' "min_caml_test_trace" ["bytecode"; "a"] in
-        Logger.debug "[EXPERIMENT]"; List.iter (fun fundef ->
-            Logger.debug "----------------------";
-            Emit_virtual.to_string_fundef fundef |> Logger.debug;
-            Logger.debug "----------------------"
-          ) y;
+  let y = Method_jit_loop.run_while p reg' mem' "min_caml_test_trace" ["bytecode"; "a"] in
+  Logger.debug "[EXPERIMENT]"; List.iter (fun fundef ->
+      Logger.debug "----------------------";
+      Emit_virtual.to_string_fundef fundef |> Logger.debug;
+      Logger.debug "----------------------"
+    ) y;
 
-        Jit_emit.emit_result_mj ~prog:p ~traces:y ~file:"jit_loop_test";
-        ()
-      end
-    ]
-  end
+  Jit_emit.emit_result_mj ~prog:p ~traces:y ~file:"jit_loop_test";
+  ()
+
+let _ =
+  (match Sys.argv with
+  | [|"-debug"|] | [|"-d"|] | [|"--debug"|] ->
+    Logger.log_level := Logger.Debug;
+  | _ -> ());
+  main
