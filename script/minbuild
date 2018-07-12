@@ -1,0 +1,4 @@
+#!/bin/sh
+./min-caml "$1".ml && \
+    gcc -g -m32 -Wall lib/libmincaml.s lib/stub.c "$1".s -o "$2" && \
+    rm -rf "$2".dSYM
