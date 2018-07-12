@@ -31,6 +31,7 @@ let p =
   |> Simm.f
 
 let main =
+  Logger.log_level := Logger.Debug;
   let reg, mem = Array.make 1000000 (Red (-1)), Array.make 1000000 (Red (-1)) in
   (* execute preprocessor *)
   let fundefs', interp_body, jit_args' =
@@ -48,14 +49,14 @@ let main =
 
   let reg', mem' = Array.copy reg, Array.copy mem in
   let x = Method_jit_loop.run p reg mem "min_caml_test_trace" ["bytecode"; "a"] in
-  Logger.debug "[EXPERIMENT]"; List.iter (fun t ->
+  List.iter (fun t ->
       Logger.debug "----------------------";
       Emit_virtual.to_string_fundef t |> Logger.debug;
       Logger.debug "----------------------"
     ) x;
 
   let y = Method_jit_loop.run_while p reg' mem' "min_caml_test_trace" ["bytecode"; "a"] in
-  Logger.debug "[EXPERIMENT]"; List.iter (fun fundef ->
+  List.iter (fun fundef ->
       Logger.debug "----------------------";
       Emit_virtual.to_string_fundef fundef |> Logger.debug;
       Logger.debug "----------------------"
@@ -65,8 +66,5 @@ let main =
   ()
 
 let _ =
-  (match Sys.argv with
-  | [|"-debug"|] | [|"-d"|] | [|"--debug"|] ->
-    Logger.log_level := Logger.Debug;
-  | _ -> ());
+
   main

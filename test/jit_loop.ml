@@ -1,3 +1,7 @@
+let jit_dispatch a b c = () in
+let loop_start a = () in
+let loop_end a = () in
+
 let rec interp bytecode pc a =
   jit_dispatch (pc=3) bytecode a;
   let instr = bytecode.(pc) in

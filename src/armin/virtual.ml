@@ -13,6 +13,7 @@ type inst =
   | HALT
   | FRAME_RESET (* o l n *)
   | POP1
+  | LOOP_S
   | Literal of int
   | Lref of string
   | Ldef of string
@@ -36,7 +37,9 @@ let insts =
      DUP;
      HALT;
      FRAME_RESET;
-     POP1; |]
+     POP1;
+     LOOP_S
+  |]
 
 let index_of element array =
   fst(List.find (fun (_,v) -> v=element)
@@ -197,12 +200,14 @@ let rec interp  code pc stack =
       let _,stack = pop stack in
       let stack = push stack v in
       interp  code pc stack
+    | LOOP_S ->
+      log "LOOP_S";
+      let n,pc = fetch code pc in
+      interp code pc stack
     | Literal i ->
       failwith @@ Printf.sprintf "unresolved. Literal %d" i
     | Ldef s | Lref s ->
       failwith @@ Printf.sprintf "unresolved. Lref/Ldef %s." s
-    | _ ->
-      failwith "unknown instruction."
 
 (* run the given program by calling the function id 0 *)
 type fundef_bin_t = int array
