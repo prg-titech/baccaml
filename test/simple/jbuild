@@ -1,0 +1,25 @@
+(jbuild_version 1)
+
+(executables
+ ((names (simple1_test simple2_test simple3_test simple4_test simple5_test))
+  (libraries (core str oUnit minCaml bacCaml))
+))
+
+(alias
+ ((name runtest)
+  (deps (simple1_test.exe))
+  (action  (run ${<})
+)))
+
+
+(alias
+ ((name runtest)
+  (deps (simple2_test.exe))
+  (action  (run ${<})
+)))
+
+(alias
+ ((name runtest)
+  (deps (simple4_test.exe))
+  (action  (run ${<})
+)))
