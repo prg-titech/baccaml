@@ -202,8 +202,7 @@ let rec interp  code pc stack =
       interp  code pc stack
     | LOOP_S ->
       log "LOOP_S";
-      let n,pc = fetch code pc in
-      interp code pc stack
+      interp code (pc + 1) stack
     | Literal i ->
       failwith @@ Printf.sprintf "unresolved. Literal %d" i
     | Ldef s | Lref s ->

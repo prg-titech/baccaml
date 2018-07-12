@@ -31,12 +31,7 @@ let exec e =
     String.concat ~sep:"; " (List.map ~f:string_of_int insts_nums) ^
     "|]"
   );
-  print_endline (compile_insts insts_nums);
-
-  let stack = Array.create (Virtual.max_stack_depth) 0 in
-  let sp = 0 in
-  let v = Virtual.interp (Array.of_list insts_nums) 0 (sp, stack) in
-  print_endline @@ "==> " ^ (string_of_int v)
+  print_endline (compile_insts insts_nums)
 
 let entry ic =
   match Parser.parse Lexer.token (Lexing.from_channel (ic)) with

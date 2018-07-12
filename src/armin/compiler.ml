@@ -46,7 +46,7 @@ let rec tail_elim fname = function
   | others -> others
 
 (* [...;Ldef a;...] -> [...;a,i;...] where i is the index of the
-   next instruction of Ldef a in the list all Ldefs are removed 
+   next instruction of Ldef a in the list all Ldefs are removed
    e.g., [_;Ldef 8;_;Ldef 7;_] ==> [8,1; 7,2]
 *)
 let make_label_env instrs =
@@ -76,24 +76,25 @@ and compile_exp fenv exp env =
   match exp with
   | Int n -> [CONST; Literal n]
   | Var v -> [DUP; Literal(lookup env v)]
-  | Add (e1, e2) -> (compile_exp fenv e1 env) @ 
+  | Add (e1, e2) -> (compile_exp fenv e1 env) @
                     (compile_exp fenv e2 (shift_env env)) @ [ADD]
-  | Sub (e1, e2) -> (compile_exp fenv e1 env) @ 
+  | Sub (e1, e2) -> (compile_exp fenv e1 env) @
                     (compile_exp fenv e2 (shift_env env)) @ [SUB]
-  | Mul (e1, e2) -> (compile_exp fenv e1 env) @ 
+  | Mul (e1, e2) -> (compile_exp fenv e1 env) @
                     (compile_exp fenv e2 (shift_env env)) @ [MUL]
-  | LT (e1, e2) -> (compile_exp fenv e1 env) @ 
+  | LT (e1, e2) -> (compile_exp fenv e1 env) @
                    (compile_exp fenv e2 (shift_env env)) @ [LT]
   | If (cond, then_exp, else_exp) ->
-    let l2,l1 = gen_label(),gen_label() in
-    (compile_exp fenv cond env) 
-    @ [JUMP_IF_ZERO; Lref l1]
-    @ (compile_exp fenv then_exp env)
-    @ [CONST; Literal 0;         (* unconditional jump *)
-       JUMP_IF_ZERO; Lref l2;
-       Ldef l1] 
-    @ (compile_exp fenv else_exp env)
-    @ [Ldef l2]
+    let l2, l1 = gen_label (), gen_label () in
+    [LOOP_S] @
+    (compile_exp fenv cond env) @
+    [JUMP_IF_ZERO; Lref l1] @
+    (compile_exp fenv then_exp env) @
+    [CONST; Literal 0;         (* unconditional jump *)
+     JUMP_IF_ZERO; Lref l2;
+     Ldef l1] @
+    (compile_exp fenv else_exp env) @
+    [Ldef l2]
   | Call(fname, rands) ->
     (List.flatten
        (List.rev
@@ -115,15 +116,15 @@ and compile_exp fenv exp env =
              (List.fold_left (fun (rev_code_list,env) exp ->
                   (compile_exp fenv exp env)::rev_code_list,
                   shift_env env)
-                 ([], env) rands))))
-    @ [FRAME_RESET;
-       Literal old_arity; Literal local_size; Literal new_arity;
-       CONST; Literal 0; JUMP_IF_ZERO; Lref fname]
+                 ([], env) rands)))) @
+    [FRAME_RESET;
+     Literal old_arity; Literal local_size; Literal new_arity;
+     CONST; Literal 0; JUMP_IF_ZERO; Lref fname]
   | Let (var, exp, body) ->
     let ex_env = extend_env env var in
-    (compile_exp fenv exp env)            (* in old env *)
-    @ (compile_exp fenv body ex_env)      (* in extended env *)
-    @ [POP1]                              (* drop the value *)
+    (compile_exp fenv exp env) @         (* in old env *)
+    (compile_exp fenv body ex_env) @     (* in extended env *)
+    [POP1]                               (* drop the value *)
   | LetRec (fundef, body) ->
     (compile_exp fenv body env) @ [HALT] @ (compile_fun fenv fundef)
 

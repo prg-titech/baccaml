@@ -72,6 +72,8 @@ let rec interp bytecode pc stack sp =
   else if instr = 11 then       (* JUMP *)
     let addr = bytecode.(pc + 1) in
     interp bytecode addr stack sp
+  else if instr = 12 then
+    interp bytecode (pc + 1) stack sp
   else
     -1000 in
 
@@ -102,7 +104,7 @@ let stack_simple = Array.make 10 0 in
    DUP 2
    ADD
    RET 1
- *)
+*)
 let code_call = [|
   4; 10;
   4; 20;
@@ -129,7 +131,7 @@ let stack_call = Array.make 10 0 in
    CONST 1
    DUB
    RET 1
- *)
+*)
 let code_jmp_if = [|
   4; 1;
   4; 2;
@@ -149,7 +151,8 @@ let stack_jmp_if = Array.make 10 0 in
 (interp code_jmp_if 0 stack_jmp_if 0) === 0;
 
 let code_fib =
-  [| 4; 10; 6; 5; 9; 8; 1; 4; 2; 3; 5; 18; 8; 1; 4; 0; 5; 33; 8; 1; 4; 1; 1; 6; 5; 8; 2; 4; 2; 1; 6; 5; 0; 7; 1 |]
+  [| 4; 10; 6; 5; 9; 12; 8; 1; 4; 2; 3; 5; 19; 8; 1; 4; 0; 5; 34; 8; 1; 4; 1; 1; 6; 5; 8; 2; 4; 2; 1; 6; 5; 0; 7;  1|]
+  (* [| 4; 10; 6; 5; 9; 8; 1; 4; 2; 3; 5; 18; 8; 1; 4; 0; 5; 33; 8; 1; 4; 1; 1; 6; 5; 8; 2; 4; 2; 1; 6; 5; 0; 7; 1 |] *)
 in
 let stack_fib = Array.make 30 0 in
-(interp code_fib 0 stack_fib 0) === 55
+(interp code_fib 0 stack_fib 0) === 55;
