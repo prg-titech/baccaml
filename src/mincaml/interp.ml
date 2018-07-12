@@ -3,6 +3,30 @@ open Core
 open Interp_config
 open Util
 
+exception Not_supported of string
+
+exception Un_implemented_instruction of string
+
+type labels = (* function label for closures *)
+  (Id.l * int) list
+
+type prog_with_label = (* prog for interpreter *)
+  ProgWithLabel of (Id.l * float) list * fundef list * t * labels
+
+let register_size = 1000000
+
+let heap = ref 0
+
+let to_prog_with_label prog =
+  let rec create_labels fundefs i =
+    match fundefs with
+    | [] -> []
+    | fundef :: tl -> (fundef.name, i) :: create_labels tl (i + 1)
+  in
+  let Prog (table, fundefs, exp) = prog in
+  let labels = create_labels fundefs 0 in
+  ProgWithLabel (table, fundefs, exp, labels)
+
 let zero = "zero.0"
 
 let int_of_id_t = function
@@ -64,19 +88,19 @@ let rec interp prog instr reg mem  = match instr with
     let res = eval_exp prog exp reg mem  in
     Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" "min_caml_hp" !heap res);
     heap := res;
-    interp prog t reg mem 
+    interp prog t reg mem
   | Let ((id, _), exp, t) ->
     let reg_num = int_of_id_t id in
     let res = eval_exp prog exp reg mem  in
     Logger.debug(Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
     reg.(reg_num) <- res;
-    interp prog t reg mem 
+    interp prog t reg mem
 (* begin
  *   match !enable_jit, !is_first_dispatch with
  *   | true, true ->
  *     is_first_dispatch := false;
- *     interp prog (Ans (CallDir (Id.L .trace_name, .reds, []))) reg mem 
- *   | _ -> interp prog t reg mem 
+ *     interp prog (Ans (CallDir (Id.L .trace_name, .reds, []))) reg mem
+ *   | _ -> interp prog t reg mem
  * end *)
 
 and eval_exp prog exp' reg mem  = match exp' with
@@ -201,9 +225,9 @@ and eval_exp prog exp' reg mem  = match exp' with
     in
     Logger.debug (Printf.sprintf "IfEq (id1: %s, id2: %s, t1: %d, t2: %d)" id1 (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 = r2 then
-      interp prog t1 reg mem 
+      interp prog t1 reg mem
     else
-      interp prog t2 reg mem 
+      interp prog t2 reg mem
   | IfLE (id, id_or_imm, t1, t2) ->
     let r1 = match id with "min_caml_hp" -> !heap | _ -> reg.(int_of_id_t id) in
     let r2 = match id_or_imm with
@@ -212,9 +236,9 @@ and eval_exp prog exp' reg mem  = match exp' with
     in
     Logger.debug (Printf.sprintf "IfLE (id: %s, id_or_imm: %s, t1: %d, t2: %d)" id (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 <= r2 then
-      interp prog t1 reg  mem 
+      interp prog t1 reg  mem
     else
-      interp prog t2 reg  mem 
+      interp prog t2 reg  mem
   | IfGE (id, id_or_imm, t1, t2) ->
     let r1 = match id with "min_caml_hp" -> !heap | _ -> reg.(int_of_id_t id) in
     let r2 = match id_or_imm with
@@ -223,9 +247,9 @@ and eval_exp prog exp' reg mem  = match exp' with
     in
     Logger.debug (Printf.sprintf "IfGE (id1: %s, id2: %s, t1: %d, t2: %d)" id (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 >= r2 then
-      interp prog t1 reg  mem 
+      interp prog t1 reg  mem
     else
-      interp prog t2 reg  mem 
+      interp prog t2 reg  mem
   | CallCls (id_t, args, _) ->
     let r1 = reg.(int_of_id_t id_t) in
     let m1 = mem.(r1) in
@@ -234,14 +258,14 @@ and eval_exp prog exp' reg mem  = match exp' with
     let fundef = lookup_by_id_l prog (Id.L (id)) in
     let reg' = make_reg reg (fundef.args) args in
     reg'.(int_of_id_t id) <- r1;
-    interp prog (fundef.body) reg' mem 
+    interp prog (fundef.body) reg' mem
   | CallDir (Id.L ("min_caml_print_int"), [arg], _) ->
     let v = reg.(int_of_id_t arg) in
     Logger.debug (Printf.sprintf "CallDir min_caml_print_int %d" v);
-    print_int v;
+    Out_channel.output_string stdout (string_of_int v);
     0
   | CallDir (Id.L ("min_caml_print_newline"), _, _) ->
-    print_newline ();
+    Out_channel.newline stdout;
     0
   | CallDir (Id.L ("min_caml_truncate"), _, [farg]) ->
     raise (Un_implemented_instruction "min_caml_truncate is not implemented.")
@@ -260,7 +284,7 @@ and eval_exp prog exp' reg mem  = match exp' with
     let fundef = lookup_by_id_l prog name in
     let reg' = make_reg reg (fundef.args) args in
     let Id.L s = name in Logger.debug (Printf.sprintf "CallDir %s" s);
-    interp prog (fundef.body) reg' mem 
+    interp prog (fundef.body) reg' mem
   | _ -> raise (Un_implemented_instruction "Not implemented.")
 
 
