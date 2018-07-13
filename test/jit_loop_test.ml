@@ -24,13 +24,14 @@ let bytecode =
     3; 5;
     7 |]
 
-let p =
-  open_in ((Sys.getcwd ()) ^ "/test/jit_loop.ml")
-  |> Lexing.from_channel
-  |> Mutil.virtualize
-  |> Simm.f
 
-let main =
+let main name code =
+  let p =
+    open_in ((Sys.getcwd ()) ^ "/" ^ name)
+    |> Lexing.from_channel
+    |> Mutil.virtualize
+    |> Simm.f
+  in
   Logger.log_level := Logger.Debug;
   let reg, mem = Array.make 1000000 (Red (-1)), Array.make 1000000 (Red (-1)) in
   (* execute preprocessor *)
@@ -45,15 +46,9 @@ let main =
   Hashtbl.add greentbl "pc" 3;
   Hashtbl.add redtbl "a" 100;
   Colorizer.colorize_reg redtbl greentbl reg fundef' interp_body;
-  Colorizer.colorize_pgm bytecode 0 mem;
+  Colorizer.colorize_pgm code 0 mem;
 
   let reg', mem' = Array.copy reg, Array.copy mem in
-  let x = Method_jit_loop.run p reg mem "min_caml_test_trace" ["bytecode"; "a"] in
-  List.iter (fun t ->
-      Logger.debug "----------------------";
-      Emit_virtual.to_string_fundef t |> Logger.debug;
-      Logger.debug "----------------------"
-    ) x;
 
   let y = Method_jit_loop.run_while p reg' mem' "min_caml_test_trace" ["bytecode"; "a"] in
   List.iter (fun fundef ->
@@ -66,5 +61,7 @@ let main =
   ()
 
 let _ =
-
-  main
+  let args = Sys.argv in
+  let file = args.(1) in
+  let bytes = args.(2) |> Str.split_delim (Str.regexp " ") |> List.map int_of_string |> Array.of_list in
+  main file bytes

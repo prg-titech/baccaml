@@ -2,5 +2,5 @@
 
 (executables
  ((names (jit_loop_test))
-  (libraries (core str oUnit minCaml bacCaml))
+  (libraries (core str re oUnit minCaml bacCaml))
 ))
