@@ -1,11 +1,11 @@
 #!/bin/sh
 
 # Example
-# ./script/build jit_loop jit_loop_test test/jit_loop.ml "1 1 7 1 10 4 2 13 6 0 5 3 5 7"
+# ./script/build jit_loop jit_loop_test "1 1 7 1 10 4 2 13 6 0 5 3 5 7"
 
 jbuilder build && \
     jbuilder build test/"$2".exe && \
-    _build/default/test/"$2".exe "$3" "$4" && \
+    _build/default/test/"$2".exe test/"$1".ml "$3" && \
     ./min-caml test/"$1".ml && \
     gcc -c -g -m32 -O2 "$2".s && \
     gcc -g -m32 -Wall lib/libmincaml.s lib/stub.c test/"$1".s "$2".o -o "$2" && \
