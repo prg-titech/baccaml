@@ -35,16 +35,16 @@ let _ = test "If" (If(Int 123,Int 456,Int 789))
      Ldef "$0";
      CONST; Literal 789; Ldef "$1"]
 let _ = test "Call" (Call("f",[Var "x";Var "x"]))
-    [DUP; Literal 3; 
+    [DUP; Literal 3;
      DUP; Literal 4; CALL; Lref "f"]
 let _ = test "Let" (Let("z",Int 123,Add(Var "z",Var "y")))
-    [CONST; Literal 123; 
+    [CONST; Literal 123;
      DUP; Literal 0;
      DUP; Literal 4;
      ADD;
      POP1]
 let _ = test "TCall" (TCall("f",[Int 123;Int 456;Int 789]))
-    [CONST; Literal 123; 
+    [CONST; Literal 123;
      CONST; Literal 456;
      CONST; Literal 789;
      FRAME_RESET; Literal 2; Literal 1; Literal 3;
@@ -71,9 +71,9 @@ let elim_test name src expected =
 
 let callf,tcallf = Call("f", []), TCall("f", [])
 let callg a = Call("g", a)
-let _ = elim_test "top"  callf tcallf  
+let _ = elim_test "top"  callf tcallf
 let _ = elim_test "other" (callg []) (callg [])
-let _ = elim_test "not top" (callg [callf]) (callg [callf]) 
+let _ = elim_test "not top" (callg [callf]) (callg [callf])
 let _ = elim_test "if" (If(callf,callf,callf)) (If(callf,tcallf,tcallf))
 let _ = elim_test "let" (Let("v",callf,callf)) (Let("v",callf,tcallf))
 
@@ -124,11 +124,11 @@ let gcd = {name="gcd"; args=["a"; "b"];
                       Call("gcd",[Var "a"; Call("sub", [Var "b"; Var "a"])]),
                       Call("gcd",[Call("sub", [Var "a"; Var "b"]); Var "b"])))}
 
-(* compliation of gcd yields the following bytecode (local variable 
+(* compliation of gcd yields the following bytecode (local variable
    indices, function indices are replaced with variable names like a, b, and sub
    for readability.   But the key points are, the tail calls are eliminated
    into jump-to-the-beginning instructions (i.e., CONST 0; JUMP_IF_ZERO 1).
-   [|Literal 2; 
+   [|Literal 2;
    1:LOAD a;
     LOAD b;
     CALL eq;
@@ -155,7 +155,7 @@ let gcd = {name="gcd"; args=["a"; "b"];
     STORE a;
     CONST 0; JUMP_IF_ZERO 1;
    58:RET|]
-*)            
+*)
 
 (* let _ = assert (21 = ccexe [eq;sub;gcd] "gcd" [252;105]) *)
 

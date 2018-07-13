@@ -5,6 +5,8 @@ let print_array f arr =
     arr;
   print_string "|] " in
 
+let loop_end a = () in
+
 (* ADD 0
    SUB 1
    MUL 2
@@ -17,6 +19,7 @@ let print_array f arr =
    HALT 9
    FRAME_RESET 10
    POP1 11
+   LOOP_S 12
 *)
 let rec interp bytecode pc stack sp =
   let instr = bytecode.(pc) in
@@ -44,9 +47,11 @@ let rec interp bytecode pc stack sp =
   else if instr = 5 then        (* JUMP_IF_ZERO *)
     let addr = bytecode.(pc + 1) in
     let v = stack.(sp - 1) in
-    if v = 0
-    then interp bytecode addr stack (sp - 1)
-    else interp bytecode (pc + 2) stack (sp - 1)
+    if v = 0 then
+      (if addr < pc then loop_end ();
+       interp bytecode addr stack (sp - 1))
+    else
+      interp bytecode (pc + 2) stack (sp - 1)
   else if instr = 6 then        (* CALL *)
     let addr = bytecode.(pc + 1) in
     stack.(sp) <- (pc + 2);
@@ -72,7 +77,7 @@ let rec interp bytecode pc stack sp =
   else if instr = 11 then       (* JUMP *)
     let addr = bytecode.(pc + 1) in
     interp bytecode addr stack sp
-  else if instr = 12 then
+  else if instr = 12 then       (* LOOP_S *)
     interp bytecode (pc + 1) stack sp
   else
     -1000 in
@@ -151,7 +156,7 @@ let stack_jmp_if = Array.make 10 0 in
 (interp code_jmp_if 0 stack_jmp_if 0) === 0;
 
 let code_fib =
-  [| 4; 10; 6; 5; 9; 12; 8; 1; 4; 2; 3; 5; 19; 8; 1; 4; 0; 5; 34; 8; 1; 4; 1; 1; 6; 5; 8; 2; 4; 2; 1; 6; 5; 0; 7;  1|]
+  [|4; 10; 6; 6; 9; 12; 8; 1; 4; 2; 3; 5; 19; 8; 1; 4; 0; 5; 34; 8; 1; 4; 1; 1; 6; 6; 8; 2; 4; 2; 1; 6; 6; 0; 7; 1 |]
   (* [| 4; 10; 6; 5; 9; 8; 1; 4; 2; 3; 5; 18; 8; 1; 4; 0; 5; 33; 8; 1; 4; 1; 1; 6; 5; 8; 2; 4; 2; 1; 6; 5; 0; 7; 1 |] *)
 in
 let stack_fib = Array.make 30 0 in

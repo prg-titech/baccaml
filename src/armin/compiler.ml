@@ -86,7 +86,6 @@ and compile_exp fenv exp env =
                    (compile_exp fenv e2 (shift_env env)) @ [LT]
   | If (cond, then_exp, else_exp) ->
     let l2, l1 = gen_label (), gen_label () in
-    [LOOP_S] @
     (compile_exp fenv cond env) @
     [JUMP_IF_ZERO; Lref l1] @
     (compile_exp fenv then_exp env) @
@@ -126,7 +125,10 @@ and compile_exp fenv exp env =
     (compile_exp fenv body ex_env) @     (* in extended env *)
     [POP1]                               (* drop the value *)
   | LetRec (fundef, body) ->
-    (compile_exp fenv body env) @ [HALT] @ (compile_fun fenv fundef)
+    (compile_exp fenv body env) @
+    [HALT] @
+    [LOOP_S] @
+    (compile_fun fenv fundef)
 
 
 and compile_funs fundefs =
