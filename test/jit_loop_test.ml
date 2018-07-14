@@ -12,56 +12,90 @@ let print_list f lst =
   in
   print_string "["; loop f lst; print_string "]"
 
-(* preprocesses *)
-let bytecode =
-  [|1; 1;
-    7;
-    1; 10;
-    4;
-    2; 13;
-    6; 0;
-    5;
-    3; 5;
-    7 |]
+let prepare_var red_lst green_lst =
+  let red_tbl = Hashtbl.create 10 in
+  let green_tbl = Hashtbl.create 10 in
+  List.iter
+    (fun r -> Hashtbl.add red_tbl (fst r) (snd r))
+    red_lst;
+  List.iter
+    (fun g -> Hashtbl.add green_tbl (fst g) (snd g))
+    green_lst;
+  red_tbl, green_tbl
 
-
-let main name code =
+let main name ex_name code red_lst green_lst =
   let p =
     open_in ((Sys.getcwd ()) ^ "/" ^ name)
     |> Lexing.from_channel
     |> Mutil.virtualize
     |> Simm.f
   in
-  Logger.log_level := Logger.Debug;
-  let reg, mem = Array.make 1000000 (Red (-1)), Array.make 1000000 (Red (-1)) in
-  (* execute preprocessor *)
+  let reg = Array.make 1000000 (Red (-1)) in
+  let mem = Array.make 1000000 (Red (-1)) in
+
+  let red_args = List.map fst red_lst in
   let fundefs', interp_body, jit_args' =
-    Method_jit_loop.prep ~prog:p ~name:"min_caml_test_trace" ~red_args:["a"] in
+    Method_jit_loop.prep ~prog:p ~name:"min_caml_test_trace" ~red_args:red_args in
 
   let fundef' = List.hd fundefs' in
-  let redtbl = Hashtbl.create 100 in
-  let greentbl = Hashtbl.create 100 in
 
-  Hashtbl.add greentbl "bytecode" 0;
-  Hashtbl.add greentbl "pc" 3;
-  Hashtbl.add redtbl "a" 100;
+  let redtbl, greentbl = prepare_var red_lst green_lst in
   Colorizer.colorize_reg redtbl greentbl reg fundef' interp_body;
   Colorizer.colorize_pgm code 0 mem;
 
-  let reg', mem' = Array.copy reg, Array.copy mem in
-
-  let y = Method_jit_loop.run_while p reg' mem' "min_caml_test_trace" ["bytecode"; "a"] in
+  let y = Method_jit_loop.run_while p reg mem "min_caml_test_trace" ("bytecode" :: red_args) in
   List.iter (fun fundef ->
-      Logger.debug "----------------------";
       Emit_virtual.to_string_fundef fundef |> Logger.debug;
-      Logger.debug "----------------------"
     ) y;
 
-  Jit_emit.emit_result_mj ~prog:p ~traces:y ~file:"jit_loop_test";
+  Jit_emit.emit_result_mj ~prog:p ~traces:y ~file:ex_name;
   ()
 
+let to_tuple lst =
+  if List.length (List.hd lst) <> 2 then
+    failwith "to_tuple: element of list's size should be 2."
+  else
+    List.map (fun elm -> (List.nth elm 0, List.nth elm 1)) lst
+
+let parse_string_list f str_lst =
+  str_lst
+  |> Str.split_delim (Str.regexp " ")
+  |> List.map f
+  |> Array.of_list
+
+(* parse a list like "a 1; b 2" -> [("a", 1), ("b", 2)] *)
+let parse_pair_list pair_lst =
+  pair_lst
+  |> Str.split_delim (Str.regexp "; ")
+  |> List.map (Str.split_delim (Str.regexp " "))
+  |> to_tuple
+  |> List.map (fun (x, y) -> (x, int_of_string y))
+
+let file = ref ""
+let codes = ref ""
+let reds = ref ""
+let greens = ref ""
+let output = ref "a.out"
+
+let usage =  "usage: " ^ Sys.argv.(0) ^ " [-file string] [-greens string list] [-reds string list] [-codes int list]"
+
+let speclist = [
+  ("-file", Arg.Set_string file, "Specify file name");
+  ("-green", Arg.Set_string greens, "Specify green variables");
+  ("-red", Arg.Set_string reds, "Specify red variables");
+  ("-code", Arg.Set_string codes, "Specify bytecode");
+  ("-o", Arg.Set_string output, "Set executable's name");
+  ("-dbg", Arg.Unit (fun _ -> Logger.log_level := Logger.Debug), "Enable debug mode");
+]
+
 let _ =
-  let args = Sys.argv in
-  let file = args.(1) in
-  let bytes = args.(2) |> Str.split_delim (Str.regexp " ") |> List.map int_of_string |> Array.of_list in
-  main file bytes
+  Arg.parse
+    speclist
+    (fun x -> raise (Arg.Bad ("Bad argument : " ^ x)))
+    usage;
+  let file = !file in
+  let bytes = parse_string_list int_of_string !codes in
+  let reds = parse_pair_list !reds in
+  let greens = parse_pair_list !greens in
+  let output = !output in
+  main file output bytes reds greens
