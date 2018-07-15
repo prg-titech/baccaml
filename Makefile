@@ -60,7 +60,7 @@ TRASH = $(EXAMPLES:%=example/%.s) $(EXAMPLES:%=example/%) $(EXAMPLES:%=example/%
 
 example/%.s: example/%.ml
 	./$(COMPILER) example/$*.ml
-example/%: example/%.s lib/libmincaml.S lib/stub.c
+example/%: example/%.s lib/libmincaml.s lib/stub.c
 	$(CC) $(CFLAGS) -m32 $^ -o $@
 example/%.res: example/%
 	$< > $@
