@@ -64,10 +64,12 @@ let _ = test_ex (fun fenv exp env -> resolve_labels (compile_exp fenv exp env))
     ]
 
 let elim_test name src expected =
-  let elimed = tail_elim "f" src in
-  if elimed = expected
-  then Printf.printf "ELIM %s : OK\n" name
-  else Printf.printf "ELIM %s : NG\n" name
+  try
+    let elimed = tail_elim "f" src in
+    if elimed = expected
+    then Printf.printf "ELIM %s : OK\n" name
+    else Printf.printf "ELIM %s : NG\n" name
+  with _ -> Printf.printf "ELIM %s : NG\n" name
 
 let callf,tcallf = Call("f", []), TCall("f", [])
 let callg a = Call("g", a)
@@ -84,17 +86,19 @@ let main name args =
   }
 
 let ccexe funs fname args =
-  let funs = (main fname args) :: funs in
-  let obj = Compiler.compile_funs funs in
-  let result = VM.run_asm obj in
-  Printf.printf "%s %s => %d\n"
-    fname (String.concat " " (List.map string_of_int args))
-    result; result
+  try
+    let funs = (main fname args) :: funs in
+    let obj = Compiler.compile_funs funs in
+    let result = VM.run_asm obj in
+    Printf.printf "%s %s => %d\n"
+      fname (String.concat " " (List.map string_of_int args))
+      result; result
+  with _ -> Printf.printf "%s: NG\n" fname; 0
 
 (* some more test programs *)
 
 let let_test = {name="let_test"; args=[];
-                body=Add(Int 456,Let("x",Int 123,Var "x"))}
+                body=Add(Int 456,Let("x", Int 123, Var "x"))}
 let _ = assert (456+123 = ccexe [let_test] "let_test" [])
 
 (* let _ = assert (3628800 = ccexe [fact] "fact" [10])

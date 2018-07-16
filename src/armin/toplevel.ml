@@ -54,4 +54,6 @@ let rec main_loop () =
     main_loop ()
 
 let _ =
+  Logs.set_level @@ Some Logs.Debug;
+  Logs.set_reporter @@ Logs.format_reporter ();
   main_loop ()

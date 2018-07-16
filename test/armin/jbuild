@@ -21,7 +21,7 @@
 ))
 
 (alias
- ((name runtest)
-  (deps (compiler_test.exe))
-  (action (run ${<}))
+((name runtest)
+ (deps (compiler_test.exe))
+ (action (run ${<}))
 ))

@@ -17,6 +17,7 @@ build:
 	jbuilder build
 	ln -sf _build/default/src/mincaml/$(MAIN) .
 	ln -sf _build/default/src/armin/$(ARMIN) .
+	ln -sf _build/default/src/armin/toplevel.exe .
 	mv $(MAIN) $(COMPILER)
 
 .PHONY: setup

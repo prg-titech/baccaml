@@ -38,10 +38,10 @@ let colorize_reg redstbl greenstbl reg fundef t =
   let free_vars_with_id = List.map (fun var -> split var) (free_vars @ args) in (* (x, 11) :: (y, 12) :: *)
   List.iter (fun (var, id) ->
       (try
-        let value = Hashtbl.find redstbl var in
-        reg.(int_of_string id) <- Red (value);
+         let value = Hashtbl.find redstbl var in
+         reg.(int_of_string id) <- Red (value);
        with Not_found -> ());
-      (try 
+      (try
          let value' = Hashtbl.find greenstbl var in
          reg.(int_of_string id) <- Green (value')
        with Not_found -> ())

@@ -31,6 +31,9 @@ let exec e =
     String.concat ~sep:"; " (List.map ~f:string_of_int insts_nums) ^
     "|]"
   );
+  print_endline (
+    String.concat ~sep:" " (List.map ~f:string_of_int insts_nums)
+  );
   print_endline (compile_insts insts_nums)
 
 let entry ic =

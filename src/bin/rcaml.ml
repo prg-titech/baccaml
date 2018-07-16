@@ -52,8 +52,8 @@ let main name ex_name code red_lst green_lst =
     |> Mutil.virtualize
     |> Simm.f
   in
-  let reg = Array.make 1000000 (Red (-1)) in
-  let mem = Array.make 1000000 (Red (-1)) in
+  let reg = Array.make 1000000 (Red (0)) in
+  let mem = Array.make 1000000 (Red (0)) in
   let red_args = List.map fst red_lst in
 
   let fundefs', interp_body, jit_args' =
@@ -66,7 +66,12 @@ let main name ex_name code red_lst green_lst =
   Colorizer.colorize_pgm code 0 mem;
 
   let traces =
-    Method_jit_loop.run_while p reg mem "min_caml_test_trace" ("bytecode" :: red_args) in
+    Method_jit_loop.run_while
+      p
+      reg
+      mem
+      "min_caml_test_trace"
+      ("bytecode" :: "stack" :: red_args) in
   List.iter
     (fun fundef -> Emit_virtual.to_string_fundef fundef |> Logger.debug)
     traces;

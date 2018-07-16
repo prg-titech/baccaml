@@ -5,7 +5,7 @@ let print_array f arr =
     arr;
   print_string "|] " in
 
-let loop_end a = () in
+let loop_end a b = () in
 
 (* ADD 0
    SUB 1
@@ -48,7 +48,7 @@ let rec interp bytecode stack pc sp =
     let addr = bytecode.(pc + 1) in
     let v = stack.(sp - 1) in
     if v = 0 then
-      (if addr < pc then loop_end ();
+      (if addr < pc then loop_end bytecode stack;
        interp bytecode stack addr (sp - 1))
     else
       interp bytecode stack (pc + 2) (sp - 1)
@@ -79,6 +79,9 @@ let rec interp bytecode stack pc sp =
     interp bytecode stack addr sp
   else if instr = 12 then       (* LOOP_S *)
     interp bytecode stack (pc + 1) sp
+  else if instr = 13 then      (* LOOP_E *)
+    (loop_end bytecode stack;
+     interp bytecode stack (pc + 1) sp)
   else
     -1000 in
 

@@ -14,6 +14,7 @@ type inst =
   | FRAME_RESET (* o l n *)
   | POP1
   | LOOP_S
+  | LOOP_E
   | Literal of int
   | Lref of string
   | Ldef of string
@@ -38,7 +39,8 @@ let insts =
      HALT;
      FRAME_RESET;
      POP1;
-     LOOP_S
+     LOOP_S;
+     LOOP_E;
   |]
 
 let index_of element array =
@@ -202,6 +204,9 @@ let rec interp  code pc stack =
       interp  code pc stack
     | LOOP_S ->
       log "LOOP_S";
+      interp code (pc + 1) stack
+    | LOOP_E ->
+      log "LOOP_E";
       interp code (pc + 1) stack
     | Literal i ->
       failwith @@ Printf.sprintf "unresolved. Literal %d" i
