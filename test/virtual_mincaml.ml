@@ -1,5 +1,5 @@
 let rec interp bytecode stack pc sp =
-  jit_dispatch (pc=8) bytecode stack;
+  jit_dispatch (pc=0) bytecode stack;
   let instr = bytecode.(pc) in
   if instr = 0 then             (* ADD *)
     let v2 = stack.(sp - 1) in  (* sp - 1 *)
@@ -14,7 +14,7 @@ let rec interp bytecode stack pc sp =
   else if instr = 3 then        (* LT *)
     let v2 = stack.(sp - 1) in
     let v1 = stack.(sp - 2) in
-    stack.(sp - 2) <- (if v1 < v2 then 1 else 0);
+    stack.(sp - 2) <- 0;
     interp bytecode stack (pc + 1) (sp - 1)
   else if instr = 4 then        (* CONST *)
     let c = bytecode.(pc + 1) in
@@ -24,11 +24,7 @@ let rec interp bytecode stack pc sp =
     let addr = bytecode.(pc + 1) in
     let v = stack.(sp - 1) in
     if v = 0 then
-      if addr < pc then 
-        (loop_end bytecode stack;
-         interp bytecode stack addr (sp - 1))
-      else
-        interp bytecode stack addr (sp - 1)
+      interp bytecode stack addr (sp - 1)
     else
       interp bytecode stack (pc + 2) (sp - 1)
   else if instr = 6 then        (* CALL *)
@@ -47,12 +43,19 @@ let rec interp bytecode stack pc sp =
     stack.(sp) <- v;
     interp bytecode stack (pc + 2) (sp + 1)
   else if instr = 9 then        (* HALT *)
-    stack.(sp - 1)
-  else if instr = 11 then       (* JUMP *)
-    let addr = bytecode.(pc + 1) in
-    interp bytecode stack addr sp
+    (loop_end bytecode stack;
+     stack.(sp - 1))
+  else if instr = 11 then       (* POP1 *)
+    let v = stack.(sp - 1) in
+    let _ = stack.(sp - 2) in
+    stack.(sp - 2) <- v;
+    interp bytecode stack (pc + 1) (sp - 2)
   else if instr = 12 then       (* LOOP_S *)
-    interp bytecode stack (pc + 1) sp
+    (loop_start bytecode stack;
+     interp bytecode stack (pc + 1) sp)
+  else if instr = 13 then       (* LOOP_E *)
+    (loop_end bytecode stack;
+     interp bytecode stack (pc + 1) sp)
   else
     -1000 in
 

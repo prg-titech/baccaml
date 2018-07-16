@@ -50,10 +50,9 @@ let main name ex_name code red_lst green_lst =
     open_in ((Sys.getcwd ()) ^ "/" ^ name)
     |> Lexing.from_channel
     |> Mutil.virtualize
-    |> Simm.f
-  in
-  let reg = Array.make 1000000 (Red (0)) in
-  let mem = Array.make 1000000 (Red (0)) in
+    |> Simm.f in
+  let reg = Array.make 1000000 (Red (-1)) in
+  let mem = Array.make 1000000 (Red (-1)) in
   let red_args = List.map fst red_lst in
 
   let fundefs', interp_body, jit_args' =

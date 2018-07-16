@@ -164,3 +164,9 @@ let code_fib =
 in
 let stack_fib = Array.make 30 0 in
 (interp code_fib stack_fib 0 0) === 55;
+
+let code' =
+  [|4; 10; 6; 6; 9; 12; 8; 1; 4; 2; 3; 5; 19; 8; 1; 4; 0; 5; 29; 8; 1; 8; 2; 4; 1; 1; 6; 6; 0; 7; 1; |]
+in
+let stack' = Array.make 50 0 in
+(interp code' stack' 0 0) === 55

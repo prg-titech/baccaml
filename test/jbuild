@@ -1,6 +1,6 @@
 (jbuild_version 1)
 
 (executables
- ((names (jit_loop_test))
-  (libraries (core str re oUnit minCaml bacCaml))
+ ((names (jit_loop_test virtual_mincaml_test))
+  (libraries (core str re sequence oUnit minCaml bacCaml))
 ))

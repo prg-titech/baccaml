@@ -127,7 +127,6 @@ and compile_exp fenv exp env =
   | LetRec (fundef, body) ->
     (compile_exp fenv body env) @
     [HALT] @
-    [LOOP_S] @
     (compile_fun fenv fundef)
 
 and compile_funs fundefs =
