@@ -56,7 +56,8 @@ let rec interp bytecode stack pc sp =
   else if instr = 6 then        (* CALL *)
     let addr = bytecode.(pc + 1) in
     stack.(sp) <- (pc + 2);
-    interp bytecode stack addr (sp + 1)
+    let res = interp bytecode stack addr (sp + 1) in
+    res
   else if instr = 7 then        (* RET *)
     let n = bytecode.(pc + 1) in
     let v = stack.(sp - 1) in   (* sp: sp - 1 *)
