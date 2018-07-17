@@ -12,5 +12,6 @@ RUN opam init && \
     fmt \
     logs \
     menhir \
+    sequence \
     jbuilder && \
     eval $(opam config env)

@@ -25,15 +25,17 @@ let _ = run_test_tt_main begin
             reds = [];
             method_start = 0;
             method_end = 6;
-            pc_place = 1
+            pc_place = 1;
+            loop_headers = [0];
+            backedge_pcs = [0];
           }) in
         let { body } = fundef in
         let reg = Array.create 10000 (Red 0) in
         let mem = Array.create 10000 (Red 0) in
-        reg.(126) <- Green (0);
-        reg.(127) <- Green (6);
-        reg.(128) <- Green (100);
-        reg.(129) <- Green (1);
+        reg.(129) <- Green (0);
+        reg.(130) <- Green (6);
+        reg.(131) <- Green (100);
+        reg.(132) <- Green (1);
         for i = 0 to (Array.length bytecode - 1) do
           let n = i * 4 in
           if n = 44 then
@@ -50,7 +52,7 @@ let _ = run_test_tt_main begin
         Jit_emit.emit_trace
           trace
           "simple3_mj"
-          "interp.126"
+          "interp.128"
       end;
       "tracing_jit" >::
       begin fun () ->
@@ -64,10 +66,10 @@ let _ = run_test_tt_main begin
           }) in
         let reg = Array.create 100000 (Red 0) in
         let mem = Array.create 100000 (Red 0) in
-        reg.(126) <- Green (0);
-        reg.(127) <- Green (6);
-        reg.(128) <- Green (100);
-        reg.(129) <- Green (1);
+        reg.(129) <- Green (0);
+        reg.(130) <- Green (6);
+        reg.(131) <- Green (100);
+        reg.(132) <- Green (1);
         for i = 0 to (Array.length bytecode - 1) do
           let n = i * 4 in
           if n = 44 then
