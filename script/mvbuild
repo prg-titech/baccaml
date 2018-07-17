@@ -1,0 +1,10 @@
+#!/bin/sh
+# script/mvbuild test/virtual_test "bytecode 0; stack 100; pc 0; sp 0" "4 10 ..." "1"
+
+jbuilder build "$1".exe && \
+_build/default/$1.exe \
+  -file test/virtual_mincaml.ml \
+  -green "$2" \
+  -code "$3" \
+  -annot "$4" \
+  -dbg

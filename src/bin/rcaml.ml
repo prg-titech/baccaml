@@ -5,6 +5,9 @@ open BacCaml
 open Jit_config
 open Jit_util
 
+type trace_env =
+  Env of prog * value array * value array * string list
+
 let print_list f lst =
   let rec loop f = function
     | [] -> ()
@@ -31,7 +34,7 @@ let prepare_prog bytecode annot mem =
       mem.(i * 4) <- Green (bytecode.(i))
   done
 
-let main name ex_name code annot red_lst green_lst =
+let prepare_env name ex_name code annot red_lst green_lst =
   let p =
     open_in ((Sys.getcwd ()) ^ "/" ^ name)
     |> Lexing.from_channel
@@ -51,15 +54,7 @@ let main name ex_name code annot red_lst green_lst =
   Colorizer.colorize_reg redtbl greentbl reg fundef' interp_body;
   prepare_prog code annot mem;
 
-  reg.(223) <- Green (100);
-
-  let y = Method_jit_loop.run_while p reg mem "min_caml_test_trace" ("bytecode" :: "stack" :: red_args) in
-  List.iter (fun fundef ->
-      Emit_virtual.to_string_fundef fundef |> Logger.debug;
-    ) y;
-
-  Jit_emit.emit_result_mj ~prog:p ~traces:y ~file:ex_name;
-  ()
+  Env (p, reg, mem, red_args)
 
 let to_tuple lst =
   if List.length lst = 0 then
@@ -102,7 +97,7 @@ let speclist = [
   ("-dbg", Arg.Unit (fun _ -> Logger.log_level := Logger.Debug), "Enable debug mode");
 ]
 
-let _ =
+let run f =
   Arg.parse
     speclist
     (fun x -> raise (Arg.Bad ("Bad argument : " ^ x)))
@@ -114,4 +109,4 @@ let _ =
   let reds = parse_pair_list !reds in
   let greens = parse_pair_list !greens in
   let output = !output in
-  main file output bytes annots reds greens
+  f file output bytes annots reds greens
