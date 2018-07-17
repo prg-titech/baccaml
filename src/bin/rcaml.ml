@@ -5,8 +5,39 @@ open BacCaml
 open Jit_config
 open Jit_util
 
-type trace_env =
-  Env of prog * value array * value array * string list
+type env = {
+  prog : prog;
+  reg : value array;
+  mem : value array;
+  red_args : string list;
+  ex_name : string;
+} [@@deriving fields]
+
+type arg = {
+  file : string;
+  ex_name : string;
+  code : int array;
+  annot : int array;
+  reds : (string * int) list;
+  greens : (string * int) list;
+} [@@deriving fields]
+
+type var = {
+  redtbl : (string, int) Hashtbl.t;
+  greentbl : (string, int) Hashtbl.t;
+} [@@deriving fields]
+
+type tenv = {
+  fundefs : fundef list;
+  ibody : Asm.t;
+} [@@deriving fields]
+
+let () =
+  let r = { file = "test"; ex_name = "test"; code = [|0|]; annot = [|0|]; reds = []; greens = [] } in
+  Fieldslib.(
+    assert (file r = "test" && ex_name r = "test" && code r = [|0|] && annot r = [|0|] && reds r = [] && greens r = []);
+    ignore (Fields_of_arg.create ~file:"a" ~ex_name:"b" ~code:(Array.make 1 0) ~annot:(Array.make 1 0) ~reds:[] ~greens:[]);
+  )
 
 let print_list f lst =
   let rec loop f = function
@@ -14,6 +45,60 @@ let print_list f lst =
     | hd :: tl -> f hd; print_string "; "; loop f tl
   in
   print_string "["; loop f lst; print_string "]"
+
+let prepare_reds trace_args (Prog (_, fundefs, _)) =
+  let interp =
+    List.find begin fun { name = Id.L (x) } ->
+      (String.split_on_char '.' x |> List.hd) = "interp"
+    end fundefs
+  in
+  let { args } = interp in
+  List.filter begin fun arg ->
+    let arg_name = List.hd (String.split_on_char '.' arg) in
+    List.exists (fun trace_arg -> trace_arg = arg_name) trace_args
+  end args
+
+let prepare_tenv' p t reds =
+  let t' =
+    Simm.t t
+    |> Trim.trim_jmp
+    |> Trim.trim_jit_dispatcher
+  in
+  begin match t' with
+    | Let (_, Set (_),
+           Let (_,  IfEq (_, _, _, _),
+                Let (_, CallDir (Id.L (_), args, fargs),
+                     interp_body)))
+    | Let (_,  IfEq (_, _, _, _),
+           Let (_, CallDir (Id.L (_), args, fargs),
+                interp_body))
+    | Ans (IfEq (_, _, Ans (CallDir (Id.L (_), args, fargs)),
+                 interp_body)) ->
+      let Prog (table, fundefs, main) = p in
+      let fundefs' =
+        List.map begin fun fundef ->
+            let Id.L (x) = fundef.name in
+            match String.split_on_char '.' x |> List.hd with
+            | name' when name' = "interp" ->
+              let { name; args; fargs; ret } = fundef in
+              { name = name; args = args; fargs = fargs; body = interp_body; ret = ret }
+            | _ -> fundef
+        end fundefs
+      in
+      Fieldslib.(
+        Fields_of_tenv.create ~fundefs:fundefs' ~ibody:interp_body
+      )
+    | _ ->
+      failwith "missing jit_dispatch. please add jit_dispatch ... at the top of your interpreter."
+  end
+
+let prepare_tenv ~prog:p ~name:n ~red_args:reds =
+  let Prog (table, fundefs, main) = p in
+  let { body } = List.find begin fun { name = Id.L (x) } ->
+      String.split_on_char '.' x |> List.hd |> contains "interp"
+    end fundefs
+  in
+  prepare_tenv' p body (prepare_reds reds p)
 
 let prepare_var red_lst green_lst =
   let red_tbl = Hashtbl.create 10 in
@@ -24,7 +109,7 @@ let prepare_var red_lst green_lst =
   List.iter
     (fun g -> Hashtbl.add green_tbl (fst g) (snd g))
     green_lst;
-  red_tbl, green_tbl
+  { redtbl = red_tbl; greentbl = green_tbl }
 
 let prepare_prog bytecode annot mem =
   for i = 0 to (Array.length bytecode - 1) do
@@ -34,27 +119,35 @@ let prepare_prog bytecode annot mem =
       mem.(i * 4) <- Green (bytecode.(i))
   done
 
-let prepare_env name ex_name code annot red_lst green_lst =
+let prepare_env arg =
   let p =
-    open_in ((Sys.getcwd ()) ^ "/" ^ name)
+    open_in ((Sys.getcwd ()) ^ "/" ^ (Fieldslib.(file arg)))
     |> Lexing.from_channel
     |> Mutil.virtualize
     |> Simm.f
   in
-  let reg = Array.make 1000000 (Red (-1)) in
-  let mem = Array.make 1000000 (Red (-1)) in
+  let reg, mem = Array.make 100000 (Red (-1)), Array.make 100000 (Red (-1)) in
 
-  let red_args = List.map fst red_lst in
-  let fundefs', interp_body, jit_args' =
-    Method_jit_loop.prep ~prog:p ~name:"min_caml_test_trace" ~red_args:red_args in
+  let red_args = List.map fst (Fieldslib.(reds arg)) in
+  let tenv = prepare_tenv ~prog:p ~name:"min_caml_test_trace" ~red_args:red_args in
 
-  let fundef' = List.hd fundefs' in
+  (prepare_var (Fieldslib.(reds arg)) (Fieldslib.(greens arg))
+   |> fun var ->
+   Colorizer.colorize_reg
+     (Fieldslib.(redtbl var))
+     (Fieldslib.(greentbl var))
+     reg
+     (List.hd (Fieldslib.(fundefs tenv)))
+     (Fieldslib.(ibody tenv));
+   prepare_prog (Fieldslib.(code arg)) (Fieldslib.(annot arg)) mem);
 
-  let redtbl, greentbl = prepare_var red_lst green_lst in
-  Colorizer.colorize_reg redtbl greentbl reg fundef' interp_body;
-  prepare_prog code annot mem;
-
-  Env (p, reg, mem, red_args)
+  Fieldslib.(
+    Fields_of_env.create
+      ~prog:p
+      ~reg:reg
+      ~mem:mem
+      ~red_args:red_args
+      ~ex_name:(Fieldslib.(ex_name arg)))
 
 let to_tuple lst =
   if List.length lst = 0 then
@@ -64,7 +157,7 @@ let to_tuple lst =
   else
     List.map (fun elm -> (List.nth elm 0, List.nth elm 1)) lst
 
-let string_of_array f str_lst =
+let string_of_array ~f str_lst =
   str_lst
   |> Str.split_delim (Str.regexp " ")
   |> List.map f
@@ -97,16 +190,18 @@ let speclist = [
   ("-dbg", Arg.Unit (fun _ -> Logger.log_level := Logger.Debug), "Enable debug mode");
 ]
 
-let run f =
+let run = (fun f ->
   Arg.parse
     speclist
     (fun x -> raise (Arg.Bad ("Bad argument : " ^ x)))
     usage;
   let file = !file in
-  let bytes = string_of_array int_of_string !codes in
-  print_endline (Array.length bytes |> string_of_int);
-  let annots = string_of_array int_of_string !annots in
+  let output = !output in
+  let bytes = string_of_array ~f:int_of_string !codes in
+  let annots = string_of_array ~f:int_of_string !annots in
   let reds = parse_pair_list !reds in
   let greens = parse_pair_list !greens in
-  let output = !output in
-  f file output bytes annots reds greens
+  f Fieldslib.(
+      Fields_of_arg.create
+        ~file:file ~ex_name:output ~code:bytes ~annot:annots ~reds:reds ~greens:greens
+    ))

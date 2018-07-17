@@ -20,6 +20,7 @@ let loop_end a b = () in
    FRAME_RESET 10
    POP1 11
    LOOP_S 12
+   LOOP_E 13
 *)
 let rec interp bytecode stack pc sp =
   let instr = bytecode.(pc) in
