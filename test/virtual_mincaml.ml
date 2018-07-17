@@ -24,10 +24,7 @@ let rec interp bytecode stack pc sp =
     let addr = bytecode.(pc + 1) in
     let v = stack.(sp - 1) in
     if v = 0 then
-      (if addr < pc + 1 then
-         (loop_end bytecode stack; interp bytecode stack addr (sp - 1))
-       else
-         interp bytecode stack addr (sp - 1))
+      interp bytecode stack addr (sp - 1)
     else interp bytecode stack (pc + 2) (sp - 1)
   else if instr = 6 then        (* CALL *)
     let addr = bytecode.(pc + 1) in
@@ -45,8 +42,7 @@ let rec interp bytecode stack pc sp =
     stack.(sp) <- v;
     interp bytecode stack (pc + 2) (sp + 1)
   else if instr = 9 then        (* HALT *)
-    (loop_end bytecode stack;
-     stack.(sp - 1))
+    stack.(sp - 1)
   else if instr = 11 then       (* POP1 *)
     let v = stack.(sp - 1) in
     let _ = stack.(sp - 2) in
