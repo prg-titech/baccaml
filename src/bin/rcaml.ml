@@ -23,15 +23,53 @@ let prepare_var red_lst green_lst =
     green_lst;
   red_tbl, green_tbl
 
+let prepare_prog bytecode annot mem =
+  for i = 0 to (Array.length bytecode - 1) do
+    if Array.exists (fun annot -> annot = i) annot then
+      mem.(i * 4) <- Red (bytecode.(i))
+    else
+      mem.(i * 4) <- Green (bytecode.(i))
+  done
+
+let main name ex_name code annot red_lst green_lst =
+  let p =
+    open_in ((Sys.getcwd ()) ^ "/" ^ name)
+    |> Lexing.from_channel
+    |> Mutil.virtualize
+    |> Simm.f
+  in
+  let reg = Array.make 1000000 (Red (-1)) in
+  let mem = Array.make 1000000 (Red (-1)) in
+
+  let red_args = List.map fst red_lst in
+  let fundefs', interp_body, jit_args' =
+    Method_jit_loop.prep ~prog:p ~name:"min_caml_test_trace" ~red_args:red_args in
+
+  let fundef' = List.hd fundefs' in
+
+  let redtbl, greentbl = prepare_var red_lst green_lst in
+  Colorizer.colorize_reg redtbl greentbl reg fundef' interp_body;
+  prepare_prog code annot mem;
+
+  reg.(223) <- Green (100);
+
+  let y = Method_jit_loop.run_while p reg mem "min_caml_test_trace" ("bytecode" :: "stack" :: red_args) in
+  List.iter (fun fundef ->
+      Emit_virtual.to_string_fundef fundef |> Logger.debug;
+    ) y;
+
+  Jit_emit.emit_result_mj ~prog:p ~traces:y ~file:ex_name;
+  ()
+
 let to_tuple lst =
   if List.length lst = 0 then
-    [("x", "0")]
+    [("dummy", "0")]
   else if List.length (List.hd lst) <> 2 then
     failwith "to_tuple: element of list's size should be 2."
   else
     List.map (fun elm -> (List.nth elm 0, List.nth elm 1)) lst
 
-let parse_string_list f str_lst =
+let string_of_array f str_lst =
   str_lst
   |> Str.split_delim (Str.regexp " ")
   |> List.map f
@@ -45,52 +83,21 @@ let parse_pair_list pair_lst =
   |> to_tuple
   |> List.map (fun (x, y) -> (x, int_of_string y))
 
-let main name ex_name code red_lst green_lst =
-  let p =
-    open_in ((Sys.getcwd ()) ^ "/" ^ name)
-    |> Lexing.from_channel
-    |> Mutil.virtualize
-    |> Simm.f in
-  let reg = Array.make 1000000 (Red (-1)) in
-  let mem = Array.make 1000000 (Red (-1)) in
-  let red_args = List.map fst red_lst in
-
-  let fundefs', interp_body, jit_args' =
-    Method_jit_loop.prep ~prog:p ~name:"min_caml_test_trace" ~red_args:red_args in
-
-  let fundef' = List.hd fundefs' in
-
-  let redtbl, greentbl = prepare_var red_lst green_lst in
-  Colorizer.colorize_reg redtbl greentbl reg fundef' interp_body;
-  Colorizer.colorize_pgm code 0 mem;
-
-  let traces =
-    Method_jit_loop.run_while
-      p
-      reg
-      mem
-      "min_caml_test_trace"
-      ("bytecode" :: "stack" :: red_args) in
-  List.iter
-    (fun fundef -> Emit_virtual.to_string_fundef fundef |> Logger.debug)
-    traces;
-
-  Jit_emit.emit_result_mj ~prog:p ~traces:traces ~file:ex_name;
-  ()
-
 let file = ref ""
 let codes = ref ""
+let annots = ref ""
 let reds = ref ""
 let greens = ref ""
-let output = ref "a.out"
+let output = ref "a"
 
-let usage =  "usage: " ^ Sys.argv.(0) ^ " [-file string] [-greens string list] [-reds string list] [-codes int list]"
+let usage =  "usage: " ^ Sys.argv.(0) ^ " [-file string] [-green string list] [-red string list] [-code int list] [-annot int list]"
 
 let speclist = [
   ("-file", Arg.Set_string file, "Specify file name");
   ("-green", Arg.Set_string greens, "Specify green variables");
   ("-red", Arg.Set_string reds, "Specify red variables");
   ("-code", Arg.Set_string codes, "Specify bytecode");
+  ("-annot", Arg.Set_string annots, "Specify annotations for bytecode");
   ("-o", Arg.Set_string output, "Set executable's name");
   ("-dbg", Arg.Unit (fun _ -> Logger.log_level := Logger.Debug), "Enable debug mode");
 ]
@@ -101,8 +108,10 @@ let _ =
     (fun x -> raise (Arg.Bad ("Bad argument : " ^ x)))
     usage;
   let file = !file in
-  let bytes = parse_string_list int_of_string !codes in
+  let bytes = string_of_array int_of_string !codes in
+  print_endline (Array.length bytes |> string_of_int);
+  let annots = string_of_array int_of_string !annots in
   let reds = parse_pair_list !reds in
   let greens = parse_pair_list !greens in
   let output = !output in
-  main file output bytes reds greens
+  main file output bytes annots reds greens

@@ -51,6 +51,10 @@ let rec mj p reg mem fenv name t =
     connect (Id.gentmp Type.Int) restored_call (fst t'), snd t'
   | Let ((dest, typ), exp, body) ->
     begin match exp with
+      | IfEq _ | IfGE _ | IfLE _ ->
+        let t' = mj_if p reg mem fenv name exp in
+        let k = mj p reg mem fenv name body in
+        connect dest (fst t') (fst k), snd k
       | _ ->
         match Optimizer.run p exp reg mem with
         | Specialized (v) ->
