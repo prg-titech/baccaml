@@ -7,11 +7,17 @@ open Jit_config
 open Jit_util
 open Operands
 
-module M = Map.Make(String)
+(* function_name -> (arguments, following expressions)
+ *)
+module M' = Map.Make(String)
+
+module M = struct
+  include M'
+  let keys m = M.bindings m |> List.map fst
+end
+
 
 type value = string list * t
-
-let keys m = M.bindings m |> List.map fst
 
 let empty_fenv () = M.empty
 
@@ -105,6 +111,7 @@ and mj_if p reg mem fenv name exp =
     let memt1, memt2 = Array.copy mem, Array.copy mem in
     let t1' = mj p regt1 memt1 fenv name t1 in
     let t2' = mj p regt2 memt2 fenv name t2 in
+    let new_map = M.fold M.add (snd t1') (snd t2') in
     begin match r1, r2 with
       | Green (n1), Green (n2)
       | LightGreen (n1), LightGreen (n2)
@@ -112,15 +119,15 @@ and mj_if p reg mem fenv name exp =
       | LightGreen (n1), Green (n2) ->
         if exp |*| (n1, n2) then t1' else t2'
       | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
-        Ans (exp |%| (id_t, C (n2), fst t1', fst t2')), snd t1'
+        Ans (exp |%| (id_t, C (n2), fst t1', fst t2')), new_map
       | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
         let id_t2 = match id_or_imm with
             V (id) -> id
           | C (n) -> failwith "id_or_imm should be string"
         in
-        Ans (exp |%|  (id_t2, C (n1), fst t1', fst t2')), snd t2'
+        Ans (exp |%|  (id_t2, C (n1), fst t1', fst t2')), new_map
       | Red (n1), Red (n2) ->
-        Ans (exp |%| (id_t, id_or_imm, fst t1', fst t2')), snd t2'
+        Ans (exp |%| (id_t, id_or_imm, fst t1', fst t2')), new_map
     end
   | _ -> failwith "method_jit_if should accept conditional branches."
 
@@ -195,15 +202,22 @@ let run_while p reg mem name reds =
   let Prog (tbl, _, m) = p in
   let (fdfs, ibody, reds) = prep ~prog:p ~name:name ~red_args:reds in
   let p' = Prog (tbl, fdfs, m) in
+
   let rec loop p reg mem fenv name args t =
-    let res, fenv' = mj p reg mem fenv name t in
-    match M.choose_opt fenv' with
-    | Some (n, (ag, t')) ->
-      (res, name, reds) :: (loop p reg mem M.empty n ag t')
+    let t1, fenv1 = mj p reg mem fenv name t in
+    match M.choose_opt fenv1 with
+    | Some (n, (ag, bd)) ->
+      (t1, name, args) ::
+      (loop p reg mem (M.empty) n ag bd) @
+      (match M.choose_opt (M.remove n fenv1) with
+       | Some (n', (ag', bd')) ->
+         loop p reg mem M.empty n' ag' bd'
+       | None ->
+         [])
     | None ->
-      (res, name, args) :: []
+      [(t1, name, args)]
   in
-  let loops = loop p' reg mem M.empty name reds ibody in
+  let loops = loop p' reg mem M.empty name reds ibody  in
   List.map begin fun (body, name, args) ->
     { name = Id.L (name); args = args; fargs = []; body = body; ret = Type.Int }
   end loops
