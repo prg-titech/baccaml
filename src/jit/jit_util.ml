@@ -2,16 +2,17 @@ open Core
 open MinCaml
 open Asm
 open Util
+open Common
 open Jit_config
 
 let int_of_id_t id =
   if String.equal id "min_caml_hp" then
     failwith ("int_of_id_t min_caml_hp is not supported.")
   else
-    match int_of_string_opt (Xutil.String.after_of id '.') with
+    match int_of_string_opt (String.after_of id '.') with
     | Some (i) -> i
     | _ ->
-      match int_of_string_opt (Xutil.String.after_of id 'u') with
+      match int_of_string_opt (String.after_of id 'u') with
       | Some (i) -> i
       | _ -> failwith (Printf.sprintf "int_of_id_t (%s) is failed" id)
 
@@ -92,9 +93,7 @@ let name_of id =
   | None -> id
 
 let is_opcode id =
-  List.for_all
-    (String.to_list (name_of id))
-    (fun c -> String.contains "instr" c)
+  String.contains (name_of id) "instr"
 
 let _ =
   assert (is_opcode "instr")
