@@ -7,6 +7,7 @@ let print_array f arr =
 
 let loop_end a b = () in
 
+
 (* ADD 0
    SUB 1
    MUL 2
@@ -56,8 +57,7 @@ let rec interp bytecode stack pc sp =
   else if instr = 6 then        (* CALL *)
     let addr = bytecode.(pc + 1) in
     stack.(sp) <- (pc + 2);
-    let res = interp bytecode stack addr (sp + 1) in
-    res
+    interp bytecode stack addr (sp + 1)
   else if instr = 7 then        (* RET *)
     let n = bytecode.(pc + 1) in
     let v = stack.(sp - 1) in   (* sp: sp - 1 *)
