@@ -8,7 +8,7 @@
 (library
  ((name           minCaml)
   (public_name    baccaml.minCaml)
-  (modules        (:standard \ main anchor))
+  (modules        (:standard \ min_caml anchor))
   (libraries      (str core util))
   (c_names        (float))
   (preprocess
@@ -16,8 +16,8 @@
 ))
 
 (executable
- ((name           main)
-  (public_name    Main)
-  (modules        Main)
+ ((name           min_caml)
+  (public_name    baccaml.min_caml)
+  (modules        Min_caml)
   (libraries      (minCaml))
 ))

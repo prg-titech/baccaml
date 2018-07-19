@@ -1,8 +1,6 @@
 open Asm
 open Core
 
-let flg = ref false
-
 let trace_entry = "min_caml_trace_entry"
 
 let rec convert = function
@@ -26,25 +24,18 @@ let rec trim_jit_dispatcher = function
          Let (_, IfEq (x, y, Ans (Set (n1)), Ans (Set (n2))),
               Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), args, fargs),
                    body))) ->
-    begin
-      if !flg then
-        Ans (
-          IfEq (x, C (n0),
-                Ans (CallDir (Id.L (trace_entry), List.tl_exn args, fargs)),
-                body))
-      else body
-    end
+    Ans (
+      IfEq (x, C (n0),
+            Ans (CallDir (Id.L (trace_entry), List.tl_exn args, fargs)),
+            body))
+
   | Let (_, IfEq (x, y, Ans (Set (n1)), Ans (Set (n2))),
          Let (_, CallDir (Id.L ("min_caml_jit_dispatch"), args, fargs),
-              body)) when !flg ->
-    begin
-      if !flg then
-        Ans (
-          IfEq (x, C (0),
-                Ans (CallDir (Id.L (trace_entry), List.tl_exn args, fargs)),
-                body))
-      else body
-    end
+              body)) ->
+    Ans (
+      IfEq (x, C (0),
+            Ans (CallDir (Id.L (trace_entry), List.tl_exn args, fargs)),
+            body))
   | t -> t
 
 let rec trim_jmp = function
@@ -54,24 +45,18 @@ let rec trim_jmp = function
               Let (_, CallDir (Id.L ("jit_merge_point"), args, fargs),
                    body))) ->
     begin
-      if !flg then
-        Ans (
-          IfEq (x, C (n0),
-                Ans (CallDir (Id.L (trace_entry), List.tl_exn args, fargs)),
-                body))
-      else body
+      Ans (
+        IfEq (x, C (n0),
+              Ans (CallDir (Id.L (trace_entry), List.tl_exn args, fargs)),
+              body))
     end
   | Let (_, IfEq (x, y, Ans (Set (n1)), Ans (Set (n2))),
          Let (_, CallDir (Id.L ("jit_merge_point"), args, fargs),
               body)) ->
-    begin
-      if !flg then
-        Ans (
-          IfEq (x, C (0),
-                Ans (CallDir (Id.L (trace_entry), List.tl_exn args, fargs)),
-                body))
-      else body
-    end
+    Ans (
+      IfEq (x, C (0),
+            Ans (CallDir (Id.L (trace_entry), List.tl_exn args, fargs)),
+            body))
   | t -> t
 
 

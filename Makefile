@@ -2,23 +2,22 @@
 
 all: build test
 
--include: Makefile.mincaml
-
 CC = gcc
 CFLAGS = -g -O2 -Wall
 OCAMLLDFLAGS = -warn-error -31
 
 MAIN = main.exe
 ARMIN = armin.exe
-COMPILER = min-caml
+COMPILER = min_caml.exe
+
+BUILD_DIR = _build/default
 
 .PHONY: build
 build:
 	jbuilder build
-	ln -sf _build/default/src/mincaml/$(MAIN) .
-	ln -sf _build/default/src/armin/$(ARMIN) .
-	ln -sf _build/default/src/armin/toplevel.exe .
-	mv $(MAIN) $(COMPILER)
+	ln -sf $(BUILD_DIR)/src/mincaml/$(COMPILER) .
+	ln -sf $(BUILD_DIR)/src/armin/$(ARMIN) .
+	ln -sf $(BUILD_DIR)/src/armin/toplevel.exe .
 
 .PHONY: setup
 setup:
