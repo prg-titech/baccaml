@@ -186,18 +186,6 @@ let prep ~prog:p ~name:n ~red_args:reds =
   in
   prep' p body (create_mj_reds reds p)
 
-let run p reg mem name reds =
-  let Prog (tbl, _, m) = p in
-  let (fdfs, ibody, reds) = prep ~prog:p ~name:name ~red_args:reds in
-  let p' = Prog (tbl, fdfs, m) in
-  let fenv = M.empty in
-  let res, fenv' =  mj p' reg mem fenv name ibody in
-  { name = Id.L (name); args = reds; fargs = []; body = res; ret = Type.Int } ::
-  List.map begin fun (n, (ag, t)) ->
-    let res, fenv' = mj p' reg mem fenv' n t in
-    { name = Id.L (n); args = ag; fargs = []; body = res; ret = Type.Int }
-  end (M.bindings fenv')
-
 let run_while p reg mem name reds =
   let Prog (tbl, _, m) = p in
   let (fdfs, ibody, reds) = prep ~prog:p ~name:name ~red_args:reds in
