@@ -1,6 +1,6 @@
 .default: build
 
-all: build test
+all: build
 
 CC = gcc
 CFLAGS = -g -O2 -Wall

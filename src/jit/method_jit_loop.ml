@@ -7,17 +7,11 @@ open Jit_config
 open Jit_util
 open Operands
 
-(* function_name -> (arguments, following expressions)
- *)
-module M' = Map.Make(String)
-
 module M = struct
-  include M'
+  (* function_name -> (arguments, following expressions) *)
+  include Map.Make(String)
   let keys m = M.bindings m |> List.map fst
 end
-
-
-type value = string list * t
 
 let empty_fenv () = M.empty
 
@@ -132,63 +126,9 @@ and mj_if p reg mem fenv name exp =
   | _ -> failwith "method_jit_if should accept conditional branches."
 
 
-let create_mj_reds trace_args (Prog (_, fundefs, _)) =
-  let interp =
-    List.find begin fun { name = Id.L (x) } ->
-      (String.split_on_char '.' x |> List.hd) = "interp"
-    end fundefs
-  in
-  let { args } = interp in
-  List.filter begin fun arg ->
-    let arg_name = List.hd (String.split_on_char '.' arg) in
-    List.exists (fun trace_arg -> trace_arg = arg_name) trace_args
-  end args
-
-
-let prep' p t reds =
-  let t' =
-    Simm.t t
-    |> Trim.trim_jmp
-    |> Trim.trim_jit_dispatcher
-  in
-  begin match t' with
-    | Let (_, Set (_),
-           Let (_,  IfEq (_, _, _, _),
-                Let (_, CallDir (Id.L (_), args, fargs),
-                     interp_body)))
-    | Let (_,  IfEq (_, _, _, _),
-           Let (_, CallDir (Id.L (_), args, fargs),
-                interp_body))
-    | Ans (IfEq (_, _, Ans (CallDir (Id.L (_), args, fargs)),
-                 interp_body)) ->
-      let Prog (table, fundefs, main) = p in
-      let fundefs' =
-        List.map begin fun fundef ->
-            let Id.L (x) = fundef.name in
-            match String.split_on_char '.' x |> List.hd with
-            | name' when name' = "interp" ->
-              let { name; args; fargs; ret } = fundef in
-              { name = name; args = args; fargs = fargs; body = interp_body; ret = ret }
-            | _ -> fundef
-        end fundefs
-      in
-      fundefs', interp_body, reds
-    | _ ->
-      failwith
-        "missing jit_dispatch. please add jit_dispatch ... at the top of your interpreter."
-  end
-
-let prep ~prog:p ~name:n ~red_args:reds =
-  let Prog (table, fundefs, main) = p in
-  let { body } = List.find begin fun { name = Id.L (x) } ->
-      String.split_on_char '.' x |> List.hd |> contains "interp"
-    end fundefs
-  in
-  prep' p body (create_mj_reds reds p)
-
 let run_while p reg mem name reds =
   let Prog (tbl, _, m) = p in
-  let (fdfs, ibody, reds) = prep ~prog:p ~name:name ~red_args:reds in
+  let Jit_prep.Env(fdfs, ibody, reds) = Jit_prep.prep ~prog:p ~name:name ~red_args:reds in
   let p' = Prog (tbl, fdfs, m) in
 
   let rec loop p reg mem fenv name args t =
@@ -205,6 +145,7 @@ let run_while p reg mem name reds =
     | None ->
       [(t1, name, args)]
   in
+
   let loops = loop p' reg mem M.empty name reds ibody  in
   List.map begin fun (body, name, args) ->
     { name = Id.L (name); args = args; fargs = []; body = body; ret = Type.Int }

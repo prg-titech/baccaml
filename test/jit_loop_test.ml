@@ -1,7 +1,8 @@
 open MinCaml
+open BacCaml
+open RCaml
 open Asm
 open Util
-open BacCaml
 open Jit_config
 open Jit_util
 
@@ -34,13 +35,13 @@ let main name ex_name code red_lst green_lst =
   let mem = Array.make 1000000 (Red (-1)) in
 
   let red_args = List.map fst red_lst in
-  let fundefs', interp_body, jit_args' =
-    Method_jit_loop.prep ~prog:p ~name:"min_caml_test_trace" ~red_args:red_args in
+  let tenv =
+    RCaml.prepare_tenv ~prog:p ~name:"min_caml_test_trace" ~red_args:red_args in
 
-  let fundef' = List.hd fundefs' in
+  let fundef' = List.hd (Fieldslib.(fundefs tenv)) in
 
   let redtbl, greentbl = prepare_var red_lst green_lst in
-  Colorizer.colorize_reg redtbl greentbl reg fundef' interp_body;
+  Colorizer.colorize_reg redtbl greentbl reg fundef' (Fieldslib.(ibody tenv));
   Colorizer.colorize_pgm code 0 mem;
 
   let y = Method_jit_loop.run_while p reg mem "min_caml_test_trace" ("bytecode" :: red_args) in
