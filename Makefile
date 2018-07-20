@@ -12,7 +12,7 @@ COMPILER = min_caml.exe
 
 BUILD_DIR = _build/default
 
-LIBS = core oUnit ppx_deriving logs fmt sequence stringext
+LIBS = core menhir oUnit ppx_deriving logs fmt sequence stringext
 
 .PHONY: build
 build:

@@ -9,4 +9,4 @@ before_install:
   - docker pull micchon/baccaml
 
 script:
-  - docker run -u root -v $(pwd):/tmp --rm -it micchon/baccaml /home/opam/.opam/4.05.0/bin/jbuilder runtest
+  - docker run -u root -v $(pwd):/tmp --rm -it micchon/baccaml /home/opam/.opam/4.05.0/bin/jbuilder build && /home/opam/.opam/4.05.0/bin/jbuilder runtest
