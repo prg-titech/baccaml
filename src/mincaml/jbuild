@@ -9,7 +9,7 @@
  ((name           minCaml)
   (public_name    baccaml.minCaml)
   (modules        (:standard \ min_caml anchor))
-  (libraries      (str core util))
+  (libraries      (str core logs util))
   (c_names        (float))
   (preprocess
    (pps (ppx_deriving.show)))

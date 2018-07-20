@@ -45,9 +45,9 @@ let main name ex_name code red_lst green_lst =
   Colorizer.colorize_pgm code 0 mem;
 
   let y = Method_jit_loop.run_while p reg mem "min_caml_test_trace" ("bytecode" :: red_args) in
-  List.iter (fun fundef ->
-      Emit_virtual.to_string_fundef fundef |> Logger.debug;
-    ) y;
+  List.iter (fun fundef -> Logs.debug (fun m ->
+      m "%s" (Emit_virtual.to_string_fundef fundef);
+    )) y;
 
   Jit_emit.emit_result_mj ~prog:p ~traces:y ~file:ex_name;
   ()
@@ -86,7 +86,7 @@ let speclist = [
   ("-red", Arg.Set_string reds, "Specify red variables");
   ("-code", Arg.Set_string codes, "Specify bytecode");
   ("-o", Arg.Set_string output, "Set executable's name");
-  ("-dbg", Arg.Unit (fun _ -> Logger.log_level := Logger.Debug), "Enable debug mode");
+  ("-dbg", Arg.Unit (fun _ -> Logs.set_level @@ Some Logs.Debug), "Enable debug mode");
 ]
 
 let _ =
@@ -94,6 +94,7 @@ let _ =
     speclist
     (fun x -> raise (Arg.Bad ("Bad argument : " ^ x)))
     usage;
+  Logs.set_reporter @@ Logs.format_reporter ();
   let file = !file in
   let bytes = parse_string_list int_of_string !codes in
   let reds = parse_pair_list !reds in

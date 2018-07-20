@@ -1,6 +1,5 @@
 open MinCaml
 open Asm
-open Util
 open BacCaml
 open Jit_config
 open Jit_util
@@ -187,7 +186,7 @@ let speclist = [
   ("-code", Arg.Set_string codes, "Specify bytecode");
   ("-annot", Arg.Set_string annots, "Specify annotations for bytecode");
   ("-o", Arg.Set_string output, "Set executable's name");
-  ("-dbg", Arg.Unit (fun _ -> Logger.log_level := Logger.Debug), "Enable debug mode");
+  ("-dbg", Arg.Unit (fun _ -> Util.Logger.log_level := Util.Logger.Debug), "Enable debug mode");
 ]
 
 let run = (fun f ->

@@ -183,12 +183,14 @@ and create_asm' = function
     create_asm'_non_tail_if (NonTail(z)) e1 e2 "jbe" "ja"
   | Tail, CallCls(x, ys, zs) -> (* 末尾呼び出し (caml2html: emit_tailcall) *)
     Buffer.create 100
-    |> fun buf -> Buffer.add_string buf @@ (create_asm'_args [(x, reg_cl)] ys zs)
-                  |> fun _ -> Buffer.add_string buf @@ Printf.sprintf "\tjmp\t*(%s)\n" reg_cl
-                              |> fun _ -> Buffer.contents buf
+    |> fun buf ->
+    Buffer.add_string buf @@ (create_asm'_args [(x, reg_cl)] ys zs)
+    |> fun _ ->
+    Buffer.add_string buf @@ Printf.sprintf "\tjmp\t*(%s)\n" reg_cl
+    |> fun _ -> Buffer.contents buf
   | Tail, CallDir(Id.L(x), ys, zs) -> (* 末尾呼び出し *)
     Buffer.create 100
-    |> fun buf -> 
+    |> fun buf ->
     Buffer.add_string buf @@ create_asm'_args [] ys zs;
     Buffer.add_string buf @@ (
       if String.contains x "interp" then
@@ -221,7 +223,7 @@ and create_asm' = function
       else
         Printf.sprintf "\tcall\t%s\n" x);
     if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\tsubl\t$%d, %s\n" ss reg_sp;
-    (if List.mem a allregs && a <> regs.(0) then 
+    (if List.mem a allregs && a <> regs.(0) then
        Buffer.add_string buf @@ Printf.sprintf "\tmovl\t%s, %s\n" regs.(0) a
      else if List.mem a allfregs && a <> fregs.(0) then
        Buffer.add_string buf @@ Printf.sprintf "\tmovsd\t%s, %s\n" fregs.(0) a);
@@ -286,7 +288,7 @@ let emit_fundef fundef =
   stackset := S.empty;
   stackmap := [];
   Printf.sprintf ".globl %s\n" x |> Buffer.add_string buf;
-  Printf.sprintf "%s:\n" x |> Buffer.add_string buf;  
+  Printf.sprintf "%s:\n" x |> Buffer.add_string buf;
   create_asm (Tail, body) |> Buffer.add_string buf;
   buf
 
@@ -322,7 +324,7 @@ let emit_trace (tr: trace_result) (file: string) (interp: string)  =
   Printf.sprintf "%s:\n" x |> Buffer.add_string buf;
   create_asm (Tail, body) |> Buffer.add_string buf;
   let res = Buffer.contents buf in
-  Logger.debug (print_newline (); "!!EMIT TRACE!!\n" ^ res);
+  Logs.debug (fun m -> m  "\n!!EMIT TRACE!!\n%s" res);
   let oc = open_out (file ^ ".s") in
   Printf.fprintf oc "%s" res;
   close_out oc
@@ -337,13 +339,13 @@ let emit_result_mj ~prog:p ~traces:trs ~file:f =
       ) fundefs
     |> fun { name = Id.L (x) } -> x
   in
-  let buf = Buffer.create 10000 in  
+  let buf = Buffer.create 10000 in
   List.iter (fun fundef ->
       emit_fundef fundef |> Buffer.add_buffer buf
     ) trs;
   emit_midlayer (Method_success (List.hd trs)) f interp_name |> Buffer.add_buffer buf;
   let res = Buffer.contents buf in
-  Logger.debug (print_newline (); "!!EMIT TRACE!!\n" ^ res);
+  Logs.debug (fun m -> m "\n!!EMIT TRACE!!\n%s)" res);
   let oc = open_out (f ^ ".s") in
   Printf.fprintf oc "%s" res;
   close_out oc

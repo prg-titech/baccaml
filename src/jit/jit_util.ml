@@ -1,18 +1,27 @@
 open MinCaml
 open Asm
-open Util
 open Jit_config
 
 let int_of_id_t id =
   if id = "min_caml_hp" then
     failwith ("int_of_id_t min_caml_hp is not supported.")
   else
-    match int_of_string_opt (String.after_of id '.') with
-    | Some (i) -> i
-    | _ ->
-      match int_of_string_opt (String.after_of id 'u') with
+    Core.(
+      match
+        String.split ~on:'.' id
+        |> List.last
+        |> fun opt -> Option.(opt >>| int_of_string)
+      with
       | Some (i) -> i
-      | _ -> failwith (Printf.sprintf "int_of_id_t (%s) is failed" id)
+      | _ ->
+        match
+          Stringext.split ~max:2 ~on:'u' id
+          |> List.last
+          |> fun opt -> Option.(opt >>| int_of_string)
+        with
+        | Some (i) -> i
+        | _ -> failwith (Printf.sprintf "int_of_id_t (%s) is failed" id)
+    )
 
 let value_of = function
   | Red (n) | Green (n) | LightGreen (n) -> n
@@ -86,12 +95,11 @@ let jit_value_of_id_or_imm reg = function
   | C (n) -> Green (n)
 
 let name_of id =
-  match Core.List.hd (String.split_on_char '.' id) with
-  | Some (v) -> v
-  | None -> id
+  try List.hd (String.split_on_char '.' id) with
+  | _ -> id
 
 let is_opcode id =
-  String.contains (name_of id) "instr"
+  contains (name_of id) "instr"
 
 let _ =
   assert (is_opcode "instr")

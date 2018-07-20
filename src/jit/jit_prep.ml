@@ -1,6 +1,5 @@
 open MinCaml
 open Asm
-open Util
 open Jit_util
 
 type env = Env of Asm.fundef list * Asm.t * Id.t list

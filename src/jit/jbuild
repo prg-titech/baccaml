@@ -3,5 +3,5 @@
 (library
  ((name          bacCaml)
   (public_name   baccaml.jit)
-  (libraries     (core str util minCaml)
+  (libraries     (core str stringext logs fmt util minCaml)
   )))

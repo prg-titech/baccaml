@@ -1,7 +1,6 @@
 open Core
 
 open MinCaml
-open Util
 open Asm
 open Jit_config
 open Jit_util
@@ -16,16 +15,13 @@ let run p e reg mem = match e with
     let r = reg.(int_of_id_t id_t) in
     (match r with
      | Green (n) ->
-       let msg = Format.sprintf "Set (%d): Green" n in
-       Logger.debug msg;
+       Logs.debug (fun m -> m "Set (%d): Green" n);
        Specialized (Green (n))
      | LightGreen (n) ->
-       let msg = Format.sprintf "Set (%d): LightGreen" n in
-       Logger.debug msg;
+       Logs.debug (fun m -> m "Set (%d): LightGreen" n );
        Specialized (LightGreen (n))
      | Red (n) ->
-       let msg = Format.sprintf "Set (%d): Red" n in
-       Logger.debug msg;
+       Logs.debug (fun m -> m "Set (%d): Red" n);
        Not_specialized (exp, Red (n)))
   | Add (id_t1, id_or_imm) as exp ->
     let r1 = reg.(int_of_id_t id_t1) in
@@ -39,31 +35,28 @@ let run p e reg mem = match e with
      | LightGreen (n1), LightGreen (n2)
      | LightGreen (n1), Green (n2)
      | Green (n1), LightGreen (n2) ->
-       let msg =
-         Format.sprintf "Add (%s, %s), %d %d ==> %d: Green, Green"
-           id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2)
-       in Logger.debug msg;
+       Logs.debug (fun m ->
+           m "Add (%s, %s), %d %d ==> %d: Green, Green"
+             id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2));
        Specialized (Green (n1 + n2))
      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
-       let msg =
-         Format.sprintf "Add (%s, %s), %d %d ==> %d; Red, Green"
-           id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2)
-       in Logger.debug msg;
+       Logs.debug (fun m ->
+           m "Add (%s, %s), %d %d ==> %d; Red, Green"
+             id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2));
        Not_specialized (Add (id_t1, C (n2)), Red (n1 + n2))
      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
-       let msg =
-         Format.sprintf "Add (%s, %s), %d %d ==> %d; Green, Red"
-           id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2)
-       in Logger.debug msg;
+       Logs.debug (fun m ->
+           m "Add (%s, %s), %d %d ==> %d; Green, Red"
+             id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2));
        let id_t' = match id_or_imm with
            V (id) -> id
          | C (n) -> failwith "Add (green, red)"
        in
        Not_specialized (Add (id_t', C (n1)), Red (n1 + n2))
      | Red (n1), Red (n2) ->
-       let msg = Format.sprintf "Add (%s, %s), %d %d ==> %d; Red, Red"
-           id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2)
-       in Logger.debug msg;
+       Logs.debug (fun m ->
+           m "Add (%s, %s), %d %d ==> %d; Red, Red"
+             id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2));
        Not_specialized (exp, Red (n1 + n2)))
   | Sub (id_t1, id_or_imm) as exp ->
     let r1 = reg.(int_of_id_t id_t1) in
@@ -76,8 +69,9 @@ let run p e reg mem = match e with
      | LightGreen (n1), LightGreen (n2)
      | LightGreen (n1), Green (n2)
      | Green (n1), LightGreen (n2) ->
-       let msg = Format.sprintf "Sub (%s, %s), %d %d; Red, Red" id_t1 (string_of_id_or_imm id_or_imm) n1 n2 in
-       Logger.debug msg;
+       Logs.debug (fun m ->
+           m "Sub (%s, %s), %d %d; Red, Red"
+             id_t1 (string_of_id_or_imm id_or_imm) n1 n2);
        Specialized (Green (n1 - n2))
      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
        Not_specialized (Sub (id_t1, C (n2)), Red (n1 - n2))
@@ -111,26 +105,23 @@ let run p e reg mem = match e with
      | Green (n1), LightGreen (n2) ->
        begin match mem.(n1 + n2) with
          | Green n | LightGreen n as value ->
-           let msg =
-             Format.sprintf "Ld (%s, %s), %d %d => %d (Green): Green, Green"
-               id_t id_t2 (value_of destld) (value_of offsetld) n
-           in Logger.debug msg;
+           Logs.debug (fun m ->
+             m "Ld (%s, %s), %d %d => %d (Green): Green, Green"
+               id_t id_t2 (value_of destld) (value_of offsetld) n);
            Specialized (value)
          | Red n ->
-           let msg =
-             Format.sprintf "Ld (%s, %s), %d %d => %d (Red): Green, Green"
-               id_t id_t2 (value_of destld) (value_of offsetld) n
-           in Logger.debug msg;
+           Logs.debug (fun m ->
+               m "Ld (%s, %s), %d %d => %d (Red): Green, Green"
+                 id_t id_t2 (value_of destld) (value_of offsetld) n);
            let e = Ld (zero, C (n1 + n2), 0) in
            Not_specialized (e, Red n)
        end
      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) -> failwith "Ld (green, red)"
      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
        let n = mem.(n1 + n2) in
-       let msg =
-         Format.sprintf "Ld (%s, %s), %d %d => %d: Red, Green"
-           id_t id_t2 (value_of destld) (value_of offsetld) (value_of n)
-       in Logger.debug msg;
+       Logs.debug (fun m ->
+           m "Ld (%s, %s), %d %d => %d: Red, Green"
+             id_t id_t2 (value_of destld) (value_of offsetld) (value_of n));
        begin match mem.(n1 + n2) with
          | Green (n) | LightGreen (n) ->
            Not_specialized (Ld (id_t, C (n2), x), Red (n))
@@ -139,10 +130,9 @@ let run p e reg mem = match e with
        end
      | Red (n1), Red (n2) ->
        let n = mem.(n1 + n2) in
-       let msg =
-         Format.sprintf "Ld (%s, %s), %d %d => %d: Red, Red"
-           id_t id_t2 (value_of destld) (value_of offsetld) (value_of n)
-       in Logger.debug msg;
+       Logs.debug (fun m ->
+           m "Ld (%s, %s), %d %d => %d: Red, Red"
+             id_t id_t2 (value_of destld) (value_of offsetld) (value_of n));
        Not_specialized (exp, Red (value_of n)))
   | St (src, dest, offset, x) ->
     let src' = reg.(int_of_id_t src) in
@@ -162,18 +152,14 @@ let run p e reg mem = match e with
         begin match src' with
           | Green (n) | LightGreen (n) ->
             mem.(n1 + n2) <- src';
-            let msg =
-              Format.sprintf
-                "St (%s, %s, %s, %d), %d %d %d: Green, Green, Green"
-                src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset')
-            in Logger.debug msg;
+            Logs.debug (fun m ->
+                m "St (%s, %s, %s, %d), %d %d %d: Green, Green, Green"
+                  src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
             Specialized (Green (0))
           | Red (n) ->
-            let msg =
-              Format.sprintf
-                "St (%s, %s, %s, %d), %d %d %d: Green, Green, Red"
-                src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset')
-            in Logger.debug msg;
+            Logs.debug (fun m ->
+                m "St (%s, %s, %s, %d), %d %d %d: Green, Green, Red"
+                  src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
             Not_specialized (St (src, zero, C (n1 + n2), 0), Red (n))
         end
       | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
@@ -182,38 +168,30 @@ let run p e reg mem = match e with
         begin match src' with
           | Green (n) | LightGreen (n) ->
             mem.(n1 + n2) <- src';
-            let msg =
-              Format.sprintf
-                "St (%s, %s, %s, %d), %d %d %d: Red, Green, Green"
-                src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset')
-            in Logger.debug msg;
+            Logs.debug (fun m ->
+                m "St (%s, %s, %s, %d), %d %d %d: Red, Green, Green"
+                  src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
             Not_specialized (St (src, dest, C (n2), x), Red (0))
           | Red (n) ->
             mem.(n1 + n2) <- src';
-            let msg =
-              Format.sprintf
-                "St (%s, %s, %s, %d), %d %d %d: Red, Green, Red"
-                src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset')
-            in Logger.debug msg;
+            Logs.debug (fun m ->
+                m "St (%s, %s, %s, %d), %d %d %d: Red, Green, Red"
+                  src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
             Not_specialized (St (src, zero, C (n1 + n2), x), Red (0))
         end
       | Red (n1), Red (n2) ->
         begin match src' with
           | Green (n) | LightGreen (n) ->
             mem.(n1 + n2) <- Red (value_of src');
-            let msg =
-              Format.sprintf
-                "St (%s, %s, %s, %d), %d %d %d: Red, Red, Green"
-                src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset')
-            in Logger.debug msg;
+            Logs.debug (fun m ->
+                m "St (%s, %s, %s, %d), %d %d %d: Red, Red, Green"
+                  src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
             Not_specialized (St (src, dest, C (n2), x), Red (0))
           | Red (n) ->
             mem.(n1 + n2) <- src';
-            let msg =
-              Format.sprintf
-                "St (%s, %s, %s, %d), %d %d %d: Red, Red, Red"
-                src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset')
-            in Logger.debug msg;
+            Logs.debug (fun m ->
+                m "St (%s, %s, %s, %d), %d %d %d: Red, Red, Red"
+                  src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
             Not_specialized (St (src, zero, C (n1 + n2), x), Red (0))
         end
     end

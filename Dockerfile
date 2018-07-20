@@ -1,18 +1,13 @@
-FROM ocaml/opam:ubuntu
+FROM ocaml/opam:alpine
 
 MAINTAINER Yusuke Izawa <yuizalp@gmail.com>
 
 WORKDIR /tmp
 
-RUN opam init && \
-    opam install -y \
-    ounit \
-    core \
-    ppx_deriving \
-    ppx_fields_conv \
-    fmt \
-    logs \
-    menhir \
-    sequence \
-    jbuilder && \
+COPY Makefile .
+
+RUN touch ~/.profile && sudo apk update && \
+    sudo apk add m4 pcre-dev make patch libc-dev gcc && \
+    opam init -a && \
+    make setup && \
     eval $(opam config env)

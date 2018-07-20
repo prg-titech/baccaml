@@ -1,5 +1,5 @@
 (executables
  ((names (jit_loop_test virtual_test))
   (public_names (baccaml.jlt baccaml.vt))
-  (libraries (core str re sequence oUnit minCaml bacCaml rCaml))
+  (libraries (core str re sequence logs fmt oUnit minCaml bacCaml rCaml))
 ))

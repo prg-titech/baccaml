@@ -1,6 +1,4 @@
-module List = struct
-
-  include List
+module BcList = struct
 
   let rec zip lst1 lst2 = match lst1, lst2 with
     | [], _ -> []
@@ -9,7 +7,7 @@ module List = struct
 
   let unzip lst =
     let f (l, s) (x, y) = (x::l, y::s) in
-    Core.List.fold_left ~f:f ~init:([],[]) (List.rev lst)
+    List.fold_left f ([],[]) (List.rev lst)
 
   let range i j =
     let rec aux n acc =
@@ -25,7 +23,7 @@ module List = struct
 
 end
 
-module Array = struct
+module BcArray = struct
 
   include Array
 
@@ -35,11 +33,10 @@ module Array = struct
       | h :: t -> f h; print_string ";"; print_elements t
     in
     print_string "[|"; print_elements (Array.to_list arr); print_string "|]"
+
 end
 
-module String = struct
-
-  include String
+module BcString = struct
 
   let string_to_list str =
     let rec loop i limit =
@@ -62,7 +59,7 @@ module String = struct
     let re = Str.regexp_string str2 in
     try
       ignore (Str.search_forward re str1 0); true
-    with Not_found ->
+    with _ ->
       false
 
   let before_of str chr =
@@ -72,12 +69,27 @@ module String = struct
 
 end
 
+module List = struct
+  include List
+  include BcList
+end
+
+module Array = struct
+  include Array
+  include BcString
+end
+
+module String = struct
+  include String
+  include BcString
+end
+
 module Logger = struct
   type level =
-  | Error
-  | Warn
-  | Info
-  | Debug
+    | Error
+    | Warn
+    | Info
+    | Debug
 
   let log_level = ref Error
 

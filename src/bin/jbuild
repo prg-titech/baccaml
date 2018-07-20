@@ -3,7 +3,7 @@
 (library
  ((name        rCaml)
   (public_name baccaml.rcaml)
-  (libraries (bacCaml minCaml))
+  (libraries (logs bacCaml minCaml))
   (preprocess
     (pps (ppx_fields_conv)))
 ))

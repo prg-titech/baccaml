@@ -1,6 +1,5 @@
 open MinCaml
 open Asm
-open Util
 open Inlining
 open Renaming
 open Jit_config
@@ -30,12 +29,12 @@ let rec mj p reg mem fenv name t =
   | Ans (exp) ->
     mj_exp p reg mem fenv name exp
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), args, fargs), body) ->
-    Logger.debug "min_caml_loop_start";
+    Logs.debug (fun m -> m "min_caml_loop_start");
     let fname = gen_fname "loop_start" in
     let extended_fenv = extend_fenv fname args body fenv in
     Ans (CallDir (Id.L (fname), args, fargs)), extended_fenv
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), args, fargs), body) ->
-    Logger.debug "min_caml_loop_end";
+    Logs.debug (fun m -> m "min_caml_loop_end");
     Ans (CallDir (Id.L (name), args, fargs)), M.empty
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     let restored_call =
@@ -66,7 +65,7 @@ let rec mj p reg mem fenv name t =
 and mj_exp p reg mem fenv name exp =
   match exp with
   | CallDir (id_l, args, fargs) ->
-    Logger.debug (Printf.sprintf "CallDir (%s)" (string_of_id_l id_l));
+    Logs.debug (fun m -> m  "CallDir (%s)" (string_of_id_l id_l));
     let fundef = find_fundef p id_l in
     let t = Inlining.inline_calldir_exp args fundef reg in
     mj p reg mem fenv name t
@@ -85,7 +84,7 @@ and mj_exp p reg mem fenv name exp =
 and mj_if p reg mem fenv name exp =
   match exp with
   | IfGE (id_t, id_or_imm, t1, t2) | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
-    Logger.debug (Printf.sprintf "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
+    Logs.debug (fun m -> m  "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
     let r1 = value_of reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
       | V (id) -> value_of reg.(int_of_id_t id)
@@ -95,7 +94,7 @@ and mj_if p reg mem fenv name exp =
     then mj p reg mem fenv name t1
     else mj p reg mem fenv name t2
   | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) ->
-    Logger.debug (Printf.sprintf "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
+    Logs.debug (fun m -> m  "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
     let r1 = jit_value_of_id_t reg id_t in
     let r2 = jit_value_of_id_or_imm reg id_or_imm in
     let regt1, regt2 = Array.copy reg, Array.copy reg in
