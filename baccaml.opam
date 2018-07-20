@@ -12,5 +12,7 @@ depends: [
   "jbuilder" {build}
   "core"
   "str"
+  "sequence"
   "ppx_deriving"
+  "oUnit"
 ]

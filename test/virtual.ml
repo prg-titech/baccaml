@@ -7,7 +7,6 @@ let print_array f arr =
 
 let loop_end a b = () in
 
-
 (* ADD 0
    SUB 1
    MUL 2
