@@ -1,12 +1,10 @@
-open Core
 open MinCaml
 open Asm
 open Util
-open Common
 open Jit_config
 
 let int_of_id_t id =
-  if String.equal id "min_caml_hp" then
+  if id = "min_caml_hp" then
     failwith ("int_of_id_t min_caml_hp is not supported.")
   else
     match int_of_string_opt (String.after_of id '.') with
@@ -49,15 +47,15 @@ let contains s1 s2 =
   with _ -> false
 
 let find_pc_addr (argsr : Id.t list) (jargs : method_jit_args) =
-  match List.nth argsr (jargs.pc_place) with
+  match List.nth_opt argsr (jargs.pc_place) with
   | Some (v) -> int_of_id_t v
   | None -> failwith "find_pc in Method_jit is failed."
 
 let find_pc_addr_with_p (p : prog) (jargs : method_jit_args) =
   let Prog (_, fundefs, _) = p in
   let { args } =
-    match List.find fundefs ~f:(fun { name } ->
-        contains (string_of_id_l name) "interp")
+    match List.find_opt (fun { name } ->
+        contains (string_of_id_l name) "interp") fundefs
     with
     | Some (fundef) -> fundef
     | None -> failwith "find fundef is failed in method jit."
@@ -67,8 +65,8 @@ let find_pc_addr_with_p (p : prog) (jargs : method_jit_args) =
 let find_pc_with_p (p : prog) (reg : reg) (jargs : method_jit_args) =
   let Prog (_, fundefs, _) = p in
   let { args } =
-    match List.find fundefs ~f:(fun { name } ->
-        contains (string_of_id_l name) "interp")
+    match List.find_opt (fun { name } ->
+        contains (string_of_id_l name) "interp") fundefs
     with
     | Some (fundef) -> fundef
     | None -> failwith "find fundef is failed in method jit."
@@ -77,7 +75,7 @@ let find_pc_with_p (p : prog) (reg : reg) (jargs : method_jit_args) =
 
 let rec find_fundef prog name =
   let Asm.Prog (_, fundefs, _) = prog in
-  match List.find fundefs ~f:(fun fundef -> fundef.name = name) with
+  match List.find_opt (fun fundef -> fundef.name = name) fundefs with
   | Some (body) -> body
   | None -> failwith "find_fundef in Method jit is failed"
 
@@ -88,7 +86,7 @@ let jit_value_of_id_or_imm reg = function
   | C (n) -> Green (n)
 
 let name_of id =
-  match List.hd (String.split id ~on:'.') with
+  match Core.List.hd (String.split_on_char '.' id) with
   | Some (v) -> v
   | None -> id
 

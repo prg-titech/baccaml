@@ -1,12 +1,12 @@
-open Core
 open MinCaml
-open Asm
 open Util
+open Asm
 open Inlining
+open Renaming
 open Jit_config
 open Jit_util
 open Operands
-open Renaming
+open Core
 
 exception Method_jit_failed of string
 

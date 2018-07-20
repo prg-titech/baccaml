@@ -191,7 +191,7 @@ and create_asm' = function
     |> fun buf -> 
     Buffer.add_string buf @@ create_asm'_args [] ys zs;
     Buffer.add_string buf @@ (
-      if List.for_all (fun c -> String.contains x c) ['i'; 'n'; 't'; 'e'; 'r'; 'p'] then
+      if String.contains x "interp" then
         Printf.sprintf "\tjmp\t%s\n" "min_caml_mid_layer"
       else
         Printf.sprintf "\tjmp\t%s\n" x);
@@ -216,7 +216,7 @@ and create_asm' = function
     Buffer.add_string buf @@ create_asm'_args [] ys zs;
     if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\taddl\t$%d, %s\n" ss reg_sp;
     Buffer.add_string buf @@ (
-      if List.for_all (fun c -> String.contains x c) ['i'; 'n'; 't'; 'e'; 'r'; 'p'] then
+      if String.contains x "interp" then
         Printf.sprintf "\tcall\t%s\n" "min_caml_mid_layer"
       else
         Printf.sprintf "\tcall\t%s\n" x);

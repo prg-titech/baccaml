@@ -1,7 +1,7 @@
 open Asm
-open Core
 open Interp_config
 open Util
+open Core
 
 exception Not_supported of string
 

@@ -7,11 +7,8 @@ open Jit_config
 open Jit_util
 open Operands
 
-module M = struct
-  (* function_name -> (arguments, following expressions) *)
-  include Map.Make(String)
-  let keys m = M.bindings m |> List.map fst
-end
+(* function_name -> (arguments, following expressions) *)
+module M = Map.Make(String)
 
 let empty_fenv () = M.empty
 

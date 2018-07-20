@@ -3,5 +3,5 @@
 (library
  ((name util)
   (public_name baccaml.util)
-  (libraries (core str))
+  (libraries (stdlib core str))
 ))

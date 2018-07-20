@@ -12,6 +12,8 @@ COMPILER = min_caml.exe
 
 BUILD_DIR = _build/default
 
+LIBS = merlin ocp-indent tuareg utop core oUnit ppx_deriving logs fmt sequence
+
 .PHONY: build
 build:
 	jbuilder build
@@ -21,7 +23,7 @@ build:
 
 .PHONY: setup
 setup:
-	opam install -y merlin ocp-indent tuareg utop core jbuilder ppx_deriving logs fmt
+	opam install $(LIBS)
 
 .PHONY: clean
 clean:
