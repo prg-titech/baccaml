@@ -34,7 +34,8 @@ let rec mj p reg mem fenv name t =
     let extended_fenv = extend_fenv fname args body fenv in
     Ans (CallDir (Id.L (fname), args, fargs)), extended_fenv
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), args, fargs), body) ->
-    Logs.debug (fun m -> m "min_caml_loop_end");
+    (* [TODO] インタプリタに差しもどす処理を入れる *)
+    Logs.debug (fun m -> m "min_caml_loop_end.");
     Ans (CallDir (Id.L (name), args, fargs)), M.empty
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     let restored_call =

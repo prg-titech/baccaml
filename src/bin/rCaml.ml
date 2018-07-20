@@ -186,7 +186,7 @@ let speclist = [
   ("-code", Arg.Set_string codes, "Specify bytecode");
   ("-annot", Arg.Set_string annots, "Specify annotations for bytecode");
   ("-o", Arg.Set_string output, "Set executable's name");
-  ("-dbg", Arg.Unit (fun _ -> Util.Logger.log_level := Util.Logger.Debug), "Enable debug mode");
+  ("-dbg", Arg.Unit (fun _ -> Logs.set_level @@ Some Logs.Debug), "Enable debug mode");
 ]
 
 let run = (fun f ->
@@ -194,6 +194,7 @@ let run = (fun f ->
     speclist
     (fun x -> raise (Arg.Bad ("Bad argument : " ^ x)))
     usage;
+  Logs.set_reporter @@ Logs.format_reporter ();
   let file = !file in
   let output = !output in
   let bytes = string_of_array ~f:int_of_string !codes in

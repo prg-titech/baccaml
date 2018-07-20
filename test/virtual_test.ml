@@ -18,8 +18,8 @@ let _ =
 
       List.iter (
         fun fundef ->
-          Emit_virtual.to_string_fundef fundef
-          |> Logger.debug) traces;
+          Logs.debug (fun m ->
+              m "%s" (Emit_virtual.to_string_fundef fundef))) traces;
 
       Jit_emit.emit_result_mj ~prog:prog ~traces:traces ~file:ex_name
     )

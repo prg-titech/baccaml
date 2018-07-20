@@ -22,17 +22,16 @@ let rec interp bytecode stack pc sp =
     interp bytecode stack (pc + 2) (sp + 1)
   else if instr = 5 then        (* JUMP_IF_ZERO *)
     let addr = bytecode.(pc + 1) in
-    let v = stack.(sp - 1) in
-    if v = 0 then
-      (loop_start bytecode stack;
+    loop_start ();
+    if stack.(sp - 1) = 0 then
+      (loop_start ();
        interp bytecode stack addr (sp - 1))
     else
-      (loop_start bytecode stack;
+      (loop_start ();
        interp bytecode stack (pc + 2) (sp - 1))
   else if instr = 6 then        (* CALL *)
     let addr = bytecode.(pc + 1) in
     stack.(sp) <- (pc + 2);
-    loop_start bytecode stack;
     let r = interp bytecode stack addr (sp + 1) in
     r
   else if instr = 7 then        (* RET *)
@@ -40,7 +39,7 @@ let rec interp bytecode stack pc sp =
     let v = stack.(sp - 1) in   (* sp - 1 *)
     let pc2 = stack.(sp - 2) in (* sp - 2 *)
     stack.(sp - n - 2) <- v;    (* sp - 2 - n + 1 = sp - 1 - n *)
-    loop_end bytecode stack;
+    loop_end ();
     interp bytecode stack pc2 (sp - n - 1)
   else if instr = 8 then        (* DUP *)
     let n = bytecode.(pc + 1) in
@@ -55,10 +54,10 @@ let rec interp bytecode stack pc sp =
     stack.(sp - 2) <- v;
     interp bytecode stack (pc + 1) (sp - 2)
   else if instr = 12 then       (* LOOP_S *)
-    (loop_start bytecode stack;
+    (loop_start ();
      interp bytecode stack (pc + 1) sp)
   else if instr = 13 then       (* LOOP_E *)
-    (loop_end bytecode stack;
+    (loop_end ();
      interp bytecode stack (pc + 1) sp)
   else
     -1000 in
