@@ -13,6 +13,9 @@ depends: [
   "core"
   "str"
   "sequence"
+  "logs"
+  "fmt"
+  "stringext"
   "ppx_deriving"
   "oUnit"
 ]
