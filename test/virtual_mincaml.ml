@@ -1,5 +1,5 @@
 let rec interp bytecode stack pc sp =
-  jit_dispatch (pc=0) bytecode stack;
+  jit_dispatch (pc=6) bytecode stack;
   let instr = bytecode.(pc) in
   if instr = 0 then             (* ADD *)
     let v2 = stack.(sp - 1) in  (* sp - 1 *)
@@ -22,13 +22,10 @@ let rec interp bytecode stack pc sp =
     interp bytecode stack (pc + 2) (sp + 1)
   else if instr = 5 then        (* JUMP_IF_ZERO *)
     let addr = bytecode.(pc + 1) in
-    loop_start ();
     if stack.(sp - 1) = 0 then
-      (loop_start ();
-       interp bytecode stack addr (sp - 1))
+       interp bytecode stack addr (sp - 1)
     else
-      (loop_start ();
-       interp bytecode stack (pc + 2) (sp - 1))
+      interp bytecode stack (pc + 2) (sp - 1)
   else if instr = 6 then        (* CALL *)
     let addr = bytecode.(pc + 1) in
     stack.(sp) <- (pc + 2);
