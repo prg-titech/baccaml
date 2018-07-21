@@ -1,5 +1,5 @@
 let rec interp bytecode stack pc sp =
-  jit_dispatch (pc=6) bytecode stack;
+  jit_dispatch (pc=5) bytecode stack;
   let instr = bytecode.(pc) in
   if instr = 0 then             (* ADD *)
     let v2 = stack.(sp - 1) in  (* sp - 1 *)
