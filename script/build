@@ -8,5 +8,5 @@ jbuilder build && \
     _build/default/"$2".exe -file "$1".ml -code "$3" -green "$4" -red "$5" -o $(basename "$2") -dbg && \
     ./min_caml.exe "$1".ml && \
     gcc -c -g -m32 -O2 $(basename "$2").s && \
-    gcc -g -m32 -Wall lib/libmincaml.s lib/stub.c "$1".s $(basename "$2").o -o $(basename "$2") && \
+    gcc -g -m32 -Wall lib/libbaccaml.s lib/stub.c "$1".s $(basename "$2").o -o $(basename "$2") && \
     rm -rf $(basename "$2").dSYM

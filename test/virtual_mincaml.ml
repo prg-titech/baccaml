@@ -59,8 +59,8 @@ let rec interp bytecode stack pc sp =
   else
     -1000 in
 
-let code = Array.make 50 0 in
-let stack = Array.make 50 0 in
+let code = Array.make 40 0 in
+let stack = Array.make 1000 0 in
 code.(0) <- 4;
 code.(1) <- 10;
 code.(2) <- 6;
