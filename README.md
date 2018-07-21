@@ -13,17 +13,18 @@ This project is forked from <a href="https://github.com/esumii/min-caml">min-cam
 
 ## BacCaml Project
 
-- [BacCaml](https://github.com/prg-titech/baccaml): meta JIT compiler
-- [Armin](https://github.com/prg-titech/armin): interface language for BacCaml
+- BacCaml: The Meta JIT Compiler
+- RCaml: CLI interface
+- Armin: interface language for BacCaml
 
 ## Usage
 
 - Setup
 
-	For build BacCaml:
+	Install dependencies:
 
 	```bash
-	$ opam install -y core ppx_deriving ounit
+	$ make setup
 	```
 
 	For your developing environment:
