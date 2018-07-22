@@ -190,8 +190,8 @@ let prime_test = {name="prime_test"; args=["cand"; "i"];
 
 let is_prime = {name = "is_prime"; args = ["cand"];
                 body = If ( LT (Int 2, Var "cand"),
-                        Call ("prime_test", [Var "cand"; Int 2]),
-                        Int 1)}
+                            Call ("prime_test", [Var "cand"; Int 2]),
+                            Int 1)}
 
 (* let _ = assert (1 = ccexe [sub;eq;mod_;prime_test;is_prime] "mod" [7;3]) *)
 let _ = print_string "start prime_test\n"

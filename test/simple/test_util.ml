@@ -18,6 +18,6 @@ let () =
 let setup aa bb =
   Core.List.iter
     ~f:(fun (a, i) -> bb.(i) <- value_of a)
-     (List.zip_exn
+    (List.zip_exn
        (Array.to_list aa)
        (List.range 0 (Array.length aa - 1)))

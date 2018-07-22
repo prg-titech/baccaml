@@ -1,12 +1,12 @@
 (* let print_array arr =
-  print_string "[";
-  Array.map (fun a -> print_int a; print_string "; ") arr;
-  print_string "]" in
+   print_string "[";
+   Array.map (fun a -> print_int a; print_string "; ") arr;
+   print_string "]" in
 
-let debug stack pc sp =
-  print_array stack; print_newline ();
-  print_string "pc: "; print_int pc; print_newline ();
-  print_string "sp: "; print_int sp; print_newline (); in
+   let debug stack pc sp =
+   print_array stack; print_newline ();
+   print_string "pc: "; print_int pc; print_newline ();
+   print_string "sp: "; print_int sp; print_newline (); in
 *)
 
 let rec interp bytecode pc stack sp =
@@ -21,11 +21,11 @@ let rec interp bytecode pc stack sp =
     let v2 = stack.(sp) in
     let v1 = stack.(sp - 1) in
     stack.(sp - 1) <- (v1 - v2);    interp bytecode (pc + 1) stack (sp - 1)
-  (* else if instr = 3 then (* LT *)
-    let v2 = stack.(sp) in
-    let v1 = stack.(sp - 1) in
-    stack.(sp - 1) <- (if v1 < v2 then 1 else 0);
-     interp bytecode (pc + 1) stack (sp - 1) *)
+    (* else if instr = 3 then (* LT *)
+       let v2 = stack.(sp) in
+       let v1 = stack.(sp - 1) in
+       stack.(sp - 1) <- (if v1 < v2 then 1 else 0);
+       interp bytecode (pc + 1) stack (sp - 1) *)
   else if instr = 4 then (* CONST *)
     let n = bytecode.(pc + 1) in
     stack.(sp - 1) <- n;
@@ -67,23 +67,23 @@ let rec interp bytecode pc stack sp =
     -1
 in
 (* let code  = Array.make 10 0 in
-let stack = Array.make 10 0 in
-code.(0) <- 21; code.(1) <- 2;
-code.(2) <- 21; code.(3) <- 3;
-code.(4) <- 22; code.(5) <- 1;
-code.(6) <- 0;
-code.(7) <- 30;
-print_int (interp code 0 stack 0); (* return 5 *) print_newline ();
+   let stack = Array.make 10 0 in
+   code.(0) <- 21; code.(1) <- 2;
+   code.(2) <- 21; code.(3) <- 3;
+   code.(4) <- 22; code.(5) <- 1;
+   code.(6) <- 0;
+   code.(7) <- 30;
+   print_int (interp code 0 stack 0); (* return 5 *) print_newline ();
 *)
 
 (* RET *)
 (* let code2 = Array.make 20 (-1) in
-let stack2 = Array.make 20 (-1) in
-stack2.(0) <- 4; stack2.(1) <- 5; stack2.(2) <- 2; stack2.(3) <- 6;
-code2.(0) <- 11; code2.(1) <- 1;
-code2.(2) <- 0;
-code2.(3) <- 30;
-print_int (interp code2 0 stack2 3); (* return 10 *) print_newline ();
+   let stack2 = Array.make 20 (-1) in
+   stack2.(0) <- 4; stack2.(1) <- 5; stack2.(2) <- 2; stack2.(3) <- 6;
+   code2.(0) <- 11; code2.(1) <- 1;
+   code2.(2) <- 0;
+   code2.(3) <- 30;
+   print_int (interp code2 0 stack2 3); (* return 10 *) print_newline ();
 *)
 
 (* CALL and RET *)
@@ -100,15 +100,15 @@ print_int (interp code3 7 stack3 1); (* return 9 *) print_newline ()
 
 (* LT true *)
 (* let code4 = Array.make 100 (-1) in
-let stack4 = Array.make 20 (-1) in
-stack4.(0) <- 2; stack4.(1) <- 3;
-code4.(0) <- 3; code4.(1) <- 30;
-print_int (interp code4 0 stack4 1) (* return 1*); print_newline ();
+   let stack4 = Array.make 20 (-1) in
+   stack4.(0) <- 2; stack4.(1) <- 3;
+   code4.(0) <- 3; code4.(1) <- 30;
+   print_int (interp code4 0 stack4 1) (* return 1*); print_newline ();
 
-(* LT false *)
-let code5 = Array.make 100 (-1) in
-let stack5 = Array.make 20 (-1) in
-stack5.(0) <- 3; stack5.(1) <- 2;
-code5.(0) <- 3; code5.(1) <- 30;
-print_int (interp code5 0 stack5 1) (* return 0 *)
+   (* LT false *)
+   let code5 = Array.make 100 (-1) in
+   let stack5 = Array.make 20 (-1) in
+   stack5.(0) <- 3; stack5.(1) <- 2;
+   code5.(0) <- 3; code5.(1) <- 30;
+   print_int (interp code5 0 stack5 1) (* return 0 *)
 *)

@@ -23,7 +23,7 @@ let rec interp bytecode stack pc sp =
   else if instr = 5 then        (* JUMP_IF_ZERO *)
     let addr = bytecode.(pc + 1) in
     if stack.(sp - 1) = 0 then
-       interp bytecode stack addr (sp - 1)
+      interp bytecode stack addr (sp - 1)
     else
       interp bytecode stack (pc + 2) (sp - 1)
   else if instr = 6 then        (* CALL *)
