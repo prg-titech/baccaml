@@ -28,6 +28,7 @@ setup:
 .PHONY: clean
 clean:
 	jbuilder clean
+	git clean -dfXq
 	@rm -rf $(TRASH)
 
 .PHONY: clean-jit
