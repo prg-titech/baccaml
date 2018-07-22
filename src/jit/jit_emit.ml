@@ -333,9 +333,9 @@ let emit_result_mj ~prog:p ~traces:trs ~file:f =
   let Prog (_, fundefs, _) = p in
   let interp_name =
     List.find (fun { name = Id.L (x)} ->
-      String.split_on_char '.' x
-      |> List.hd
-      |> fun s -> (String.equal "interp" s) || (String.equal "interpret" s)
+        String.split_on_char '.' x
+        |> List.hd
+        |> fun s -> (String.equal "interp" s) || (String.equal "interpret" s)
       ) fundefs
     |> fun { name = Id.L (x) } -> x
   in

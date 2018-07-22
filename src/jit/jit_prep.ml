@@ -34,12 +34,12 @@ let prep' p t =
       let Prog (table, fundefs, main) = p in
       let fundefs' =
         Core.List.map fundefs ~f:begin fun fundef ->
-            let Id.L (x) = fundef.name in
-            match String.split_on_char '.' x |> List.hd with
-            | name' when name' = "interp" ->
-              let { name; args; fargs; ret } = fundef in
-              { name = name; args = args; fargs = fargs; body = interp_body; ret = ret }
-            | _ -> fundef
+          let Id.L (x) = fundef.name in
+          match String.split_on_char '.' x |> List.hd with
+          | name' when name' = "interp" ->
+            let { name; args; fargs; ret } = fundef in
+            { name = name; args = args; fargs = fargs; body = interp_body; ret = ret }
+          | _ -> fundef
         end in
       fundefs', interp_body
     | _ ->
@@ -51,8 +51,8 @@ let prep ~prog:p ~name:n ~red_args:reds =
   let Prog (table, fundefs, main) = p in
   let { body } =
     List.find (fun { name = Id.L (x) } ->
-      String.split_on_char '.' x
-      |> List.hd
-      |> contains "interp") fundefs in
+        String.split_on_char '.' x
+        |> List.hd
+        |> contains "interp") fundefs in
   let fundefs', interp_body = prep' p body in
   Env (fundefs', interp_body, (create_mj_reds reds p))

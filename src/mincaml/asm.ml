@@ -7,7 +7,7 @@ type t = (* 命令の列 (caml2html: sparcasm_t) *)
   | Let of (Id.t * Type.t) * exp * t
 [@@deriving show]
 and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *)
-  | Nop
+    | Nop
   | Set of int
   | SetL of Id.l
   | Mov of Id.t

@@ -106,8 +106,8 @@ let run p e reg mem = match e with
        begin match mem.(n1 + n2) with
          | Green n | LightGreen n as value ->
            Logs.debug (fun m ->
-             m "Ld (%s, %s), %d %d => %d (Green): Green, Green"
-               id_t id_t2 (value_of destld) (value_of offsetld) n);
+               m "Ld (%s, %s), %d %d => %d (Green): Green, Green"
+                 id_t id_t2 (value_of destld) (value_of offsetld) n);
            Specialized (value)
          | Red n ->
            Logs.debug (fun m ->

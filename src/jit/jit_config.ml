@@ -22,7 +22,7 @@ type tracing_jit_args =
     mutable loop_header : int;
     mutable loop_pc_place : int
   }
-  
+
 type method_jit_args =
   { mutable method_name : string;
     mutable reds : string list;

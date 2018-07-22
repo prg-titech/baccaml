@@ -76,12 +76,12 @@ let prepare_tenv' p t reds =
       let Prog (table, fundefs, main) = p in
       let fundefs' =
         List.map begin fun fundef ->
-            let Id.L (x) = fundef.name in
-            match String.split_on_char '.' x |> List.hd with
-            | name' when name' = "interp" ->
-              let { name; args; fargs; ret } = fundef in
-              { name = name; args = args; fargs = fargs; body = interp_body; ret = ret }
-            | _ -> fundef
+          let Id.L (x) = fundef.name in
+          match String.split_on_char '.' x |> List.hd with
+          | name' when name' = "interp" ->
+            let { name; args; fargs; ret } = fundef in
+            { name = name; args = args; fargs = fargs; body = interp_body; ret = ret }
+          | _ -> fundef
         end fundefs
       in
       Fieldslib.(
@@ -190,18 +190,18 @@ let speclist = [
 ]
 
 let run = (fun f ->
-  Arg.parse
-    speclist
-    (fun x -> raise (Arg.Bad ("Bad argument : " ^ x)))
-    usage;
-  Logs.set_reporter @@ Logs.format_reporter ();
-  let file = !file in
-  let output = !output in
-  let bytes = string_of_array ~f:int_of_string !codes in
-  let annots = string_of_array ~f:int_of_string !annots in
-  let reds = parse_pair_list !reds in
-  let greens = parse_pair_list !greens in
-  f Fieldslib.(
-      Fields_of_arg.create
-        ~file:file ~ex_name:output ~code:bytes ~annot:annots ~reds:reds ~greens:greens
-    ))
+    Arg.parse
+      speclist
+      (fun x -> raise (Arg.Bad ("Bad argument : " ^ x)))
+      usage;
+    Logs.set_reporter @@ Logs.format_reporter ();
+    let file = !file in
+    let output = !output in
+    let bytes = string_of_array ~f:int_of_string !codes in
+    let annots = string_of_array ~f:int_of_string !annots in
+    let reds = parse_pair_list !reds in
+    let greens = parse_pair_list !greens in
+    f Fieldslib.(
+        Fields_of_arg.create
+          ~file:file ~ex_name:output ~code:bytes ~annot:annots ~reds:reds ~greens:greens
+      ))

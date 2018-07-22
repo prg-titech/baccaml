@@ -10,7 +10,7 @@ type labels = (* function label for closures *)
   (Id.l * int) list
 
 type prog_with_label = (* prog for interpreter *)
-  ProgWithLabel of (Id.l * float) list * fundef list * t * labels
+    ProgWithLabel of (Id.l * float) list * fundef list * t * labels
 
 let register_size = 1000000
 

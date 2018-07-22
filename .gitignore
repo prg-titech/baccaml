@@ -34,14 +34,7 @@
 #/simm.ml
 #/virtual.ml
 
-# Project Specific Generated Files
-src/lexer.ml
-src/parser.ml
-src/parser.mli
-
 # Build
-min-caml
-min-camli
 *.exe
 *.top
 *.byte

@@ -22,8 +22,8 @@ let rec find_fundef prog name =
   match List.find fundefs ~f:(fun fundef -> fundef.name = name) with
   | Some (body) -> body
   | None ->
-     let Id.L (x) = name in
-     failwith @@ Printf.sprintf "find_fundef is failed. name: %s" x
+    let Id.L (x) = name in
+    failwith @@ Printf.sprintf "find_fundef is failed. name: %s" x
 
 let rec connect id_t instr body =
   let rec go id_t instr body = match instr with

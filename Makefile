@@ -21,10 +21,6 @@ build:
 	ln -sf $(BUILD_DIR)/src/armin/$(ARMIN) .
 	ln -sf $(BUILD_DIR)/src/armin/toplevel.exe .
 
-.PHONY: setup
-setup:
-	opam install $(LIBS)
-
 .PHONY: clean
 clean:
 	jbuilder clean
@@ -48,25 +44,12 @@ test-one:
 	jbuilder build test/$(SPEC).exe
 	cd _build/default/test || exit 1 && ./$(SPEC).exe
 
-EXAMPLES = \
-	print sum-tail gcd sum fib ack even-odd adder funcomp cls-rec cls-bug \
-	cls-bug2 cls-reg-bug shuffle spill spill2 spill3 join-stack join-stack2 \
-	join-stack3 join-reg join-reg2 non-tail-if2 inprod inprod-rec inprod-loop \
-	matmul matmul-flat manyargs fib-tail array array2 float tuple
+.PHONY: indent
+indent:
+	for f in `find src test -name "*.ml"`; do ocp-indent $$f > tmp.txt && cat tmp.txt > $$f; done && rm -f tmp.txt
 
-.PHONY: example
-example: $(EXAMPLES:%=example/%.cmp)
+.PHONY: setup
+setup:
+	opam install $(LIBS)
 
-.PRECIOUS: example/%.s example/% example/%.res example/%.ans example/%.cmp
-TRASH = $(EXAMPLES:%=example/%.s) $(EXAMPLES:%=example/%) $(EXAMPLES:%=example/%.res) $(EXAMPLES:%=example/%.ans) $(EXAMPLES:%=example/%.cmp)
-
-example/%.s: example/%.ml
-	./$(COMPILER) example/$*.ml
-example/%: example/%.s lib/libmincaml.s lib/stub.c
-	$(CC) $(CFLAGS) -m32 $^ -o $@
-example/%.res: example/%
-	$< > $@
-example/%.ans: example/%.ml
-	ocaml $< > $@
-example/%.cmp: example/%.res example/%.ans
-	diff $^ > $@
+-include Makefile.mincaml
