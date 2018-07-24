@@ -34,7 +34,5 @@ let rec g env = function (* β簡約ルーチン本体 (caml2html: beta_g) *)
   | App(g, xs) -> App(find g env, List.map (fun x -> find x env) xs)
   | ExtArray(x) -> ExtArray(x)
   | ExtFunApp(x, ys) -> ExtFunApp(x, List.map (fun y -> find y env) ys)
-  | JitMergePoint(x, ys) -> JitMergePoint(x, List.map (fun y -> find y env) ys)
-  | CanEnterJit(x, ys) -> CanEnterJit(x, List.map (fun y -> find y env) ys)
 
 let f = g M.empty

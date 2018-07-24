@@ -24,8 +24,6 @@ type t = (* K正規化後の式 (caml2html: knormal_t) *)
   | Put of Id.t * Id.t * Id.t
   | ExtArray of Id.t
   | ExtFunApp of Id.t * Id.t list
-  | JitMergePoint of Id.t * Id.t list
-  | CanEnterJit of Id.t * Id.t list
 [@@deriving show]
 
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
@@ -42,8 +40,6 @@ let rec fv = function (* 式に出現する（自由な）変数 (caml2html: kno
     let zs = S.diff (fv e1) (S.of_list (List.map fst yts)) in
     S.diff (S.union zs (fv e2)) (S.singleton x)
   | App(x, ys) -> S.of_list (x :: ys)
-  | JitMergePoint (x, ys) -> S.of_list (x :: ys)
-  | CanEnterJit (x, ys) -> S.of_list (x :: ys)
   | Tuple(xs) | ExtFunApp(_, xs) -> S.of_list xs
   | Put(x, y, z) -> S.of_list [x; y; z]
   | LetTuple(xs, y, e) -> S.add y (S.diff (fv e) (S.of_list (List.map fst xs)))
@@ -146,20 +142,6 @@ let rec g env = function (* K正規化ルーチン本体 (caml2html: knormal_g) 
                   (fun x -> bind (xs @ [x]) e2s) in
             bind [] e2s) (* left-to-right evaluation *)
      | _ -> assert false)
-  | Syntax.JitMergePoint (f, e2s) ->
-    let rec bind xs = function
-      | [] -> JitMergePoint(f, xs), Type.Unit
-      | e2 :: e2s ->
-        insert_let (g env e2)
-          (fun x -> bind (xs @ [x]) e2s)
-    in bind [] e2s
-  | Syntax.CanEnterJit (f, e2s) ->
-    let rec bind xs = function
-      | [] -> JitMergePoint(f, xs), Type.Unit
-      | e2 :: e2s ->
-        insert_let (g env e2)
-          (fun x -> bind (xs @ [x]) e2s)
-    in bind [] e2s
   | Syntax.Tuple(es) ->
     let rec bind xs ts = function (* "xs" and "ts" are identifiers and types for the elements *)
       | [] -> Tuple(xs), Type.Tuple(ts)
