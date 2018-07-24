@@ -49,7 +49,7 @@ let rec find_label prog num =
   | Some (id, _) -> id
   | None ->
     Logs.err (fun m -> m "num: %d" num);
-    raise Not_found
+    failwith (Printf.sprintf "Not found num: %d" num)
 
 let rec lookup_by_id_l prog name =
   let ProgWithLabel (_, fundefs, _, _) = prog in
@@ -57,7 +57,7 @@ let rec lookup_by_id_l prog name =
   | Some (fundef) -> fundef
   | None ->
     Logs.err (fun m -> let Id.L s = name in m "CallCls %s is not found" s);
-    raise Not_found
+    assert false
 
 let rec lookup_by_id_t prog name =
   let ProgWithLabel (_, fundefs, _, _) = prog in
@@ -65,7 +65,7 @@ let rec lookup_by_id_t prog name =
   | Some (fundef) -> fundef
   | None ->
     Logs.err (fun m -> m "CallCls %s" name);
-    raise Not_found
+    assert false
 
 let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数がしまわれている reg を作る *)
   let regs_tmp = List.map ~f:int_of_id_t args_tmp in
