@@ -110,12 +110,12 @@ let prepare_var red_lst green_lst =
     green_lst;
   { redtbl = red_tbl; greentbl = green_tbl }
 
-let prepare_prog bytecode annot mem =
+let prepare_prog bytecode addr annot mem =
   for i = 0 to (Array.length bytecode - 1) do
     if Array.exists (fun annot -> annot = i) annot then
-      mem.(i * 4) <- Red (bytecode.(i))
+      mem.(addr + i * 4) <- Red (bytecode.(i))
     else
-      mem.(i * 4) <- Green (bytecode.(i))
+      mem.(addr + i * 4) <- Green (bytecode.(i))
   done
 
 let prepare_env arg =
@@ -138,7 +138,8 @@ let prepare_env arg =
      reg
      (List.hd (Fieldslib.(fundefs tenv)))
      (Fieldslib.(ibody tenv));
-   prepare_prog (Fieldslib.(code arg)) (Fieldslib.(annot arg)) mem);
+   let addr = Fieldslib.(greens arg) |> List.find (fun arg' -> fst arg' = "bytecode") |> snd in
+   prepare_prog (Fieldslib.(code arg)) addr (Fieldslib.(annot arg)) mem);
 
   Fieldslib.(
     Fields_of_env.create

@@ -113,7 +113,7 @@ let run p e reg mem = match e with
            Logs.debug (fun m ->
                m "Ld (%s, %s), %d %d => %d (Red): Green, Green"
                  id_t id_t2 (value_of destld) (value_of offsetld) n);
-           let e = Ld (zero, C (n1 + n2), 0) in
+           let e = Ld (zero, C ((n1 + n2) / 4), 4) in
            Not_specialized (e, Red n)
        end
      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) -> failwith "Ld (green, red)"
@@ -160,7 +160,7 @@ let run p e reg mem = match e with
             Logs.debug (fun m ->
                 m "St (%s, %s, %s, %d), %d %d %d: Green, Green, Red"
                   src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
-            Not_specialized (St (src, zero, C (n1 + n2), 0), Red (n))
+            Not_specialized (St (src, zero, C ((n1 + n2) / 4), 4), Red (n))
         end
       | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
         failwith "St (green, red)"
