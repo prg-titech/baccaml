@@ -77,10 +77,6 @@ rule token = parse
     { LESS_MINUS }
 | ';'
     { SEMICOLON }
-| "jit_merge_point"
-    { JIT_MERGE_POINT }
-| "can_enter_jit"
-    { CAN_ENTER_JIT }
 | eof
     { EOF }
 | lower (digit|lower|upper|'_')*
