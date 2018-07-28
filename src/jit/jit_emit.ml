@@ -35,27 +35,28 @@ and create_asm' = function
   | NonTail (x), Mov (y) ->
     if x <> y then Printf.sprintf "\tmovl\t%s, %s\n" y x else ""
   | NonTail(x), Neg (y) ->
-    (if x <> y then Printf.sprintf "\tmovl\t%s, %s\n" y x else "") ^
-    Printf.sprintf "\tnegl\t%s\n" x
+    let buf = Buffer.create 100 in
+    if x <> y then Printf.sprintf "\tmovl\t%s, %s\n" y x |> Buffer.add_string buf;
+    Printf.sprintf "\tnegl\t%s\n" x |> Buffer.add_string buf;
+    Buffer.contents buf
   | NonTail (x), Add (y, z') ->
     if V(x) = z' then
       Printf.sprintf "\taddl\t%s, %s\n" y x
-    else
-      begin
-        if x <> y
-        then Printf.sprintf "\tmovl\t%s, %s\n" y x
-        else ""
-      end  ^ Printf.sprintf "\taddl\t%s, %s\n" (pp_id_or_imm z') x
+    else begin
+      let buf = Buffer.create 100 in
+      if x <> y then Printf.sprintf "\tmovl\t%s, %s\n" y x |> Buffer.add_string buf;
+      Printf.sprintf "\taddl\t%s, %s\n" (pp_id_or_imm z') x |> Buffer.add_string buf;
+      Buffer.contents buf
+    end
   | NonTail (x), Sub (y, z') ->
     if V (x) = z' then
-      (Printf.sprintf "\tsubl\t%s, %s\n" y x ^
-       Printf.sprintf "\tnegl\t%s\n" x)
-    else
-      begin
-        if x <> y
-        then Printf.sprintf "\tmovl\t%s, %s\n" y x
-        else ""
-      end ^ Printf.sprintf "\tsubl\t%s, %s\n" (pp_id_or_imm z') x
+      (Printf.sprintf "\tsubl\t%s, %s\n" y x) ^ (Printf.sprintf "\tnegl\t%s\n" x)
+    else begin
+      let buf = Buffer.create 100 in
+      if x <> y then Printf.sprintf "\tmovl\t%s, %s\n" y x |> Buffer.add_string buf;
+      Printf.sprintf "\tsubl\t%s, %s\n" (pp_id_or_imm z') x |> Buffer.add_string buf;
+      Buffer.contents buf
+    end
   | NonTail (x), Ld (y, V (z), i) -> Printf.sprintf "\tmovl\t(%s,%s,%d), %s\n" y z i x
   | NonTail (x), Ld (y, C (j), i) -> Printf.sprintf "\tmovl\t%d(%s), %s\n" (j * i) y x
   | NonTail (_), St (x, y, V (z), i) -> Printf.sprintf "\tmovl\t%s, (%s,%s,%d)\n" x y z i
@@ -70,11 +71,10 @@ and create_asm' = function
   | NonTail(x), FAddD(y, z) ->
     if x = z then
       Printf.sprintf "\taddsd\t%s, %s\n" y x
-    else
-      begin
-        if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
-        else ""
-      end ^ Printf.sprintf "\taddsd\t%s, %s\n" z x
+    else begin
+      if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
+      else ""
+    end ^ Printf.sprintf "\taddsd\t%s, %s\n" z x
   | NonTail(x), FSubD(y, z) ->
     if x = z then (* [XXX] ugly *)
       let ss = stacksize () in
@@ -83,11 +83,10 @@ and create_asm' = function
         if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
         else ""
       end ^ Printf.sprintf "\tsubsd\t%d(%s), %s\n" ss reg_sp x
-    else
-      begin
-        if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
-        else ""
-      end ^ Printf.sprintf "\tsubsd\t%s, %s\n" z x
+    else begin
+      if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
+      else ""
+    end ^ Printf.sprintf "\tsubsd\t%s, %s\n" z x
   | NonTail(x), FMulD(y, z) ->
     if x = z then
       Printf.sprintf "\tmulsd\t%s, %s\n" y x
@@ -104,11 +103,10 @@ and create_asm' = function
         if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
         else ""
       end ^ Printf.sprintf "\tdivsd\t%d(%s), %s\n" ss reg_sp x
-    else
-      begin
-        if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
-        else ""
-      end ^ Printf.sprintf "\tdivsd\t%s, %s\n" z x
+    else begin
+      if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
+      else ""
+    end ^ Printf.sprintf "\tdivsd\t%s, %s\n" z x
   | NonTail(x), LdDF(y, V(z), i) -> Printf.sprintf "\tmovsd\t(%s,%s,%d), %s\n" y z i x
   | NonTail(x), LdDF(y, C(j), i) -> Printf.sprintf "\tmovsd\t%d(%s), %s\n" (j * i) y x
   | NonTail(_), StDF(x, y, V(z), i) -> Printf.sprintf "\tmovsd\t%s, (%s,%s,%d)\n" x y z i
