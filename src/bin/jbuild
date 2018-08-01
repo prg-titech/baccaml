@@ -1,9 +1,0 @@
-(jbuild_version 1)
-
-(library
- ((name        rCaml)
-  (public_name baccaml.rcaml)
-  (libraries (logs bacCaml minCaml))
-  (preprocess
-    (pps (ppx_fields_conv)))
-))

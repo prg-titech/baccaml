@@ -1,6 +1,5 @@
 open MinCaml
 open BacCaml
-open Util
 open Asm
 open Core
 open OUnit

@@ -1,0 +1,9 @@
+(tests
+ (names simple1_test simple2_test simple3_test simple4_test)
+ (flags (-w -4-33-40-41-42-43-34-44
+  -short-paths
+  -strict-sequence
+  -strict-formats
+  -short-paths
+  -keep-locs))
+ (libraries core str oUnit minCaml bacCaml))

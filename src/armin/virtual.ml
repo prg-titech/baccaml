@@ -1,5 +1,3 @@
-open Syntax
-
 type inst =
   | ADD
   | SUB
@@ -177,7 +175,7 @@ let rec interp  code pc stack =
     | RET (* n *) ->
       log "RET";
       (* let pc0 = pc-1 in *)
-      let n,pc = fetch code pc in
+      let n,_ = fetch code pc in
       let v,stack = pop stack in (* return value *)
       let pc,stack = pop stack in (* return address *)
       let stack = drop stack n in (* delete arguments *)

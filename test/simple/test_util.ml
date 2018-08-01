@@ -1,5 +1,4 @@
 open MinCaml
-open Util
 open BacCaml
 
 open Jit_config
@@ -11,9 +10,6 @@ include Tracing_jit
 include Method_jit
 include Jit_config
 include Mutil
-
-let () =
-  Logger.log_level := Logger.Debug
 
 let setup aa bb =
   Core.List.iter

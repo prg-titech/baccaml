@@ -1,7 +1,6 @@
 {
 exception UnknownToken of string
 open Parser
-open Type
 }
 
 let space = [' ' '\t' '\n' '\r']

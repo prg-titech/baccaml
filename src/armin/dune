@@ -1,0 +1,34 @@
+(ocamllex (modules lexer))
+(menhir (modules parser))
+
+(library
+ (name myFront)
+ (modules (:standard \ armin toplevel))
+ (libraries core str fmt logs)
+ (flags  (-w -33))
+  (preprocess
+   (pps ppx_deriving.show)))
+
+(executable
+ (name armin)
+ (public_name baccaml.armin)
+ (modules Armin)
+ (flags (-w -4-33-40-41-42-43-34-44
+  -short-paths
+  -strict-sequence
+  -strict-formats
+  -short-paths
+  -keep-locs))
+ (libraries myFront core str))
+
+(executable
+ (name toplevel)
+ (public_name baccaml.atop)
+ (modules Toplevel)
+ (flags (-w -4-33-40-41-42-43-34-44
+  -short-paths
+  -strict-sequence
+  -strict-formats
+  -short-paths
+  -keep-locs))
+ (libraries myFront core str))

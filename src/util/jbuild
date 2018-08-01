@@ -1,7 +1,0 @@
-(jbuild_version 1)
-
-(library
- ((name util)
-  (public_name baccaml.util)
-  (libraries (stdlib core str))
-))

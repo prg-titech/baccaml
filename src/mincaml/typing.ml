@@ -21,7 +21,7 @@ let rec deref_typ = function (* 型変数を中身でおきかえる関数 (caml
     r := Some(t');
     t'
   | t -> t
-let rec deref_id_typ (x, t) = (x, deref_typ t)
+let deref_id_typ (x, t) = (x, deref_typ t)
 let rec deref_term = function
   | Not(e) -> Not(deref_term e)
   | Neg(e) -> Neg(deref_term e)

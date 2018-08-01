@@ -1,5 +1,4 @@
 open MinCaml
-open Util
 open Mutil
 open Core
 
@@ -40,7 +39,6 @@ let spec_list = [
   ("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
   ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated");
   ("-dump", Arg.Unit(fun _ -> ev_flg := true), "emit virtual machine code");
-  ("-debug", Arg.Unit(fun _ -> Logger.log_level := Logger.Debug), "print debug messages")
 ]
 
 let usage =

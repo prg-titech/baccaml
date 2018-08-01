@@ -16,14 +16,14 @@ LIBS = core menhir oUnit ppx_deriving logs fmt stringext
 
 .PHONY: build
 build:
-	jbuilder build
+	dune build
 	ln -sf $(BUILD_DIR)/src/mincaml/$(COMPILER) .
 	ln -sf $(BUILD_DIR)/src/armin/$(ARMIN) .
 	ln -sf $(BUILD_DIR)/src/armin/toplevel.exe .
 
 .PHONY: clean
 clean:
-	jbuilder clean
+	dune clean
 	git clean -dfXq
 	@rm -rf $(TRASH)
 
@@ -37,11 +37,11 @@ clean-all: clean clean-jit
 
 .PHONY: test
 test:
-	jbuilder runtest -f
+	dune runtest -f
 
 .PHONY: test-one
 test-one:
-	jbuilder build test/$(SPEC).exe
+	dune build test/$(SPEC).exe
 	cd _build/default/test || exit 1 && ./$(SPEC).exe
 
 .PHONY: indent

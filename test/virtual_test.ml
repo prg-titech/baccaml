@@ -2,7 +2,6 @@ open RCaml
 open MinCaml
 open BacCaml
 open Jit_config
-open Util
 
 let _ =
   run begin fun arg ->

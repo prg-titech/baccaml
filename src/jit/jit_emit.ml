@@ -1,5 +1,4 @@
 open MinCaml
-open Util
 open Asm
 open Emit
 open Jit_config
@@ -191,7 +190,7 @@ and create_asm' = function
     |> fun buf ->
     Buffer.add_string buf @@ create_asm'_args [] ys zs;
     Buffer.add_string buf @@ (
-      if String.contains x "interp" then
+      if Core.String.exists x ~f:(String.contains "interp") then
         Printf.sprintf "\tjmp\t%s\n" "min_caml_mid_layer"
       else
         Printf.sprintf "\tjmp\t%s\n" x);
@@ -216,7 +215,7 @@ and create_asm' = function
     Buffer.add_string buf @@ create_asm'_args [] ys zs;
     if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\taddl\t$%d, %s\n" ss reg_sp;
     Buffer.add_string buf @@ (
-      if String.contains x "interp" then
+      if Core.String.exists x ~f:(String.contains "interp") then
         Printf.sprintf "\tcall\t%s\n" "min_caml_mid_layer"
       else
         Printf.sprintf "\tcall\t%s\n" x);

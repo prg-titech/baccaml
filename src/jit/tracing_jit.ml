@@ -1,5 +1,4 @@
 open MinCaml
-open Util
 open Asm
 open Core
 open Guard

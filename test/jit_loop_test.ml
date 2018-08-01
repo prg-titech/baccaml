@@ -2,7 +2,6 @@ open MinCaml
 open BacCaml
 open RCaml
 open Asm
-open Util
 open Jit_config
 open Jit_util
 

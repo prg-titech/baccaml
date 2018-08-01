@@ -68,7 +68,7 @@ let resolve_labels instrs =
 let rec compile_exp_entry fenv exp env =
   let exps = compile_exp fenv exp env in
   match List.find_opt (fun inst -> inst = HALT) exps with
-  | Some v -> exps
+  | Some _ -> exps
   | None -> exps @ [HALT]
 
 (* compilation of expressions *)
@@ -131,7 +131,7 @@ and compile_exp fenv exp env =
 
 and compile_funs fundefs =
   let fenv name =
-    fst (List.find (fun (_, { name = n }) -> name = n)
+    fst (List.find (fun (_, { name = n; _ }) -> name = n)
            (List.mapi (fun idx fdef -> (idx, fdef))
               fundefs)) in
   Array.of_list(resolve_labels

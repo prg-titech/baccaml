@@ -1,7 +1,0 @@
-(jbuild_version 1)
-
-(library
- ((name          bacCaml)
-  (public_name   baccaml.jit)
-  (libraries     (core str stringext logs fmt util minCaml)
-  )))
