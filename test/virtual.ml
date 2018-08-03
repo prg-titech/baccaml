@@ -5,7 +5,8 @@ let print_array f arr =
     arr;
   print_string "|] " in
 
-let loop_end a b = () in
+let loop_start _ = () in
+let loop_end _ = () in
 
 (* ADD 0
    SUB 1
@@ -26,10 +27,11 @@ let rec interp bytecode stack pc sp =
   let instr = bytecode.(pc) in
   Printf.printf "is: %d\tsp: %d\tpc: %d\t" instr sp pc;
   print_array print_int stack; print_newline ();
+let instr = bytecode.(pc) in
   if instr = 0 then             (* ADD *)
-    let v2 = stack.(sp - 1) in  (* sp: sp - 1 *)
-    let v1 = stack.(sp - 2) in  (* sp: sp - 2 *)
-    stack.(sp - 2) <- v1 + v2;  (* sp: sp - 1 *)
+    let v2 = stack.(sp - 1) in  (* sp - 1 *)
+    let v1 = stack.(sp - 2) in  (* sp - 2 *)
+    stack.(sp - 2) <- v1 + v2;  (* sp - 1 *)
     interp bytecode stack (pc + 1) (sp - 1)
   else if instr = 1 then        (* SUB *)
     let v2 = stack.(sp - 1) in
@@ -47,42 +49,38 @@ let rec interp bytecode stack pc sp =
     interp bytecode stack (pc + 2) (sp + 1)
   else if instr = 5 then        (* JUMP_IF_ZERO *)
     let addr = bytecode.(pc + 1) in
-    let v = stack.(sp - 1) in
-    if v = 0 then
-      (if addr < pc then loop_end bytecode stack;
-       interp bytecode stack addr (sp - 1))
+    if stack.(sp - 1) = 0 then
+      interp bytecode stack addr (sp - 1)
     else
       interp bytecode stack (pc + 2) (sp - 1)
   else if instr = 6 then        (* CALL *)
     let addr = bytecode.(pc + 1) in
-    stack.(sp) <- (pc + 2);
-    interp bytecode stack addr (sp + 1)
+    let r = interp bytecode stack addr sp in
+    stack.(sp) <- r;
+    interp bytecode stack (pc + 2) (sp + 1)
   else if instr = 7 then        (* RET *)
-    let n = bytecode.(pc + 1) in
-    let v = stack.(sp - 1) in   (* sp: sp - 1 *)
-    let pc2 = stack.(sp - 2) in (* sp: sp - 2 *)
-    stack.(sp - n - 2) <- v;    (* sp: sp - 2 - n + 1 = sp - 1 - n *)
-    interp bytecode stack pc2 (sp - n - 1)
+    stack.(sp - 1)
   else if instr = 8 then        (* DUP *)
     let n = bytecode.(pc + 1) in
-    let v = stack.(sp - n - 1) in
+    let v = stack.(sp - n) in
     stack.(sp) <- v;
     interp bytecode stack (pc + 2) (sp + 1)
   else if instr = 9 then        (* HALT *)
     stack.(sp - 1)
-  else if instr = 10 then       (* MUL *)
-    let v2 = stack.(sp - 1) in
-    let v1 = stack.(sp - 2) in
-    stack.(sp - 2) <- v1 * v2;
-    interp bytecode stack (pc + 1) (sp - 1)
-  else if instr = 11 then       (* JUMP *)
+  else if instr = 11 then       (* POP1 *)
+    let v = stack.(sp - 1) in
+    let _ = stack.(sp - 2) in
+    stack.(sp - 2) <- v;
+    interp bytecode stack (pc + 1) (sp - 2)
+  else if instr = 12 then       (* LOOP_S *)
+    (loop_start ();
+     interp bytecode stack (pc + 1) sp)
+  else if instr = 13 then       (* LOOP_E *)
+    (loop_end ();
+     interp bytecode stack (pc + 1) sp)
+  else if instr = 14 then
     let addr = bytecode.(pc + 1) in
     interp bytecode stack addr sp
-  else if instr = 12 then       (* LOOP_S *)
-    interp bytecode stack (pc + 1) sp
-  else if instr = 13 then      (* LOOP_E *)
-    (loop_end bytecode stack;
-     interp bytecode stack (pc + 1) sp)
   else
     -1000 in
 
@@ -138,17 +136,17 @@ let stack_call = Array.make 10 0 in
    HALT
    DUP 1
    CONST 1
-   DUB
+   SUB
    RET 1
 *)
 let code_jmp_if = [|
   4; 1;
   4; 2;
   0;
-  8; 0;
+  8; 1;
   5; 13;
   6; 14;
-  11; 5;
+  14; 5;
   9;
   8; 1;
   4; 1;

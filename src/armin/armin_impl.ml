@@ -14,8 +14,7 @@ let exec e =
 
   let insts =
     try compile_exp_entry empty_fenv e empty_env with
-    | e -> raise @@ Error "compilation failed."
-  in
+    | e -> raise @@ Error "compilation failed." in
 
   let insts' = resolve_labels insts in
   List.iter insts' (fun inst ->
@@ -24,8 +23,10 @@ let exec e =
 
   let insts_nums =  try List.map insts' Virtual.int_of_inst with
     | Failure msg -> raise @@ Error msg
-    | e -> raise @@ Error "Conversion to instruction number is failed."
-  in
+    | e -> raise @@ Error "Conversion to instruction number is failed." in
+
+  Virtual.interp (Array.of_list insts_nums) 0 (0, Array.create 100 0) |> print_int; print_newline ();
+
   print_endline (
     "[|" ^
     String.concat ~sep:"; " (List.map ~f:string_of_int insts_nums) ^

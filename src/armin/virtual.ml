@@ -164,24 +164,28 @@ let rec interp  code pc stack =
       log "CALL";
       (* calling a function will create a new operand stack and lvars  *)
       let addr,pc = fetch code pc  in
-      let stack = push stack pc in (* save return address *)
+      (* let stack = push stack pc in (\* save return address *\) *)
       (* (let (sp,s)=stack in
        *  if 2<sp then
        *    (Printf.printf "%d CALL %d [%d %d ...]\n" (pc-2) addr
        *       (s.(sp-2)) (s.(sp-3)))
        *  else ())
        * ; *)
-      interp  code addr stack
+      (* interp  code addr stack *)
+      let r = interp code addr stack in
+      let stack = push stack r in
+      interp code pc stack
     | RET (* n *) ->
       log "RET";
       (* let pc0 = pc-1 in *)
-      let n,_ = fetch code pc in
-      let v,stack = pop stack in (* return value *)
-      let pc,stack = pop stack in (* return address *)
-      let stack = drop stack n in (* delete arguments *)
-      let stack = push stack v in (* restore return value *)
-      (* Printf.printf "%d RET with %d to %d\n" pc0 v pc; *)
-      interp  code pc stack
+      (* let n,_ = fetch code pc in
+       * let v,stack = pop stack in (\* return value *\)
+       * let pc,stack = pop stack in (\* return address *\)
+       * let stack = drop stack n in (\* delete arguments *\)
+       * let stack = push stack v in (\* restore return value *\)
+       * (\* Printf.printf "%d RET with %d to %d\n" pc0 v pc; *\)
+       * interp  code pc stack *)
+      fst (pop stack)
     | DUP ->
       let n,pc = fetch code pc in
       let stack = push stack (take stack n) in

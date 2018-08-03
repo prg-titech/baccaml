@@ -22,7 +22,8 @@ let rec interp bytecode stack pc sp =
     interp bytecode stack (pc + 2) (sp + 1)
   else if instr = 5 then        (* JUMP_IF_ZERO *)
     let addr = bytecode.(pc + 1) in
-    if stack.(sp - 1) = 0 then
+    let v = stack.(sp - 1) in
+    if v = 0 then
       interp bytecode stack addr (sp - 1)
     else
       interp bytecode stack (pc + 2) (sp - 1)
@@ -57,7 +58,7 @@ let rec interp bytecode stack pc sp =
 let code = Array.make 40 0 in
 let stack = Array.make 100 0 in
 code.(0) <- 4;
-code.(1) <- 23;
+code.(1) <- 10;
 code.(2) <- 6;
 code.(3) <- 5;
 code.(4) <- 9;

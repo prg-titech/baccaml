@@ -49,7 +49,10 @@ and create_asm' = function
     end
   | NonTail (x), Sub (y, z') ->
     if V (x) = z' then
-      (Printf.sprintf "\tsubl\t%s, %s\n" y x) ^ (Printf.sprintf "\tnegl\t%s\n" x)
+      let buf = Buffer.create 100 in
+      (Printf.sprintf "\tsubl\t%s, %s\n" y x) |> Buffer.add_string buf;
+      (Printf.sprintf "\tnegl\t%s\n" x) |> Buffer.add_string buf;
+      Buffer.contents buf
     else begin
       let buf = Buffer.create 100 in
       if x <> y then Printf.sprintf "\tmovl\t%s, %s\n" y x |> Buffer.add_string buf;
@@ -61,51 +64,57 @@ and create_asm' = function
   | NonTail (_), St (x, y, V (z), i) -> Printf.sprintf "\tmovl\t%s, (%s,%s,%d)\n" x y z i
   | NonTail (_), St (x, y, C (j), i) -> Printf.sprintf "\tmovl\t%s, %d(%s)\n" x (j * i) y
   | NonTail (x), FMovD (y) ->
-    if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x else ""
+    let buf = Buffer.create 10 in
+    if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x |> Buffer.add_string buf;
+    Buffer.contents buf
   | NonTail(x), FNegD(y) ->
-    begin
-      if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
-      else ""
-    end ^ Printf.sprintf "\txorpd\tmin_caml_fnegd, %s\n" x
+    let buf = Buffer.create 100 in
+    if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x |> Buffer.add_string buf;
+    Printf.sprintf "\txorpd\tmin_caml_fnegd, %s\n" x |> Buffer.add_string buf;
+    Buffer.contents buf
   | NonTail(x), FAddD(y, z) ->
+    let buf = Buffer.create 100 in
     if x = z then
-      Printf.sprintf "\taddsd\t%s, %s\n" y x
+        Printf.sprintf "\taddsd\t%s, %s\n" y x |> Buffer.add_string buf
     else begin
-      if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
-      else ""
-    end ^ Printf.sprintf "\taddsd\t%s, %s\n" z x
+      if x <> y then
+        Printf.sprintf "\tmovsd\t%s, %s\n" y x |> Buffer.add_string buf;
+    end;
+    Printf.sprintf "\taddsd\t%s, %s\n" z x |> Buffer.add_string buf;
+    Buffer.contents buf
   | NonTail(x), FSubD(y, z) ->
-    if x = z then (* [XXX] ugly *)
+    let buf = Buffer.create 100 in
+    if x = z then
       let ss = stacksize () in
-      Printf.sprintf "\tmovsd\t%s, %d(%s)\n" z ss reg_sp ^
-      begin
-        if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
-        else ""
-      end ^ Printf.sprintf "\tsubsd\t%d(%s), %s\n" ss reg_sp x
+      Printf.sprintf "\tmovsd\t%s, %d(%s)\n" z ss reg_sp |> Buffer.add_string buf;
+      if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x |> Buffer.add_string buf;
+      Printf.sprintf "\tsubsd\t%d(%s), %s\n" ss reg_sp x |> Buffer.add_string buf;
     else begin
-      if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
-      else ""
-    end ^ Printf.sprintf "\tsubsd\t%s, %s\n" z x
+      if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x |> Buffer.add_string buf;
+    end;
+    Printf.sprintf "\tsubsd\t%s, %s\n" z x |> Buffer.add_string buf;
+    Buffer.contents buf
   | NonTail(x), FMulD(y, z) ->
+    let buf = Buffer.create 100 in
     if x = z then
-      Printf.sprintf "\tmulsd\t%s, %s\n" y x
-    else
-      begin
-        if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
-        else ""
-      end ^ Printf.sprintf "\tmulsd\t%s, %s\n" z x
+      Printf.sprintf "\tmulsd\t%s, %s\n" y x |> Buffer.add_string buf
+    else begin
+      if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x |> Buffer.add_string buf
+    end;
+    Printf.sprintf "\tmulsd\t%s, %s\n" z x |> Buffer.add_string buf;
+    Buffer.contents buf
   | NonTail(x), FDivD(y, z) ->
+    let buf = Buffer.create 100 in
     if x = z then
       let ss = stacksize () in
-      Printf.sprintf "\tmovsd\t%s, %d(%s)\n" z ss reg_sp ^
-      begin
-        if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
-        else ""
-      end ^ Printf.sprintf "\tdivsd\t%d(%s), %s\n" ss reg_sp x
+      Printf.sprintf "\tmovsd\t%s, %d(%s)\n" z ss reg_sp |> Buffer.add_string buf;
+      if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x |> Buffer.add_string buf;
+      Printf.sprintf "\tdivsd\t%d(%s), %s\n" ss reg_sp x |> Buffer.add_string buf;
     else begin
-      if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x
-      else ""
-    end ^ Printf.sprintf "\tdivsd\t%s, %s\n" z x
+      if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x |> Buffer.add_string buf;
+    end;
+    Printf.sprintf "\tdivsd\t%s, %s\n" z x |> Buffer.add_string buf;
+    Buffer.contents buf
   | NonTail(x), LdDF(y, V(z), i) -> Printf.sprintf "\tmovsd\t(%s,%s,%d), %s\n" y z i x
   | NonTail(x), LdDF(y, C(j), i) -> Printf.sprintf "\tmovsd\t%d(%s), %s\n" (j * i) y x
   | NonTail(_), StDF(x, y, V(z), i) -> Printf.sprintf "\tmovsd\t%s, (%s,%s,%d)\n" x y z i
@@ -133,16 +142,16 @@ and create_asm' = function
   | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Ld _ as exp) ->
     Buffer.create 100
     |> fun buf ->
-    Buffer.add_string buf @@  create_asm' (NonTail(regs.(0)), exp);
+    Buffer.add_string buf @@  create_asm' (NonTail (regs.(0)), exp);
     Buffer.add_string buf @@ Printf.sprintf "\tret\n";
     Buffer.contents buf
   | Tail, (FMovD _ | FNegD _ | FAddD _ | FSubD _ | FMulD _ | FDivD _ | LdDF _  as exp) ->
     Buffer.create 100
     |> fun buf ->
-    Buffer.add_string buf @@ create_asm' (NonTail(fregs.(0)), exp);
+    Buffer.add_string buf @@ create_asm' (NonTail (fregs.(0)), exp);
     Buffer.add_string buf @@ Printf.sprintf "\tret\n";
     Buffer.contents buf
-  | Tail, (Restore(x) as exp) ->
+  | Tail, (Restore (x) as exp) ->
     (match locate x with
      | [i] -> create_asm' (NonTail(regs.(0)), exp)
      | [i; j] when i + 1 = j -> create_asm' (NonTail(fregs.(0)), exp)
@@ -189,11 +198,12 @@ and create_asm' = function
     Buffer.create 100
     |> fun buf ->
     Buffer.add_string buf @@ create_asm'_args [] ys zs;
-    Buffer.add_string buf @@ (
+    Buffer.add_string buf @@ begin
       if Core.String.exists x ~f:(String.contains "interp") then
         Printf.sprintf "\tjmp\t%s\n" "min_caml_mid_layer"
       else
-        Printf.sprintf "\tjmp\t%s\n" x);
+        Printf.sprintf "\tjmp\t%s\n" x
+    end;
     Buffer.contents buf
   | NonTail(a), CallCls(x, ys, zs) ->
     Buffer.create 100

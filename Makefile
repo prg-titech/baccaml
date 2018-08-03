@@ -12,7 +12,7 @@ COMPILER = min_caml.exe
 
 BUILD_DIR = _build/default
 
-LIBS = core menhir oUnit ppx_deriving logs fmt stringext
+LIBS = core menhir oUnit ppx_deriving logs fmt stringext dune
 
 .PHONY: build
 build:

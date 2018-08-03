@@ -138,7 +138,14 @@ let prepare_env arg =
      reg
      (List.hd (Fieldslib.(fundefs tenv)))
      (Fieldslib.(ibody tenv));
-   let addr = Fieldslib.(greens arg) |> List.find (fun arg' -> fst arg' = "bytecode") |> snd in
+   let addr =
+     match Fieldslib.(greens arg) |> List.find_opt (fun arg' -> fst arg' = "bytecode") with
+     | Some x -> x |> snd
+     | None ->
+       match Fieldslib.(reds arg) |> List.find_opt (fun arg' -> fst arg' = "bytecode") with
+       | Some x -> x |> snd
+       | None -> raise Not_found
+   in
    prepare_prog (Fieldslib.(code arg)) addr (Fieldslib.(annot arg)) mem);
 
   Fieldslib.(

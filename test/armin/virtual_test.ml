@@ -52,7 +52,7 @@ let  _ = test "FRAME_RESET"            (* TOP 6 5 4 3 2 1 BOTTOM *)
      MUL;                       (* TOP        24 1 BOTTOM *)
      ADD;                       (* TOP          25 BOTTOM *)
      HALT] [ 1;2;3;4;5;6 ] 25
-let _ = test "POP1" 
+let _ = test "POP1"
     [POP1; ADD; HALT] [ 1;2;3 ] 4
 
 let _ = test_ex 0 2 "CALL simple"
@@ -67,7 +67,7 @@ let _ = test_ex 2 8 "CALL and RET"
      RET; Literal 2;    (* stack =         [9] *)
      (* stack =       [5;4] *)
      CALL; Literal 1;   (* stack =         [9] *)
-     HALT]              
+     HALT]
     [ 4;5 ] 9
 let _ = test_ex 2 8 "CALL mul add"
     [DUP; Literal 2; (* 1;2 *)
