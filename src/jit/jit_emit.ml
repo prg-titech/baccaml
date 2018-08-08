@@ -32,7 +32,9 @@ and create_asm' = function
   | NonTail (x), Set (i) -> Printf.sprintf "\tmovl\t$%d, %s\n" i x
   | NonTail (x), SetL (Id.L (y)) -> Printf.sprintf "\tmovl\t$%s, %s\n" y x
   | NonTail (x), Mov (y) ->
-    if x <> y then Printf.sprintf "\tmovl\t%s, %s\n" y x else ""
+    let buf = Buffer.create 10 in
+    if x <> y then Printf.sprintf "\tmovl\t%s, %s\n" y x |> Buffer.add_string buf;
+    Buffer.contents buf
   | NonTail(x), Neg (y) ->
     let buf = Buffer.create 100 in
     if x <> y then Printf.sprintf "\tmovl\t%s, %s\n" y x |> Buffer.add_string buf;
@@ -43,44 +45,84 @@ and create_asm' = function
       Printf.sprintf "\taddl\t%s, %s\n" y x
     else begin
       let buf = Buffer.create 100 in
-      if x <> y then Printf.sprintf "\tmovl\t%s, %s\n" y x |> Buffer.add_string buf;
-      Printf.sprintf "\taddl\t%s, %s\n" (pp_id_or_imm z') x |> Buffer.add_string buf;
+      if x <> y then
+        Printf.sprintf "\tmovl\t%s, %s\n" y x
+        |> Buffer.add_string buf;
+      Printf.sprintf "\taddl\t%s, %s\n" (pp_id_or_imm z') x
+      |> Buffer.add_string buf;
       Buffer.contents buf
     end
   | NonTail (x), Sub (y, z') ->
     if V (x) = z' then
       let buf = Buffer.create 100 in
-      (Printf.sprintf "\tsubl\t%s, %s\n" y x) |> Buffer.add_string buf;
-      (Printf.sprintf "\tnegl\t%s\n" x) |> Buffer.add_string buf;
+      (Printf.sprintf "\tsubl\t%s, %s\n" y x)
+      |> Buffer.add_string buf;
+      (Printf.sprintf "\tnegl\t%s\n" x)
+      |> Buffer.add_string buf;
       Buffer.contents buf
     else begin
       let buf = Buffer.create 100 in
-      if x <> y then Printf.sprintf "\tmovl\t%s, %s\n" y x |> Buffer.add_string buf;
-      Printf.sprintf "\tsubl\t%s, %s\n" (pp_id_or_imm z') x |> Buffer.add_string buf;
+      if x <> y then
+        Printf.sprintf "\tmovl\t%s, %s\n" y x
+        |> Buffer.add_string buf;
+      Printf.sprintf "\tsubl\t%s, %s\n" (pp_id_or_imm z') x
+      |> Buffer.add_string buf;
       Buffer.contents buf
     end
-  | NonTail (x), Ld (y, V (z), i) -> Printf.sprintf "\tmovl\t(%s,%s,%d), %s\n" y z i x
-  | NonTail (x), Ld (y, C (j), i) -> Printf.sprintf "\tmovl\t%d(%s), %s\n" (j * i) y x
-  | NonTail (_), St (x, y, V (z), i) -> Printf.sprintf "\tmovl\t%s, (%s,%s,%d)\n" x y z i
-  | NonTail (_), St (x, y, C (j), i) -> Printf.sprintf "\tmovl\t%s, %d(%s)\n" x (j * i) y
+  | NonTail (x), Ld (y, V (z), i) ->
+    let buf = Buffer.create 20 in
+    if y = zero then
+      Printf.sprintf "\tmovl\t%d(%%esp), %s\n" 4 x
+      |> Buffer.add_string buf;
+    Printf.sprintf "\tmovl\t(%s,%s,%d), %s\n" y z i x
+    |> Buffer.add_string buf;
+    Buffer.contents buf
+  | NonTail (x), Ld (y, C (j), i) ->
+    let buf = Buffer.create 20 in
+    if y = zero then
+      Printf.sprintf "\tmovl\t%d(%%esp), %s\n" 4 x
+      |> Buffer.add_string buf;
+    Printf.sprintf "\tmovl\t%d(%s), %s\n" (j * i) y x
+    |> Buffer.add_string buf;
+    Buffer.contents buf
+  | NonTail (_), St (x, y, V (z), i) ->
+    let buf = Buffer.create 20 in
+    if y = zero then
+      Printf.sprintf "\tmovl\t%d(%%esp), %s\n" 4 x
+      |> Buffer.add_string buf;
+    Printf.sprintf "\tmovl\t%s, (%s,%s,%d)\n" x y z i
+  | NonTail (_), St (x, y, C (j), i) ->
+    let buf = Buffer.create 20 in
+    if y = zero then
+      Printf.sprintf "\tmovl\t%d(%%esp), %s\n" 4 x
+      |> Buffer.add_string buf;
+    Printf.sprintf "\tmovl\t%s, %d(%s)\n" x (j * i) y
   | NonTail (x), FMovD (y) ->
     let buf = Buffer.create 10 in
-    if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x |> Buffer.add_string buf;
+    if x <> y then
+      Printf.sprintf "\tmovsd\t%s, %s\n" y x
+      |> Buffer.add_string buf;
     Buffer.contents buf
   | NonTail(x), FNegD(y) ->
     let buf = Buffer.create 100 in
-    if x <> y then Printf.sprintf "\tmovsd\t%s, %s\n" y x |> Buffer.add_string buf;
-    Printf.sprintf "\txorpd\tmin_caml_fnegd, %s\n" x |> Buffer.add_string buf;
+    if x <> y then
+      Printf.sprintf "\tmovsd\t%s, %s\n" y x
+      |> Buffer.add_string buf;
+    Printf.sprintf "\txorpd\tmin_caml_fnegd, %s\n" x
+    |> Buffer.add_string buf;
     Buffer.contents buf
   | NonTail(x), FAddD(y, z) ->
     let buf = Buffer.create 100 in
     if x = z then
-        Printf.sprintf "\taddsd\t%s, %s\n" y x |> Buffer.add_string buf
+      Printf.sprintf "\taddsd\t%s, %s\n" y x
+      |> Buffer.add_string buf
     else begin
       if x <> y then
-        Printf.sprintf "\tmovsd\t%s, %s\n" y x |> Buffer.add_string buf;
+        Printf.sprintf "\tmovsd\t%s, %s\n" y x
+        |> Buffer.add_string buf;
     end;
-    Printf.sprintf "\taddsd\t%s, %s\n" z x |> Buffer.add_string buf;
+    Printf.sprintf "\taddsd\t%s, %s\n" z x
+    |> Buffer.add_string buf;
     Buffer.contents buf
   | NonTail(x), FSubD(y, z) ->
     let buf = Buffer.create 100 in
@@ -311,8 +353,8 @@ let emit_midlayer (tr : trace_result) (file : string) (interp : string) : Buffer
   Printf.sprintf "\tret\n" |> Buffer.add_string buf;
   Printf.sprintf ".globl min_caml_mid_layer\n" |> Buffer.add_string buf;
   Printf.sprintf "min_caml_mid_layer:\n" |> Buffer.add_string buf;
-  Printf.sprintf "\tmovl\t%d(%%esp), %%eax\n" 0 |> Buffer.add_string buf;
-  Printf.sprintf "\tmovl\t%d(%%esp), %%ebx\n" 4 |> Buffer.add_string buf;
+  Printf.sprintf "\tmovl\t%d(%%esp), %%eax\n" 12 |> Buffer.add_string buf;
+  Printf.sprintf "\tmovl\t%d(%%esp), %%ebx\n" 8 |> Buffer.add_string buf;
   Printf.sprintf "\tjmp\t%s\n" interp |> Buffer.add_string buf;
   buf
 
