@@ -42,7 +42,7 @@ let rec interp bytecode stack pc sp =
   else if instr = 6 then        (* CALL *)
     let addr = bytecode.(pc + 1) in
     let r = interp bytecode stack addr sp in
-    print_int r; print_newline ();
+    (* print_int r; print_newline (); *)
     stack.(sp - 1) <- r;
     interp bytecode stack (pc + 2) sp
   else if instr = 7 then        (* RET *)
