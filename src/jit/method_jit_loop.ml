@@ -116,7 +116,7 @@ and mj_if p reg mem fenv name exp =
             V (id) -> id
           | C (n) -> failwith "id_or_imm should be string"
         in
-        Ans (exp |%|  (id_t2, C (n1), fst t1', fst t2')), new_map
+        Ans (exp |%|  (id_t2, C (n1), fst t2', fst t1')), new_map
       | Red (n1), Red (n2) ->
         Ans (exp |%| (id_t, id_or_imm, fst t1', fst t2')), new_map
     end
