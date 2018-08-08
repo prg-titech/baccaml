@@ -6,27 +6,27 @@ min_caml_test_trace:
 	movl	%ebx, 8(%eax)
 	movl	8(%eax), %ebx
 	cmpl	$2, %ebx
-	jg	jle_else.2995
+	jg	jle_else.2994
 	movl	$1, %ebx
-	jmp	jle_cont.2996
-jle_else.2995:
+	jmp	jle_cont.2995
+jle_else.2994:
 	movl	$0, %ebx
-jle_cont.2996:
+jle_cont.2995:
 	movl	%ebx, 8(%eax)
 	movl	8(%eax), %ebx
 	cmpl	$0, %ebx
-	jne	je_else.2997
+	jne	je_else.2996
 	movl	0(%eax), %ebx
 	movl	%ebx, 8(%eax)
 	movl	8(%eax), %ebx
 	subl	$1, %ebx
 	movl	4(%esp), %eax # added
-	movl	%ebx, 0(%eax) # fixed
+	movl	%ebx, 0(%eax)
 	movl	$100, %ebx
 	movl	$0, %ecx
 	movl	$5, %edx
 	movl	$3, %esi
-	movl	%eax, 8(%ebp)
+	movl	%eax, 0(%ebp)
 	movl	%ebx, %eax
 	movl	%ecx, %ebx
 	movl	%edx, %ecx
@@ -35,17 +35,16 @@ jle_cont.2996:
 	call	min_caml_mid_layer
 	subl	$8, %ebp
 	movl	0(%ebp), %ebx
+	movl	%eax, 8(%ebx)
+	movl	0(%ebx), %eax
 	movl	%eax, 12(%ebx)
-	movl	4(%ebx), %eax
-	movl	%eax, 16(%ebx)
-	movl	16(%ebx), %eax
-	subl	$2, %eax
+	subl  $2, %eax
 	movl	4(%esp), %eax # added
 	movl	%eax, 0(%ebx) # fixed
 	movl	$100, %eax
 	movl	$0, %ecx
 	movl	$5, %edx
-	movl	$5, %esi
+	movl	$4, %esi
 	movl	%ecx, %ebx
 	movl	%edx, %ecx
 	movl	%esi, %edx
@@ -53,19 +52,14 @@ jle_cont.2996:
 	call	min_caml_mid_layer
 	subl	$8, %ebp
 	movl	0(%ebp), %ebx
-	movl	%eax, 20(%ebx)
-	movl	16(%ebx), %eax
-	movl	%eax, 24(%ebx)
-	movl	24(%ebx), %eax
-	addl	$2, %eax
-	movl	%eax, 24(%ebx)
-	movl	24(%ebx), %eax
-	movl	%eax, 20(%ebx)
-	movl	16(%ebx), %eax
 	movl	%eax, 12(%ebx)
 	movl	8(%ebx), %eax
+	movl	%eax, 16(%ebx)
+	movl	8(%ebx), %eax
+	movl	%eax, 4(%ebx)
+	movl	0(%ebx), %eax
 	ret
-je_else.2997:
+je_else.2996:
 	movl	$1, %eax
 	ret
 .globl min_caml_trace_entry
