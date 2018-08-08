@@ -8,9 +8,8 @@ open Jit_util
 exception Not_optimization_supported of string
 
 let run p e reg mem = match e with
-  | Nop -> Specialized (Red 0)
-  | Set n ->
-    Specialized (Green n)
+  | Nop -> Specialized (Green 0)
+  | Set n -> Specialized (Green n)
   | Mov id_t as exp ->
     let r = reg.(int_of_id_t id_t) in
     (match r with

@@ -1,6 +1,18 @@
+(* let print_array f arr =
+ *   print_string "[|";
+ *   Array.iter
+ *     (fun a -> f a; print_string "; ")
+ *     arr;
+ *   print_string "|] " in
+ *
+ * let loop_start _ = () in
+ * let loop_end _ = () in *)
+
 let rec interp bytecode stack pc sp =
   jit_dispatch (pc=5) bytecode stack;
   let instr = bytecode.(pc) in
+  (* Printf.printf "is: %d\tsp: %d\tpc: %d\t" instr sp pc;
+   * print_array print_int stack; print_newline (); *)
   if instr = 0 then             (* ADD *)
     let v2 = stack.(sp - 1) in  (* sp - 1 *)
     let v1 = stack.(sp - 2) in  (* sp - 2 *)
@@ -30,8 +42,9 @@ let rec interp bytecode stack pc sp =
   else if instr = 6 then        (* CALL *)
     let addr = bytecode.(pc + 1) in
     let r = interp bytecode stack addr sp in
-    stack.(sp) <- r;
-    interp bytecode stack (pc + 2) (sp + 1)
+    print_int r; print_newline ();
+    stack.(sp - 1) <- r;
+    interp bytecode stack (pc + 2) sp
   else if instr = 7 then        (* RET *)
     stack.(sp - 1)
   else if instr = 8 then        (* DUP *)
@@ -56,34 +69,34 @@ let rec interp bytecode stack pc sp =
     -1000 in
 
 let code = Array.make 40 0 in
-let stack = Array.make 100 0 in
+let stack = Array.make 50 0 in
 code.(0) <- 4;
-code.(1) <- 10;
+code.(1) <- 9;
 code.(2) <- 6;
 code.(3) <- 5;
 code.(4) <- 9;
 code.(5) <- 8;
-code.(6) <- 1;
+code.(6) <- 0;
 code.(7) <- 4;
 code.(8) <- 2;
 code.(9) <- 3;
 code.(10) <- 5;
 code.(11) <- 18;
-code.(12) <- 8;
+code.(12) <- 4;
 code.(13) <- 1;
 code.(14) <- 4;
 code.(15) <- 0;
 code.(16) <- 5;
 code.(17) <- 33;
 code.(18) <- 8;
-code.(19) <- 1;
+code.(19) <- 0;
 code.(20) <- 4;
 code.(21) <- 1;
 code.(22) <- 1;
 code.(23) <- 6;
 code.(24) <- 5;
 code.(25) <- 8;
-code.(26) <- 2;
+code.(26) <- 1;
 code.(27) <- 4;
 code.(28) <- 2;
 code.(29) <- 1;

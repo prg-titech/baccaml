@@ -25,7 +25,7 @@ let exec e =
     | Failure msg -> raise @@ Error msg
     | e -> raise @@ Error "Conversion to instruction number is failed." in
 
-  Virtual.interp (Array.of_list insts_nums) 0 (0, Array.create 100 0) |> print_int; print_newline ();
+  (* Virtual.interp (Array.of_list insts_nums) 0 (0, Array.create 100 0) |> print_int; print_newline (); *)
 
   print_endline (
     "[|" ^
