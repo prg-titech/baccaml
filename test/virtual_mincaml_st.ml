@@ -6,7 +6,8 @@
  *   print_string "|] " in
  *
  * let loop_start _ = () in
- * let loop_end _ = () in *)
+ * let loop_end _ = () in
+ * let jit_dispatch _ _ _ = () in *)
 
 let rec interp bytecode stack pc sp =
   jit_dispatch (pc=5) bytecode stack;
@@ -42,7 +43,6 @@ let rec interp bytecode stack pc sp =
   else if instr = 6 then        (* CALL *)
     let addr = bytecode.(pc + 1) in
     let r = interp bytecode stack addr sp in
-    (* print_int r; print_newline (); *)
     stack.(sp - 1) <- r;
     interp bytecode stack (pc + 2) sp
   else if instr = 7 then        (* RET *)
