@@ -44,7 +44,7 @@ let colorize_reg redstbl greenstbl reg fundef t =
       (try
          let value' = Hashtbl.find greenstbl var in
          reg.(int_of_string id) <- Green (value')
-       with Not_found -> ())
+       with Not_found -> ());
     ) free_vars_with_id
 
 let _ =

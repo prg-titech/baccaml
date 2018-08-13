@@ -104,5 +104,4 @@ code.(30) <- 6;
 code.(31) <- 5;
 code.(32) <- 0;
 code.(33) <- 7;
-code.(34) <- 1;
 print_int (interp code stack 0 0)

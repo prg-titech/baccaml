@@ -177,6 +177,7 @@ let run p e reg mem = match e with
             Logs.debug (fun m ->
                 m "St (%s, %s, %s, %d), %d %d %d: Red, Green, Green"
                   src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
+
             Not_specialized (St (src, dest, C (n2), x), Red (0))
           | Red (n) ->
             mem.(n1 + n2) <- src';

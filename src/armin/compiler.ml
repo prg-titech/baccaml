@@ -144,4 +144,4 @@ and compile_fun fenv { name; args; body } =
     (build_args_env args)
 
 and compile_fun_body fenv name arity exp env =
-  (VM.Ldef name) :: (compile_exp fenv exp env) @ [VM.RET; VM.Literal arity]
+  (VM.Ldef name) :: (compile_exp fenv exp env) @ [VM.RET]
