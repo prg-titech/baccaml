@@ -18,9 +18,10 @@ let gen_fname id = Id.genid id
 let rec restore_args cont reg = function
     [] -> cont
   | hd :: tl ->
-    if is_green reg.(int_of_id_t hd) then
+    let jv = reg.(int_of_id_t hd) in
+    if is_green jv then
       Let ((hd, Type.Int),
-           Set (value_of reg.(int_of_id_t hd)),
+           Set (value_of jv),
            restore_args cont reg tl)
     else restore_args cont reg tl
 
@@ -42,8 +43,7 @@ let rec mj p reg mem fenv name t =
       restore_args
         (Let ((dest, typ), CallDir (id_l, args, fargs), Ans (Nop)))
         reg
-        args
-    in
+        args in
     let t' = mj p reg mem fenv name body in
     connect (Id.gentmp Type.Int) restored_call (fst t'), snd t'
   | Let ((dest, typ), exp, body) ->
@@ -82,9 +82,8 @@ and mj_exp p reg mem fenv name exp =
       | Not_specialized (e, v) -> Ans (e), M.empty
     end
 
-and mj_if p reg mem fenv name exp =
-  match exp with
-  | IfGE (id_t, id_or_imm, t1, t2) | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) when (is_opcode id_t) ->
+and mj_if p reg mem fenv name = function
+  | IfGE (id_t, id_or_imm, t1, t2) | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) as exp when (is_opcode id_t) ->
     Logs.debug (fun m -> m  "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
     let r1 = value_of reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
@@ -94,7 +93,7 @@ and mj_if p reg mem fenv name exp =
     if exp |*| (r1, r2)
     then mj p reg mem fenv name t1
     else mj p reg mem fenv name t2
-  | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) ->
+  | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) as exp ->
     Logs.debug (fun m -> m  "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
     let r1 = jit_value_of_id_t reg id_t in
     let r2 = jit_value_of_id_or_imm reg id_or_imm in
@@ -104,10 +103,7 @@ and mj_if p reg mem fenv name exp =
     let t2' = mj p regt2 memt2 fenv name t2 in
     let new_map = M.fold M.add (snd t1') (snd t2') in
     begin match r1, r2 with
-      | Green (n1), Green (n2)
-      | LightGreen (n1), LightGreen (n2)
-      | Green (n1), LightGreen (n2)
-      | LightGreen (n1), Green (n2) ->
+      | Green (n1), Green (n2) | LightGreen (n1), LightGreen (n2) | Green (n1), LightGreen (n2) | LightGreen (n1), Green (n2) ->
         if exp |*| (n1, n2) then t1' else t2'
       | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
         Ans (exp |%| (id_t, C (n2), fst t1', fst t2')), new_map
@@ -116,7 +112,7 @@ and mj_if p reg mem fenv name exp =
             V (id) -> id
           | C (n) -> failwith "id_or_imm should be string"
         in
-        Ans (exp |%|  (id_t2, C (n1), fst t2', fst t1')), new_map
+        Ans (exp |%| (id_t2, C (n1), fst t2', fst t1')), new_map
       | Red (n1), Red (n2) ->
         Ans (exp |%| (id_t, id_or_imm, fst t1', fst t2')), new_map
     end

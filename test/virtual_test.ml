@@ -7,8 +7,6 @@ let _ =
   run begin fun arg ->
     let { prog; reg; mem; red_args; ex_name } = prepare_env arg in
 
-    reg.(1000) <- Green (1000);
-
     let traces =
       Method_jit_loop.run_while
         prog reg mem

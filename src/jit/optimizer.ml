@@ -8,19 +8,19 @@ open Jit_util
 exception Not_optimization_supported of string
 
 let run p e reg mem = match e with
-  | Nop -> Specialized (Red 0)
-  | Set n -> Specialized (Red n)
+  | Nop -> Specialized (Green 0)
+  | Set n -> Specialized (Green n)
   | Mov id_t as exp ->
     let r = reg.(int_of_id_t id_t) in
     (match r with
      | Green (n) ->
-       Logs.debug (fun m -> m "Set (%d): Green" n);
+       Logs.debug (fun m -> m "Mov (%d): Green" n);
        Specialized (Green (n))
      | LightGreen (n) ->
-       Logs.debug (fun m -> m "Set (%d): LightGreen" n );
+       Logs.debug (fun m -> m "Mov (%d): LightGreen" n );
        Specialized (LightGreen (n))
      | Red (n) ->
-       Logs.debug (fun m -> m "Set (%d): Red" n);
+       Logs.debug (fun m -> m "Mov (%d): Red" n);
        Not_specialized (exp, Red (n)))
   | Add (id_t1, id_or_imm) as exp ->
     let r1 = reg.(int_of_id_t id_t1) in
@@ -34,18 +34,17 @@ let run p e reg mem = match e with
      | LightGreen (n1), LightGreen (n2)
      | LightGreen (n1), Green (n2)
      | Green (n1), LightGreen (n2) ->
-       Logs.debug (fun m ->
-           m "Add (%s, %s), %d %d ==> %d: Green, Green"
+       Logs.debug (fun m -> m "Add (%s, %s), %d %d ==> %d: Green, Green ==> Green"
              id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2));
        Specialized (Green (n1 + n2))
      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
        Logs.debug (fun m ->
-           m "Add (%s, %s), %d %d ==> %d; Red, Green"
+           m "Add (%s, %s), %d %d ==> %d: Red, Green ==> Red"
              id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2));
        Not_specialized (Add (id_t1, C (n2)), Red (n1 + n2))
      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
        Logs.debug (fun m ->
-           m "Add (%s, %s), %d %d ==> %d; Green, Red"
+           m "Add (%s, %s), %d %d ==> %d: Green, Red ==> Red"
              id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2));
        let id_t' = match id_or_imm with
            V (id) -> id
@@ -54,7 +53,7 @@ let run p e reg mem = match e with
        Not_specialized (Add (id_t', C (n1)), Red (n1 + n2))
      | Red (n1), Red (n2) ->
        Logs.debug (fun m ->
-           m "Add (%s, %s), %d %d ==> %d; Red, Red"
+           m "Add (%s, %s), %d %d ==> %d: Red, Red ==> Red"
              id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2));
        Not_specialized (exp, Red (n1 + n2)))
   | Sub (id_t1, id_or_imm) as exp ->
@@ -69,18 +68,27 @@ let run p e reg mem = match e with
      | LightGreen (n1), Green (n2)
      | Green (n1), LightGreen (n2) ->
        Logs.debug (fun m ->
-           m "Sub (%s, %s), %d %d; Red, Red"
-             id_t1 (string_of_id_or_imm id_or_imm) n1 n2);
+           m "Sub (%s, %s), %d %d ==> %d: Green, Green ==> Green"
+             id_t1 (string_of_id_or_imm id_or_imm) n1 n2 (n1 - n2));
        Specialized (Green (n1 - n2))
      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
+       Logs.debug (fun m ->
+           m "Sub (%s, %s), %d, %d ==> %d: Red, Green ==> Red"
+             id_t1 (string_of_id_or_imm id_or_imm) n1 n2 (n1 - n2));
        Not_specialized (Sub (id_t1, C (n2)), Red (n1 - n2))
      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
+       Logs.debug (fun m ->
+           m "Sub (%s, %s), %d, %d ==> %d: Green, Red ==> Red"
+             id_t1 (string_of_id_or_imm id_or_imm) n1 n2 (n1 - n2));
        let id_t' = match id_or_imm with
            V (id) -> id
          | C (n) -> failwith "Sub (green, red)"
        in
        Not_specialized (Add (id_t', C (n1)), Red (n1 - n2))
      | Red (n1), Red (n2) ->
+       Logs.debug (fun m ->
+           m "Sub (%s, %s), %d, %d ==> %d: Red, Red ==> Red"
+             id_t1 (string_of_id_or_imm id_or_imm) n1 n2 (n1 - n2));
        Not_specialized (exp, Red (n1 - n2)))
   | Ld (id_t, id_or_imm, x) as exp ->
     let destld = reg.(int_of_id_t id_t) in
