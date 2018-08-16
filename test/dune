@@ -1,9 +1,10 @@
 (executables
  (names jit_loop_test virtual_test)
  (flags (-w -4-33-40-41-42-43-34-44
-  -short-paths
-  -strict-sequence
-  -strict-formats
-  -short-paths
-  -keep-locs))
+         -g
+         -short-paths
+         -strict-sequence
+         -strict-formats
+         -short-paths
+         -keep-locs))
  (libraries core str re logs fmt oUnit minCaml bacCaml rCaml))

@@ -55,11 +55,12 @@ let _ =
   Hashtbl.add greens "c" 2;
   Hashtbl.add greens "d" 3;
   let reg = Array.make 100 (Red (0)) in
-  let fundef = { name = Id.L "test"; args = ["a.12"; "b.13"]; fargs = []; body = Ans (Nop); ret = Type.Unit } in
-  let t = Ans (Nop) in
+  let t = Ans (Mov ("c.14")) in
+  let fundef = { name = Id.L "test"; args = ["a.12"; "b.13"]; fargs = []; body = t; ret = Type.Unit } in
   colorize_reg reds greens reg fundef t;
   assert (reg.(12) = Red (0));
-  assert (reg.(13) = Red (10))
+  assert (reg.(13) = Red (10));
+  assert (reg.(14) = Green (2))
 
 let colorize_pgm pgm bytecode mem =
   for i = 0 to (Array.length pgm - 1) do

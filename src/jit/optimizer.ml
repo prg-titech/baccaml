@@ -8,10 +8,11 @@ open Jit_util
 exception Not_optimization_supported of string
 
 let run p e reg mem = match e with
-  | Nop -> Specialized (Green 0)
-  | Set n -> Specialized (Green n)
+
+  | Nop -> Specialized (Red 0)
+  | Set n -> Specialized (Red n)
   | Mov id_t as exp ->
-    let r = reg.(int_of_id_t id_t) in
+    let r = reg.(int_of_id_t id_t ) in
     (match r with
      | Green (n) ->
        Logs.debug (fun m -> m "Mov (%d): Green" n);
@@ -23,18 +24,19 @@ let run p e reg mem = match e with
        Logs.debug (fun m -> m "Mov (%d): Red" n);
        Not_specialized (exp, Red (n)))
   | Add (id_t1, id_or_imm) as exp ->
-    let r1 = reg.(int_of_id_t id_t1) in
+    let r1 = match List.last (String.split id_t1 ~on:'.') with
+      | Some (str) -> int_of_string str |> Array.get reg
+      | None -> failwith "In Add, getting r1 is failed."
+    in
     let r2 = match id_or_imm with
       | V (id_t) -> reg.(int_of_id_t id_t)
       | C (n) -> Green (n)
     in
     let id_t2 = match id_or_imm with V (id) -> id | C (n) -> string_of_int n in
     (match r1, r2 with
-     | Green (n1), Green (n2)
-     | LightGreen (n1), LightGreen (n2)
-     | LightGreen (n1), Green (n2)
-     | Green (n1), LightGreen (n2) ->
-       Logs.debug (fun m -> m "Add (%s, %s), %d %d ==> %d: Green, Green ==> Green"
+     | Green (n1), Green (n2) | LightGreen (n1), LightGreen (n2) | LightGreen (n1), Green (n2) | Green (n1), LightGreen (n2) ->
+       Logs.debug (fun m ->
+           m "Add (%s, %s), %d %d ==> %d: Green, Green ==> Green"
              id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2));
        Specialized (Green (n1 + n2))
      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
@@ -57,16 +59,16 @@ let run p e reg mem = match e with
              id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2));
        Not_specialized (exp, Red (n1 + n2)))
   | Sub (id_t1, id_or_imm) as exp ->
-    let r1 = reg.(int_of_id_t id_t1) in
+    let r1 = match List.last (String.split id_t1 ~on:'.') with
+      | Some (str) -> int_of_string str |> Array.get reg
+      | None -> failwith "In Sub, getting r1 is failed."
+    in
     let r2 = match id_or_imm with
       | V (id_t) -> reg.(int_of_id_t id_t)
       | C (n) -> Green (n)
     in
     (match r1, r2 with
-     | Green (n1), Green (n2)
-     | LightGreen (n1), LightGreen (n2)
-     | LightGreen (n1), Green (n2)
-     | Green (n1), LightGreen (n2) ->
+     | Green (n1), Green (n2) | LightGreen (n1), LightGreen (n2) | LightGreen (n1), Green (n2) | Green (n1), LightGreen (n2) ->
        Logs.debug (fun m ->
            m "Sub (%s, %s), %d %d ==> %d: Green, Green ==> Green"
              id_t1 (string_of_id_or_imm id_or_imm) n1 n2 (n1 - n2));

@@ -60,9 +60,8 @@ let prepare_reds trace_args (Prog (_, fundefs, _)) =
 let prepare_tenv' p t reds =
   let t' =
     Simm.t t
-    |> Trim.trim_jmp
-    |> Trim.trim_jit_dispatcher
-  in
+    |> Jit_trim.trim_jmp
+    |> Jit_trim.trim_jit_dispatcher in
   begin match t' with
     | Let (_, Set (_),
            Let (_,  IfEq (_, _, _, _),

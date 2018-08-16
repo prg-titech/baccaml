@@ -13,8 +13,7 @@ let _ =
         "min_caml_test_trace"
         ("bytecode" :: "stack" :: red_args) in
 
-    List.iter (
-      fun fundef ->
+    List.iter (fun fundef ->
         Logs.debug (fun m ->
             m "%s" (Emit_virtual.to_string_fundef fundef))) traces;
 

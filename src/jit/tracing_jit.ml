@@ -1,11 +1,13 @@
 open MinCaml
 open Asm
-open Core
+
 open Guard
-open Jit_config
-open Jit_util
 open Renaming
 open Inlining
+open Jit_config
+open Jit_util
+
+open Core
 
 exception Not_supported of string
 
@@ -166,7 +168,7 @@ and tracing_jit_ans p e reg mem jit_args = match e with
     end
 
 let exec p t reg mem jit_args =
-  let t' = Simm.t t |> Trim.trim_jmp in
+  let t' = Simm.t t |> Jit_trim.trim_jmp in
   let jit_args' =
     match jit_args with
       Tracing_jit_args t -> t

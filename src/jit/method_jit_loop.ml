@@ -25,8 +25,7 @@ let rec restore_args cont reg = function
            restore_args cont reg tl)
     else restore_args cont reg tl
 
-let rec mj p reg mem fenv name t =
-  match t with
+ let rec mj p reg mem fenv name = function
   | Ans (exp) ->
     mj_exp p reg mem fenv name exp
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), args, fargs), body) ->
@@ -51,7 +50,7 @@ let rec mj p reg mem fenv name t =
       | IfEq _ | IfGE _ | IfLE _ ->
         let t' = mj_if p reg mem fenv name exp in
         let k = mj p reg mem fenv name body in
-        connect dest (fst t') (fst k), snd k
+        connect dest (fst t') (fst k), snd t'
       | _ ->
         match Optimizer.run p exp reg mem with
         | Specialized (v) ->
@@ -63,8 +62,7 @@ let rec mj p reg mem fenv name t =
           Let ((dest, typ), e, t), x
     end
 
-and mj_exp p reg mem fenv name exp =
-  match exp with
+and mj_exp p reg mem fenv name = function
   | CallDir (id_l, args, fargs) ->
     Logs.debug (fun m -> m  "CallDir (%s)" (string_of_id_l id_l));
     let fundef = find_fundef p id_l in
@@ -72,7 +70,7 @@ and mj_exp p reg mem fenv name exp =
     mj p reg mem fenv name t
   | IfEq _ | IfGE _ | IfLE _ as exp ->
     mj_if p reg mem fenv name exp
-  | _ ->
+  | exp ->
     begin match Optimizer.run p exp reg mem with
       | Specialized (v) ->
         let id = Id.gentmp Type.Int in
@@ -95,8 +93,11 @@ and mj_if p reg mem fenv name = function
     else mj p reg mem fenv name t2
   | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) as exp ->
     Logs.debug (fun m -> m  "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
-    let r1 = jit_value_of_id_t reg id_t in
-    let r2 = jit_value_of_id_or_imm reg id_or_imm in
+    let r1 = reg.(int_of_id_t id_t) in
+    let r2 = match id_or_imm with
+        V (id) -> reg.(int_of_id_t id)
+      | C (n) -> Green (n)
+    in
     let regt1, regt2 = Array.copy reg, Array.copy reg in
     let memt1, memt2 = Array.copy mem, Array.copy mem in
     let t1' = mj p regt1 memt1 fenv name t1 in

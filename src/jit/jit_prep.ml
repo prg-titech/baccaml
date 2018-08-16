@@ -18,8 +18,8 @@ let create_mj_reds reds (Prog (_, fundefs, _)) =
 let prep' p t =
   let t' =
     Simm.t t
-    |> Trim.trim_jmp
-    |> Trim.trim_jit_dispatcher
+    |> Jit_trim.trim_jmp
+    |> Jit_trim.trim_jit_dispatcher
   in
   begin match t' with
     | Let (_, Set (_),

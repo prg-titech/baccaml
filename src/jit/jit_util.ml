@@ -6,22 +6,16 @@ let int_of_id_t id =
   if id = "min_caml_hp" then
     failwith ("int_of_id_t min_caml_hp is not supported.")
   else
-    Core.(
-      match
-        String.split ~on:'.' id
-        |> List.last
-        |> fun opt -> Option.(opt >>| int_of_string)
+    try
+      let x = String.split_on_char '.' id  in
+      List.nth x (List.length x - 1) |> int_of_string
+    with
+    | _ ->
+      try
+        let y = String.split_on_char 'u' id  in
+        List.nth y (List.length y - 1) |> int_of_string
       with
-      | Some (i) -> i
-      | _ ->
-        match
-          Stringext.split ~max:2 ~on:'u' id
-          |> List.last
-          |> fun opt -> Option.(opt >>| int_of_string)
-        with
-        | Some (i) -> i
-        | _ -> failwith (Printf.sprintf "int_of_id_t (%s) is failed" id)
-    )
+      | _ -> failwith @@ Printf.sprintf "int_of_id_t is failed: %s" id
 
 let value_of = function
   | Red (n) | Green (n) | LightGreen (n) -> n
