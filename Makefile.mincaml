@@ -8,7 +8,13 @@ EXAMPLES = \
 example: $(EXAMPLES:%=example/%.cmp)
 
 .PRECIOUS: example/%.s example/% example/%.res example/%.ans example/%.cmp
-TRASH = $(EXAMPLES:%=example/%.s) $(EXAMPLES:%=example/%) $(EXAMPLES:%=example/%.res) $(EXAMPLES:%=example/%.ans) $(EXAMPLES:%=example/%.cmp)
+
+TRASH = \
+      $(EXAMPLES:%=example/%.s) \
+      $(EXAMPLES:%=example/%) \
+      $(EXAMPLES:%=example/%.res) \
+      $(EXAMPLES:%=example/%.ans) \
+      $(EXAMPLES:%=example/%.cmp)
 
 example/%.s: example/%.ml
 	./$(COMPILER) example/$*.ml
