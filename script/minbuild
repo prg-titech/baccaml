@@ -1,4 +1,0 @@
-#!/bin/sh
-./min_caml.exe "$1".ml && \
-  gcc -g -m32 -O2 -Wall lib/libbaccaml.S lib/stub.c "$1".s "$2".s -lm -o "$2" && \
-    rm -rf "$2".dSYM
