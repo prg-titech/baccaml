@@ -10,7 +10,7 @@
  * let jit_dispatch _ _ _ = () in *)
 
 let rec interp bytecode stack pc sp =
-  jit_dispatch (pc=5) bytecode stack;
+  jit_dispatch (pc=0) stack;
   let instr = bytecode.(pc) in
   (* Printf.printf "is: %d\tsp: %d\tpc: %d\t" instr sp pc;
    * print_array print_int stack; print_newline (); *)

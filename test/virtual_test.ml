@@ -11,7 +11,7 @@ let _ =
       Method_jit_loop.run_while
         prog reg mem
         "min_caml_test_trace"
-        ("bytecode" :: "stack" :: red_args) in
+        ("stack" :: red_args) in
 
     List.iter (fun fundef ->
         Logs.debug (fun m ->
