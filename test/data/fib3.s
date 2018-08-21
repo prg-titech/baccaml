@@ -1,7 +1,7 @@
 .globl min_caml_test_trace
 min_caml_test_trace:
 	movl	0(%ebp), %eax
-	movl	4(%esp), %eax # added
+	movl	8(%esp), %eax # added
 	movl	0(%eax), %ebx
 	movl	%ebx, 8(%eax)
 	movl	8(%eax), %ebx
@@ -20,7 +20,7 @@ jle_cont.2995:
 	movl	%ebx, 8(%eax)
 	movl	8(%eax), %ebx
 	subl	$1, %ebx
-	movl	4(%esp), %eax # added
+	movl	8(%esp), %eax # added
 	movl	%ebx, 0(%eax)
 	movl	$100, %ebx
 	movl	$0, %ecx
@@ -38,8 +38,8 @@ jle_cont.2995:
 	movl	%eax, 8(%ebx)
 	movl	0(%ebx), %eax
 	movl	%eax, 12(%ebx)
-	subl  $2, %eax
-	movl	4(%esp), %eax # added
+	subl  	$2, %eax
+	movl	8(%esp), %eax # added
 	movl	%eax, 0(%ebx) # fixed
 	movl	$100, %eax
 	movl	$0, %ecx
@@ -74,4 +74,4 @@ min_caml_trace_entry:
 min_caml_mid_layer:
 	movl	12(%esp), %eax
 	movl	8(%esp), %ebx
-	jmp	interp.224
+	jmp	interp.221

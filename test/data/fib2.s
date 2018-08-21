@@ -80,4 +80,4 @@ min_caml_trace_entry:
 min_caml_mid_layer:
 	movl	12(%esp), %eax
 	movl	8(%esp), %ebx
-	jmp	interp.224
+	jmp	interp.221
