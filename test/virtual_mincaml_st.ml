@@ -65,43 +65,44 @@ let rec interp bytecode stack pc sp =
   else if instr = 13 then       (* LOOP_E *)
     (loop_end ();
      interp bytecode stack (pc + 1) sp)
+  else if instr = 14 then       (* JUMP *)
+    let addr = bytecode.(pc + 1) in
+    interp bytecode stack addr sp
   else
     -1000 in
 
 let code = Array.make 40 0 in
 let stack = Array.make 50 0 in
-code.(0) <- 4;
-code.(1) <- 9;
-code.(2) <- 6;
-code.(3) <- 5;
-code.(4) <- 9;
-code.(5) <- 8;
-code.(6) <- 0;
+code.(0) <- 8;
+code.(1) <- 0;
+code.(2) <- 4;
+code.(3) <- 2;
+code.(4) <- 3;
+code.(5) <- 5;
+code.(6) <- 11;
 code.(7) <- 4;
-code.(8) <- 2;
-code.(9) <- 3;
-code.(10) <- 5;
-code.(11) <- 18;
-code.(12) <- 4;
-code.(13) <- 1;
-code.(14) <- 4;
-code.(15) <- 0;
-code.(16) <- 5;
-code.(17) <- 33;
+code.(8) <- 1;
+code.(9) <- 14;
+code.(10) <- 26;
+code.(11) <- 8;
+code.(12) <- 0;
+code.(13) <- 4;
+code.(14) <- 1;
+code.(15) <- 1;
+code.(16) <- 6;
+code.(17) <- 0;
 code.(18) <- 8;
-code.(19) <- 0;
+code.(19) <- 1;
 code.(20) <- 4;
-code.(21) <- 1;
+code.(21) <- 2;
 code.(22) <- 1;
 code.(23) <- 6;
-code.(24) <- 5;
-code.(25) <- 8;
-code.(26) <- 1;
+code.(24) <- 0;
+code.(25) <- 0;
+code.(26) <- 7;
 code.(27) <- 4;
-code.(28) <- 2;
-code.(29) <- 1;
-code.(30) <- 6;
-code.(31) <- 5;
-code.(32) <- 0;
-code.(33) <- 7;
-print_int (interp code stack 0 0)
+code.(28) <- 9;
+code.(29) <- 6;
+code.(30) <- 0;
+code.(31) <- 9;
+print_int (interp code stack 27 0)

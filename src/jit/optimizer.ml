@@ -8,7 +8,6 @@ open Jit_util
 exception Not_optimization_supported of string
 
 let run p e reg mem = match e with
-
   | Nop -> Specialized (Red 0)
   | Set n -> Specialized (Red n)
   | Mov id_t as exp ->
@@ -153,10 +152,7 @@ let run p e reg mem = match e with
       | C (n) -> Green (n * x)
     in
     begin match dest', offset' with
-      | Green (n1), Green (n2)
-      | LightGreen (n1), LightGreen (n2)
-      | LightGreen (n1), Green (n2)
-      | Green (n1), LightGreen (n2) ->
+      | Green (n1), Green (n2) | LightGreen (n1), LightGreen (n2) | LightGreen (n1), Green (n2) | Green (n1), LightGreen (n2) ->
         begin match src' with
           | Green (n) | LightGreen (n) ->
             mem.(n1 + n2) <- src';

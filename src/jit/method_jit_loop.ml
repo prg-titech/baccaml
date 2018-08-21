@@ -25,7 +25,7 @@ let rec restore_args cont reg = function
            restore_args cont reg tl)
     else restore_args cont reg tl
 
- let rec mj p reg mem fenv name = function
+let rec mj p reg mem fenv name = function
   | Ans (exp) ->
     mj_exp p reg mem fenv name exp
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), args, fargs), body) ->
@@ -43,14 +43,47 @@ let rec restore_args cont reg = function
         (Let ((dest, typ), CallDir (id_l, args, fargs), Ans (Nop)))
         reg
         args in
-    let t' = mj p reg mem fenv name body in
-    connect (Id.gentmp Type.Int) restored_call (fst t'), snd t'
+    let t, x = mj p reg mem fenv name body in
+    connect (Id.gentmp Type.Int) restored_call t, x
   | Let ((dest, typ), exp, body) ->
     begin match exp with
       | IfEq _ | IfGE _ | IfLE _ ->
         let t' = mj_if p reg mem fenv name exp in
         let k = mj p reg mem fenv name body in
-        connect dest (fst t') (fst k), snd t'
+        connect dest (fst t') (fst k), snd k
+      | St (id_t1, id_t2, id_or_imm, x) ->
+        let srcv = reg.(int_of_id_t id_t1) in
+        let destv = reg.(int_of_id_t id_t2) in
+        let offsetv = match id_or_imm with
+          | V (id) -> reg.(int_of_id_t id)
+          | C (n) -> Green (n) in
+        let body', m' = mj p reg mem fenv name body in
+        begin match srcv, destv with
+          | Red (n1), Red (n2) ->
+            reg.(int_of_id_t dest) <- Red (0);
+            let n = int_of_id_t id_t1 |> Array.get reg |> value_of in
+            mem.(n1 + n2 * x) <- Red (n);
+            Let ((dest, typ), exp, body'), m'
+          | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
+            let offset' = value_of offsetv in
+            let n = int_of_id_t id_t1 |> Array.get reg |> value_of in
+            reg.(int_of_id_t dest) <- Green (0);
+            mem.(n1 + n2 * x) <- Green (n);
+            let new_id = Id.gentmp Type.Int in
+            Let ((new_id, Type.Int), Set (n1),
+                 Let ((dest, typ), St (new_id, id_t2, C (offset'), x), body')), m'
+          | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
+            let offset' = value_of offsetv in
+            let n = int_of_id_t id_t1 |> Array.get reg |> value_of in
+            reg.(int_of_id_t dest) <- Green (0);
+            mem.(n1 + n2 * x) <- Green (n);
+            Let ((dest, typ), St (id_t1, zero, C (n2 + offset'), x), body'), m'
+          | _ ->
+            let n1, n2 = value_of srcv, value_of destv in
+            reg.(int_of_id_t id_t1) <- Green (0);
+            mem.(n1 + n2 * x) <- Green (int_of_id_t id_t1 |> Array.get reg |> value_of);
+            mj p reg mem fenv name body
+        end
       | _ ->
         match Optimizer.run p exp reg mem with
         | Specialized (v) ->
