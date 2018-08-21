@@ -37,6 +37,9 @@ let rec interp bytecode pc a =
     interp bytecode (pc + 2) v
   else if instr = 7 then        (* RET *)
     a
+  else if instr = 14 then       (* JUMP *)
+    let adder = bytecode.(pc + 1) in
+    interp bytecode adder a
   else -1000
 in
 let code = Array.make 100 (-1) in

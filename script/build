@@ -2,9 +2,11 @@
 
 # Example
 # ./script/build jit_loop jit_loop_test "1 1 7 1 10 4 2 13 6 0 5 3 5 7" "bytecode 0; pc 3" "a 100"
+# TODO
+#   movl 8(%esp), %eax とする
 
-jbuilder build && \
-    jbuilder build "$2".exe && \
+dune build && \
+    dune build "$2".exe && \
     _build/default/"$2".exe -file "$1".ml -code "$3" -green "$4" -red "$5" -o $(basename "$2") -dbg && \
     ./min_caml.exe "$1".ml && \
     gcc -c -g -m32 -O2 $(basename "$2").s && \
