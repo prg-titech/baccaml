@@ -156,15 +156,13 @@ let run p e reg mem = match e with
         begin match src' with
           | Green (n) | LightGreen (n) ->
             mem.(n1 + n2) <- src';
-            Logs.debug (fun m ->
-                m "St (%s, %s, %s, %d), %d %d %d: Green, Green, Green"
-                  src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
+            Logs.debug (fun m -> m "St (%s, %s, %s, %d), %d %d %d: Green, Green, Green"
+                           src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
             Specialized (Green (0))
           | Red (n) ->
-            Logs.debug (fun m ->
-                m "St (%s, %s, %s, %d), %d %d %d: Green, Green, Red"
-                  src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
-            Not_specialized (St (src, dest, C ((n1 + n2)), x), Red (n))
+            Logs.debug (fun m -> m "St (%s, %s, %s, %d), %d %d %d: Green, Green, Red"
+                           src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
+            Not_specialized (St (src, zero, C ((n1 + n2)), x), Red (n))
         end
       | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
         failwith "St (green, red)"
