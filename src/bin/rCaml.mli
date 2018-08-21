@@ -15,15 +15,15 @@ type arg =
     greens : (string * int) list;
   }
 
-type var = {
-  redtbl : (string, int) Hashtbl.t;
-  greentbl : (string, int) Hashtbl.t;
-}
+type var =
+  { redtbl : (string, int) Hashtbl.t;
+    greentbl : (string, int) Hashtbl.t;
+  }
 
-type tenv = {
-  fundefs : MinCaml.Asm.fundef list;
-  ibody : MinCaml.Asm.t;
-}
+type tenv =
+  { fundefs : MinCaml.Asm.fundef list;
+    ibody : MinCaml.Asm.t;
+  }
 
 val prepare_env : arg -> env
 val run : (arg -> 'a) -> 'a
