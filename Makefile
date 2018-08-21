@@ -22,7 +22,8 @@ build:
 	ln -sf $(BUILD_DIR)/src/armin/$(ARMIN_TOP) .
 
 .PHONY: clean
-clean:	dune clean
+clean:
+	dune clean
 	git clean -dfXq
 	rm -rf $(TRASH)
 
