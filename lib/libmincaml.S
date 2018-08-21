@@ -15,6 +15,9 @@
 #define ALIGNSTACK3
 #endif
 .text
+.globl min_caml_trace_entry
+min_caml_trace_entry:
+	ret
 .globl min_caml_loop_start
 min_caml_loop_start:
 	ret
