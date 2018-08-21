@@ -27,7 +27,7 @@ let rec interp bytecode stack pc sp =
   let instr = bytecode.(pc) in
   Printf.printf "is: %d\tsp: %d\tpc: %d\t" instr sp pc;
   print_array print_int stack; print_newline ();
-let instr = bytecode.(pc) in
+  let instr = bytecode.(pc) in
   if instr = 0 then             (* ADD *)
     let v2 = stack.(sp - 1) in  (* sp - 1 *)
     let v1 = stack.(sp - 2) in  (* sp - 2 *)

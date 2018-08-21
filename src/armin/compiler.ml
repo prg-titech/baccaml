@@ -89,8 +89,7 @@ and compile_exp fenv exp env =
     (compile_exp fenv cond env) @
     [JUMP_IF_ZERO; Lref l1] @
     (compile_exp fenv then_exp env) @
-    [CONST; Literal 0;         (* unconditional jump *)
-     JUMP_IF_ZERO; Lref l2;
+    [JUMP; Lref l2;
      Ldef l1] @
     (compile_exp fenv else_exp env) @
     [Ldef l2]
@@ -125,9 +124,9 @@ and compile_exp fenv exp env =
     (compile_exp fenv body ex_env) @     (* in extended env *)
     [POP1]                               (* drop the value *)
   | LetRec (fundef, body) ->
+    (compile_fun fenv fundef) @
     (compile_exp fenv body env) @
-    [HALT] @
-    (compile_fun fenv fundef)
+    [HALT]
 
 and compile_funs fundefs =
   let fenv name =

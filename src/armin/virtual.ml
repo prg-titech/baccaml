@@ -5,6 +5,7 @@ type inst =
   | LT
   | CONST
   | JUMP_IF_ZERO (* addr *)
+  | JUMP
   | CALL (* fun-id *)
   | RET
   | DUP (* n *)
@@ -39,6 +40,7 @@ let insts =
      POP1;
      LOOP_S;
      LOOP_E;
+     JUMP;
   |]
 
 let index_of element array =
@@ -160,6 +162,10 @@ let rec interp  code pc stack =
       if v=0
       then interp code addr stack
       else interp code pc   stack
+    | JUMP (* addr *) ->
+      log "JUMP";
+      let addr,pc = fetch code pc in
+      interp code addr stack
     | CALL (* addr *) ->
       log "CALL";
       (* calling a function will create a new operand stack and lvars  *)
