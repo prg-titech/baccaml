@@ -42,7 +42,7 @@ let rec tracing_jit p instr reg mem jit_args = match instr with
     let t = tracing_jit p (inline_calldir_exp argsr fundef reg) reg mem jit_args in
     connect dest t (tracing_jit p body reg mem jit_args)
   | Let ((dest, typ), instr, body) ->
-    begin match Optimizer.run p instr reg mem with
+    begin match Jit_optimizer.run p instr reg mem with
       | Specialized v ->
         reg.(int_of_id_t dest) <- v;
         tracing_jit p body reg mem jit_args
@@ -160,7 +160,7 @@ and tracing_jit_ans p e reg mem jit_args = match e with
           Ans (IfGE (id_t, id_or_imm, restore_green reg t1, tracing_jit p t2 reg mem jit_args))
     end
   | _ ->
-    begin match Optimizer.run p e reg mem with
+    begin match Jit_optimizer.run p e reg mem with
       | Specialized (v) ->
         Ans (Set (value_of v))
       | Not_specialized (e, v) ->

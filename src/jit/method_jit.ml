@@ -37,7 +37,7 @@ let rec method_jit p instr reg mem jargs =
     let t' = method_jit p body reg mem jargs in
     connect (Id.gentmp Type.Unit) restored_fcall t'
   | Let ((dest, typ), exp, body) ->
-    begin match Optimizer.run p exp reg mem with
+    begin match Jit_optimizer.run p exp reg mem with
       | Specialized (v) ->
         reg.(int_of_id_t dest) <- v;
         method_jit p body reg mem jargs
@@ -57,7 +57,7 @@ and method_jit_exp p e reg mem jargs =
   | IfEq _ | IfGE _ | IfLE _ ->
     method_jit_if p e reg mem jargs
   | _ ->
-    begin match Optimizer.run p e reg mem with
+    begin match Jit_optimizer.run p e reg mem with
       | Specialized (v) ->
         let id = Id.gentmp Type.Int in
         Let ((id, Type.Int),

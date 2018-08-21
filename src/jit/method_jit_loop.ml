@@ -78,7 +78,7 @@ let rec mj p reg mem fenv name = function
     end
 
 and optimize_exp p exp reg mem fenv name (dest, typ) body =
-  match Optimizer.run p exp reg mem with
+  match Jit_optimizer.run p exp reg mem with
   | Specialized (v) ->
     reg.(int_of_id_t dest) <- v;
     mj p reg mem fenv name body
@@ -96,7 +96,7 @@ and mj_exp p reg mem fenv name = function
   | IfEq _ | IfGE _ | IfLE _ as exp ->
     mj_if p reg mem fenv name exp
   | exp ->
-    begin match Optimizer.run p exp reg mem with
+    begin match Jit_optimizer.run p exp reg mem with
       | Specialized (v) ->
         let id = Id.gentmp Type.Int in
         Let ((id, Type.Int),
@@ -149,7 +149,6 @@ let run_while p reg mem name reds =
   let Prog (tbl, _, m) = p in
   let Jit_prep.Env(fdfs, ibody, reds) = Jit_prep.prep ~prog:p ~name:name ~red_args:reds in
   let p' = Prog (tbl, fdfs, m) in
-
   let rec loop p reg mem fenv name args t =
     let t1, fenv1 = mj p reg mem fenv name t in
     match M.choose_opt fenv1 with
@@ -164,7 +163,6 @@ let run_while p reg mem name reds =
     | None ->
       [(t1, name, args)]
   in
-
   let loops = loop p' reg mem M.empty name reds ibody  in
   List.map begin fun (body, name, args) ->
     { name = Id.L (name); args = args; fargs = []; body = body; ret = Type.Int }
