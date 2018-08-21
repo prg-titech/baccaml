@@ -8,8 +8,8 @@ open Jit_util
 exception Not_optimization_supported of string
 
 let run p e reg mem = match e with
-  | Nop -> Specialized (Red 0)
-  | Set n -> Specialized (Red n)
+  | Nop -> Specialized (Green 0)
+  | Set n -> Specialized (Green n)
   | Mov id_t as exp ->
     let r = reg.(int_of_id_t id_t ) in
     (match r with
@@ -121,7 +121,7 @@ let run p e reg mem = match e with
            Logs.debug (fun m ->
                m "Ld (%s, %s), %d %d => %d (Red): Green, Green"
                  id_t id_t2 (value_of destld) (value_of offsetld) n);
-           Not_specialized (Ld (zero, C ((n1 + n2) / 4), 4), Red n)
+           Not_specialized (Ld (zero, C (n1 + n2), 0), Red n)
        end
      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) -> failwith "Ld (green, red)"
      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
@@ -131,9 +131,9 @@ let run p e reg mem = match e with
              id_t id_t2 (value_of destld) (value_of offsetld) (value_of n));
        begin match mem.(n1 + n2) with
          | Green (n) | LightGreen (n) ->
-           Not_specialized (Ld (id_t, C (n2), x), Red (n))
+           Not_specialized (Ld (id_t, C ((n1 + n2) / 4), 4), Red (n))
          | Red (n) ->
-           Not_specialized (Ld (id_t, C (n2), x), Red (n))
+           Not_specialized (Ld (id_t, C ((n1 + n2) / 4), 4), Red (n))
        end
      | Red (n1), Red (n2) ->
        let n = mem.(n1 + n2) in
@@ -147,9 +147,9 @@ let run p e reg mem = match e with
     let offset' = match offset with
       | V (id_t) ->
         (match reg.(int_of_id_t id_t) with
-         | Green (n) | LightGreen (n) -> Green (n * x)
-         | Red (n) -> Red (n * x))
-      | C (n) -> Green (n * x)
+         | Green (n) | LightGreen (n) -> Green (n)
+         | Red (n) -> Red (n))
+      | C (n) -> Green (n)
     in
     begin match dest', offset' with
       | Green (n1), Green (n2) | LightGreen (n1), LightGreen (n2) | LightGreen (n1), Green (n2) | Green (n1), LightGreen (n2) ->
@@ -182,7 +182,7 @@ let run p e reg mem = match e with
             Logs.debug (fun m ->
                 m "St (%s, %s, %s, %d), %d %d %d: Red, Green, Red"
                   src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
-            Not_specialized (St (src, zero, C (n1 + n2), x), Red (0))
+            Not_specialized (St (src, dest, C (n1 + n2), x), Red (0))
         end
       | Red (n1), Red (n2) ->
         begin match src' with
