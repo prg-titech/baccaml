@@ -60,11 +60,18 @@ let rec mj p reg mem fenv name = function
         let body', m' = mj p reg mem fenv name body in
         begin match srcv, destv with
           | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
-            let offset' = value_of offsetv in
             reg.(int_of_id_t dest) <- Green (0);
             mem.(n1 + n2 * x) <- Green (int_of_id_t id_t1 |> Array.get reg |> value_of);
-            Let ((id_t1, Type.Int), Set (n1),
-                 Let ((dest, typ), St (id_t1, id_t2, C (offset'), x), body')), m'
+            begin match offsetv with
+              | Green (n) | LightGreen (n) ->
+                let id' = Id.gentmp Type.Int in
+                Let ((id_t1, Type.Int), Set (n1),
+                     Let ((id', Type.Int), Set (n),
+                          Let ((dest, typ), St (id_t1, id_t2, C (n), x), body'))), m'
+              | Red (n) ->
+                Let ((id_t1, Type.Int), Set (n1),
+                     Let ((dest, typ), St (id_t1, id_t2, id_or_imm, x), body')), m'
+            end
           | _ -> optimize_exp p exp reg mem fenv name (dest, typ) body
         end
       | _ -> optimize_exp p exp reg mem fenv name (dest, typ) body
