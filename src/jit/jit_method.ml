@@ -2,9 +2,9 @@ open MinCaml
 open Asm
 open Inlining
 open Renaming
+open Operands
 open Jit_config
 open Jit_util
-open Operands
 
 (* function_name -> (arguments, following expressions) *)
 module M = Map.Make(String)
