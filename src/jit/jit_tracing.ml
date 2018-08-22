@@ -93,3 +93,10 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
       | Specialized (v) -> Ans (Set (value_of v))
       | Not_specialized (e, v) -> Ans (e)
     end
+
+let run_while p reg mem name reds index_pc merge_pc =
+  let Prog (tbl, _, m) = p in
+  let Jit_prep.Env (fdfs, ibody, reds) = Jit_prep.prep ~prog:p ~name:name ~red_args:reds in
+  let p' = Prog (tbl, fdfs, m) in
+  let trace = tj p' reg mem { index_pc = index_pc; merge_pc = merge_pc } ibody in
+  { name = Id.L (name); args = reds; fargs = []; body = trace; ret = Type.Int }
