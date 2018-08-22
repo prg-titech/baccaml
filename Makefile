@@ -17,9 +17,6 @@ build:
 	dune build
 	dune build src/armin/$(ARMIN)
 	dune build src/armin/$(ARMIN_TOP)
-	ln -sf $(BUILD_DIR)/src/mincaml/$(COMPILER) .
-	ln -sf $(BUILD_DIR)/src/armin/$(ARMIN) .
-	ln -sf $(BUILD_DIR)/src/armin/$(ARMIN_TOP) .
 
 .PHONY: clean
 clean:

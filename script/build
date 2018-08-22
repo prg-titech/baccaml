@@ -2,11 +2,10 @@
 
 # for jit_loop_test
 # - $ dune build test/jit_loop_test.exe
-# - $ build/default/test/jit_loop_test.exe -file test/jit_loop.ml -code "1 1 7 1 10 4 2 13 6 0 5 3 5 7" -green "bytecode 0; pc 3" "a 100" -dbg
+# - $ dune exec test/jit_loop_test.exe -- -file test/jit_loop.ml -code "1 1 7 1 10 4 2 13 6 0 5 3 5 7" -green "bytecode 0; pc 3" -red "a 100" -o jit_loop -dbg
 # - TODO: `add movl 8(%esp), %eax'
 
 dune build && \
-    ln -sf _build/default/src/mincaml/min_caml.exe . && \
-    ./min_caml.exe "$1".ml && \
+    dune exec src/mincaml/min_caml.exe "$1".ml && \
     gcc -g -m32 -O2 -Wall lib/libbaccaml.S lib/stub.c "$1".s "$2".s -lm -o "$2" && \
     rm -rf "$2".dSYM
