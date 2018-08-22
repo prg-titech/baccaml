@@ -180,7 +180,7 @@ let run p e reg mem = match e with
             Logs.debug (fun m ->
                 m "St (%s, %s, %s, %d), %d %d %d: Red, Green, Red"
                   src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
-            Not_specialized (St (src, dest, C ((n1 + n2)), x), Red (0))
+            Not_specialized (St (src, dest, offset, x), Red (0))
         end
       | Red (n1), Red (n2) ->
         begin match src' with
@@ -189,13 +189,13 @@ let run p e reg mem = match e with
             Logs.debug (fun m ->
                 m "St (%s, %s, %s, %d), %d %d %d: Red, Red, Green"
                   src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
-            Not_specialized (St (src, dest, C ((n1 + n2)), x), Red (0))
+            Not_specialized (St (src, dest, C (n1 + n2), x), Red (0))
           | Red (n) ->
             mem.(n1 + n2) <- src';
             Logs.debug (fun m ->
                 m "St (%s, %s, %s, %d), %d %d %d: Red, Red, Red"
                   src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
-            Not_specialized (St (src, dest, C ((n1 + n2)), x), Red (0))
+            Not_specialized (St (src, dest, offset, x), Red (0))
         end
     end
   | _ ->
