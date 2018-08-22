@@ -5,7 +5,59 @@
 # - $ dune exec test/jit_loop_test.exe -- -file test/jit_loop.ml -code "1 1 7 1 10 4 2 13 6 0 5 3 5 7" -green "bytecode 0; pc 3" -red "a 100" -o jit_loop -dbg
 # - TODO: `add movl 8(%esp), %eax'
 
-dune build && \
-    dune exec src/mincaml/min_caml.exe "$1".ml && \
-    gcc -g -m32 -O2 -Wall lib/libbaccaml.S lib/stub.c "$1".s "$2".s -lm -o "$2" && \
-    rm -rf "$2".dSYM
+PROGNAME=$(basename $0)
+VERSION=0.1
+
+usage () {
+    echo "Usage: $PROGNAME [OPTIONS] FILE"
+    echo "This script is for generating a binary from assembly codes emitted by meta-hybrid JIT compiler."
+    echo "    First, do \`dune exec [file].exe -- -file [file] -code [code] -green [green] -red [red] -o [output]'"
+    echo "    Example:"
+    echo "        dune exec test/jit_loop_test.exe -- -file test/jit_loop.ml -code \"1 1 7 1 10 4 2 13 6 0 5 3 5 7\" -green \"bytecode 0; pc 3\" -red \"a 100\" -o jit_loop -dbg"
+    echo "        ./script/build -- test/jit_loop_test jit_loop"
+}
+
+build () {
+    dune build && \
+	dune exec src/mincaml/min_caml.exe "$1".ml && \
+	gcc -g -m32 -O2 -Wall lib/libbaccaml.S lib/stub.c "$1".s "$2".s -lm -o "$2" && \
+	rm -rf "$2".dSYM
+}
+
+for OPT in "$@"
+do
+    case "$OPT" in
+        '-h'|'--help' )
+            usage
+            exit 1
+            ;;
+        '--version' )
+            echo $VERSION
+            exit 1
+            ;;
+        '--'|'-' )
+            shift 1
+            param+=( "$@" )
+            break
+            ;;
+        -*)
+            echo "$PROGNAME: illegal option -- '$(echo $1 | sed 's/^-*//')'" 1>&2
+            exit 1
+            ;;
+        *)
+            if [[ ! -z "$1" ]] && [[ ! "$1" =~ ^-+ ]]; then
+                #param=( ${param[@]} "$1" )
+                param+=( "$1" )
+                shift 1
+            fi
+            ;;
+    esac
+done
+
+if [ -z $param ]; then
+    echo "$PROGNAME: too few arguments" 1>&2
+    echo "Try '$PROGNAME --help' for more information." 1>&2
+    exit 1
+fi
+
+build "$@"
