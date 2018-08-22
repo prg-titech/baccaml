@@ -68,7 +68,7 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
     in
     begin match r1, r2 with
       | Green (n1), Green (n2) | LightGreen (n1), Green (n2) | Green (n1), LightGreen (n2) | LightGreen (n1), LightGreen (n2) ->
-        if exp |*| (r1, r2)
+        if exp <=> (n1, n2)
         then tj p reg mem tj_env t1
         else tj p reg mem tj_env t2
       | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
