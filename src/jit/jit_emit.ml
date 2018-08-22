@@ -346,15 +346,12 @@ let emit_midlayer (tr : trace_result) (file : string) (interp : string) : Buffer
   Printf.sprintf ".globl min_caml_trace_entry\n" |> Buffer.add_string buf;
   Printf.sprintf "min_caml_trace_entry:\n" |> Buffer.add_string buf;
   Printf.sprintf "\tpushl\t%%eax\n" |> Buffer.add_string buf;
-  Printf.sprintf "\tpushl\t%%ebx\n" |> Buffer.add_string buf;
   Printf.sprintf "\tcall\tmin_caml_test_trace\n" |> Buffer.add_string buf;
   Printf.sprintf "\tpopl\t%%edx\n" |> Buffer.add_string buf;
-  Printf.sprintf "\tpopl\t%%esi\n" |> Buffer.add_string buf;
   Printf.sprintf "\tret\n" |> Buffer.add_string buf;
   Printf.sprintf ".globl min_caml_mid_layer\n" |> Buffer.add_string buf;
   Printf.sprintf "min_caml_mid_layer:\n" |> Buffer.add_string buf;
-  Printf.sprintf "\tmovl\t%d(%%esp), %%eax\n" 12 |> Buffer.add_string buf;
-  Printf.sprintf "\tmovl\t%d(%%esp), %%ebx\n" 8 |> Buffer.add_string buf;
+  Printf.sprintf "\tmovl\t%d(%%esp), %%eax\n" 8 |> Buffer.add_string buf;
   Printf.sprintf "\tjmp\t%s\n" interp |> Buffer.add_string buf;
   buf
 
