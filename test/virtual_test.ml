@@ -8,7 +8,7 @@ let _ =
     let { prog; reg; mem; red_args; ex_name } = prepare_env arg in
 
     let traces =
-      Method_jit_loop.run_while
+      Jit_method.run_while
         prog reg mem
         "min_caml_test_trace"
         ("stack" :: red_args) in
