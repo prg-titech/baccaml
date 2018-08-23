@@ -41,7 +41,8 @@ let rec interp bytecode stack pc sp =
     else interp bytecode stack (pc + 2) (sp - 1)
   else if instr = 6 then        (* CALL *)
     let addr = bytecode.(pc + 1) in
-    stack.(sp) <- (pc + 2);
+    let raddr = pc + 2 in
+    stack.(sp) <- raddr;
     interp bytecode stack addr (sp + 1)
   else if instr = 7 then        (* RET *)
     let n = bytecode.(pc + 1) in
@@ -80,34 +81,27 @@ code.(2) <- 4;
 code.(3) <- 2;
 code.(4) <- 3;
 code.(5) <- 5;
-code.(6) <- 13;
+code.(6) <- 11;
 code.(7) <- 4;
 code.(8) <- 1;
-code.(9) <- 4;
-code.(10) <- 0;
-code.(11) <- 5;
-code.(12) <- 28;
+code.(9) <- 14;
+code.(10) <- 21;
+code.(11) <- 8;
+code.(12) <- 1;
 code.(13) <- 8;
-code.(14) <- 1;
+code.(14) <- 2;
 code.(15) <- 4;
 code.(16) <- 1;
 code.(17) <- 1;
 code.(18) <- 6;
 code.(19) <- 0;
-code.(20) <- 8;
-code.(21) <- 2;
-code.(22) <- 4;
-code.(23) <- 2;
-code.(24) <- 1;
+code.(20) <- 0;
+code.(21) <- 7;
+code.(22) <- 1;
+code.(23) <- 4;
+code.(24) <- 10;
 code.(25) <- 6;
 code.(26) <- 0;
-code.(27) <- 0;
-code.(28) <- 7;
-code.(29) <- 1;
-code.(30) <- 4;
-code.(31) <- 10;
-code.(32) <- 6;
-code.(33) <- 0;
-code.(34) <- 9;
+code.(27) <- 9;
 (* 8 1 4 2 3 5 13 4 1 4 0 5 28 8 1 4 1 1 6 0 8 2 4 2 1 6 0 0 7 1 4 10 6 0 9 *)
 print_int (interp code stack 30 0)
