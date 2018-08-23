@@ -6,13 +6,9 @@ open Operands
 open Jit_config
 open Jit_util
 
-type tj_env = { index_pc: int; merge_pc: int; trace_name: string }
-
-let (<=>) exp (n1, n2) = match exp with
-  | IfEq _ -> n1 = n2
-  | IfLE _ -> n1 <= n2
-  | IfGE _ -> n1 >= n2
-  | _ -> assert false
+type tj_env =
+  { index_pc: int; merge_pc: int; trace_name: string }
+  [@@deriving fields]
 
 let find_pc { index_pc; } args =
   match List.nth_opt args index_pc with
@@ -33,33 +29,88 @@ let rec connect (id_t, typ) instr body =
     | Ans e -> Let ((id_t, typ), e, body)
   in go id_t instr body
 
+
 let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) = function
   | Ans (exp) -> tj_exp p reg mem tj_env exp
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     let fundef = find_fundef id_l p in
     Inlining.inline_calldir_exp args fundef reg
     |> tj p reg mem tj_env
-    |> (tj p reg mem tj_env body |> connect (dest, typ))
-  | Let ((dest, typ), instr, body) ->
-    begin match Jit_optimizer.run p instr reg mem with
-      | Specialized v ->
-        reg.(int_of_id_t dest) <- v;
-        tj p reg mem tj_env body
-      | Not_specialized (e, v) ->
-        reg.(int_of_id_t dest) <- v;
-        Let ((dest, typ), e, tj p reg mem tj_env body)
-    end
+    |> connect (dest, typ) @@ tj p reg mem tj_env body
+  | Let ((dest, typ), exp, body) ->
+    match exp with
+    | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) ->
+      let n1 = reg.(int_of_id_t id_t) |> value_of in
+      let n2 = match id_or_imm with
+        | V (id) -> reg.(int_of_id_t id) |> value_of
+        | C (n) -> n
+      in tj p reg mem tj_env body
+    | Ld (id_t, id_or_imm, x) ->
+      let r1 = int_of_id_t id_t |> Array.get reg in
+      let r2 = match id_or_imm with V (id) -> int_of_id_t id_t |> Array.get reg | C (n) -> Green (n) in
+      begin match r1, r2 with
+        | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
+          let n = mem.(n1 + n2 * x) in
+          let id_t2 = match id_or_imm with V (id) -> id | C (n) -> failwith "id_or_imm should be string" in
+          reg.(int_of_id_t id_t) <- n;
+          Let ((dest, typ), Ld (id_t2, C (n1), x), tj p reg mem tj_env body)
+        | _ ->
+          optimize_exp p reg mem tj_env (dest, typ) body exp
+      end
+    | St (id_t1, id_t2, id_or_imm, x) ->
+      let srcv = reg.(int_of_id_t id_t1) in
+      let destv = reg.(int_of_id_t id_t2) in
+      let offsetv = match id_or_imm with
+        | V (id) -> reg.(int_of_id_t id)
+        | C (n) -> Green (n) in
+      let body' = tj p reg mem tj_env body in
+      begin match srcv, destv with
+        | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
+          reg.(int_of_id_t dest) <- Green (0);
+          mem.(n1 + n2 * x) <- Green (int_of_id_t id_t1 |> Array.get reg |> value_of);
+          begin match offsetv with
+            | Green (n) | LightGreen (n) ->
+              let id' = Id.gentmp Type.Int in
+              Let ((id_t1, Type.Int), Set (n1),
+                   Let ((id', Type.Int), Set (n),
+                        Let ((dest, typ), St (id_t1, id_t2, C (n), x), body')))
+            | Red (n) ->
+              Let ((id_t1, Type.Int), Set (n1),
+                   Let ((dest, typ), St (id_t1, id_t2, id_or_imm, x), body'))
+          end
+        | _ -> optimize_exp p reg mem tj_env (dest, typ) body exp
+      end
+    | _ -> optimize_exp p reg mem tj_env (dest, typ) body exp
+
+and optimize_exp p reg mem tj_env (dest, typ) body exp =
+  match Jit_optimizer.run p exp reg mem with
+  | Specialized v ->
+    reg.(int_of_id_t dest) <- v;
+    tj p reg mem tj_env body
+  | Not_specialized (e, v) ->
+    reg.(int_of_id_t dest) <- v;
+    Let ((dest, typ), e, tj p reg mem tj_env body)
 
 and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) = function
   | CallDir (id_l, args, _) ->
     let fundef =  find_fundef id_l p in
     let pc = args |> find_pc tj_env in
+    if pc = 0 then assert false;
     let { merge_pc; trace_name } = tj_env in
     if pc = merge_pc then
       let reds = args |> List.filter (fun a -> is_red reg.(int_of_id_t a)) in
       Ans (CallDir (Id.L (trace_name), reds, []))
     else
       Inlining.inline_calldir_exp args fundef reg |> tj p reg mem tj_env
+  | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) as exp ->
+    tj_if p reg mem tj_env exp
+  | exp ->
+    begin match Jit_optimizer.run p exp reg mem with
+      | Specialized (v) -> Ans (Set (value_of v))
+      | Not_specialized (e, v) -> Ans (e)
+    end
+
+and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) = function
   | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) as exp ->
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
@@ -68,22 +119,22 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
     in
     begin match r1, r2 with
       | Green (n1), Green (n2) | LightGreen (n1), Green (n2) | Green (n1), LightGreen (n2) | LightGreen (n1), LightGreen (n2) ->
-        if exp <=> (n1, n2)
+        if exp |*| (n1, n2)
         then tj p reg mem tj_env t1
         else tj p reg mem tj_env t2
       | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
-        if exp <=> (n1, n2) then
+        if exp |*| (n1, n2) then
           Ans (exp |%| (id_t, C (n2), tj p reg mem tj_env t1, Guard.restore_green reg t2))
         else
           Ans (exp |%| (id_t, C (n2), Guard.restore_green reg t1, tj p reg mem tj_env t2))
       | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
         let id_r2 = match id_or_imm with V (id) -> id | C (n) -> failwith "id_or_imm should be string" in
-        if exp <=> (n1, n2) then
+        if exp |*| (n1, n2) then
           Ans (exp |%| (id_r2, C (n1), tj p reg mem tj_env t1, Guard.restore_green reg t2))
         else
           Ans (exp |%| (id_r2, C (n1), Guard.restore_green reg t1, tj p reg mem tj_env t2))
       | Red (n1), Red (n2) ->
-        if exp <=> (n1, n2) then
+        if exp |*| (n1, n2) then
           Ans (exp |%| (id_t, id_or_imm, tj p reg mem tj_env t1, Guard.restore_green reg t2))
         else
           Ans (exp |%| (id_t, id_or_imm, Guard.restore_green reg t1, tj p reg mem tj_env t2))
