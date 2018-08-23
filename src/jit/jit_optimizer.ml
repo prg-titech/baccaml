@@ -106,7 +106,7 @@ let run p e reg mem = match e with
       | C (n) -> string_of_int n
     in
     (match destld, offsetld with
-     | Green (n1), Green (n2) | LightGreen (n1), LightGreen (n2) | LightGreen (n1), Green (n2)| Green (n1), LightGreen (n2) ->
+     | Green (n1), Green (n2) | LightGreen (n1), LightGreen (n2) | LightGreen (n1), Green (n2) | Green (n1), LightGreen (n2) ->
        begin match mem.(n1 + n2) with
          | Green n | LightGreen n as value ->
            Logs.debug (fun m ->
@@ -120,7 +120,7 @@ let run p e reg mem = match e with
            Not_specialized (Ld (zero, C (n1 + n2 / x) , x), Red n)
        end
      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
-       failwith "Ld (green, red)"
+       Not_specialized (Ld (id_t, id_or_imm, x), mem.(n1 + n2))
      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
        let n = mem.(n1 + n2) in
        Logs.debug (fun m ->
