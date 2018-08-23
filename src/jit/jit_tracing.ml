@@ -44,7 +44,13 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
       let n2 = match id_or_imm with
         | V (id) -> reg.(int_of_id_t id) |> value_of
         | C (n) -> n
-      in tj p reg mem tj_env body
+      in
+      let id_t2 = match id_or_imm with V (id) -> id | C (n) -> string_of_int n in
+      connect (dest, typ)
+        (if exp |*| (n1, n2)
+         then Ans (exp |%| (id_t, id_or_imm, tj p reg mem tj_env t1, Guard.restore_green reg t2))
+         else Ans (exp |%| (id_t2, V (id_t), Guard.restore_green reg t1, tj p reg mem tj_env t2)))
+      @@ tj p reg mem tj_env body
     | Ld (id_t, id_or_imm, x) ->
       let r1 = int_of_id_t id_t |> Array.get reg in
       let r2 = match id_or_imm with V (id) -> int_of_id_t id_t |> Array.get reg | C (n) -> Green (n) in
@@ -93,9 +99,10 @@ and optimize_exp p reg mem tj_env (dest, typ) body exp =
 
 and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) = function
   | CallDir (id_l, args, _) ->
+    Logs.debug (fun m -> m "CallDir (%s)" (string_of_id_l id_l));
     let fundef =  find_fundef id_l p in
-    let pc = args |> find_pc tj_env in
-    if pc = 0 then assert false;
+    let pc = args |> find_pc tj_env |> Array.get reg |> value_of in
+    Logs.debug (fun m -> m "pc : %d" pc);
     let { merge_pc; trace_name } = tj_env in
     if pc = merge_pc then
       let reds = args |> List.filter (fun a -> is_red reg.(int_of_id_t a)) in
@@ -112,6 +119,7 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
 
 and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) = function
   | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) as exp ->
+    Logs.debug (fun m -> m "If (%s, %s)" id_t (string_of_id_or_imm id_or_imm));
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
       | V (id) -> reg.(int_of_id_t id)
