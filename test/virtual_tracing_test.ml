@@ -9,8 +9,8 @@ let _ =
 
     let trace =
       Jit_tracing.run_while
-        prog reg mem "min_caml_test_trace"
-        ("stack" :: red_args) 3 2
+        prog reg mem ex_name
+        ("stack" :: red_args) 2 0
     in
     Logs.debug (fun m -> m "%s" (Emit_virtual.to_string_fundef trace));
 
