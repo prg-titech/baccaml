@@ -6,10 +6,9 @@ open Jit_config
 let _ =
   run begin fun arg ->
     let { prog; reg; mem; red_args; ex_name } = prepare_env arg in
-    let ex_name' = ("min_caml_" ^ ex_name |> Id.genid) in
     let trace =
       Jit_tracing.run_while
-        prog reg mem ex_name'
+        prog reg mem "min_caml_test_trace"
         ("stack" :: red_args) 2 0
     in
 

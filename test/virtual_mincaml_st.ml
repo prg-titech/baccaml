@@ -72,7 +72,7 @@ let rec interp bytecode stack pc sp =
     -1000 in
 
 let code = Array.make 40 0 in
-let stack = Array.make 50 0 in
+let stack = Array.make 1000 0 in
 code.(0) <- 8;
 code.(1) <- 0;
 code.(2) <- 4;
@@ -101,7 +101,7 @@ code.(24) <- 0;
 code.(25) <- 0;
 code.(26) <- 7;
 code.(27) <- 4;
-code.(28) <- 20;
+code.(28) <- 100;
 code.(29) <- 6;
 code.(30) <- 0;
 code.(31) <- 9;
