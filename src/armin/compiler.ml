@@ -25,7 +25,7 @@ let empty_fenv = (fun _ -> 47)
 let extend_fenv fenv fundef = fundef :: fenv
 
 let return_address_marker = "$ret_addr"
-let build_args_env args = return_address_marker :: (List.rev args)
+let build_args_env args = (List.rev args)
 (* computes the number of arguments to this frame.  The stack has a
    shape like [...local vars...][ret addr][..args...], the return
    address position from the top indicates the number of local
@@ -86,13 +86,13 @@ and compile_exp fenv exp env =
                    (compile_exp fenv e2 (shift_env env)) @ [LT]
   | If (cond, then_exp, else_exp) ->
     let l2, l1 = gen_label (), gen_label () in
-    (compile_exp fenv cond env)
-    @ [JUMP_IF_ZERO; Lref l1]
-    @ (compile_exp fenv then_exp env)
-    @ [JUMP; Lref l2;
-       Ldef l1]
-    @ (compile_exp fenv else_exp env)
-    @ [Ldef l2]
+    (compile_exp fenv cond env) @
+    [JUMP_IF_ZERO; Lref l1] @
+    (compile_exp fenv then_exp env) @
+    [JUMP; Lref l2;
+     Ldef l1] @
+    (compile_exp fenv else_exp env) @
+    [Ldef l2]
   | Call(fname, rands) ->
     (List.flatten
        (List.rev
@@ -143,4 +143,4 @@ and compile_fun fenv { name; args; body } =
     (build_args_env args)
 
 and compile_fun_body fenv name arity exp env =
-  (VM.Ldef name) :: (compile_exp fenv exp env) @ [VM.RET; VM.Literal arity]
+  (VM.Ldef name) :: (compile_exp fenv exp env) @ [VM.RET]

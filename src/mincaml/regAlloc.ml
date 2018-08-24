@@ -109,7 +109,7 @@ let find' x' regenv =
 let rec g dest cont regenv = function (* 命令列のレジスタ割り当て (caml2html: regalloc_g) *)
   | Ans(exp) -> g'_and_restore dest cont regenv exp
   | Let((x, t) as xt, exp, e) ->
-    if not (M.mem x regenv) then failwith (Printf.sprintf "Mem.x regenv failed %s" x);
+    assert (not (M.mem x regenv));
     let cont' = concat e dest cont in
     let (e1', regenv1) = g'_and_restore xt cont' regenv exp in
     let (_call, targets) = target x dest cont' in
@@ -121,7 +121,7 @@ let rec g dest cont regenv = function (* 命令列のレジスタ割り当て (c
        let (e2', regenv2) = g dest cont (add x r (M.remove y regenv1)) e in
        let save =
          try Save(M.find y regenv, y)
-         with Not_found -> Nop in
+         with Not_found -> Nop in            
        (seq(save, concat e1' (r, t) e2'), regenv2)
      | Alloc(r) ->
        let (e2', regenv2) = g dest cont (add x r regenv1) e in
