@@ -27,7 +27,8 @@ let rec interp bytecode stack pc sp =
   else if instr = 3 then        (* LT *)
     let v2 = stack.(sp - 1) in
     let v1 = stack.(sp - 2) in
-    stack.(sp - 2) <- (if v1 < v2 then 1 else 0);
+    let n = (if v1 < v2 then 1 else 0) in
+    stack.(sp - 2) <- n;
     interp bytecode stack (pc + 1) (sp - 1)
   else if instr = 4 then        (* CONST *)
     let c = bytecode.(pc + 1) in
@@ -104,4 +105,26 @@ code.(25) <- 6;
 code.(26) <- 0;
 code.(27) <- 9;
 (* 8 1 4 2 3 5 13 4 1 4 0 5 28 8 1 4 1 1 6 0 8 2 4 2 1 6 0 0 7 1 4 10 6 0 9 *)
-print_int (interp code stack 30 0)
+code.(0) <- 8;
+code.(1) <- 0;
+code.(2) <- 4;
+code.(3) <- 2;
+code.(4) <- 3;
+code.(5) <- 5;
+code.(6) <- 11;
+code.(7) <- 4;
+code.(8) <- 1;
+code.(9) <- 14;
+code.(10) <- 16;
+code.(11) <- 4;
+code.(12) <- 1;
+code.(13) <- 4;
+code.(14) <- 2;
+code.(15) <- 0;
+code.(16) <- 7;
+code.(17) <- 4;
+code.(18) <- 10;
+code.(19) <- 6;
+code.(20) <- 0;
+code.(21) <- 9;
+print_int (interp code stack 17 0)
