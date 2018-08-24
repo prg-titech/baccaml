@@ -1,5 +1,5 @@
 (executables
- (names jit_loop_test virtual_test)
+ (names jit_loop_test virtual_test virtual_tracing_test)
  (flags (-w -4-33-40-41-42-43-34-44
          -g
          -short-paths
