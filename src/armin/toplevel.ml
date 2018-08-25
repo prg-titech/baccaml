@@ -41,14 +41,15 @@ let rec main_loop () =
     | None ->
       main_loop ()
   with
-  | Interrupt s
-  | CompilationError s
-  | ConversionError s ->
+  | CompilationError s | ConversionError s ->
     print_endline s;
     main_loop ()
   | Invalid_argument s ->
     print_endline s;
     main_loop ()
+  | Interrupt s ->
+    print_endline s;
+    exit 0
   | e ->
     print_endline "Anonymous Error.";
     main_loop ()
