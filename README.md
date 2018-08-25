@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/prg-titech/baccaml.svg?branch=develop)](https://travis-ci.org/prg-titech/baccaml)
 
 <div align=center>
-<img src="image/baccaml.png" width=300>
+<img src="image/baccaml.png" width=500>
 </div>
 
 ---
@@ -17,30 +17,14 @@ This project is forked from <a href="https://github.com/esumii/min-caml">min-cam
 - RCaml: CLI interface
 - Armin: interface language for BacCaml
 
-## Usage
+### Setup
 
-- Setup
+- Install dependencies: `$ opam install -y core menhir ppx_deriving stringext logs fmt dune`
+- For your developing environment: `$ opam install -y tuareg merlin ocp-indent utop`
 
-	Install dependencies:
+### Build and execute
 
-	```bash
-	$ make setup
-	```
-
-	For your developing environment:
-
-	```bash
-	$ opam install -y tuareg merlin ocp-indent utop
-	```
-
-- Build
-
-	``` bash
-	$ make
-	```
-
-- Test
-
-	``` bash
-	$ make test
-	```
+```bash
+$ make
+$ dune exec [target].exe -- -file [filename] -red [red variables] -green [green variables] -code [bytecode] -o [output]
+```
