@@ -19,8 +19,17 @@ This project is forked from <a href="https://github.com/esumii/min-caml">min-cam
 
 ### Setup
 
-- Install dependencies: `$ opam install -y core menhir ppx_deriving stringext logs fmt dune`
-- For your developing environment: `$ opam install -y tuareg merlin ocp-indent utop`
+- Install dependencies:
+
+  ```shell
+  $ opam install core menhir ppx_deriving stringext logs fmt dune
+  ```
+
+- For your developing environment:
+
+	```shell
+	$ opam install tuareg merlin ocp-indent utop
+	```
 
 ### Build and execute
 
