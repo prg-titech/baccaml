@@ -7,9 +7,9 @@ dev-repo: "https://github.com/prg-titech/baccaml.git"
 license: "Apache 2.0"
 version: "0.1"
 build:
-  [[ "jbuilder" "build" "--only-packages" "%{name}%" "--root" "." "-j" jobs "@install" ]]
+  [[ "dune" "build" "--only-packages" "%{name}%" "--root" "." "-j" jobs "@install" ]]
 depends: [
-  "jbuilder" {build}
+  "dune" {build}
   "core"
   "str"
   "sequence"
