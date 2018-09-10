@@ -14,7 +14,7 @@ usage () {
 
 build () {
   dune build
-  dune exec src/mincaml/min_caml.exe "$1".ml
+  dune exec src/base/min_caml.exe "$1".ml
   gcc -c -g -m32 "$1".s -o "$1".o
   gcc -c -g -m32 "$2".s
   gcc -g -m32 -Wall lib/libbaccaml.S lib/stub.c "$1".o "$2".o -lm -o "$2"
