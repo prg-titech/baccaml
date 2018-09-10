@@ -258,6 +258,7 @@ and g'_args oc x_reg_cl ys zs =
     (fun (z, fr) -> Printf.fprintf oc "\tmovsd\t%s, %s\n" z fr)
     (shuffle sw zfrs)
 
+(* emit the assembly of fundef *)
 let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
   Printf.fprintf oc ".globl %s\n" x;
   Printf.fprintf oc "%s:\n" x;
