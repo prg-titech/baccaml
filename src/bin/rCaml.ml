@@ -177,14 +177,15 @@ let parse_pair_list pair_lst =
   |> to_tuple
   |> List.map (fun (x, y) -> (x, int_of_string y))
 
-let file = ref ""
-let codes = ref ""
-let annots = ref ""
-let reds = ref ""
-let greens = ref ""
-let output = ref "a"
+let file      = ref ""
+let codes     = ref ""
+let annots    = ref ""
+let reds      = ref ""
+let greens    = ref ""
+let output    = ref "out"
+let is_dryrun = ref false
 
-let usage =  "usage: " ^ Sys.argv.(0) ^ " [-file string] [-green string list] [-red string list] [-code int list] [-annot int list]"
+let usage  = "usage: " ^ Sys.argv.(0) ^ " [-file string] [-green string list] [-red string list] [-code int list] [-annot int list]"
 
 let speclist = [
   ("-file", Arg.Set_string file, "Specify file name");
@@ -193,6 +194,7 @@ let speclist = [
   ("-code", Arg.Set_string codes, "Specify bytecode");
   ("-annot", Arg.Set_string annots, "Specify annotations for bytecode");
   ("-o", Arg.Set_string output, "Set executable's name");
+  ("-dry-run", Arg.Unit (fun _ -> is_dryrun := true), "run as dry");
   ("-dbg", Arg.Unit (fun _ -> Logs.set_level @@ Some Logs.Debug), "Enable debug mode");
 ]
 
