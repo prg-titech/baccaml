@@ -143,7 +143,15 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
 
 and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) = function
   | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) as exp ->
-    Logs.debug (fun m -> m "If (%s, %s)" id_t (string_of_id_or_imm id_or_imm));
+    Logs.debug begin fun m ->
+      let if_rep = match exp with
+        | IfEq _ -> "IfEq"
+        | IfLE _ -> "IfLE"
+        | IfGE _ -> "IfGE"
+        | _ -> failwith "If expression should be come here."
+      in
+      m "%s (%s, %s)" if_rep id_t (string_of_id_or_imm id_or_imm)
+    end;
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
       | V (id) -> reg.(int_of_id_t id)
