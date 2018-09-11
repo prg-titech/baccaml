@@ -69,8 +69,8 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
         | Red (n1), Red (n2) ->
           connect (dest, typ)
             begin if exp |*| (n1, n2)
-              then (Ans (exp |%| (id_t, id_or_imm, tj p reg mem tj_env t2, Guard.restore_green reg t1)))
-              else (Ans (exp |%| (id_t, id_or_imm, Guard.restore_green reg t2, tj p reg mem tj_env t1)))
+              then (Ans (exp |%| (id_t, id_or_imm, tj p reg mem tj_env t1, Guard.restore_green reg t2)))
+              else (Ans (exp |%| (id_t, id_or_imm, Guard.restore_green reg t1, tj p reg mem tj_env t2)))
             end
             (tj p reg mem tj_env body)
         | _ -> tj p reg mem tj_env (if exp |*| (n1, n2) then t1 else t2)
