@@ -14,6 +14,13 @@ let rec replace_in_list slst output =
 let write_string_of_list oc sl =
   List.iter (fun s -> Printf.fprintf oc s) sl
 
+let find_interp_name fundefs =
+  List.find begin fun { name = Id.L (x)} ->
+    String.split_on_char '.' x
+    |> List.hd
+    |> fun s -> (String.equal "interp" s) || (String.equal "interpret" s)
+  end fundefs |> fun { name = Id.L (x) } -> x
+
 (* 命令列のアセンブリ生成 as String *)
 let rec create_asm (dest, t) =
   let buf = Buffer.create 10000 in
@@ -341,29 +348,36 @@ let emit_fundef fundef =
   create_asm (Tail, body) |> Buffer.add_string buf;
   buf
 
-let emit_midlayer (tr : trace_result) (file : string) (interp : string) : Buffer.t =
+let emit_midlayer tr (file : string) (interp : string) : Buffer.t =
   let buf = Buffer.create 1000 in
   Printf.sprintf ".globl min_caml_trace_entry\n" |> Buffer.add_string buf;
   Printf.sprintf "min_caml_trace_entry:\n" |> Buffer.add_string buf;
   Printf.sprintf "\tpushl\t%%eax\n" |> Buffer.add_string buf;
+  Printf.sprintf "\tpushl\t%%ecx\n" |> Buffer.add_string buf;
   Printf.sprintf "\tcall\tmin_caml_test_trace\n" |> Buffer.add_string buf;
+  Printf.sprintf "\tpopl\t%%edx\n" |> Buffer.add_string buf;
   Printf.sprintf "\tpopl\t%%edx\n" |> Buffer.add_string buf;
   Printf.sprintf "\tret\n" |> Buffer.add_string buf;
   Printf.sprintf ".globl min_caml_mid_layer\n" |> Buffer.add_string buf;
   Printf.sprintf "min_caml_mid_layer:\n" |> Buffer.add_string buf;
-  Printf.sprintf "\tmovl\t%d(%%esp), %%eax\n" 8 |> Buffer.add_string buf;
+  begin match tr with
+    | `Meta_method ->
+      Printf.sprintf "\tmovl\t%d(%%esp), %%eax\n" 12 |> Buffer.add_string buf;
+      Printf.sprintf "\tmovl\t%d(%%esp), %%ecx\n" 8 |> Buffer.add_string buf;
+    | `Meta_tracing ->
+      Printf.sprintf "\tmovl\t%d(%%esp), %%eax\n" 8 |> Buffer.add_string buf;
+      Printf.sprintf "\tmovl\t%d(%%esp), %%ecx\n" 4 |> Buffer.add_string buf;
+  end;
   Printf.sprintf "\tjmp\t%s\n" interp |> Buffer.add_string buf;
   buf
 
-let emit_trace (tr: trace_result) (file: string) (interp: string)  =
-  let fd = match tr with Tracing_success v | Method_success v -> v in
+let emit_trace jtype trace file interp =
   stackset := S.empty;
   stackmap := [];
-  fd
-  |> RegAlloc.h
+  RegAlloc.h trace
   |> fun { name = Id.L (x); body } ->
-  let buf = Buffer.create 10000 in
-  emit_midlayer tr file interp |> Buffer.add_buffer buf;
+  let buf = Buffer.create 1000 in
+  emit_midlayer jtype file interp |> Buffer.add_buffer buf;
   Printf.sprintf ".globl %s\n" x |> Buffer.add_string buf;
   Printf.sprintf "%s:\n" x |> Buffer.add_string buf;
   create_asm (Tail, body) |> Buffer.add_string buf;
@@ -373,21 +387,16 @@ let emit_trace (tr: trace_result) (file: string) (interp: string)  =
   Printf.fprintf oc "%s" res;
   close_out oc
 
-let emit_result_mj ~prog:p ~traces:trs ~file:f =
-  let Prog (_, fundefs, _) = p in
-  let interp_name =
-    List.find (fun { name = Id.L (x)} ->
-        String.split_on_char '.' x
-        |> List.hd
-        |> fun s -> (String.equal "interp" s) || (String.equal "interpret" s)
-      ) fundefs
-    |> fun { name = Id.L (x) } -> x
-  in
-  let buf = Buffer.create 10000 in
-  List.iter (fun fundef ->
-      emit_fundef fundef |> Buffer.add_buffer buf
-    ) trs;
-  emit_midlayer (Method_success (List.hd trs)) f interp_name |> Buffer.add_buffer buf;
+let emit_result ~prog:(Prog (_, fundefs, _)) ~traces:trs ~file:f ~jit_type:jtype =
+  stackset := S.empty;
+  stackmap := [];
+  let interp_name = find_interp_name fundefs in
+  let buf = Buffer.create 1000 in
+  List.iter begin fun fundef ->
+    emit_fundef fundef |> Buffer.add_buffer buf
+  end trs;
+  emit_midlayer jtype f interp_name
+  |> Buffer.add_buffer buf;
   let res = Buffer.contents buf in
   Logs.debug (fun m -> m "\n!!EMIT TRACE!!\n%s)" res);
   let oc = open_out (f ^ ".s") in
