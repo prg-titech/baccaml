@@ -1,12 +1,10 @@
-CC = gcc
-CFLAGS = -g -O2 -Wall
-OCAMLLDFLAGS = -warn-error -31
+CC 		= gcc
+CFLAGS		= -g -m32
+OCAMLLDFLAGS 	= -warn-error -31
 
-ARMIN = armin.exe
-ARMIN_TOP = toplevel.exe
-COMPILER = min_caml.exe
-
-BUILD_DIR = _build/default
+ARMIN 		= armin.exe
+ARMIN_TOP 	= toplevel.exe
+COMPILER 	= min_caml.exe
 
 default: build
 
