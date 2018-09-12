@@ -47,24 +47,24 @@ EXAMPLES = \
 	matmul matmul-flat manyargs fib-tail array array2 float tuple
 
 .PHONY: example
-example: $(EXAMPLES:%=example/%.cmp)
+example: $(EXAMPLES:%=etc/example/%.cmp)
 
-.PRECIOUS: example/%.s example/% example/%.res example/%.ans example/%.cmp
+.PRECIOUS: etc/example/%.s etc/example/% etc/example/%.res etc/example/%.ans etc/example/%.cmp
 
 TRASH = \
-      $(EXAMPLES:%=example/%.s) \
-      $(EXAMPLES:%=example/%) \
-      $(EXAMPLES:%=example/%.res) \
-      $(EXAMPLES:%=example/%.ans) \
-      $(EXAMPLES:%=example/%.cmp)
+      $(EXAMPLES:%=etc/example/%.s) \
+      $(EXAMPLES:%=etc/example/%) \
+      $(EXAMPLES:%=etc/example/%.res) \
+      $(EXAMPLES:%=etc/example/%.ans) \
+      $(EXAMPLES:%=etc/example/%.cmp)
 
-example/%.s: example/%.ml
-	./$(COMPILER) example/$*.ml
-example/%: example/%.s lib/libmincaml.S lib/stub.c
+etc/example/%.s: etc/example/%.ml
+	dune exec src/base/$(COMPILER) etc/example/$*.ml
+etc/example/%: etc/example/%.s lib/libmincaml.S lib/stub.c
 	$(CC) $(CFLAGS) -m32 $^ -o $@
-example/%.res: example/%
+etc/example/%.res: etc/example/%
 	$< > $@
-example/%.ans: example/%.ml
+etc/example/%.ans: etc/example/%.ml
 	ocaml $< > $@
-example/%.cmp: example/%.res example/%.ans
+etc/example/%.cmp: etc/example/%.res etc/example/%.ans
 	diff $^ > $@

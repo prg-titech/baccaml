@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/prg-titech/baccaml.svg?branch=develop)](https://travis-ci.org/prg-titech/baccaml)
 
 <div align=center>
-<img src="image/baccaml.png" width=500>
+<img src="etc/image/baccaml.png" width=400>
 </div>
 
 ---
