@@ -43,6 +43,13 @@ let rec unique list =
 
 let restore_green reg cont =
   let free_vars = unique (get_free_vars cont) in
+  let rec add_guard_label = function
+    | Ans (CallDir (Id.L (x), args, fargs)) ->
+      Ans ((CallDir (Id.L ("guard_failure." ^ x), args, fargs)))
+    | Ans (exp) -> Ans (exp)
+    | Let ((id, typ), exp, body) ->
+      Let ((id, typ), exp, add_guard_label body)
+  in
   let rec restore cont = function
     | [] -> cont
     | hd :: tl ->
@@ -51,7 +58,7 @@ let restore_green reg cont =
         Let ((hd, Type.Int), Set (n), restore cont tl)
       | _ ->
         restore cont tl
-  in restore cont free_vars
+  in restore cont free_vars |> add_guard_label
 
 let rec restore_green_reg reg cont =
   let rec go reglst ~cont:t = match reglst with

@@ -243,16 +243,14 @@ and create_asm' = function
     |> fun _ ->
     Buffer.add_string buf @@ Printf.sprintf "\tjmp\t*(%s)\n" reg_cl
     |> fun _ -> Buffer.contents buf
-  | Tail, CallDir(Id.L(x), ys, zs) -> (* 末尾呼び出し *)
+  | Tail, CallDir(Id.L (x), ys, zs) -> (* 末尾呼び出し *)
     Buffer.create 100
     |> fun buf ->
     Buffer.add_string buf @@ create_asm'_args [] ys zs;
-    Buffer.add_string buf @@ begin
-      if Core.String.exists x ~f:(String.contains "interp") then
-        Printf.sprintf "\tjmp\t%s\n" "min_caml_mid_layer"
-      else
-        Printf.sprintf "\tjmp\t%s\n" x
-    end;
+    if List.for_all (fun c -> String.contains x c) (Stringext.to_list "guard_failure") then
+      Buffer.add_string buf @@ Printf.sprintf "\tjmp\t%s\n" "min_caml_mid_layer"
+    else
+      Buffer.add_string buf @@ Printf.sprintf "\tjmp\t%s\n" x;
     Buffer.contents buf
   | NonTail(a), CallCls(x, ys, zs) ->
     Buffer.create 100
@@ -338,7 +336,7 @@ and create_asm'_args x_reg_cl ys zs =
     (shuffle sw zfrs);
   Buffer.contents buf
 
-let emit_fundef fundef =
+let create_asm_fundef fundef =
   let { name = Id.L (x); body } = RegAlloc.h fundef in
   let buf = Buffer.create 1000 in
   stackset := S.empty;
@@ -371,6 +369,7 @@ let emit_midlayer tr (file : string) (interp : string) : Buffer.t =
   Printf.sprintf "\tjmp\t%s\n" interp |> Buffer.add_string buf;
   buf
 
+(* deprecaed. use emit_result *)
 let emit_trace jtype trace file interp =
   stackset := S.empty;
   stackmap := [];
@@ -387,13 +386,13 @@ let emit_trace jtype trace file interp =
   Printf.fprintf oc "%s" res;
   close_out oc
 
-let emit_result ~prog:(Prog (_, fundefs, _)) ~traces:trs ~file:f ~jit_type:jtype =
+let emit_result ~jit_type:jtype ~prog:(Prog (_, fundefs, _)) ~traces:trs ~file:f =
   stackset := S.empty;
   stackmap := [];
   let interp_name = find_interp_name fundefs in
   let buf = Buffer.create 1000 in
   List.iter begin fun fundef ->
-    emit_fundef fundef |> Buffer.add_buffer buf
+    create_asm_fundef fundef |> Buffer.add_buffer buf
   end trs;
   emit_midlayer jtype f interp_name
   |> Buffer.add_buffer buf;
