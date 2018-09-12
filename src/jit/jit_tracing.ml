@@ -129,7 +129,9 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
     Logs.debug (fun m -> m "pc : %d" pc);
     let { merge_pc; trace_name } = tj_env in
     if pc = merge_pc then
-      let reds = args |> List.filter (fun a -> is_red reg.(int_of_id_t a)) in
+      let reds = args |> List.filter (fun a ->
+          is_red reg.(int_of_id_t a))
+      in
       Ans (CallDir (Id.L (trace_name), reds, []))
     else
       Inlining.inline_calldir_exp args fundef reg |> tj p reg mem tj_env
