@@ -44,11 +44,10 @@ let _ = run_test_tt_main begin
           else
             mem.(i * 4) <- Green (bytecode.(i))
         done;
-        let trace = MJ.exec prog body reg mem method_jit_args in
-        (match trace with
-         | Tracing_success res' | Method_success res' ->
-           Emit_virtual.to_string_fundef res' |> print_endline);
+        let trace = match MJ.exec prog body reg mem method_jit_args with
+        | Tracing_success res' | Method_success res' -> res' in
         Jit_emit.emit_trace
+          `Meta_method
           trace
           "simple3_mj"
           "interp.128"

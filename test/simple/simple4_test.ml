@@ -53,11 +53,10 @@ let _ = run_test_tt_main begin
           if n = 20 then mem.(n) <- Red (bytecode.(i))
           else mem.(n) <- Green (bytecode.(i))
         done;
-        let res = MJ.exec prog body reg mem method_jit_args in
-        (match res with
-         | Tracing_success res' | Method_success res' ->
-           (Emit_virtual.to_string_fundef res') |> print_endline);
+        let res = match MJ.exec prog body reg mem method_jit_args with
+        | Tracing_success res' | Method_success res' -> res' in
         Jit_emit.emit_trace
+          `Meta_method
           res
           "simple4_mj"
           "interp.79"

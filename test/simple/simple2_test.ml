@@ -45,11 +45,11 @@ let _ = run_test_tt_main begin
         done;
         reg.(70) <- Green (0);
         reg.(71) <- Green (0);
-        let res = MJ.exec prog body reg mem method_jit_args in
-        (match res with
-         | Tracing_success res' | Method_success res' ->
-           Emit_virtual.to_string_fundef res' |> print_endline);
+        let res = match MJ.exec prog body reg mem method_jit_args with
+          | Tracing_success v
+          | Method_success v -> v in
         Jit_emit.emit_trace
+          `Meta_method
           res
           "simple2_mj"
           "interp.69"

@@ -17,5 +17,5 @@ let _ =
         Logs.debug (fun m ->
             m "%s" (Emit_virtual.to_string_fundef fundef))) traces;
 
-    Jit_emit.emit_result_mj ~prog:prog ~traces:traces ~file:ex_name
+    Jit_emit.emit_result ~prog:prog ~traces:traces ~file:ex_name ~jit_type:`Meta_tracing
   end

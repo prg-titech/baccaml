@@ -12,5 +12,5 @@ let _ =
         (red_args @ ["bytecode"]) 3 0
     in
     print_endline (Emit_virtual.to_string_fundef trace);
-    Jit_emit.emit_result_mj ~prog:prog ~traces:[trace] ~file:ex_name
+    Jit_emit.emit_result ~prog:prog ~traces:[trace] ~file:ex_name ~jit_type:`Meta_tracing
   end
