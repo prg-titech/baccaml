@@ -17,7 +17,7 @@ build () {
   dune exec src/base/min_caml.exe "$1".ml
   gcc -c -g -m32 "$1".s -o "$1".o
   gcc -c -g -m32 "$2".s
-  gcc -g -m32 -Wall lib/libbaccaml.S lib/stub.c "$1".o "$2".o -lm -o "$2"
+  gcc -g -m32 -Wall stub/libbaccaml.S stub/stub.c "$1".o "$2".o -lm -o "$2"
   rm -rf "$2".dSYM
 }
 
