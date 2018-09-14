@@ -12,6 +12,8 @@ usage () {
     echo "        ./script/build -- test/jit_loop_test jit_loop"
 }
 
+BUILD_TARGET=
+
 build () {
   dune build
   dune exec src/base/min_caml.exe "$1".ml
@@ -21,6 +23,12 @@ build () {
   rm -rf "$2".dSYM
 }
 
+build_min_caml () {
+  dune build src/base/min_caml.exe -- "$1".ml
+  gcc -g -m32 -Wall stub/libmincaml.S stub/stub.c "$1".s -o "$1"
+  rm -rf "$1".dSYM
+}
+
 for OPT in "$@"
 do
     case "$OPT" in
@@ -28,10 +36,14 @@ do
             usage
             exit 1
             ;;
-        '--version' )
+        '--version'|'-v')
             echo $VERSION
             exit 1
             ;;
+        '--mincaml'|'-m')
+            BUILD_TARGET="mincaml"
+            shift 1
+	          ;;
         '--'|'-' )
             shift 1
             param+=( "$@" )
@@ -57,4 +69,11 @@ if [ -z $param ]; then
     exit 1
 fi
 
-build "$@"
+case $BUILD_TARGET in
+  "mincaml")
+    build_min_caml $param
+    ;;
+  *)
+    build $param
+    ;;
+esac
