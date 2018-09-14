@@ -15,18 +15,18 @@ usage () {
 BUILD_TARGET=
 
 build () {
-  dune build
-  dune exec src/base/min_caml.exe "$1".ml
-  gcc -c -g -m32 "$1".s -o "$1".o
-  gcc -c -g -m32 "$2".s
-  gcc -g -m32 -Wall stub/libbaccaml.S stub/stub.c "$1".o "$2".o -lm -o "$2"
-  rm -rf "$2".dSYM
+    dune build
+    dune exec src/base/min_caml.exe "$1".ml
+    gcc -c -g -m32 "$1".s -o "$1".o
+    gcc -c -g -m32 "$2".s
+    gcc -g -m32 -Wall stub/libbaccaml.S stub/stub.c "$1".o "$2".o -lm -o "$2"
+    rm -rf "$2".dSYM
 }
 
 build_min_caml () {
-  dune build src/base/min_caml.exe -- "$1".ml
-  gcc -g -m32 -Wall stub/libmincaml.S stub/stub.c "$1".s -o "$1"
-  rm -rf "$1".dSYM
+    dune build src/base/min_caml.exe -- "$1".ml
+    gcc -g -m32 -Wall stub/libmincaml.S stub/stub.c "$1".s -o "$1"
+    rm -rf "$1".dSYM
 }
 
 for OPT in "$@"
@@ -43,7 +43,7 @@ do
         '--mincaml'|'-m')
             BUILD_TARGET="mincaml"
             shift 1
-	          ;;
+	    ;;
         '--'|'-' )
             shift 1
             param+=( "$@" )
