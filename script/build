@@ -74,6 +74,6 @@ case $BUILD_TARGET in
     build_min_caml $param
     ;;
   *)
-    build $param
+    build $@
     ;;
 esac
