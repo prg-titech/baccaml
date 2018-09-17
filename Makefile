@@ -6,6 +6,20 @@ ARMIN 		= armin.exe
 ARMIN_TOP 	= toplevel.exe
 COMPILER 	= min_caml.exe
 
+EXAMPLES 	= print sum-tail gcd sum fib ack even-odd adder funcomp cls-rec cls-bug \
+		cls-bug2 cls-reg-bug shuffle spill spill2 spill3 join-stack join-stack2 \
+		join-stack3 join-reg join-reg2 non-tail-if2 inprod inprod-rec inprod-loop \
+		matmul matmul-flat manyargs fib-tail array array2 float tuple
+
+TRASH 		= $(EXAMPLES:%=etc/example/%.s) \
+		$(EXAMPLES:%=etc/example/%) \
+		$(EXAMPLES:%=etc/example/%.res) \
+		$(EXAMPLES:%=etc/example/%.ans) \
+		$(EXAMPLES:%=etc/example/%.cmp) \
+		*.o *.s **/*.dSYM
+
+
+
 default: build
 
 all: build test
@@ -26,9 +40,7 @@ clean:
 clean-jit:
 	rm -rf *.o *.s test/*.o test/*.s *.dSYM
 	rm -rf simple*_*j
-
-.PHONY: clean-all
-clean-all: clean clean-jit
+	rm -rf $(TRASH)
 
 .PHONY: test
 test:
@@ -38,23 +50,10 @@ test:
 indent:
 	for f in `find src test -name "*.ml"`; do ocp-indent $$f > tmp.txt && cat tmp.txt > $$f; done && rm -f tmp.txt
 
-EXAMPLES = \
-	print sum-tail gcd sum fib ack even-odd adder funcomp cls-rec cls-bug \
-	cls-bug2 cls-reg-bug shuffle spill spill2 spill3 join-stack join-stack2 \
-	join-stack3 join-reg join-reg2 non-tail-if2 inprod inprod-rec inprod-loop \
-	matmul matmul-flat manyargs fib-tail array array2 float tuple
-
 .PHONY: example
 example: $(EXAMPLES:%=etc/example/%.cmp)
 
 .PRECIOUS: etc/example/%.s etc/example/% etc/example/%.res etc/example/%.ans etc/example/%.cmp
-
-TRASH = \
-      $(EXAMPLES:%=etc/example/%.s) \
-      $(EXAMPLES:%=etc/example/%) \
-      $(EXAMPLES:%=etc/example/%.res) \
-      $(EXAMPLES:%=etc/example/%.ans) \
-      $(EXAMPLES:%=etc/example/%.cmp)
 
 etc/example/%.s: etc/example/%.ml
 	dune exec src/base/$(COMPILER) etc/example/$*.ml
