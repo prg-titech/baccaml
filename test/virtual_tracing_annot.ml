@@ -41,23 +41,23 @@ let rec interp stack sp bytecode pc =
     then interp stack (sp - 1) bytecode addr
     else interp stack (sp - 1) bytecode (pc + 2)
   else if instr = 6 then        (* CALL *)
-    mj_call (
-      let addr = bytecode.(pc + 1) in
-      let r = interp stack sp bytecode (bytecode.(pc + 1)) in
-      stack.(sp - 1) <- r;
-      interp stack sp bytecode (pc + 2)
-    );
-    stack.(sp) <- pc + 2;
-    interp stack (sp + 1) bytecode (bytecode.(pc + 2))
+    (mj_call_start ();
+     let addr = bytecode.(pc + 1) in
+     let r = interp stack sp bytecode (bytecode.(pc + 1)) in
+     stack.(sp - 1) <- r;
+     let _ = interp stack sp bytecode (pc + 2) in
+     mj_call_end ();
+     stack.(sp) <- pc + 2;
+     interp stack (sp + 1) bytecode (bytecode.(pc + 2)))
   else if instr = 7 then        (* RET *)
-    mj_ret (
-      stack.(sp - 1)
-    );
-    let n = bytecode.(pc + 1) in
-    let v = stack.(sp - 1) in   (* sp: sp - 1 *)
-    let pc2 = stack.(sp - 2) in (* sp: sp - 2 *)
-    stack.(sp - n - 2) <- v;    (* sp: sp - 2 - n + 1 = sp - 1 - n *)
-    interp stack (sp - n - 1) bytecode pc2
+    (mj_ret_start ();
+     let _ = stack.(sp - 1) in
+     mj_ret_end ();
+     let n = bytecode.(pc + 1) in
+     let v = stack.(sp - 1) in   (* sp: sp - 1 *)
+     let pc2 = stack.(sp - 2) in (* sp: sp - 2 *)
+     stack.(sp - n - 2) <- v;    (* sp: sp - 2 - n + 1 = sp - 1 - n *)
+     interp stack (sp - n - 1) bytecode pc2)
   else if instr = 8 then        (* DUP *)
     let n = bytecode.(pc + 1) in
     let v = stack.(sp - n - 1) in
