@@ -121,7 +121,7 @@ let prepare_env arg =
   let p =
     open_in ((Sys.getcwd ()) ^ "/" ^ (Fieldslib.(file arg)))
     |> Lexing.from_channel
-    |> Mutil.virtualize
+    |> Util.virtualize
     |> Simm.f
   in
   let reg, mem = Array.make 100000 (Red (0)), Array.make 100000 (Red (0)) in

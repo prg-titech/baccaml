@@ -24,7 +24,7 @@ let _ = run_test_tt_main begin
         let prog =
           In_channel.create ("simple1.ml")
           |> Lexing.from_channel
-          |> Mutil.virtualize
+          |> Util.virtualize
           |> Simm.f
         in
         let Prog (_, fundefs, main) = prog in

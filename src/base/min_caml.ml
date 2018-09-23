@@ -1,5 +1,5 @@
 open MinCaml
-open Mutil
+open Util
 open Core
 
 let ev_flg = ref false
