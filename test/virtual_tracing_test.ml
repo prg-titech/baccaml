@@ -5,7 +5,7 @@ open Jit_config
 
 let _ =
   run begin fun arg ->
-    let { prog; reg; mem; red_args; ex_name } = prepare_env arg in
+    let { prog; reg; mem; red_args; ex_name } = prepare_env `Meta_tracing arg in
     let trace =
       Jit_tracing.run_while
         prog reg mem "min_caml_test_trace"

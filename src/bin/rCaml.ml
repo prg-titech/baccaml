@@ -57,22 +57,15 @@ let prepare_reds trace_args (Prog (_, fundefs, _)) =
     List.exists (fun trace_arg -> trace_arg = arg_name) trace_args
   end args
 
-let prepare_tenv' p t reds =
-  let t' =
-    Simm.t t
-    |> Jit_trim.trim_jmp
-    |> Jit_trim.trim_jit_dispatcher in
-  begin match t' with
+let prepare_tenv' (Prog (table, fundefs, main)) t reds =
+  begin match Simm.t t |> Jit_trim.trim with
     | Let (_, Set (_),
            Let (_,  IfEq (_, _, _, _),
-                Let (_, CallDir (Id.L (_), args, fargs),
-                     interp_body)))
+                Let (_, CallDir (Id.L (_), args, fargs), interp_body)))
     | Let (_,  IfEq (_, _, _, _),
-           Let (_, CallDir (Id.L (_), args, fargs),
-                interp_body))
-    | Ans (IfEq (_, _, Ans (CallDir (Id.L (_), args, fargs)),
-                 interp_body)) ->
-      let Prog (table, fundefs, main) = p in
+           Let (_, CallDir (Id.L (_), args, fargs), interp_body))
+    | Ans (IfEq (_, _,
+                 Ans (CallDir (Id.L (_), args, fargs)), interp_body)) ->
       let fundefs' =
         List.map begin fun fundef ->
           let Id.L (x) = fundef.name in
@@ -83,9 +76,7 @@ let prepare_tenv' p t reds =
           | _ -> fundef
         end fundefs
       in
-      Fieldslib.(
-        Fields_of_tenv.create ~fundefs:fundefs' ~ibody:interp_body
-      )
+      Fieldslib.(Fields_of_tenv.create ~fundefs:fundefs' ~ibody:interp_body)
     | _ ->
       failwith "missing jit_dispatch. please add jit_dispatch ... at the top of your interpreter."
   end
@@ -117,11 +108,16 @@ let prepare_prog bytecode addr annot mem =
       mem.(addr + i * 4) <- Green (bytecode.(i))
   done
 
-let prepare_env arg =
+let prepare_env jit_type arg =
   let p =
     open_in ((Sys.getcwd ()) ^ "/" ^ (Fieldslib.(file arg)))
     |> Lexing.from_channel
     |> Util.virtualize
+    |>
+    begin match jit_type with
+      | `Meta_method ->  Jit_annot.trans_mj
+      | `Meta_tracing -> Jit_annot.trans_tj
+    end
     |> Simm.f
   in
   let reg, mem = Array.make 100000 (Red (0)), Array.make 100000 (Red (0)) in
@@ -155,27 +151,29 @@ let prepare_env arg =
       ~red_args:red_args
       ~ex_name:(Fieldslib.(ex_name arg)))
 
-let to_tuple lst =
-  if List.length lst = 0 then
-    [("dummy", "0")]
-  else if List.length (List.hd lst) <> 2 then
-    failwith "to_tuple: element of list's size should be 2."
-  else
-    List.map (fun elm -> (List.nth elm 0, List.nth elm 1)) lst
+module Util = struct
+  let to_tuple lst =
+    if List.length lst = 0 then
+      [("dummy", "0")]
+    else if List.length (List.hd lst) <> 2 then
+      failwith "to_tuple: element of list's size should be 2."
+    else
+      List.map (fun elm -> (List.nth elm 0, List.nth elm 1)) lst
 
-let string_of_array ~f str_lst =
-  str_lst
-  |> Str.split_delim (Str.regexp " ")
-  |> List.map f
-  |> Array.of_list
+  let string_of_array ~f str_lst =
+    str_lst
+    |> Str.split_delim (Str.regexp " ")
+    |> List.map f
+    |> Array.of_list
 
-(* parse a list like "a 1; b 2" -> [("a", 1), ("b", 2)] *)
-let parse_pair_list pair_lst =
-  pair_lst
-  |> Str.split_delim (Str.regexp "; ")
-  |> List.map (Str.split_delim (Str.regexp " "))
-  |> to_tuple
-  |> List.map (fun (x, y) -> (x, int_of_string y))
+  (* parse a list like "a 1; b 2" -> [("a", 1), ("b", 2)] *)
+  let parse_pair_list pair_lst =
+    pair_lst
+    |> Str.split_delim (Str.regexp "; ")
+    |> List.map (Str.split_delim (Str.regexp " "))
+    |> to_tuple
+    |> List.map (fun (x, y) -> (x, int_of_string y))
+end
 
 let file      = ref ""
 let codes     = ref ""
@@ -206,10 +204,10 @@ let run = (fun f ->
     Logs.set_reporter @@ Logs.format_reporter ();
     let file = !file in
     let output = !output in
-    let bytes = string_of_array ~f:int_of_string !codes in
-    let annots = string_of_array ~f:int_of_string !annots in
-    let reds = parse_pair_list !reds in
-    let greens = parse_pair_list !greens in
+    let bytes = Util.string_of_array ~f:int_of_string !codes in
+    let annots = Util.string_of_array ~f:int_of_string !annots in
+    let reds = Util.parse_pair_list !reds in
+    let greens = Util.parse_pair_list !greens in
     f Fieldslib.(
         Fields_of_arg.create
           ~file:file ~ex_name:output ~code:bytes ~annot:annots ~reds:reds ~greens:greens
