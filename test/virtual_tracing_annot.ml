@@ -50,12 +50,12 @@ let rec interp stack sp bytecode pc =
      interp stack (sp + 1) bytecode (bytecode.(pc + 2)))
   else if instr = 7 then        (* RET *)
     (mj_ret_start ();
-     mj_ret_end (stack.(sp - 1)));
+     mj_ret_end (stack.(sp - 1));
      let n = bytecode.(pc + 1) in
      let v = stack.(sp - 1) in   (* sp: sp - 1 *)
      let pc2 = stack.(sp - 2) in (* sp: sp - 2 *)
      stack.(sp - n - 2) <- v;    (* sp: sp - 2 - n + 1 = sp - 1 - n *)
-     interp stack (sp - n - 1) bytecode pc2
+     interp stack (sp - n - 1) bytecode pc2)
   else if instr = 8 then        (* DUP *)
     let n = bytecode.(pc + 1) in
     let v = stack.(sp - n - 1) in
