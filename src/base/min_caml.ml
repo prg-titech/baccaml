@@ -18,19 +18,16 @@ let run_dump f =
     In_channel.close inchan;
     raise e
 
-let compile outchan l =
-  virtualize l
-  |> Trim.f
-  |> Simm.f
-  |> RegAlloc.f
-  |> Emit.f outchan
-
 (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file) *)
 let run_compile f =
   let inchan = In_channel.create (f ^ ".ml") in
   let outchan = Out_channel.create (f ^ ".s") in
   try
-    compile outchan (Lexing.from_channel inchan);
+    virtualize (Lexing.from_channel inchan)
+    |> Trim.f
+    |> Simm.f
+    |> RegAlloc.f
+    |> Emit.f outchan;
     In_channel.close inchan;
     Out_channel.close outchan;
   with e -> (In_channel.close inchan; Out_channel.close outchan; raise e)
