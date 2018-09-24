@@ -48,7 +48,7 @@ let rec interp stack sp bytecode pc =
      let res = interp stack sp bytecode (pc + 2) in
      mj_call_end (res);
      stack.(sp) <- pc + 2;
-     interp stack (sp + 1) bytecode (bytecode.(pc + 2)))
+     interp stack (sp + 1) bytecode (bytecode.(pc + 1)))
   else if instr = 7 then        (* RET *)
     (mj_ret_start ();
      let res = stack.(sp - 1) in
