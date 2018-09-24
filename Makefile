@@ -26,8 +26,6 @@ all: build test
 .PHONY: build
 build:
 	dune build
-	dune build src/armin/$(ARMIN)
-	dune build src/armin/$(ARMIN_TOP)
 
 .PHONY: clean
 clean:
