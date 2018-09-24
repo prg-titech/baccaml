@@ -37,12 +37,10 @@ clean:
 test:
 	dune runtest -f
 
-.PHONY: indent
-indent:
-	for f in `find src test -name "*.ml"`; do \
-		ocp-indent $$f > tmp.txt && cat tmp.txt > $$f; \
-	done && \
-	rm -f tmp.txt
+
+.PHONY: doc
+doc:
+	dune build @doc
 
 .PHONY: example
 example: $(EXAMPLES:%=etc/example/%.cmp)
@@ -51,11 +49,15 @@ example: $(EXAMPLES:%=etc/example/%.cmp)
 
 etc/example/%.s: etc/example/%.ml
 	dune exec src/base/$(COMPILER) etc/example/$*.ml
+
 etc/example/%: etc/example/%.s lib/libmincaml.S lib/stub.c
 	$(CC) $(CFLAGS) -m32 $^ -o $@
+
 etc/example/%.res: etc/example/%
 	$< > $@
+
 etc/example/%.ans: etc/example/%.ml
 	ocaml $< > $@
+
 etc/example/%.cmp: etc/example/%.res etc/example/%.ans
 	diff $^ > $@
