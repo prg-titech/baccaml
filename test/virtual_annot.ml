@@ -45,12 +45,14 @@ let rec interp stack sp bytecode pc =
      let addr = bytecode.(pc + 1) in
      let r = interp stack sp bytecode (bytecode.(pc + 1)) in
      stack.(sp - 1) <- r;
-     mj_call_end (interp stack sp bytecode (pc + 2));
+     let res = interp stack sp bytecode (pc + 2) in
+     mj_call_end (res);
      stack.(sp) <- pc + 2;
      interp stack (sp + 1) bytecode (bytecode.(pc + 2)))
   else if instr = 7 then        (* RET *)
     (mj_ret_start ();
-     mj_ret_end (stack.(sp - 1));
+     let res = stack.(sp - 1) in
+     mj_ret_end (res);
      let n = bytecode.(pc + 1) in
      let v = stack.(sp - 1) in   (* sp: sp - 1 *)
      let pc2 = stack.(sp - 2) in (* sp: sp - 2 *)
