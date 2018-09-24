@@ -1,14 +1,13 @@
-open MinCaml
-open Util
 open Core
+open MinCaml
 
-let ev_flg = ref false
+let is_dump = ref `NG
 
 let run_dump f =
   let inchan = In_channel.create (f ^ ".ml") in
   try
     Lexing.from_channel inchan
-    |> virtualize
+    |> Util.virtualize
     |> Trim.f
     |> Simm.f
     |> Emit_virtual.to_string_prog
@@ -18,12 +17,12 @@ let run_dump f =
     In_channel.close inchan;
     raise e
 
-(* ファイルをコンパイルしてファイルに出力する (caml2html: main_file) *)
 let run_compile f =
   let inchan = In_channel.create (f ^ ".ml") in
   let outchan = Out_channel.create (f ^ ".s") in
   try
-    virtualize (Lexing.from_channel inchan)
+    Lexing.from_channel inchan
+    |> Util.virtualize
     |> Trim.f
     |> Simm.f
     |> RegAlloc.f
@@ -34,8 +33,8 @@ let run_compile f =
 
 let spec_list = [
   ("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
-  ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated");
-  ("-dump", Arg.Unit(fun _ -> ev_flg := true), "emit virtual machine code");
+  ("-iter", Arg.Int(fun i -> Util.limit := i), "maximum number of optimizations iterated");
+  ("-dump", Arg.Unit(fun _ -> is_dump := `OK), "emit virtual machine code");
 ]
 
 let usage =
@@ -44,15 +43,9 @@ let usage =
 
 let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
   let files = ref [] in
-  Arg.parse spec_list
-    begin fun s ->
-      let flst = String.split s ~on:'.' in
-      if not (String.equal (List.last_exn flst) "ml") then
-        failwith "No suffix. Please add [filename].ml."
-      else
-        files := !files @ [List.hd_exn flst]
-    end
-    usage;
-  List.iter !files ~f:(fun f ->
-      if !ev_flg then ignore (run_dump f)
-      else ignore (run_compile f))
+  Arg.parse spec_list begin fun f ->
+    files := !files @ [String.split f ~on:'.'
+                       |> List.hd
+                       |> Option.value ~default:f]
+  end usage;
+  List.iter !files ~f:(match !is_dump with `OK -> run_dump | `NG -> run_compile)
