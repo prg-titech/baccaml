@@ -38,13 +38,6 @@ let () =
     ignore (Fields_of_arg.create ~file:"a" ~ex_name:"b" ~code:(Array.make 1 0) ~annot:(Array.make 1 0) ~reds:[] ~greens:[]);
   )
 
-let print_list f lst =
-  let rec loop f = function
-    | [] -> ()
-    | hd :: tl -> f hd; print_string "; "; loop f tl
-  in
-  print_string "["; loop f lst; print_string "]"
-
 let prepare_reds trace_args (Prog (_, fundefs, _)) =
   let interp =
     List.find begin fun { name = Id.L (x) } ->
@@ -59,13 +52,9 @@ let prepare_reds trace_args (Prog (_, fundefs, _)) =
 
 let prepare_tenv' (Prog (table, fundefs, main)) t reds =
   begin match Simm.t t |> Jit_trim.trim with
-    | Let (_, Set (_),
-           Let (_,  IfEq (_, _, _, _),
-                Let (_, CallDir (Id.L (_), args, fargs), interp_body)))
-    | Let (_,  IfEq (_, _, _, _),
-           Let (_, CallDir (Id.L (_), args, fargs), interp_body))
-    | Ans (IfEq (_, _,
-                 Ans (CallDir (Id.L (_), args, fargs)), interp_body)) ->
+    | Let (_, Set (_), Let (_,  IfEq (_, _, _, _), Let (_, CallDir (id_l, args, fargs), interp_body)))
+    | Let (_,  IfEq (_, _, _, _), Let (_, CallDir (id_l, args, fargs), interp_body))
+    | Ans (IfEq (_, _, Ans (CallDir (id_l, args, fargs)), interp_body)) ->
       let fundefs' =
         List.map begin fun fundef ->
           let Id.L (x) = fundef.name in
@@ -173,7 +162,16 @@ module Util = struct
     |> List.map (Str.split_delim (Str.regexp " "))
     |> to_tuple
     |> List.map (fun (x, y) -> (x, int_of_string y))
+
+  let print_list f lst =
+    let rec loop f = function
+      | [] -> ()
+      | hd :: tl -> f hd; print_string "; "; loop f tl
+    in
+    print_string "["; loop f lst; print_string "]"
 end
+
+exception Jittype_error of string
 
 let file      = ref ""
 let codes     = ref ""
@@ -181,7 +179,7 @@ let annots    = ref ""
 let reds      = ref ""
 let greens    = ref ""
 let output    = ref "out"
-let is_dryrun = ref false
+let jittype   = ref ""
 
 let usage  = "usage: " ^ Sys.argv.(0) ^ " [-file string] [-green string list] [-red string list] [-code int list] [-annot int list]"
 
@@ -191,8 +189,8 @@ let speclist = [
   ("-red", Arg.Set_string reds, "Specify red variables");
   ("-code", Arg.Set_string codes, "Specify bytecode");
   ("-annot", Arg.Set_string annots, "Specify annotations for bytecode");
+  ("-type", Arg.Set_string jittype, "Specify jit type");
   ("-o", Arg.Set_string output, "Set executable's name");
-  ("-dry-run", Arg.Unit (fun _ -> is_dryrun := true), "run as dry");
   ("-dbg", Arg.Unit (fun _ -> Logs.set_level @@ Some Logs.Debug), "Enable debug mode");
 ]
 
@@ -208,7 +206,12 @@ let run = (fun f ->
     let annots = Util.string_of_array ~f:int_of_string !annots in
     let reds = Util.parse_pair_list !reds in
     let greens = Util.parse_pair_list !greens in
-    f Fieldslib.(
+    let jittype' = match !jittype with
+      | "tjit" -> `Meta_tracing
+      | "mjit" -> `Meta_method
+      | _ -> raise @@ Jittype_error "-type (tjit|mjit) is missing."
+    in
+    f jittype' Fieldslib.(
         Fields_of_arg.create
           ~file:file ~ex_name:output ~code:bytes ~annot:annots ~reds:reds ~greens:greens
       ))
