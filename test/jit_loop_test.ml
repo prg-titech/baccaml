@@ -4,7 +4,7 @@ open BacCaml
 open Jit_config
 
 let _ =
-  run begin fun arg ->
+  run begin fun jittype arg ->
     let { prog; reg; mem; red_args; ex_name } = prepare_env `Meta_tracing arg in
 
     let traces =
