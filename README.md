@@ -17,23 +17,41 @@ This project is forked from <a href="https://github.com/esumii/min-caml">min-cam
 - RCaml: CLI interface
 - Armin: interface language for BacCaml
 
-### Setup
+
+## Using BacCaml
+
+### Building trace:
+
+```bash
+$ dune exec [target].exe -- \
+	-file [filename] \
+	-type (mjit|tjit) \
+	-red [red variables] \
+	-green [green variables] \
+	-code [bytecode] \
+	-o [output]
+```
+
+### Building executable:
+
+```bash
+$ dune exec src/bin/baccaml_cli.exe -- \
+	-type (mjit|tjit) \
+	-(dump|emit|build) \
+	-trace [trace name] \
+	[intepreter name]
+```
+
+### Development
 
 - Install dependencies:
 
-  ```shell
-  $ opam install core menhir ppx_deriving stringext logs fmt dune
-  ```
+	```shell
+	$ opam install core menhir ppx_deriving stringext logs fmt dune
+	```
 
-- For your developing environment:
+- Install IDEs:
 
 	```shell
 	$ opam install tuareg merlin ocp-indent utop
 	```
-
-### Build and execute
-
-```bash
-$ make
-$ dune exec [target].exe -- -file [filename] -red [red variables] -green [green variables] -code [bytecode] -o [output]
-```
