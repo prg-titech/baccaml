@@ -8,7 +8,7 @@ open Jit_util
 
 type tj_env =
   { index_pc: int; merge_pc: int; trace_name: string }
-  [@@deriving fields]
+[@@deriving fields]
 
 let find_pc { index_pc; } args =
   match List.nth_opt args index_pc with

@@ -24,7 +24,7 @@ let _ = run_test_tt_main begin
         let prog =
           In_channel.create ("simple1.ml")
           |> Lexing.from_channel
-          |> Mutil.virtualize
+          |> Util.virtualize
           |> Simm.f
         in
         let Prog (_, fundefs, main) = prog in
@@ -40,7 +40,7 @@ let _ = run_test_tt_main begin
         reg.(44) <- Green (0);
         reg.(45) <- Red (100);
         let res = match TJ.exec prog body reg mem jit_args with
-          Tracing_success v | Method_success v -> v
+            Tracing_success v | Method_success v -> v
         in
         JE.emit_trace `Meta_tracing res "simple1_tj" "interp.42"
       end

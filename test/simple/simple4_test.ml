@@ -54,7 +54,7 @@ let _ = run_test_tt_main begin
           else mem.(n) <- Green (bytecode.(i))
         done;
         let res = match MJ.exec prog body reg mem method_jit_args with
-        | Tracing_success res' | Method_success res' -> res' in
+          | Tracing_success res' | Method_success res' -> res' in
         Jit_emit.emit_trace
           `Meta_method
           res

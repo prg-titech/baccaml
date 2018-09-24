@@ -41,6 +41,12 @@ and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *
 type fundef = { name : Id.l; args : Id.t list; fargs : Id.t list; body : t; ret : Type.t }
 [@@deriving show]
 
+let find_fundef name fundefs =
+  List.find begin fun fundef ->
+    let Id.L (n) = fundef.name in
+    List.for_all (fun x -> String.contains n x) (Stringext.to_list name)
+  end fundefs
+
 (* プログラム全体 = 浮動小数点数テーブル + トップレベル関数 + メインの式 (caml2html: sparcasm_prog) *)
 type prog = Prog of (Id.l * float) list * fundef list * t
 [@@deriving show]

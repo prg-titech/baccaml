@@ -9,7 +9,7 @@ open Core
 include Tracing_jit
 include Method_jit
 include Jit_config
-include Mutil
+include Util
 
 let setup aa bb =
   Core.List.iter

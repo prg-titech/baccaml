@@ -19,7 +19,6 @@ TRASH 		= $(EXAMPLES:%=etc/example/%.s) \
 		*.o *.s **/*.dSYM
 
 
-
 default: build
 
 all: build test
@@ -27,19 +26,11 @@ all: build test
 .PHONY: build
 build:
 	dune build
-	dune build src/armin/$(ARMIN)
-	dune build src/armin/$(ARMIN_TOP)
 
 .PHONY: clean
 clean:
 	dune clean
 	git clean -dfXq
-	rm -rf $(TRASH)
-
-.PHONY: clean-jit
-clean-jit:
-	rm -rf *.o *.s test/*.o test/*.s *.dSYM
-	rm -rf simple*_*j
 	rm -rf $(TRASH)
 
 .PHONY: test
@@ -48,7 +39,10 @@ test:
 
 .PHONY: indent
 indent:
-	for f in `find src test -name "*.ml"`; do ocp-indent $$f > tmp.txt && cat tmp.txt > $$f; done && rm -f tmp.txt
+	for f in `find src test -name "*.ml"`; do \
+		ocp-indent $$f > tmp.txt && cat tmp.txt > $$f; \
+	done && \
+	rm -f tmp.txt
 
 .PHONY: example
 example: $(EXAMPLES:%=etc/example/%.cmp)

@@ -3,7 +3,7 @@ open OUnit
 
 open MinCaml
 open Asm
-open Mutil
+open Util
 
 open BacCaml
 open Jit_config

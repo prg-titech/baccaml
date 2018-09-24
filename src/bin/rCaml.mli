@@ -25,5 +25,5 @@ type tenv =
     ibody : MinCaml.Asm.t;
   }
 
-val prepare_env : arg -> env
-val run : (arg -> 'a) -> 'a
+val prepare_env : [< `Meta_method | `Meta_tracing] -> arg -> env
+val run : ([> `Meta_method | `Meta_tracing] -> arg -> 'a) -> 'a

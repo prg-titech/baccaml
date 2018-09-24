@@ -25,7 +25,7 @@ let rec trim_jit_dispatcher = function
             body))
   | t -> t
 
-let rec trim_jmp = function
+let rec trim_jit_merge_point = function
   (* jit_dispatch (pc = 0) bytecode a *)
   | Let (_, Set (n0),
          Let (_, IfEq (x, y, Ans (Set (n1)), Ans (Set (n2))),
@@ -45,3 +45,5 @@ let rec trim_jmp = function
             Ans (CallDir (Id.L (trace_entry), List.tl_exn args, fargs)),
             body))
   | t -> t
+
+let trim t = trim_jit_dispatcher t |> trim_jit_merge_point

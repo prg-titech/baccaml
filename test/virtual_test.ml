@@ -4,8 +4,8 @@ open BacCaml
 open Jit_config
 
 let _ =
-  run begin fun arg ->
-    let { prog; reg; mem; red_args; ex_name } = prepare_env arg in
+  run begin fun jittype arg ->
+    let { prog; reg; mem; red_args; ex_name } = prepare_env jittype arg in
 
     let traces =
       Jit_method.run_while
@@ -17,5 +17,5 @@ let _ =
         Logs.debug (fun m ->
             m "%s" (Emit_virtual.to_string_fundef fundef))) traces;
 
-    Jit_emit.emit_result ~jit_type:`Meta_method ~prog:prog ~traces:traces ~file:ex_name
+    Jit_emit.emit_result ~prog:prog ~traces:traces ~file:ex_name ~jit_type:jittype
   end

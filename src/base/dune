@@ -8,7 +8,7 @@
  (public_name    baccaml.minCaml)
  (modules        (:standard \ min_caml anchor))
  (flags          (-w -4-33-40-41))
- (libraries      str core logs)
+ (libraries      str core logs stringext)
  (c_names        float)
  (preprocess     (pps ppx_deriving.show)))
 
@@ -17,4 +17,4 @@
  (public_name    baccaml.min_caml)
  (flags          (-w -4-33-40-41))
  (modules        Min_caml)
- (libraries      core minCaml))
+ (libraries      core minCaml bacCaml))
