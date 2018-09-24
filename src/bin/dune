@@ -13,7 +13,7 @@
 (executable
  (name baccaml_cli)
  (public_name baccaml.cli)
- (modules :standard \ rCaml)
+ (modules baccaml_cli)
  (libraries minCaml bacCaml core logs fmt stringext)
  (flags (-w -4-33-40-41-42-43-34-44
   -short-paths
@@ -21,5 +21,17 @@
   -strict-formats
   -short-paths
   -keep-locs))
- (preprocess (pps ppx_fields_conv ppx_deriving.show))
-)
+ (preprocess (pps ppx_fields_conv ppx_deriving.show)))
+
+(executable
+ (name build)
+ (public_name baccaml.build)
+ (modules build)
+ (libraries minCaml bacCaml core logs fmt stringext)
+ (flags (-w -4-33-40-41-42-43-34-44
+  -short-paths
+  -strict-sequence
+  -strict-formats
+  -short-paths
+  -keep-locs))
+ (preprocess (pps ppx_fields_conv ppx_deriving.show)))
