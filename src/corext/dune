@@ -1,0 +1,10 @@
+(library
+ (name corext)
+ (public_name baccaml.corext)
+ (flags (-w -4-33-40-41-42-43-34-44
+	 -short-paths
+	 -strict-sequence
+	 -strict-formats
+	 -short-paths
+	 -keep-locs))
+  (libraries core))
