@@ -10,10 +10,14 @@ int fib(int n) {
 }
 
 int main() {
-  int res, n;
+  int res, n, N;
   n = 40;
+  N = 50;
   float start = get_micro_time();
-  res = fib(n);
+  for (int i = 0; i < N; i++) {
+    res = fib(n);
+  }
   float end = get_micro_time();
-  printf("fib(%d): %f s\n", n, (end - start) / (int)1e6);
+  float ellapse = (end - start) / (int)1e6;
+  printf("fib(%d): %f s\n", n, ellapse / N);
 }
