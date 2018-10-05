@@ -1,12 +1,5 @@
 #include <stdio.h>
-#include <unistd.h>
-#include <sys/time.h>
-
-int get_micro_time() {
-  struct timeval current_time;
-  gettimeofday(&current_time, NULL);
-  return current_time.tv_sec * (int)1e6 + current_time.tv_usec;
-}
+#include "time.h"
 
 int fib(int n) {
   if (n < 2) {
@@ -17,9 +10,10 @@ int fib(int n) {
 }
 
 int main() {
-  int res;
-  int start = get_micro_time();
-  res = fib(30);
-  int end = get_micro_time();
-  printf("fib(30): %d\n", (end - start));
+  int res, n;
+  n = 40;
+  float start = get_micro_time();
+  res = fib(n);
+  float end = get_micro_time();
+  printf("fib(%d): %f s\n", n, (end - start) / (int)1e6);
 }

@@ -3,8 +3,7 @@ let rec fib n =
   else fib (n - 1) + fib (n - 2)
 in
 let start = get_micro_time () in
-let res = fib 30 in
+let res = fib 40 in
 let stop = get_micro_time () in
 print_int (stop - start);
 print_newline ();
-print_int res
