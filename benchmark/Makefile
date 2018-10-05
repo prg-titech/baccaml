@@ -1,5 +1,5 @@
 # SUBDIRS := $(wildcard */.)
-SUBDIRS := c pypy
+SUBDIRS := c mincaml
 
 all: $(SUBDIRS)
 $(SUBDIRS):

@@ -29,7 +29,7 @@ def main():
         print "EXECUTION: %d" % (j)
         fib(n)
     end = time.time()
-    print "TIME: %f" % (get_ellapsed_time(start, end))
+    print "TIME: %f s" % (get_ellapsed_time(start, end))
 
 
 if __name__ == "__main__":

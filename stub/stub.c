@@ -29,11 +29,11 @@ int min_caml_get_micro_time() {
   return current_time.tv_sec * (int)1e6 + current_time.tv_usec;
 }
 
-void min_caml_loop_start () {
+void min_caml_loop_start() {
   return;
 }
 
-void min_caml_loop_end () {
+void min_caml_loop_end() {
   return;
 }
 
