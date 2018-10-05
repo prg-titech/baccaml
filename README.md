@@ -20,7 +20,7 @@ This project is forked from <a href="https://github.com/esumii/min-caml">min-cam
 
 ## Using BacCaml
 
-### Building trace:
+### Building trace
 
 ```bash
 $ dune exec [target].exe -- \
@@ -32,7 +32,7 @@ $ dune exec [target].exe -- \
 	-o [output]
 ```
 
-### Building executable:
+### Building executable
 
 ```bash
 $ dune exec src/bin/baccaml_cli.exe -- \
