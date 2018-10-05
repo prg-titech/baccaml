@@ -1,5 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/time.h>
+
+extern void min_caml_sleep() asm ("min_caml_sleep");
+extern int min_caml_get_micro_time() asm ("min_caml_get_micro_time");
+extern void min_caml_loop_start() asm ("min_caml_loop_start");
+extern void min_caml_loop_end() asm ("min_caml_loop_end");
 
 extern void min_caml_start(char *, char *);
 
@@ -8,6 +15,27 @@ extern void min_caml_start(char *, char *);
    portability (under SPARC emulators, for example).  Thanks to Steven
    Shaw for reporting the problem and proposing this solution. */
 FILE *min_caml_stderr;
+
+// sleep in 1 second
+void min_caml_sleep() {
+  sleep(1);
+  return;
+}
+
+// getting time in micro seconds
+int min_caml_get_micro_time() {
+  struct timeval current_time;
+  gettimeofday(&current_time, NULL);
+  return current_time.tv_sec * (int)1e6 + current_time.tv_usec;
+}
+
+void min_caml_loop_start () {
+  return;
+}
+
+void min_caml_loop_end () {
+  return;
+}
 
 int main() {
   char *hp, *sp;
