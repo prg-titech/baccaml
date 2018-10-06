@@ -10,14 +10,15 @@ int fib(int n) {
 }
 
 int main() {
-  int x, i, start, end;
+  int x, i, start, end, iter;
+  iter = 10;
   i = 0;
   start = get_micro_time();
-  while(i < 10) {
+  while(i < iter {
     x = fib(28);
     i++;
   }
   end = get_micro_time();
-  printf("execution time: %f s\n", (end - start) / (float) 10 / (float)100000);
+  printf("execution time: %f s\n", (end - start) / (float)iter / (float)100000);
   return 0;
 }
