@@ -1,4 +1,4 @@
-open MinCaml.Asm
+open Asm
 
 let (|*|) e (n1, n2) = match e with
   | IfEq _ -> n1 = n2
