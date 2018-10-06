@@ -8,7 +8,7 @@
  (public_name    baccaml.base)
  (modules        (:standard \ min_caml anchor))
  (flags          (-w -4-33-40-41))
- (libraries      str core logs stringext)
+ (libraries      str core logs stringext corext)
  (c_names        float)
  (preprocess     (pps ppx_deriving.show)))
 
