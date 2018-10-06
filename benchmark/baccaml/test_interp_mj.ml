@@ -159,7 +159,7 @@ let rec loop n =
   if n = 0 then ()
   else let _ = interp stack 0 code 27 in loop (n -1)
 in
-loop 10;
+loop 1;
 let stop = get_micro_time () in
 print_int (stop - start);
 print_newline ()
