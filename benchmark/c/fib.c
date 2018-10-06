@@ -14,7 +14,7 @@ int main() {
   iter = 10;
   i = 0;
   start = get_micro_time();
-  while(i < iter {
+  while(i < iter) {
     x = fib(28);
     i++;
   }
