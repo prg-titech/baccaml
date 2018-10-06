@@ -1,13 +1,5 @@
 import time
 
-def get_millis():
-    return int(round(time.time() * 1000))
-
-
-def get_ellapsed_time(start, end):
-    return (end - start) / float(1000)
-
-
 def fib(n):
     if n < 2:
         return 1
@@ -16,20 +8,28 @@ def fib(n):
 
 
 def main():
-    W = 10
+    W = 20
     N = 30
 
     n = 40
 
+    wstart = time.time()
     for i in range(W):
-        print "WARMUP: %d" % (i)
+        tstart = time.time()
         fib(n)
+        print "Warmup (%d) elapsed time: %f s" % (i + 1, (time.time() - tstart))
+
+    wend = time.time()
+
+    print "WARMUP TIME: %f s" % ((wend - wstart) / float(W))
     start = time.time()
     for j in range(N):
-        print "EXECUTION: %d" % (j)
+        estart = time.time()
         fib(n)
+        print "Execution (%d) elapsed time: %f s" % (j + 1, (time.time() - estart))
+
     end = time.time()
-    print "TIME: %f s" % (get_ellapsed_time(start, end))
+    print "TIME: %f s" % ((end - start) / float(N))
 
 
 if __name__ == "__main__":
