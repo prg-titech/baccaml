@@ -11,7 +11,7 @@ def main():
     W = 20
     N = 30
 
-    n = 40
+    n = 28
 
     wstart = time.time()
     for i in range(W):

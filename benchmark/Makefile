@@ -1,5 +1,4 @@
-# SUBDIRS := $(wildcard */.)
-SUBDIRS := c mincaml
+SUBDIRS := $(wildcard */.)
 
 all: $(SUBDIRS)
 $(SUBDIRS):

@@ -4,10 +4,10 @@ let rec fib n =
 in
 let rec loop_fib n =
   if n = 0 then ()
-  else let _ = fib 40 in loop_fib (n - 1)
+  else let _ = fib 28 in loop_fib (n - 1)
 in
 let start = get_micro_time () in
-let _ = fib 40 in
+loop_fib 10;
 let stop = get_micro_time () in
 print_int (stop - start);
 print_newline ()
