@@ -4,9 +4,8 @@
 #include <sys/time.h>
 
 extern void min_caml_sleep() asm ("min_caml_sleep");
+
 extern int min_caml_get_micro_time() asm ("min_caml_get_micro_time");
-extern void min_caml_loop_start() asm ("min_caml_loop_start");
-extern void min_caml_loop_end() asm ("min_caml_loop_end");
 
 extern void min_caml_start(char *, char *);
 
@@ -27,14 +26,6 @@ int min_caml_get_micro_time() {
   struct timeval current_time;
   gettimeofday(&current_time, NULL);
   return current_time.tv_sec * (int)1e6 + current_time.tv_usec;
-}
-
-void min_caml_loop_start() {
-  return;
-}
-
-void min_caml_loop_end() {
-  return;
 }
 
 int main() {

@@ -15,6 +15,12 @@
 #define ALIGNSTACK3
 #endif
 .text
+.globl min_caml_loop_start
+min_caml_loop_start:
+	ret
+.globl min_caml_loop_end
+min_caml_loop_end:
+	ret
 .globl min_caml_print_debug
 min_caml_print_debug:
 	pushl %eax
