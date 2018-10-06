@@ -7,7 +7,7 @@ let rec loop_fib n =
   else let _ = fib 40 in loop_fib (n - 1)
 in
 let start = get_micro_time () in
-loop_fib 30;
+loop_fib 10;
 let stop = get_micro_time () in
 print_int (stop - start);
 print_newline ()
