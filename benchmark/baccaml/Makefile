@@ -1,4 +1,8 @@
-interp-mj:
+APPS = test_fib_mj test_fib_tj test_interp_naive
+
+all: $(APPS)
+
+test_fib_mj:
 	cd ../../ && \
 	dune exec benchmark/baccaml/test_fib.exe -- \
 		-file benchmark/baccaml/test_interp_mj.ml \
@@ -11,7 +15,7 @@ interp-mj:
 	mv test_fib_mj benchmark/baccaml
 
 
-interp-tj:
+test_fib_tj:
 	cd ../../ && \
 	dune exec benchmark/baccaml/test_fib.exe -- \
 		-file benchmark/baccaml/test_interp_tj.ml \
@@ -23,7 +27,11 @@ interp-tj:
 	dune exec src/bin/baccaml_cli.exe -- -type tjit -build -trace test_fib_tj benchmark/baccaml/test_interp_tj.ml && \
 	mv test_fib_tj benchmark/baccaml
 
-interp-naive:
+test_interp_naive:
 	cd ../../ && \
 	dune exec src/base/min_caml.exe -- -type mjit benchmark/baccaml/test_interp_naive.ml; \
 	gcc -m32 stub/stub.c stub/libmincaml.S benchmark/baccaml/test_interp_naive.s -o benchmark/baccaml/test_interp_naive
+
+
+clean:
+	$(RM) $(APPS)
