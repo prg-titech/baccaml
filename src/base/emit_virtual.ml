@@ -39,8 +39,9 @@ and to_string_type typ =
 let rec to_string_ids ids =
   match ids with
   | [] -> "[]"
-  | _ -> "[" ^ (String.concat "; " ids) ^ "]"
-
+  | _ ->
+    let ids' = List.map (fun s -> "\"" ^ s ^ "\"") ids in
+    "[" ^ (String.concat "; " ids') ^ "]"
 
 (* Asm.exp to string *)
 let rec to_string_exp exp =
