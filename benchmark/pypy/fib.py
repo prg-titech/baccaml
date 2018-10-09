@@ -8,15 +8,17 @@ def fib(n):
 
 
 def main():
-    W = 20
-    N = 30
+    W = 10
+    N = 20
 
-    n = 28
+    n = 50
+
+    res = 0
 
     wstart = time.time()
     for i in range(W):
         tstart = time.time()
-        fib(n)
+        res = fib(n)
         print "Warmup (%d) elapsed time: %f s" % (i + 1, (time.time() - tstart))
 
     wend = time.time()
@@ -25,7 +27,7 @@ def main():
     start = time.time()
     for j in range(N):
         estart = time.time()
-        fib(n)
+        res = fib(n)
         print "Execution (%d) elapsed time: %f s" % (j + 1, (time.time() - estart))
 
     end = time.time()
