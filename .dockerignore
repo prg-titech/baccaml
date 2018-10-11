@@ -2,4 +2,5 @@ bytemark/
 min-rt/
 shootout/
 _build/
+benchmark/
 *.exe
