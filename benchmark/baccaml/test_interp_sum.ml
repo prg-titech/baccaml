@@ -1,5 +1,4 @@
 let rec interp stack sp bytecode pc =
-  jit_dispatch (pc=0) stack sp bytecode;
   let instr = bytecode.(pc) in
   if instr = 0 then             (* ADD *)
     let v2 = stack.(sp - 1) in  (* sp: sp - 1 *)
@@ -89,9 +88,11 @@ code.(19) <- 0;
 code.(20) <- 0;
 code.(21) <- 7;
 code.(22) <- 4;
-code.(23) <- 60000;
+code.(23) <- 5000;
 code.(24) <- 6;
 code.(25) <- 0;
 code.(26) <- 9;
+let start = get_micro_time () in
 let res = interp stack 0 code 22 in
-print_int res; print_newline ()
+let stop = get_micro_time () in
+print_int (stop - start); print_newline ()

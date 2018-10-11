@@ -37,7 +37,7 @@ int main() {
     fprintf(stderr, "malloc or alloca failed\n");
     return 1;
   }
-  fprintf(stderr, "sp = %p, hp = %p\n", sp, hp);
+  /* fprintf(stderr, "sp = %p, hp = %p\n", sp, hp); */
   min_caml_start(sp, hp);
 
   return 0;

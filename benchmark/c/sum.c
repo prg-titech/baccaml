@@ -9,7 +9,7 @@ int sum(int n) {
 int main() {
   int x, i, n, start, end, iter;
   iter = 10;
-  n = 60000;
+  n = 5000;
   i = 0;
   start = get_micro_time();
   while(i < iter) {
@@ -17,6 +17,6 @@ int main() {
     i++;
   }
   end = get_micro_time();
-  printf("execution time: %f s\n", (end - start) / (float)iter / (float)1000000);
+  printf("%f us\n", (end - start) / (float)iter);
   return 0;
 }

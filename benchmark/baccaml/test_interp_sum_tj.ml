@@ -90,9 +90,11 @@ code.(20) <- 0;
 code.(21) <- 7;
 code.(22) <- 1;
 code.(23) <- 4;
-code.(24) <- 50000;
+code.(24) <- 5000;
 code.(25) <- 6;
 code.(26) <- 0;
 code.(27) <- 9;
+let start = get_micro_time () in
 let res = interp stack 0 code 23 in
-print_int res; print_newline ()
+let stop = get_micro_time () in
+print_int (stop - start); print_newline ()

@@ -9,9 +9,9 @@ def fib(n):
 
 def main():
     W = 10
-    N = 20
+    N = 90
 
-    n = 50
+    n = 40
 
     res = 0
 
@@ -19,7 +19,7 @@ def main():
     for i in range(W):
         tstart = time.time()
         res = fib(n)
-        print "Warmup (%d) elapsed time: %f s" % (i + 1, (time.time() - tstart))
+        print "%f," % ((time.time() - tstart))
 
     wend = time.time()
 
@@ -28,7 +28,7 @@ def main():
     for j in range(N):
         estart = time.time()
         res = fib(n)
-        print "Execution (%d) elapsed time: %f s" % (j + 1, (time.time() - estart))
+        print "%f," % ((time.time() - estart))
 
     end = time.time()
     print "TIME: %f s" % ((end - start) / float(N))

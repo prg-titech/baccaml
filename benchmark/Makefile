@@ -1,4 +1,4 @@
-SUBDIRS := $(wildcard */.)
+SUBDIRS := baccaml mincaml c pypy
 APP := fib
 
 all: $(SUBDIRS)

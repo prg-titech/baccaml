@@ -1,14 +1,16 @@
+import sys
 import time
 
 def summary(n):
     if n == 0: return 0
     else: return n + summary(n -1)
 
+
 def main():
     W = 10
-    N = 20
+    N = 100
 
-    n = 50
+    n = 5000
 
     res = 0
 
@@ -16,7 +18,7 @@ def main():
     for i in range(W):
         tstart = time.time()
         res = summary(n)
-        print "Warmup (%d) elapsed time: %f s" % (i + 1, (time.time() - tstart))
+        print "%f" % ((time.time() - tstart) * 1000000.0)
 
     wend = time.time()
 
@@ -25,11 +27,12 @@ def main():
     for j in range(N):
         estart = time.time()
         res = summary(n)
-        print "Execution (%d) elapsed time: %f s" % (j + 1, (time.time() - estart))
+        print "%f" % ((time.time() - estart) * 100000.0)
 
     end = time.time()
     print "TIME: %f s" % ((end - start) / float(N))
 
 
 if __name__ == "__main__":
+    sys.setrecursionlimit(10000)
     main()

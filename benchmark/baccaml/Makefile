@@ -1,7 +1,8 @@
-APPS = test_fib_mj test_fib_tj test_interp_naive test_interp_sum
+APPS = test_fib_mj test_fib_tj test_interp_naive test_interp_sum test_sum_mj test_sum_tj
 APP := fib
+JIT := mj
 
-$(APP): test_$(APP)_mj
+$(APP): test_$(APP)_$(JIT)
 
 all: $(APPS)
 
@@ -18,15 +19,17 @@ test_fib_mj:
 	mv test_fib_mj benchmark/baccaml
 
 test_sum_mj: test_sum.ml
+	$(eval INTERP := test_interp_sum_mj)
 	cd ../../ && \
 	dune exec benchmark/baccaml/$(basename $<).exe -- \
-		-file benchmark/baccaml/test_interp_sum_mj.ml \
+		-file benchmark/baccaml/$(INTERP).ml \
 		-green "bytecode 100; pc 0" \
 		-red "stack 0; sp 1" \
 		-code "8 0 4 2 3 5 11 4 1 14 21 8 0 8 1 4 1 1 6 0 0 7 4 10 6 0 9" \
 		-o $(basename $<)_mj \
 		-type mjit && \
-	dune exec src/bin/baccaml_cli.exe -- -type mjit -build -trace $(basename $<)_mj benchmark/baccaml/test_interp_sum.ml; \
+	dune exec src/bin/baccaml_cli.exe -- -type mjit -build -trace test_sum_mj  \
+		benchmark/baccaml/$(INTERP).ml; \
 	mv $(basename $<)_mj benchmark/baccaml
 
 test_sum_tj: test_sum.ml

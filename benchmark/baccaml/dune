@@ -1,5 +1,5 @@
 (executables
- (names test_sum)
+ (names test_sum test_fib)
  (flags (-w -4-33-40-41-42-43-34-44
          -g
          -short-paths
