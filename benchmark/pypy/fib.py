@@ -11,7 +11,7 @@ def main():
     W = 10
     N = 90
 
-    n = 40
+    n = 28
 
     res = 0
 
@@ -19,7 +19,7 @@ def main():
     for i in range(W):
         tstart = time.time()
         res = fib(n)
-        print "%f," % ((time.time() - tstart))
+        print "%f," % ((time.time() - tstart) * 1000000.0)
 
     wend = time.time()
 
@@ -28,7 +28,7 @@ def main():
     for j in range(N):
         estart = time.time()
         res = fib(n)
-        print "%f," % ((time.time() - estart))
+        print "%f" % ((time.time() - estart) * 1000000.0)
 
     end = time.time()
     print "TIME: %f s" % ((end - start) / float(N))

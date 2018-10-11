@@ -48,12 +48,12 @@ def calc_fib40():
 def calc_fib28():
     from test_fib28 import *
     print "fib(28)"
-    print_result("Method JIT", res_fib28_mj)
-    print_result("Tracing JIT", res_fib28_tj)
-    print_result("Interpreter", res_fib28_interp)
-    print_result("MinCaml", res_fib28_mincaml)
-    print_result("C (clang)", res_fib28_c)
-    print_result("PyPy (6.0)", res_fib28_pypy)
+    print_result("Method JIT", res_fib28_mj, unit='us')
+    print_result("Tracing JIT", res_fib28_tj, unit='us')
+    print_result("Interpreter", res_fib28_interp, unit='us')
+    print_result("MinCaml", res_fib28_mincaml, unit='us')
+    print_result("C (clang)", res_fib28_c, unit='us')
+    print_result("PyPy (6.0)", res_fib28_pypy, unit='us')
 
 
 def calc_sum():
