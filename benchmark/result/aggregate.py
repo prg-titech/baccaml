@@ -2,6 +2,7 @@ import statistics as st
 import test_fib as tf
 import test_fib28 as tf28
 
+
 def average(lst):
     return sum(lst) / float(len(lst))
 
@@ -30,9 +31,11 @@ mj_fib28_mc = relative(tf28.res_fib28_pypy, tf28.res_fib28_mincaml)
 
 def print_result(name, lst, unit='s'):
     if unit is 's':
-        print "%s: \tAverage %f s \tVariance %f \t STDEV %f" % (name, average(lst), variance(lst), st.stdev(lst))
+        print "%s: \tAverage %f s \t\tVariance %f \t\tSTDEV %f" % \
+            (name, average(lst), variance(lst), st.stdev(lst))
     elif unit is 'us':
-        print "%s: \tAverage %f us \tVariance %f \t STDEV %f" % (name, average(lst), variance(lst), st.stdev(lst))
+        print "%s: \tAverage %f us \t\tVariance %f \t\tSTDEV %f" % \
+            (name, average(lst), variance(lst), st.stdev(lst))
 
 
 def calc_fib40():

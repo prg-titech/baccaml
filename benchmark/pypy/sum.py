@@ -1,38 +1,42 @@
 import sys
 import time
+import statistics as stc
+
+
+def micros():
+    return int(time.time() * 100000.0)
+
 
 def summary(n):
-    if n == 0: return 0
-    else: return n + summary(n -1)
+    if n == 0:
+        return 0
+    else:
+        return n + summary(n - 1)
 
 
 def main():
-    W = 10
+    W = 0
     N = 100
 
-    n = 5000
+    n = 6000
 
-    res = 0
-
-    wstart = time.time()
-    for i in range(W):
-        tstart = time.time()
-        res = summary(n)
-        print "%f" % ((time.time() - tstart) * 1000000.0)
-
-    wend = time.time()
-
-    print "WARMUP TIME: %f s" % ((wend - wstart) / float(W))
-    start = time.time()
+    res = []
+    start = micros()
     for j in range(N):
-        estart = time.time()
-        res = summary(n)
-        print "%f" % ((time.time() - estart) * 100000.0)
+        estart = micros()
+        summary(n)
+        eend = micros()
+        res.append(eend - estart)
+        print "%f" % (eend - estart)
+    end = micros()
 
-    end = time.time()
-    print "TIME: %f s" % ((end - start) / float(N))
+    ave = stc.mean(res)
+    stdev = stc.stdev(res)
+    print "TIME: %f us" % ((end - start) / float(N))
+    print "Average: %f \t STDEV: %f" % (ave, stdev)
+
 
 
 if __name__ == "__main__":
-    sys.setrecursionlimit(10000)
+    sys.setrecursionlimit(6000)
     main()
