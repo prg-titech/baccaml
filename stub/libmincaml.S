@@ -15,9 +15,6 @@
 #define ALIGNSTACK3
 #endif
 .text
-.globl min_caml_trace_entry
-min_caml_trace_entry:
-	ret
 .globl min_caml_loop_start
 min_caml_loop_start:
 	ret
@@ -26,11 +23,11 @@ min_caml_loop_end:
 	ret
 .globl min_caml_print_debug
 min_caml_print_debug:
-  pushl %eax
-  call min_caml_print_int
-  call min_caml_print_newline
-  popl %eax
-  ret
+	pushl %eax
+	call min_caml_print_int
+	call min_caml_print_newline
+	popl %eax
+	ret
 .globl min_caml_print_newline
 min_caml_print_newline:
 	pushl	%ebp

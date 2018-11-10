@@ -99,7 +99,7 @@ let prepare_prog bytecode addr annot mem =
 
 let prepare_env jit_type arg =
   let p =
-    open_in ((Sys.getcwd ()) ^ "/" ^ (Fieldslib.(file arg)))
+    open_in ((Fieldslib.(file arg)))
     |> Lexing.from_channel
     |> Util.virtualize
     |>

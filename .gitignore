@@ -12,6 +12,7 @@
 
 # Binary
 *.o
+*.s
 
 # omake
 *.omc
@@ -22,17 +23,6 @@
 
 # merlin
 .merlin
-
-# Symlink to Architecture-Specific Files
-#/asm.ml
-#/asm.mli
-#/bytemark/Makefile
-#/emit.ml
-#/libmincaml.S
-#/regAlloc.ml
-#/shootout/Makefile
-#/simm.ml
-#/virtual.ml
 
 # Build
 *.exe

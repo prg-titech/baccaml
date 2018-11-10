@@ -73,11 +73,11 @@ let build_object_file file =
 let build_executable interp trace =
   let cmd =
     Printf.sprintf "gcc -g -m32 %s %s %s %s -o %s"
-      (cwd ^ "/" ^ "stub/stub.c")
-      (cwd ^ "/" ^ "stub/libbaccaml.S")
-      (cwd ^ "/" ^ interp ^ ".o")
-      (cwd ^ "/" ^ trace ^ ".o")
-      (cwd ^ "/" ^ trace)
+      ("stub/stub.c")
+      ("stub/libmincaml.S")
+      (interp ^ ".o")
+      (trace ^ ".o")
+      (trace)
   in
   Sys.command_exn cmd
 

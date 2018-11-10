@@ -42,6 +42,10 @@ test:
 doc:
 	dune build @doc
 
+.PHONY: benchmark
+benchmark:
+	$(MAKE) -C benchmark
+
 .PHONY: example
 example: $(EXAMPLES:%=etc/example/%.cmp)
 
