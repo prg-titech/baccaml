@@ -19,7 +19,7 @@ def bench_sum(n):
         summary(n)
 
 
-def main():
+def test():
     N = 100000
     n = 1000
 
@@ -31,6 +31,18 @@ def main():
     print "TIME: %f us" % ((end - start))
 
 
+def bench():
+    i = 100
+    res = []
+    for _ in range(i):
+        s = micros()
+        test()
+        e = micros()
+        res.append(e - s)
+
+    print "Average: %f us, STDEV: %f" % (stc.mean(res), stc.stdev(res))
+
+
 if __name__ == "__main__":
     sys.setrecursionlimit(6000)
-    main()
+    bench()

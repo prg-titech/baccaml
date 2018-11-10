@@ -1,7 +1,8 @@
 name, average, stdev
-test_sum_tj, 921273, 10130
-test_sum_mj, 9928284, 9557.19
+test_sum_tj,     921273,      10130
+test_sum_mj,     928284,     9557.19
 test_interp_sum, 3.02743e+06, 57363.8
-mincaml_sum, 141130, 3455.95
-c_sum, 453045, 31575
-pypy, 99327, 2076.29
+mincaml_sum,     141,      3455.95
+c_sum,           453045,      31575
+pypy,            99327,       2076.29
+pypy_interp,     4212558,     27698.85
