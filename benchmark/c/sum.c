@@ -8,8 +8,8 @@ int sum(int n) {
 
 int main() {
   int x, i, n, start, end, iter;
-  iter = 10;
-  n = 5000;
+  iter = 100000;
+  n = 1000;
   i = 0;
   start = get_micro_time();
   while(i < iter) {
@@ -17,6 +17,6 @@ int main() {
     i++;
   }
   end = get_micro_time();
-  printf("%f us\n", (end - start) / (float)iter);
+  printf("%d us\n", (end - start));
   return 0;
 }

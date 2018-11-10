@@ -89,21 +89,15 @@ code.(19) <- 0;
 code.(20) <- 0;
 code.(21) <- 7;
 code.(22) <- 4;
-code.(23) <- 5000;
+code.(23) <- 1000;
 code.(24) <- 6;
 code.(25) <- 0;
 code.(26) <- 9;
-(* let start = get_micro_time () in
- * let rec loop n =
- *   if n = 0 then ()
- *   else
- *     let res = interp stack 0 code 22 in
- *     loop (n -1)
- * in
- * loop 1;
- * let stop = get_micro_time () in
- * print_int (stop - start); print_newline () *)
+let rec loop x =
+  if x = 0 then ()
+  else let _ = interp stack 0 code 22 in loop (x - 1)
+in
 let start = get_micro_time () in
-let res = interp stack 0 code 22 in
+let _ = loop 100000 in
 let stop = get_micro_time () in
 print_int (stop - start); print_newline ()

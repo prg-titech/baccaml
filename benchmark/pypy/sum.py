@@ -14,27 +14,21 @@ def summary(n):
         return n + summary(n - 1)
 
 
+def bench_sum(n):
+    for _ in range(100):
+        summary(n)
+
+
 def main():
-    W = 0
-    N = 100
+    N = 100000
+    n = 1000
 
-    n = 6000
-
-    res = []
     start = micros()
     for j in range(N):
-        estart = micros()
         summary(n)
-        eend = micros()
-        res.append(eend - estart)
-        print "%f" % (eend - estart)
     end = micros()
 
-    ave = stc.mean(res)
-    stdev = stc.stdev(res)
-    print "TIME: %f us" % ((end - start) / float(N))
-    print "Average: %f \t STDEV: %f" % (ave, stdev)
-
+    print "TIME: %f us" % ((end - start))
 
 
 if __name__ == "__main__":
