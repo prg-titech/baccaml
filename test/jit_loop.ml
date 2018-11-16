@@ -50,5 +50,6 @@ code.(5) <- 4;
 code.(6) <- 2; code.(7) <- 12;
 code.(8) <- 6; code.(9) <- 0;
 code.(10) <- 3; code.(11) <- 5;
-code.(12) <- 7;
+code.(12) <- 0; code.(13) <- 1;
+code.(14) <- 7;
 print_int (interp code 3 2147483647)
