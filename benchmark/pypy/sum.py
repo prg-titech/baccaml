@@ -15,30 +15,39 @@ def summary(n):
 
 
 def bench_sum(n):
-    for _ in range(100):
+    for _ in range(10):
         summary(n)
+
+    s = micros()
+    for _ in range(90):
+        summary(n)
+    e = micros()
+    return e - s
 
 
 def test():
-    N = 100000
+    x = 100000
+    z = int(x * 0.1)
     n = 1000
 
+    for _ in range(z):
+        summary(n)
+
     start = micros()
-    for j in range(N):
+    for _ in range(x):
         summary(n)
     end = micros()
 
     print "TIME: %f us" % ((end - start))
+    return (end - start)
 
 
 def bench():
     i = 100
     res = []
     for _ in range(i):
-        s = micros()
-        test()
-        e = micros()
-        res.append(e - s)
+        r = test()
+        res.append(r)
 
     print "Average: %f us, STDEV: %f" % (stc.mean(res), stc.stdev(res))
 
