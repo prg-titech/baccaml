@@ -27,10 +27,10 @@ def bench_sum(n):
 
 def test():
     x = 100000
-    z = int(x * 0.1)
+    y = int(x * 0.1)
     n = 1000
 
-    for _ in range(z):
+    for _ in range(y):
         summary(n)
 
     start = micros()
