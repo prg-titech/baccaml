@@ -20,8 +20,8 @@ let jit_typ typ = match typ with
 
 let tran_annot typ p =
   match typ with
-  | `Meta_tracing -> Jit_annot.trans_tj p
-  | `Meta_method -> Jit_annot.trans_mj p
+  | `Meta_tracing -> Jit_annot.gen_mj false p
+  | `Meta_method -> Jit_annot.gen_mj true p
   | `Not_specified -> failwith "jit type is not specified."
 
 let dump typ file =

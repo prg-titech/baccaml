@@ -2,41 +2,34 @@ open MinCaml
 open Asm
 open Operands
 
-let rec trans_mj_call_ret = function
-  | Ans (IfEq (id_t, id_or_imm, t1, t2) as exp)
-  | Ans (IfLE (id_t, id_or_imm, t1, t2) as exp)
-  | Ans (IfGE (id_t, id_or_imm, t1, t2) as exp) -> Ans (exp |%%| (trans_mj_call_ret t1, trans_mj_call_ret t2))
-  | Ans (exp) -> Ans (exp)
-  | Let ((dest, typ), CallDir (Id.L ("min_caml_mj_call_start"), _, _), t) -> trans_mj_call_ret t
-  | Let ((dest, typ), CallDir (Id.L ("min_caml_mj_ret_start"), _, _), t) -> trans_mj_call_ret t
-  | Let ((dest, typ), exp, Let ((dest', typ'), CallDir (Id.L ("min_caml_mj_call_end"), _, _), t')) -> Ans (exp)
-  | Let ((dest, typ), exp, Let ((dest', typ'), CallDir (Id.L ("min_caml_mj_ret_end"), _, _), t')) -> Ans (exp)
-  | Let ((dest, typ), exp, t) -> Let ((dest, typ), exp, trans_mj_call_ret t)
+exception Error
 
-let rec trans_tj_call_ret =
-  let rec aux = function
-    | Ans (exp) -> Ans (exp)
-    | Let ((dest, typ), CallDir (Id.L ("min_caml_mj_call_end"), _, _), t) -> t
-    | Let ((dest, typ), CallDir (Id.L ("min_caml_mj_ret_end"), _, _), t) -> t
-    | Let ((dest, typ), exp, t) -> aux t
-  in
-  function
-  | Ans (IfEq (id_t, id_or_imm, t1, t2) as exp)
-  | Ans (IfLE (id_t, id_or_imm, t1, t2) as exp)
-  | Ans (IfGE (id_t, id_or_imm, t1, t2) as exp) -> Ans (exp |%%| (trans_tj_call_ret t1, trans_tj_call_ret t2))
-  | Ans (exp) -> Ans (exp)
-  | Let ((dest, typ), CallDir (Id.L ("min_caml_mj_call_start"), _, _), t) -> aux t
-  | Let ((dest, typ), CallDir (Id.L ("min_caml_mj_ret_start"), _, _), t) -> aux t
-  | Let ((dest, typ), exp, t) -> Let ((dest, typ), exp, trans_tj_call_ret t)
+let rec gen_mj_t is_mj t = match t with
+  | Ans (e) ->
+    begin match e with
+      | IfEq (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfLE (x, y, t1, t2) ->
+        Ans (e |%| (x, y, gen_mj_t is_mj t1, gen_mj_t is_mj t2))
+      | IfFLE (x, y, t1, t2) | IfFEq (x, y, t1, t2) ->
+        Ans (e |%| (x, V (y), gen_mj_t is_mj t1, gen_mj_t is_mj t2))
+      | _ -> Ans (e)
+    end
+  | Let (x, CallDir (id_l, args, fargs), t) when id_l = (Id.L ("min_caml_is_mj"))->
+    begin match t with
+      | Ans (IfEq (_, _, t1, t2)) ->
+        if is_mj then t1 else t2
+      | _ ->
+        Let (x, CallDir (id_l, args, fargs), gen_mj_t is_mj t)
+    end
+  | Let (r, x, t) ->
+    Let (r, x, gen_mj_t is_mj t)
 
-let trans_mj (Prog (table, fundefs, main)) =
+let gen_mj is_mj (Prog (table, fundefs, main)) =
   let { name; args; fargs; body; ret } = find_fundef "interp" fundefs in
   let other_fundefs = List.filter (fun fundef -> fundef.name <> name ) fundefs in
-  let new_fundefs = { name = name; args = args; fargs = fargs; ret = ret; body = trans_mj_call_ret body; } :: other_fundefs
-  in Prog (table, new_fundefs, main)
-
-let trans_tj (Prog (table, fundefs, main)) =
-  let { name; args; fargs; body; ret } = find_fundef "interp" fundefs in
-  let other_fundefs = List.filter (fun fundef -> fundef.name <> name ) fundefs in
-  let new_fundefs = { name = name; args = args; fargs = fargs; ret = ret; body = trans_tj_call_ret body; } :: other_fundefs
-  in Prog (table, new_fundefs, main)
+  let new_fundefs =
+    { name = name;
+      args = args;
+      fargs = fargs;
+      ret = ret;
+      body = gen_mj_t is_mj body; } :: other_fundefs in
+  Prog (table, new_fundefs, main)

@@ -1,5 +1,6 @@
 open Core
 open MinCaml
+open BacCaml
 
 let is_dump = ref `NG
 
@@ -8,9 +9,9 @@ let jit_typ = ref `Not_specified
 let id x = x
 
 let annot p = match !jit_typ with
-  | `Meta_method -> Annot.trans_mj p
-  | `Meta_tracing -> Annot.trans_tj p
   | `Not_specified -> p
+  | `Meta_method -> Jit_annot.gen_mj true p
+  | `Meta_tracing -> Jit_annot.gen_mj false p
 
 let run_dump f =
   let inchan = In_channel.create (f ^ ".ml") in
@@ -18,8 +19,8 @@ let run_dump f =
     Lexing.from_channel inchan
     |> Util.virtualize
     |> Trim.f
-    |> annot
     |> Simm.f
+    |> annot
     |> Emit_virtual.to_string_prog
     |> print_endline;
     In_channel.close inchan;
@@ -34,8 +35,8 @@ let run_compile f =
     Lexing.from_channel inchan
     |> Util.virtualize
     |> Trim.f
-    |> annot
     |> Simm.f
+    |> annot
     |> RegAlloc.f
     |> Emit.f outchan;
     In_channel.close inchan;
@@ -50,7 +51,6 @@ let spec_list = [
        | "tjit" -> jit_typ := `Meta_tracing
        | _ -> ()), "specify jit type");
   ("-dump", Arg.Unit(fun _ -> is_dump := `OK), "emit virtual machine code");
-
 ]
 
 let usage =
