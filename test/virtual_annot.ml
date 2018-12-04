@@ -9,6 +9,19 @@
  * let loop_end _ = () in
  * let jit_dispatch _ _ _ _ = () in *)
 
+let rec loop stack old_base new_base ret n i =
+  if n = 1 then (stack.(old_base + n) <- ret; old_base + n + 1)
+  else (stack.(old_base + i) <- stack.(new_base + i);
+        loop stack old_base new_base ret n (i + 1))
+in
+
+let rec frame_reset stack sp o l n =
+  let ret = stack.(sp-n-l-1) in
+  let old_base = sp - n - l - o - 1 in
+  let new_base = sp - n in
+  loop stack old_base new_base ret n 0
+in
+
 let rec interp stack sp bytecode pc =
   jit_dispatch (pc=0) stack sp bytecode;
   let instr = bytecode.(pc) in
@@ -65,11 +78,17 @@ let rec interp stack sp bytecode pc =
     interp stack (sp + 1) bytecode (pc + 2)
   else if instr = 9 then        (* HALT *)
     stack.(sp - 1)
-  else if instr = 11 then       (* POP1 *)
+  else if instr = 10 then       (* POP1 *)
     let v = stack.(sp - 1) in
     let _ = stack.(sp - 2) in
     stack.(sp - 2) <- v;
     interp stack (sp - 2) bytecode (pc + 1)
+  else if instr = 11 then       (* FRAME_RESET *)
+    let o = bytecode.(pc + 1) in
+    let l = bytecode.(pc + 2) in
+    let n = bytecode.(pc + 3) in
+    let sp2 = frame_reset stack sp o l n in
+    interp stack sp2 bytecode (pc + 4)
   else if instr = 12 then       (* LOOP_S *)
     (loop_start ();
      interp stack sp bytecode (pc + 1))
