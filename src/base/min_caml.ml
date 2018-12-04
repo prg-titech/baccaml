@@ -10,8 +10,7 @@ let id x = x
 
 let annot p = match !jit_typ with
   | `Not_specified -> p
-  | `Meta_method -> Jit_annot.gen_mj true p
-  | `Meta_tracing -> Jit_annot.gen_mj false p
+  | `Meta_method | `Meta_tracing as typ -> Jit_annot.gen_mj typ p
 
 let run_dump f =
   let inchan = In_channel.create (f ^ ".ml") in

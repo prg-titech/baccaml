@@ -16,7 +16,13 @@ let rec gen_mj_t is_mj t = match t with
   | Let (x, CallDir (id_l, args, fargs), t) when id_l = (Id.L ("min_caml_is_mj"))->
     begin match t with
       | Ans (IfEq (_, _, t1, t2)) ->
-        if is_mj then t1 else t2
+        (* if is_mj () then t1 else t2 is compiled to *)
+        (* IfEq((x, 0, t2, t1)                        *)
+        begin
+          match is_mj with
+          | `Meta_method -> t2
+          | `Meta_tracing -> t1
+        end
       | _ ->
         Let (x, CallDir (id_l, args, fargs), gen_mj_t is_mj t)
     end

@@ -102,12 +102,8 @@ let prepare_env jit_type arg =
     open_in ((Fieldslib.(file arg)))
     |> Lexing.from_channel
     |> Util.virtualize
-    |>
-    begin match jit_type with
-      | `Meta_method ->  Jit_annot.trans_mj
-      | `Meta_tracing -> Jit_annot.trans_tj
-    end
     |> Simm.f
+    |> Jit_annot.gen_mj jit_type
   in
   let reg, mem = Array.make 100000 (Red (0)), Array.make 100000 (Red (0)) in
 

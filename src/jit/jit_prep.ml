@@ -2,6 +2,8 @@ open MinCaml
 open Asm
 open Jit_util
 
+exception Error of string
+
 type env = Env of Asm.fundef list * Asm.t * Id.t list
 
 let create_mj_reds reds (Prog (_, fundefs, _)) =
@@ -16,12 +18,7 @@ let create_mj_reds reds (Prog (_, fundefs, _)) =
   end args
 
 let prep' p t =
-  let t' =
-    Simm.t t
-    |> Jit_trim.trim_jit_merge_point
-    |> Jit_trim.trim_jit_dispatcher
-  in
-  begin match t' with
+  begin match Simm.t t |> Jit_trim.trim with
     | Let (_, Set (_),
            Let (_,  IfEq (_, _, _, _),
                 Let (_, CallDir (Id.L (_), args, fargs),
@@ -43,12 +40,11 @@ let prep' p t =
         end in
       fundefs', interp_body
     | _ ->
-      failwith
-        "missing jit_dispatch. please add jit_dispatch ... at the top of your interpreter."
+      raise (Error "missing `jit_dispatch' at the top of your interpreter.")
   end
 
-let prep ~prog:p ~name:n ~red_args:reds =
-  let Prog (table, fundefs, main) = p in
+let prep ~prog:p ~name:n ~red_args:reds ~jit_type:jtyp =
+  let Prog (table, fundefs, main) = p |> Jit_annot.gen_mj jtyp in
   let { body } =
     List.find (fun { name = Id.L (x) } ->
         String.split_on_char '.' x
