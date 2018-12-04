@@ -1,5 +1,6 @@
 (library
  (name        rCaml)
+ (public_name baccaml.rcaml)
  (libraries logs bacCaml minCaml)
  (modules rCaml)
  (flags (-w -4-33-40-41-42-43-34-44
