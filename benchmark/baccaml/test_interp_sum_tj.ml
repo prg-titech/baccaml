@@ -28,14 +28,14 @@ let rec interp stack sp bytecode pc =
     then interp stack (sp - 1) bytecode addr
     else interp stack (sp - 1) bytecode (pc + 2)
   else if instr = 6 then        (* CALL *)
+    let addr = bytecode.(pc + 1) in
     if is_mj () then
-      let addr = bytecode.(pc + 1) in
-      let r = interp stack sp bytecode (bytecode.(pc + 1)) in
+      let r = interp stack sp bytecode addr in
       stack.(sp - 1) <- r;
       interp stack sp bytecode (pc + 2)
     else
-     (stack.(sp) <- pc + 2;
-     interp stack (sp + 1) bytecode (bytecode.(pc + 1)))
+      (stack.(sp) <- pc + 2;
+       interp stack (sp + 1) bytecode addr)
   else if instr = 7 then        (* RET *)
     if is_mj () then
      stack.(sp - 1)
