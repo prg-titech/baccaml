@@ -4,7 +4,8 @@ let rec interp regs a bytecode pc =
   if instr = 0 then
     let target = bytecode.(pc + 1) in
     if a > 0 then
-      interp regs a bytecode target
+      (loop_end regs a;
+      interp regs a bytecode target)
     else
       interp regs a bytecode (pc + 2)
   else if instr = 1 then
@@ -23,10 +24,10 @@ let rec interp regs a bytecode pc =
   else if instr = 5 then
     a
   else if instr = 6 then
-    (loop_start a regs bytecode;
+    (loop_start regs a;
      interp regs a bytecode (pc + 1))
   else if instr = 7 then
-    (loop_end a regs bytecode;
+    (loop_end regs a;
      interp regs a bytecode (pc + 1))
   else
     -1
@@ -52,4 +53,8 @@ bytecode.(19) <- 2; bytecode.(20) <- 2;
 bytecode.(21) <- 5;
 
 (* 1 0 1 1 6 2 0 4 1 0 2 2 3 1 1 2 2 0 0 4 7 2 2 5 *)
-print_int (interp regs 10000 bytecode 0)
+let s = get_micro_time () in
+let r = interp regs 500000 bytecode 0 in
+let e = get_micro_time () in
+print_int (e - s); print_newline ();
+print_int r
