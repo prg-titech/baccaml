@@ -105,7 +105,7 @@ let prepare_env jit_type arg =
     |> Simm.f
     |> Jit_annot.gen_mj jit_type
   in
-  let reg, mem = Array.make 100000 (Red (0)), Array.make 100000 (Red (0)) in
+  let reg, mem = Array.make 10000000 (Red (0)), Array.make 10000000 (Red (0)) in
 
   let red_args = List.map fst (Fieldslib.(reds arg)) in
   let tenv = prepare_tenv ~prog:p ~name:"min_caml_test_trace" ~red_args:red_args in

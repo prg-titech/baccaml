@@ -66,7 +66,7 @@ let build_object_file file =
   let from = cwd ^ "/" ^ file ^ ".s" in
   let to' = cwd ^ "/" ^ file ^ ".o" in
   validate_file from;
-  Printf.sprintf "gcc -c -g -m32 %s -o %s" from to'
+  Printf.sprintf "gcc -g -c -m32 %s -o %s" from to'
   |> Sys.command_exn
 
 let build_executable interp trace =

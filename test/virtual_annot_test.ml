@@ -2,6 +2,7 @@ open MinCaml
 open RCaml
 open BacCaml
 open Jit_config
+open Jit_prep
 
 let _ =
   run begin fun jittype arg ->
@@ -17,6 +18,7 @@ let _ =
     in
     List.iter (fun t -> Emit_virtual.to_string_fundef t
                         |> print_endline) trace;
-    Jit_emit.emit_result ~prog:prog ~traces:trace ~file:ex_name
-      ~jit_type:jittype
+    Jit_emit.emit_result
+      ~prog:prog ~traces:trace ~file:ex_name ~jit_type:jittype;
+    Emit.f
   end
