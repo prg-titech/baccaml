@@ -33,7 +33,6 @@ let rec interp regs a bytecode pc =
     -1
 in
 let bytecode = Array.make 100 0 in
-let regs = Array.make 256 0 in
 bytecode.(0) <- 1; bytecode.(1) <- 0;
 bytecode.(2) <- 1; bytecode.(3) <- 1;
 
@@ -54,6 +53,12 @@ bytecode.(21) <- 5;
 
 (* 1 0 1 1 6 2 0 4 1 0 2 2 3 1 1 2 2 0 0 4 7 2 2 5 *)
 let s = get_micro_time () in
-let r = interp regs 500000 bytecode 0 in
+let rec loop n =
+  let regs = Array.make 256 0 in
+  if n = 0 then ()
+  else let _ = interp regs 500000 bytecode 0 in loop (n - 1)
+in
+(* let r = interp regs 500000 bytecode 0 in *)
+loop 100;
 let e = get_micro_time () in
 print_int (e - s); print_newline ()
