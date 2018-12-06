@@ -12,4 +12,4 @@ let rec time i =
 in
 time 100;
 let e = get_micro_time () in
-print_int (e - s)
+print_int (e - s); print_newline ()

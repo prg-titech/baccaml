@@ -18,6 +18,6 @@ int main() {
     i++;
   }
   int e = get_micro_time();
-  printf("%f \tus\n", (e - s) / (float)iter);
+  printf("%d\n", (e - s));
   return 0;
 }
