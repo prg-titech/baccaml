@@ -56,5 +56,4 @@ bytecode.(21) <- 5;
 let s = get_micro_time () in
 let r = interp regs 500000 bytecode 0 in
 let e = get_micro_time () in
-print_int (e - s); print_newline ();
-print_int r
+print_int (e - s); print_newline ()
