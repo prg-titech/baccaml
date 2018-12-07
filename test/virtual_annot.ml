@@ -1,9 +1,8 @@
 (* let print_array f arr = print_string "[|"; Array.iter (fun a -> f a; print_string "; ") arr; print_string "|] " in
- * let rec jit_dispatch _ _ _ _ = () in
- * let rec loop_start _ = () in
- * let rec loop_end _ = () in
- *)
-let rec is_mj _ = true in
+let rec jit_dispatch _ _ _ _ = () in
+let rec loop_start _ = () in
+let rec loop_end _ = () in
+let rec is_mj _ = false in *)
 
 let rec loop stack old_base new_base ret n i =
   if n = i then (stack.(old_base + n) <- ret; old_base + n + 1)
@@ -19,10 +18,10 @@ let rec frame_reset stack sp o l n =
 in
 
 let rec interp stack sp bytecode pc =
-  (* jit_dispatch (pc=0) stack sp bytecode; *)
+  jit_dispatch (pc=0) stack sp bytecode;
   let instr = bytecode.(pc) in
-  (* Printf.printf "is: %d\tsp: %d\tpc: %d\t" instr sp pc;
-   * print_newline (); print_array print_int stack; print_newline (); *)
+  (* Printf.printf "is: %d\tsp: %d\tpc: %d\n" instr sp pc; *)
+  (* print_newline (); print_array print_int stack; print_newline (); *)
   if instr = 0 then             (* ADD *)
     let v2 = stack.(sp - 1) in  (* sp: sp - 1 *)
     let v1 = stack.(sp - 2) in  (* sp: sp - 2 *)
@@ -97,7 +96,7 @@ let rec interp stack sp bytecode pc =
   else
     -1000 in
 let code = Array.make 100 0 in
-let stack = Array.make 1000 0 in
+let stack = Array.make 1000000 0 in
 
 (* fib *)
 (* for meta tracing *)
@@ -122,9 +121,17 @@ let stack = Array.make 1000 0 in
 
 (* gcd *)
 (* for meta tracing *)
-(* code.(0) <- 8; code.(1) <- 2; code.(2) <- 4; code.(3) <- 1; code.(4) <- 3; code.(5) <- 5; code.(6) <- 11; code.(7) <- 8; code.(8) <- 1; code.(9) <- 14; code.(10) <- 56; code.(11) <- 8; code.(12) <- 2; code.(13) <- 8; code.(14) <- 2; code.(15) <- 3; code.(16) <- 5; code.(17) <- 38; code.(18) <- 8; code.(19) <- 1; code.(20) <- 8; code.(21) <- 3; code.(22) <- 1; code.(23) <- 8; code.(24) <- 3; code.(25) <- 8; code.(26) <- 1; code.(27) <- 10; code.(28) <- 2; code.(29) <- 1; code.(30) <- 2; code.(31) <- 4; code.(32) <- 0; code.(33) <- 5; code.(34) <- 0; code.(35) <- 11; code.(36) <- 14; code.(37) <- 56; code.(38) <- 8; code.(39) <- 2; code.(40) <- 8; code.(41) <- 2; code.(42) <- 1; code.(43) <- 8; code.(44) <- 2; code.(45) <- 8; code.(46) <- 1; code.(47) <- 10; code.(48) <- 2; code.(49) <- 1; code.(50) <- 2; code.(51) <- 4; code.(52) <- 0; code.(53) <- 5; code.(54) <- 0; code.(55) <- 11; code.(56) <- 7; code.(57) <- 2; code.(58) <- 4; code.(59) <- 10; code.(60) <- 4; code.(61) <- 18; code.(62) <- 6; code.(63) <- 0; code.(64) <- 9;
- * print_int (interp stack 0 code 58) *)
+code.(0) <- 8; code.(1) <- 2; code.(2) <- 4; code.(3) <- 1; code.(4) <- 3; code.(5) <- 5; code.(6) <- 11; code.(7) <- 8; code.(8) <- 1; code.(9) <- 14; code.(10) <- 44; code.(11) <- 8; code.(12) <- 2; code.(13) <- 8; code.(14) <- 2; code.(15) <- 3; code.(16) <- 5; code.(17) <- 32; code.(18) <- 8; code.(19) <- 1; code.(20) <- 8; code.(21) <- 3; code.(22) <- 1; code.(23) <- 8; code.(24) <- 3; code.(25) <- 8; code.(26) <- 1; code.(27) <- 6; code.(28) <- 0; code.(29) <- 11; code.(30) <- 14; code.(31) <- 44; code.(32) <- 8; code.(33) <- 2; code.(34) <- 8; code.(35) <- 2; code.(36) <- 1; code.(37) <- 8; code.(38) <- 2; code.(39) <- 8; code.(40) <- 1; code.(41) <- 6; code.(42) <- 0; code.(43) <- 11; code.(44) <- 7; code.(45) <- 2; code.(46) <- 4; code.(47) <- 10; code.(48) <- 4; code.(49) <- 18; code.(50) <- 6; code.(51) <- 0; code.(52) <- 9;
+print_int (interp stack 0 code 46)
 
 (* for meta method *)
-code.(0) <- 8; code.(1) <- 1; code.(2) <- 4; code.(3) <- 1; code.(4) <- 3; code.(5) <- 5; code.(6) <- 11; code.(7) <- 8; code.(8) <- 0; code.(9) <- 14; code.(10) <- 44; code.(11) <- 8; code.(12) <- 1; code.(13) <- 8; code.(14) <- 1; code.(15) <- 3; code.(16) <- 5; code.(17) <- 32; code.(18) <- 8; code.(19) <- 0; code.(20) <- 8; code.(21) <- 2; code.(22) <- 1; code.(23) <- 8; code.(24) <- 2; code.(25) <- 8; code.(26) <- 1; code.(27) <- 6; code.(28) <- 0; code.(29) <- 11; code.(30) <- 14; code.(31) <- 44; code.(32) <- 8; code.(33) <- 1; code.(34) <- 8; code.(35) <- 1; code.(36) <- 1; code.(37) <- 8; code.(38) <- 1; code.(39) <- 8; code.(40) <- 1; code.(41) <- 6; code.(42) <- 0; code.(43) <- 11; code.(44) <- 7; code.(45) <- 4; code.(46) <- 21600; code.(47) <- 4; code.(48) <- 337500; code.(49) <- 6; code.(50) <- 0; code.(51) <- 9;
-print_int (interp stack 0 code 45)
+(* code.(0) <- 8; code.(1) <- 1; code.(2) <- 4; code.(3) <- 1; code.(4) <- 3; code.(5) <- 5; code.(6) <- 11; code.(7) <- 8; code.(8) <- 0; code.(9) <- 14; code.(10) <- 44; code.(11) <- 8; code.(12) <- 1; code.(13) <- 8; code.(14) <- 1; code.(15) <- 3; code.(16) <- 5; code.(17) <- 32; code.(18) <- 8; code.(19) <- 0; code.(20) <- 8; code.(21) <- 2; code.(22) <- 1; code.(23) <- 8; code.(24) <- 2; code.(25) <- 8; code.(26) <- 1; code.(27) <- 6; code.(28) <- 0; code.(29) <- 11; code.(30) <- 14; code.(31) <- 44; code.(32) <- 8; code.(33) <- 1; code.(34) <- 8; code.(35) <- 1; code.(36) <- 1; code.(37) <- 8; code.(38) <- 1; code.(39) <- 8; code.(40) <- 1; code.(41) <- 6; code.(42) <- 0; code.(43) <- 11; code.(44) <- 7; code.(45) <- 4; code.(46) <- 21600; code.(47) <- 4; code.(48) <- 337500; code.(49) <- 6; code.(50) <- 0; code.(51) <- 9; *)
+(* print_int (interp stack 0 code 45) *)
+(* let s = get_micro_time () in
+ * let rec loop_gcd n =
+ *   if n = 0 then ()
+ *   else let _ = interp stack 0 code 45 in loop_gcd (n - 1)
+ * in
+ * loop_gcd 10000000;
+ * let e = get_micro_time () in
+ * print_int (e - s) *)
