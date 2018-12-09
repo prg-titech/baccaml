@@ -143,13 +143,14 @@ let to_string_labels labels =
   List.map (fun (id_l, i) -> Printf.sprintf "Id.L (%s), %d" (let Id.L s = id_l in s) i) labels
 
 (* Asm.prog -> Interp.ProgInterp *)
-let g oc asm_prog =
-  let Interp.ProgWithLabel (xs, fundefs, t', labels) = Interp.to_prog_with_label asm_prog in
+let g oc asm_prog = Interp.(
+  let ProgWithLabel (xs, fundefs, t', labels) = Util.prog_with_label asm_prog in
   let xs' = to_string_floating_point_table xs in
   let fundefs' = "[" ^ String.concat ", " (List.map to_string_fundef fundefs) ^ "]" in
   let main_exp = to_string_t t' in
   let labels' = "(" ^ String.concat "; " (to_string_labels labels) ^ ")" in
   Printf.fprintf oc "ProgInterp (table = %s, fundefs = %s,\n main_exp = %s,\n labels = %s)" xs' fundefs' main_exp labels'
+)
 
 (* entry point *)
 let f oc asm_prog =

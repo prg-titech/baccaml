@@ -2,7 +2,7 @@ open Core
 open MinCaml
 open BacCaml
 
-let is_dump = ref `NG
+let run_typ = ref `Emit
 
 let jit_typ = ref `Not_specified
 
@@ -27,6 +27,21 @@ let run_dump f =
     In_channel.close inchan;
     raise e
 
+let run_interp f =
+  let ic = In_channel.create (f ^ ".ml") in
+  try
+    Lexing.from_channel ic
+    |> Util.virtualize
+    |> Trim.f
+    |> Simm.f
+    |> annot
+    |> Interp.f
+    |> string_of_int
+    |> print_endline
+  with e ->
+    In_channel.close ic;
+    raise e
+
 let run_compile f =
   let inchan = In_channel.create (f ^ ".ml") in
   let outchan = Out_channel.create (f ^ ".s") in
@@ -49,7 +64,10 @@ let spec_list = [
        | "mjit" -> jit_typ := `Meta_method
        | "tjit" -> jit_typ := `Meta_tracing
        | _ -> ()), "specify jit type");
-  ("-dump", Arg.Unit(fun _ -> is_dump := `OK), "emit virtual machine code");
+  ("-err", Arg.Unit(fun _ -> Logs.set_level (Some (Logs.Error))), "Specify loglevel as error");
+  ("-debug", Arg.Unit(fun _ -> Logs.set_level (Some (Logs.Debug))), "Specify loglevel as debug");
+  ("-dump", Arg.Unit(fun _ -> run_typ := `Dump), "emit virtual machine code");
+  ("-interp", Arg.Unit(fun _ -> run_typ := `Interp), "run as interpreter");
 ]
 
 let usage =
@@ -63,4 +81,9 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: m
                        |> List.hd
                        |> Option.value ~default:f]
   end usage;
-  List.iter !files ~f:(match !is_dump with `OK -> run_dump | `NG -> run_compile)
+  List.iter !files ~f:begin
+    match !run_typ with
+      `Dump -> run_dump
+    | `Interp -> run_interp
+    | `Emit -> run_compile
+  end

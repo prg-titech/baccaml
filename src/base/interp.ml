@@ -81,7 +81,8 @@ end
 
 open Util
 
-let rec interp prog instr reg mem  = match instr with
+let rec interp prog instr reg mem  =
+  match instr with
   | Ans exp ->
     let res = eval_exp prog exp reg mem  in
     (* Logs.debug (fun m -> m  "Ans (%d)" res); *)
@@ -98,7 +99,8 @@ let rec interp prog instr reg mem  = match instr with
     reg.(reg_num) <- res;
     interp prog t reg mem
 
-and eval_exp prog exp' reg mem  = match exp' with
+and eval_exp prog exp' reg mem  =
+  match exp' with
   | Nop ->
     Logs.debug (fun m -> m "Nop");
     0
@@ -276,6 +278,8 @@ and eval_exp prog exp' reg mem  = match exp' with
     a
   | CallDir (name, args, _) ->
     (* fundef.args: 仮引数 args: 実引数 *)
+    let pc = Array.get (List.to_array args) 1 in
+    print_endline (int_of_id_t pc |> Array.get reg |> string_of_int);
     let fundef = lookup_by_id_l prog name in
     let reg' = make_reg reg (fundef.args) args in
     let Id.L s = name in Logs.debug (fun m -> m  "CallDir %s" s);
