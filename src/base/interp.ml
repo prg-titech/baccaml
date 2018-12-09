@@ -1,7 +1,6 @@
 open Core
 open Asm
 
-
 exception Not_supported of string
 
 exception Un_implemented_instruction of string
@@ -16,67 +15,71 @@ let register_size = 1000000
 
 let heap = ref 0
 
-let to_prog_with_label prog =
-  let rec create_labels fundefs i =
-    match fundefs with
-    | [] -> []
-    | fundef :: tl -> (fundef.name, i) :: create_labels tl (i + 1)
-  in
-  let Prog (table, fundefs, exp) = prog in
-  let labels = create_labels fundefs 0 in
-  ProgWithLabel (table, fundefs, exp, labels)
+module Util = struct
 
-let zero = "zero.0"
+  let prog_with_label prog =
+    let rec create_labels fundefs i =
+      match fundefs with
+      | [] -> []
+      | fundef :: tl -> (fundef.name, i) :: create_labels tl (i + 1)
+    in
+    let Prog (table, fundefs, exp) = prog in
+    let labels = create_labels fundefs 0 in
+    ProgWithLabel (table, fundefs, exp, labels)
 
-let int_of_id_t = function
-  | "min_caml_hp" -> failwith ("int_of_id_t min_caml_hp is not supported.")
-  | id ->
-    match List.last (String.split id ~on:'.') with
-    | Some v -> int_of_string v
-    | None -> print_endline id; int_of_string id
+  let zero = "zero.0"
 
-let string_of_id_or_imm = function
-  | C (n) -> string_of_int n
-  | V (id) -> id
+  let int_of_id_t = function
+    | "min_caml_hp" -> failwith ("int_of_id_t min_caml_hp is not supported.")
+    | id ->
+      match List.last (String.split id ~on:'.') with
+      | Some v -> int_of_string v
+      | None -> print_endline id; int_of_string id
 
-let rec find_label_number label = function
-  | [] -> let Id.L s = label in int_of_id_t s
-  | (l, num) :: tl -> if l = label then num else find_label_number label tl
+  let string_of_id_or_imm = function
+    | C (n) -> string_of_int n
+    | V (id) -> id
 
-let rec find_label prog num =
-  let ProgWithLabel (_, _, _, labels) = prog in
-  match List.find ~f:(fun (id_l, n) -> n = num) labels with
-  | Some (id, _) -> id
-  | None ->
-    Logs.err (fun m -> m "num: %d" num);
-    failwith (Printf.sprintf "Not found num: %d" num)
+  let rec find_label_number label = function
+    | [] -> let Id.L s = label in int_of_id_t s
+    | (l, num) :: tl -> if l = label then num else find_label_number label tl
 
-let rec lookup_by_id_l prog name =
-  let ProgWithLabel (_, fundefs, _, _) = prog in
-  match List.find ~f:(fun fundef -> (fundef.name = name)) fundefs with
-  | Some (fundef) -> fundef
-  | None ->
-    Logs.err (fun m -> let Id.L s = name in m "CallCls %s is not found" s);
-    assert false
+  let rec find_label prog num =
+    let ProgWithLabel (_, _, _, labels) = prog in
+    match List.find ~f:(fun (id_l, n) -> n = num) labels with
+    | Some (id, _) -> id
+    | None ->
+      Logs.err (fun m -> m "num: %d" num);
+      failwith (Printf.sprintf "Not found num: %d" num)
 
-let rec lookup_by_id_t prog name =
-  let ProgWithLabel (_, fundefs, _, _) = prog in
-  match List.find ~f:(fun fundef -> (let Id.L s = fundef.name in s) = name) fundefs with
-  | Some (fundef) -> fundef
-  | None ->
-    Logs.err (fun m -> m "CallCls %s" name);
-    assert false
+  let rec lookup_by_id_l prog name =
+    let ProgWithLabel (_, fundefs, _, _) = prog in
+    match List.find ~f:(fun fundef -> (fundef.name = name)) fundefs with
+    | Some (fundef) -> fundef
+    | None ->
+      Logs.err (fun m -> let Id.L s = name in m "CallCls %s is not found" s);
+      assert false
 
-let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数がしまわれている reg を作る *)
-  let regs_tmp = List.map ~f:int_of_id_t args_tmp in
-  let regs_real = List.map ~f:int_of_id_t args_real in
-  let arr = Array.create register_size 0 in
-  List.iter
-    ~f:(fun (x, y) -> arr.(x) <- reg.(y))
-    (List.zip_exn regs_tmp regs_real);
-  arr
+  let rec lookup_by_id_t prog name =
+    let ProgWithLabel (_, fundefs, _, _) = prog in
+    match List.find ~f:(fun fundef -> (let Id.L s = fundef.name in s) = name) fundefs with
+    | Some (fundef) -> fundef
+    | None ->
+      Logs.err (fun m -> m "CallCls %s" name);
+      assert false
 
-let is_first_dispatch = ref true
+  let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数がしまわれている reg を作る *)
+    let regs_tmp = List.map ~f:int_of_id_t args_tmp in
+    let regs_real = List.map ~f:int_of_id_t args_real in
+    let arr = Array.create register_size 0 in
+    List.iter
+      ~f:(fun (x, y) -> arr.(x) <- reg.(y))
+      (List.zip_exn regs_tmp regs_real);
+    arr
+
+end
+
+open Util
 
 let rec interp prog instr reg mem  = match instr with
   | Ans exp ->
@@ -94,13 +97,6 @@ let rec interp prog instr reg mem  = match instr with
     Logs.debug (fun m -> m "Let (id: %s, reg_num: %d, res: %d)" id reg_num res);
     reg.(reg_num) <- res;
     interp prog t reg mem
-(* begin
- *   match !enable_jit, !is_first_dispatch with
- *   | true, true ->
- *     is_first_dispatch := false;
- *     interp prog (Ans (CallDir (Id.L .trace_name, .reds, []))) reg mem
- *   | _ -> interp prog t reg mem
- * end *)
 
 and eval_exp prog exp' reg mem  = match exp' with
   | Nop ->
@@ -290,6 +286,6 @@ and eval_exp prog exp' reg mem  = match exp' with
 let f prog =
   let reg = Array.create register_size 0 in
   let mem = Array.create register_size 0 in
-  let prog' = to_prog_with_label prog in
+  let prog' = prog_with_label prog in
   let ProgWithLabel (_, _, instructions, labels) = prog' in
   interp prog' instructions reg mem
