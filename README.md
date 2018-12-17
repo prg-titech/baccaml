@@ -11,19 +11,13 @@ This is an experimental meta-hybrid JIT compiler using both approach of method a
 This project is forked from <a href="https://github.com/esumii/min-caml">min-caml</a>, an educational mini ML compiler.
 </div>
 
-## BacCaml Project
 
-- BacCaml: The Meta JIT Compiler
-- RCaml: CLI interface
-- Armin: interface language for BacCaml
+## Usage
 
-
-## Using BacCaml
-
-### Building trace
+### Building a trace
 
 ```bash
-$ dune exec [target].exe -- \
+$ dune exec src/bin/baccaml_cli.exe -- \
 	-file [filename] \
 	-type (mjit|tjit) \
 	-red [red variables] \
@@ -32,7 +26,7 @@ $ dune exec [target].exe -- \
 	-o [output]
 ```
 
-### Building executable
+### Building an executable
 
 ```bash
 $ dune exec src/bin/baccaml_cli.exe -- \
