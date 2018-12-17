@@ -1,12 +1,12 @@
 APP = fib
 CC = gcc
-CFLAGS =
+CFLAGS = 
 
 $(APP): $(APP).c time.c
-	$(CC) -o $(APP) $^
+	$(CC) -o $(APP) $(CFLAGS) $^
 
 $(APP)-m32: $(APP).c time.c
-	$(CC) -m32 -o $(APP)-m32 $^
+	$(CC) -m32 -o $(APP) $(CFLAGS) $^
 
 clean:
 	$(RM) $(APP)

@@ -1,4 +1,5 @@
 import time
+import statistics as st
 
 def fib(n):
     if n < 2:
@@ -11,7 +12,7 @@ def main():
     W = 10
     N = 90
 
-    n = 28
+    n = 40
 
     res = 0
 
