@@ -6,11 +6,14 @@ open Jit_prep
 
 let _ =
   run begin fun jittype arg ->
-    let { prog; reg; mem; red_args; ex_name } = prepare_env jittype arg in
+    let { prog; reg; mem; red_args; ex_name; merge_pc } = prepare_env jittype arg in
     let trace = match jittype with
       | `Meta_tracing ->
-        let res = Jit_tracing.run_while prog reg mem
-            "min_caml_test_trace" (red_args @ ["bytecode"]) 3 0 in
+        let res =
+          Jit_tracing.run_while prog reg mem
+            "min_caml_test_trace"
+            (red_args @ ["bytecode"]) 3 merge_pc
+        in
         [res]
       | `Meta_method ->
         Jit_method.run_while prog reg mem "min_caml_test_trace"

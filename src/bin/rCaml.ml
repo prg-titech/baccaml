@@ -10,6 +10,7 @@ type env = {
   mem : value array;
   red_args : string list;
   ex_name : string;
+  merge_pc : int;
 } [@@deriving fields]
 
 type arg = {
@@ -19,6 +20,7 @@ type arg = {
   annot : int array;
   reds : (string * int) list;
   greens : (string * int) list;
+  merge_pc: int;
 } [@@deriving fields]
 
 type var = {
@@ -30,13 +32,6 @@ type tenv = {
   fundefs : fundef list;
   ibody : Asm.t;
 } [@@deriving fields]
-
-let () =
-  let r = { file = "test"; ex_name = "test"; code = [|0|]; annot = [|0|]; reds = []; greens = [] } in
-  Fieldslib.(
-    assert (file r = "test" && ex_name r = "test" && code r = [|0|] && annot r = [|0|] && reds r = [] && greens r = []);
-    ignore (Fields_of_arg.create ~file:"a" ~ex_name:"b" ~code:(Array.make 1 0) ~annot:(Array.make 1 0) ~reds:[] ~greens:[]);
-  )
 
 let prepare_reds trace_args (Prog (_, fundefs, _)) =
   let interp =
@@ -134,7 +129,9 @@ let prepare_env jit_type arg =
       ~reg:reg
       ~mem:mem
       ~red_args:red_args
-      ~ex_name:(Fieldslib.(ex_name arg)))
+      ~ex_name:(Fieldslib.(ex_name arg))
+      ~merge_pc:(Fieldslib.(merge_pc arg))
+  )
 
 module Util = struct
   let to_tuple lst =
@@ -176,6 +173,7 @@ let reds      = ref ""
 let greens    = ref ""
 let output    = ref "out"
 let jittype   = ref ""
+let merge_pc  = ref 0
 
 let usage  = "usage: " ^ Sys.argv.(0) ^ " [-file string] [-green string list] [-red string list] [-code int list] [-annot int list]"
 
@@ -186,6 +184,7 @@ let speclist = [
   ("-code", Arg.Set_string codes, "Specify bytecode");
   ("-annot", Arg.Set_string annots, "Specify annotations for bytecode");
   ("-type", Arg.Set_string jittype, "Specify jit type");
+  ("-merge-pc", Arg.Set_int merge_pc, "Specify merge pc");
   ("-o", Arg.Set_string output, "Set executable's name");
   ("-dbg", Arg.Unit (fun _ -> Logs.set_level @@ Some Logs.Debug), "Enable debug mode");
 ]
@@ -209,5 +208,11 @@ let run = (fun f ->
     in
     f jittype' Fieldslib.(
         Fields_of_arg.create
-          ~file:file ~ex_name:output ~code:bytes ~annot:annots ~reds:reds ~greens:greens
+          ~file:file
+          ~ex_name:output
+          ~code:bytes
+          ~annot:annots
+          ~reds:reds
+          ~greens:greens
+          ~merge_pc:!merge_pc
       ))

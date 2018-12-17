@@ -109,7 +109,8 @@ let find' x' regenv =
 let rec g dest cont regenv = function (* 命令列のレジスタ割り当て (caml2html: regalloc_g) *)
   | Ans(exp) -> g'_and_restore dest cont regenv exp
   | Let((x, t) as xt, exp, e) ->
-    assert (not (M.mem x regenv));
+    (try assert (not (M.mem x regenv));
+     with e -> Printf.eprintf "%s cannot be allocated.\n" x; raise e);
     let cont' = concat e dest cont in
     let (e1', regenv1) = g'_and_restore xt cont' regenv exp in
     let (_call, targets) = target x dest cont' in
