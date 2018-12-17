@@ -4,8 +4,7 @@ let rec interp regs a bytecode pc =
   if instr = 0 then
     let target = bytecode.(pc + 1) in
     if a > 0 then
-      (loop_end regs a;
-      interp regs a bytecode target)
+      interp regs a bytecode target
     else
       interp regs a bytecode (pc + 2)
   else if instr = 1 then
@@ -27,8 +26,7 @@ let rec interp regs a bytecode pc =
     (loop_start regs a;
      interp regs a bytecode (pc + 1))
   else if instr = 7 then
-    (loop_end regs a;
-     interp regs a bytecode (pc + 1))
+     interp regs a bytecode (pc + 1)
   else
     -1
 in
