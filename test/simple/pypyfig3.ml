@@ -3,7 +3,7 @@ let rec interp regs a bytecode pc =
   let instr = bytecode.(pc) in
   if instr = 0 then
     let target = bytecode.(pc + 1) in
-    if a > 0 then
+    if a > -2 then
       interp regs a bytecode target
     else
       interp regs a bytecode (pc + 2)
