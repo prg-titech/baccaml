@@ -96,51 +96,9 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
   | Let ((dest, typ), exp, body) ->
     match exp with
     | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) ->
-      let r1 = reg.(int_of_id_t id_t) in
-      let r2 = match id_or_imm with
-        | V (id) -> reg.(int_of_id_t id)
-        | C (n) -> Green (n)
-      in
-      let id = match id_or_imm with
-        | V (id) -> id
-        | C (n) -> string_of_int n
-      in
-      let n1, n2 = value_of r1, value_of r2 in
-      reg.(int_of_id_t id_t) <- Red (0);
-      begin match r1, r2 with
-        | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
-          connect (dest, typ)
-            (if exp |*| (n1, n2) then
-               Ans (exp |%| (id_t, C (n2),
-                             tj p reg mem tj_env t1,
-                             Guard.restore_green reg t2 `False tj_env))
-             else
-               Ans (exp |%| (id_t, C (n2),
-                             Guard.restore_green reg t1 `True tj_env,
-                             tj p reg mem tj_env t2))
-            ) (tj p reg mem tj_env body)
-        | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
-          connect (dest, typ)
-            (if exp |*| (n1, n2) then
-               Ans (exp |%| (id, C (n1),
-                             tj p reg mem tj_env t2,
-                             Guard.restore_green reg t1 `False tj_env))
-             else Ans (exp |%| (id, C (n1),
-                                Guard.restore_green reg t2 `True tj_env,
-                                tj p reg mem tj_env t1))
-            ) (tj p reg mem tj_env body)
-        | Red (n1), Red (n2) ->
-          connect (dest, typ)
-            (if exp |*| (n1, n2)
-             then Ans (exp |%| (id_t, id_or_imm,
-                                tj p reg mem tj_env t1,
-                                Guard.restore_green reg t2 `False tj_env))
-             else Ans (exp |%| (id_t, id_or_imm,
-                                Guard.restore_green reg t1 `True tj_env,
-                                tj p reg mem tj_env t2))
-            ) (tj p reg mem tj_env body)
-        | _ -> tj p reg mem tj_env (if exp |*| (n1, n2) then t1 else t2)
-      end
+      connect (dest, typ)
+        (tj_if p reg mem tj_env exp)
+        (tj p reg mem tj_env body)
     | Ld (id_t, id_or_imm, x) ->
       let r1 = int_of_id_t id_t |> Array.get reg in
       let r2 = match id_or_imm with V (id) -> int_of_id_t id_t |> Array.get reg | C (n) -> Green (n) in
