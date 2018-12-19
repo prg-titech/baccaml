@@ -7,6 +7,7 @@ type env = {
   red_args : string list;
   ex_name : string;
   merge_pc : int;
+  trace_name : string;
 }
 
 type arg = {
@@ -17,6 +18,7 @@ type arg = {
   reds : (string * int) list;
   greens : (string * int) list;
   merge_pc : int;
+  trace_name : string;
 }
 
 type var = {
@@ -30,4 +32,4 @@ type tenv = {
 }
 
 val prepare_env : [< `Meta_method | `Meta_tracing] -> arg -> env
-val run : ([> `Meta_method | `Meta_tracing] -> arg -> 'a) -> 'a
+val run : ([> `Meta_method | `Meta_tracing] -> env -> 'a) -> 'a

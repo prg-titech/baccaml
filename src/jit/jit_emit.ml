@@ -346,7 +346,7 @@ let create_asm_fundef fundef =
   create_asm (Tail, body) |> Buffer.add_string buf;
   buf
 
-let emit_midlayer tr (file : string) (interp : string) : Buffer.t =
+let emit_mid_layer tr (file : string) (interp : string) : Buffer.t =
   let buf = Buffer.create 1000 in
   Printf.sprintf ".globl min_caml_trace_entry\n" |> Buffer.add_string buf;
   Printf.sprintf "min_caml_trace_entry:\n" |> Buffer.add_string buf;
@@ -373,10 +373,9 @@ let emit_midlayer tr (file : string) (interp : string) : Buffer.t =
 let emit_trace jtype trace file interp =
   stackset := S.empty;
   stackmap := [];
-  RegAlloc.h trace
-  |> fun { name = Id.L (x); body } ->
+  let { name = Id.L (x); body } = RegAlloc.h trace in
   let buf = Buffer.create 1000 in
-  emit_midlayer jtype file interp |> Buffer.add_buffer buf;
+  emit_mid_layer jtype file interp |> Buffer.add_buffer buf;
   Printf.sprintf ".globl %s\n" x |> Buffer.add_string buf;
   Printf.sprintf "%s:\n" x |> Buffer.add_string buf;
   create_asm (Tail, body) |> Buffer.add_string buf;
@@ -394,7 +393,7 @@ let emit_result ~jit_type:jtype ~prog:(Prog (_, fundefs, _)) ~traces:trs ~file:f
   List.iter begin fun fundef ->
     create_asm_fundef fundef |> Buffer.add_buffer buf
   end trs;
-  emit_midlayer jtype f interp_name
+  emit_mid_layer jtype f interp_name
   |> Buffer.add_buffer buf;
   let res = Buffer.contents buf in
   Logs.debug (fun m -> m "\n!!EMIT TRACE!!\n%s)" res);

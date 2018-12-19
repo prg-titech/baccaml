@@ -11,6 +11,7 @@ type env = {
   red_args : string list;
   ex_name : string;
   merge_pc : int;
+  trace_name : string;
 } [@@deriving fields]
 
 type arg = {
@@ -21,6 +22,7 @@ type arg = {
   reds : (string * int) list;
   greens : (string * int) list;
   merge_pc: int;
+  trace_name : string;
 } [@@deriving fields]
 
 type var = {
@@ -32,6 +34,8 @@ type tenv = {
   fundefs : fundef list;
   ibody : Asm.t;
 } [@@deriving fields]
+
+exception Error of string
 
 let prepare_reds trace_args (Prog (_, fundefs, _)) =
   let interp =
@@ -50,24 +54,24 @@ let prepare_tenv' (Prog (table, fundefs, main)) t reds =
     | Let (_, Set (_), Let (_,  IfEq (_, _, _, _), Let (_, CallDir (id_l, args, fargs), interp_body)))
     | Let (_,  IfEq (_, _, _, _), Let (_, CallDir (id_l, args, fargs), interp_body))
     | Ans (IfEq (_, _, Ans (CallDir (id_l, args, fargs)), interp_body)) ->
-      let fundefs' =
-        List.map begin fun fundef ->
-          let Id.L (x) = fundef.name in
-          match String.split_on_char '.' x |> List.hd with
-          | name' when name' = "interp" ->
-            let { name; args; fargs; ret } = fundef in
-            { name = name; args = args; fargs = fargs; body = interp_body; ret = ret }
-          | _ -> fundef
-        end fundefs
-      in
-      Fieldslib.(Fields_of_tenv.create ~fundefs:fundefs' ~ibody:interp_body)
+      { fundefs =
+          List.map begin fun fundef ->
+            let Id.L (x) = fundef.name in
+            match String.split_on_char '.' x |> List.hd with
+            | name' when name' = "interp" ->
+              let { name; args; fargs; ret } = fundef in
+              { name = name; args = args; fargs = fargs; body = interp_body; ret = ret }
+            | _ -> fundef
+          end fundefs;
+        ibody = interp_body; }
     | _ ->
-      failwith "missing jit_dispatch. please add jit_dispatch ... at the top of your interpreter."
+      raise (Error "Missing hint function: jit_dispatch")
   end
 
 let prepare_tenv ~prog:p ~name:n ~red_args:reds =
   let Prog (table, fundefs, main) = p in
-  let { body } = List.find begin fun { name = Id.L (x) } ->
+  let { body } =
+    List.find begin fun { name = Id.L (x) } ->
       String.split_on_char '.' x |> List.hd |> contains "interp"
     end fundefs
   in
@@ -92,46 +96,40 @@ let prepare_prog bytecode addr annot mem =
       mem.(addr + i * 4) <- Green (bytecode.(i))
   done
 
-let prepare_env jit_type arg =
+let prepare_env jit_type { file; ex_name; code; annot; reds; greens; merge_pc; trace_name } =
   let p =
-    open_in ((Fieldslib.(file arg)))
+    open_in file
     |> Lexing.from_channel
     |> Util.virtualize
     |> Simm.f
     |> Jit_annot.gen_mj jit_type
   in
-  let reg, mem = Array.make 10000000 (Red (0)), Array.make 10000000 (Red (0)) in
-
-  let red_args = List.map fst (Fieldslib.(reds arg)) in
-  let tenv = prepare_tenv ~prog:p ~name:"min_caml_test_trace" ~red_args:red_args in
-
-  (prepare_var (Fieldslib.(reds arg)) (Fieldslib.(greens arg))
-   |> fun var ->
-   Colorizer.colorize_reg
-     (Fieldslib.(redtbl var))
-     (Fieldslib.(greentbl var))
-     reg
-     (List.hd (Fieldslib.(fundefs tenv)))
-     (Fieldslib.(ibody tenv));
-   let addr =
-     match Fieldslib.(greens arg) |> List.find_opt (fun arg' -> fst arg' = "bytecode") with
+  let reg = Array.make 10000000 (Red (0)) in
+  let mem = Array.make 10000000 (Red (0)) in
+  let red_args = List.map fst reds in
+  let tenv =
+    prepare_tenv
+      ~prog:p
+      ~name:"min_caml_test_trace"
+      ~red_args:red_args in
+  let { greentbl; redtbl } = prepare_var reds greens  in
+  Colorizer.colorize_reg redtbl greentbl reg (List.hd (tenv.fundefs)) (tenv.ibody);
+  let addr =
+    match greens |> List.find_opt (fun arg' -> fst arg' = "bytecode" || fst arg' = "code") with
      | Some x -> x |> snd
      | None ->
-       match Fieldslib.(reds arg) |> List.find_opt (fun arg' -> fst arg' = "bytecode") with
+       match reds |> List.find_opt (fun arg' -> fst arg' = "bytecode" || fst arg' = "code") with
        | Some x -> x |> snd
        | None -> raise Not_found
    in
-   prepare_prog (Fieldslib.(code arg)) addr (Fieldslib.(annot arg)) mem);
-
-  Fieldslib.(
-    Fields_of_env.create
-      ~prog:p
-      ~reg:reg
-      ~mem:mem
-      ~red_args:red_args
-      ~ex_name:(Fieldslib.(ex_name arg))
-      ~merge_pc:(Fieldslib.(merge_pc arg))
-  )
+   prepare_prog code addr annot mem;
+   { prog = p;
+     reg = reg;
+     mem = mem;
+     red_args = red_args;
+     ex_name = ex_name;
+     merge_pc = merge_pc;
+     trace_name = trace_name }
 
 module Util = struct
   let to_tuple lst =
@@ -174,6 +172,7 @@ let greens    = ref ""
 let output    = ref "out"
 let jittype   = ref ""
 let merge_pc  = ref 0
+let name      = ref "min_caml_test_trace"
 
 let usage  = "usage: " ^ Sys.argv.(0) ^ " [-file string] [-green string list] [-red string list] [-code int list] [-annot int list]"
 
@@ -185,6 +184,7 @@ let speclist = [
   ("-annot", Arg.Set_string annots, "Specify annotations for bytecode");
   ("-type", Arg.Set_string jittype, "Specify jit type");
   ("-merge-pc", Arg.Set_int merge_pc, "Specify merge pc");
+  ("-name", Arg.Set_string name, "Specify the name of trace");
   ("-o", Arg.Set_string output, "Set executable's name");
   ("-dbg", Arg.Unit (fun _ -> Logs.set_level @@ Some Logs.Debug), "Enable debug mode");
 ]
@@ -206,13 +206,12 @@ let run = (fun f ->
       | "mjit" -> `Meta_method
       | _ -> raise @@ Jittype_error "-type (tjit|mjit) is missing."
     in
-    f jittype' Fieldslib.(
-        Fields_of_arg.create
-          ~file:file
-          ~ex_name:output
-          ~code:bytes
-          ~annot:annots
-          ~reds:reds
-          ~greens:greens
-          ~merge_pc:!merge_pc
-      ))
+    let arg = { file = file;
+                ex_name = output;
+                code = bytes;
+                annot = annots;
+                reds = reds;
+                greens = greens;
+                merge_pc = !merge_pc;
+                trace_name = !name } in
+    f jittype' (prepare_env jittype' arg))
