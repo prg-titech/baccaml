@@ -1,7 +1,6 @@
 open MinCaml
 open Asm
 open Core
-open Jit_config
 open Jit_util
 open Renaming
 

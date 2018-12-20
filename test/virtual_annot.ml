@@ -64,6 +64,7 @@ let rec interp stack sp bytecode pc =
      (let n = bytecode.(pc + 1) in
       let v = stack.(sp - 1) in   (* sp: sp - 1 *)
       let pc2 = stack.(sp - 2) in (* sp: sp - 2 *)
+      print_int (pc2); print_newline ();
       stack.(sp - n - 2) <- v;    (* sp: sp - 2 - n + 1 = sp - 1 - n *)
       print_endline (string_of_int pc2);
       interp stack (sp - n - 1) bytecode pc2)
@@ -97,7 +98,7 @@ let rec interp stack sp bytecode pc =
   else
     -1000 in
 let code = Array.make 100 0 in
-let stack = Array.make 10000000 0 in
+let stack = Array.make 1000 0 in
 
 (* fib *)
 (* for meta tracing *)
@@ -143,8 +144,8 @@ print_int (interp stack 0 code 23)
 
 (* tak *)
 (* for meta tracing *)
-(* code.(0) <- 8; code.(1) <- 3; code.(2) <- 8; code.(3) <- 3; code.(4) <- 3; code.(5) <- 5; code.(6) <- 11; code.(7) <- 8; code.(8) <- 2; code.(9) <- 14; code.(10) <- 61; code.(11) <- 8; code.(12) <- 3; code.(13) <- 4; code.(14) <- 1; code.(15) <- 1; code.(16) <- 8; code.(17) <- 3; code.(18) <- 8; code.(19) <- 3; code.(20) <- 6; code.(21) <- 0; code.(22) <- 8; code.(23) <- 3; code.(24) <- 4; code.(25) <- 1; code.(26) <- 1; code.(27) <- 8; code.(28) <- 3; code.(29) <- 8; code.(30) <- 6; code.(31) <- 6; code.(32) <- 0; code.(33) <- 8; code.(34) <- 3; code.(35) <- 4; code.(36) <- 1; code.(37) <- 1; code.(38) <- 8; code.(39) <- 6; code.(40) <- 8; code.(41) <- 6; code.(42) <- 6; code.(43) <- 0; code.(44) <- 8; code.(45) <- 2; code.(46) <- 8; code.(47) <- 2; code.(48) <- 8; code.(49) <- 2; code.(50) <- 10; code.(51) <- 3; code.(52) <- 3; code.(53) <- 3; code.(54) <- 4; code.(55) <- 0; code.(56) <- 5; code.(57) <- 0; code.(58) <- 11; code.(59) <- 11; code.(60) <- 11; code.(61) <- 7; code.(62) <- 3; code.(63) <- 4; code.(64) <- 15; code.(65) <- 4; code.(66) <- 6; code.(67) <- 4; code.(68) <- 0; code.(69) <- 6; code.(70) <- 0; code.(71) <- 9;
- *  print_int (interp stack 5 code 62) *)
+(* code.(0) <- 8; code.(1) <- 3; code.(2) <- 8; code.(3) <- 3; code.(4) <- 3; code.(5) <- 5; code.(6) <- 11; code.(7) <- 8; code.(8) <- 2; code.(9) <- 14; code.(10) <- 61; code.(11) <- 8; code.(12) <- 3; code.(13) <- 4; code.(14) <- 1; code.(15) <- 1; code.(16) <- 8; code.(17) <- 3; code.(18) <- 8; code.(19) <- 3; code.(20) <- 6; code.(21) <- 0; code.(22) <- 8; code.(23) <- 3; code.(24) <- 4; code.(25) <- 1; code.(26) <- 1; code.(27) <- 8; code.(28) <- 3; code.(29) <- 8; code.(30) <- 6; code.(31) <- 6; code.(32) <- 0; code.(33) <- 8; code.(34) <- 3; code.(35) <- 4; code.(36) <- 1; code.(37) <- 1; code.(38) <- 8; code.(39) <- 6; code.(40) <- 8; code.(41) <- 6; code.(42) <- 6; code.(43) <- 0; code.(44) <- 8; code.(45) <- 2; code.(46) <- 8; code.(47) <- 2; code.(48) <- 8; code.(49) <- 2; code.(50) <- 10; code.(51) <- 3; code.(52) <- 3; code.(53) <- 3; code.(54) <- 4; code.(55) <- 0; code.(56) <- 5; code.(57) <- 0; code.(58) <- 11; code.(59) <- 11; code.(60) <- 11; code.(61) <- 7; code.(62) <- 3; code.(63) <- 4; code.(64) <- 12; code.(65) <- 4; code.(66) <- 6; code.(67) <- 4; code.(68) <- 0; code.(69) <- 6; code.(70) <- 0; code.(71) <- 9;
+print_int (interp stack 5 code 62) *)
 
 (* for meta method *)
 (* 8 3 8 3 3 5 11 8 2 14 61 8 3 4 1 1 8 3 8 3 6 0 8 3 4 1 1 8 3 8 6 6 0 8 3 4 1 1 8 6 8 6 6 0 8 2 8 2 8 2 10 3 3 3 4 0 5 0 11 11 11 7 4 12 4 6 4 0 6 0 9 *)
@@ -153,8 +154,8 @@ print_int (interp stack 0 code 23)
 
 (* gcd *)
 (* for meta tracing *)
-(* code.(0) <- 8; code.(1) <- 2; code.(2) <- 4; code.(3) <- 1; code.(4) <- 3; code.(5) <- 5; code.(6) <- 11; code.(7) <- 8; code.(8) <- 1; code.(9) <- 14; code.(10) <- 44; code.(11) <- 8; code.(12) <- 2; code.(13) <- 8; code.(14) <- 2; code.(15) <- 3; code.(16) <- 5; code.(17) <- 32; code.(18) <- 8; code.(19) <- 1; code.(20) <- 8; code.(21) <- 3; code.(22) <- 1; code.(23) <- 8; code.(24) <- 3; code.(25) <- 8; code.(26) <- 1; code.(27) <- 6; code.(28) <- 0; code.(29) <- 11; code.(30) <- 14; code.(31) <- 44; code.(32) <- 8; code.(33) <- 2; code.(34) <- 8; code.(35) <- 2; code.(36) <- 1; code.(37) <- 8; code.(38) <- 2; code.(39) <- 8; code.(40) <- 1; code.(41) <- 6; code.(42) <- 0; code.(43) <- 11; code.(44) <- 7; code.(45) <- 2; code.(46) <- 4; code.(47) <- 10; code.(48) <- 4; code.(49) <- 18; code.(50) <- 6; code.(51) <- 0; code.(52) <- 9;
- * print_int (interp stack 0 code 46) *)
+code.(0) <- 8; code.(1) <- 2; code.(2) <- 4; code.(3) <- 1; code.(4) <- 3; code.(5) <- 5; code.(6) <- 11; code.(7) <- 8; code.(8) <- 1; code.(9) <- 14; code.(10) <- 44; code.(11) <- 8; code.(12) <- 2; code.(13) <- 8; code.(14) <- 2; code.(15) <- 3; code.(16) <- 5; code.(17) <- 32; code.(18) <- 8; code.(19) <- 1; code.(20) <- 8; code.(21) <- 3; code.(22) <- 1; code.(23) <- 8; code.(24) <- 3; code.(25) <- 8; code.(26) <- 1; code.(27) <- 6; code.(28) <- 0; code.(29) <- 11; code.(30) <- 14; code.(31) <- 44; code.(32) <- 8; code.(33) <- 2; code.(34) <- 8; code.(35) <- 2; code.(36) <- 1; code.(37) <- 8; code.(38) <- 2; code.(39) <- 8; code.(40) <- 1; code.(41) <- 6; code.(42) <- 0; code.(43) <- 11; code.(44) <- 7; code.(45) <- 2; code.(46) <- 4; code.(47) <- 10; code.(48) <- 4; code.(49) <- 18; code.(50) <- 6; code.(51) <- 0; code.(52) <- 9;
+print_int (interp stack 0 code 46)
 
 (* for meta method *)
 (* code.(0) <- 8; code.(1) <- 1; code.(2) <- 4; code.(3) <- 1; code.(4) <- 3; code.(5) <- 5; code.(6) <- 11; code.(7) <- 8; code.(8) <- 0; code.(9) <- 14; code.(10) <- 44; code.(11) <- 8; code.(12) <- 1; code.(13) <- 8; code.(14) <- 1; code.(15) <- 3; code.(16) <- 5; code.(17) <- 32; code.(18) <- 8; code.(19) <- 0; code.(20) <- 8; code.(21) <- 2; code.(22) <- 1; code.(23) <- 8; code.(24) <- 2; code.(25) <- 8; code.(26) <- 1; code.(27) <- 6; code.(28) <- 0; code.(29) <- 11; code.(30) <- 14; code.(31) <- 44; code.(32) <- 8; code.(33) <- 1; code.(34) <- 8; code.(35) <- 1; code.(36) <- 1; code.(37) <- 8; code.(38) <- 1; code.(39) <- 8; code.(40) <- 1; code.(41) <- 6; code.(42) <- 0; code.(43) <- 11; code.(44) <- 7; code.(45) <- 4; code.(46) <- 21600; code.(47) <- 4; code.(48) <- 337500; code.(49) <- 6; code.(50) <- 0; code.(51) <- 9;

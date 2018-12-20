@@ -1,7 +1,7 @@
 open MinCaml
 open Asm
 open Core
-open Jit_config
+open Jit_util
 
 type rename_env = Id.t -> Id.t
 

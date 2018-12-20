@@ -2,7 +2,6 @@ open MinCaml
 open Asm
 open Inlining
 open Renaming
-open Jit_config
 open Jit_util
 open Operands
 

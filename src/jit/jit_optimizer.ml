@@ -2,7 +2,6 @@ open Core
 
 open MinCaml
 open Asm
-open Jit_config
 open Jit_util
 
 exception Not_optimization_supported of string

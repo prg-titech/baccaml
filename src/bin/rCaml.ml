@@ -1,7 +1,7 @@
 open MinCaml
+open Bc_front_lib
 open Asm
 open BacCaml
-open Jit_config
 open Jit_util
 
 type env = {

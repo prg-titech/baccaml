@@ -1,6 +1,17 @@
 open MinCaml
 open Asm
-open Jit_config
+
+let zero = "zero.0"
+
+type value = Red of int | Green of int | LightGreen of int
+
+type reg = value array
+
+type mem = value array
+
+type jit_result =
+  | Specialized of value
+  | Not_specialized of exp * value
 
 let int_of_id_t id =
   if id = "min_caml_hp" then
@@ -48,33 +59,6 @@ let contains s1 s2 =
   let re = Str.regexp_string s2 in
   try ignore (Str.search_forward re s1 0); true
   with _ -> false
-
-let find_pc_addr (argsr : Id.t list) (jargs : method_jit_args) =
-  match List.nth_opt argsr (jargs.pc_place) with
-  | Some (v) -> int_of_id_t v
-  | None -> failwith "find_pc in Method_jit is failed."
-
-let find_pc_addr_with_p (p : prog) (jargs : method_jit_args) =
-  let Prog (_, fundefs, _) = p in
-  let { args } =
-    match List.find_opt (fun { name } ->
-        contains (string_of_id_l name) "interp") fundefs
-    with
-    | Some (fundef) -> fundef
-    | None -> failwith "find fundef is failed in method jit."
-  in
-  find_pc_addr args jargs
-
-let find_pc_with_p (p : prog) (reg : reg) (jargs : method_jit_args) =
-  let Prog (_, fundefs, _) = p in
-  let { args } =
-    match List.find_opt (fun { name } ->
-        contains (string_of_id_l name) "interp") fundefs
-    with
-    | Some (fundef) -> fundef
-    | None -> failwith "find fundef is failed in method jit."
-  in
-  find_pc_addr args jargs |> Array.get reg |> value_of
 
 let rec find_fundef prog name =
   let Asm.Prog (_, fundefs, _) = prog in

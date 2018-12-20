@@ -1,6 +1,6 @@
 open MinCaml
 open Asm
-open Jit_config
+open Jit_util
 
 let rec unique list =
   let rec go l s =  match l with

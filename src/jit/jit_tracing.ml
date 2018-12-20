@@ -4,7 +4,6 @@ open Asm
 open Inlining
 open Renaming
 open Operands
-open Jit_config
 open Jit_util
 
 type tj_env =

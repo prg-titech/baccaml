@@ -1,7 +1,7 @@
 open MinCaml
 open Asm
 open Emit
-open Jit_config
+open Jit_util
 
 let replace input output =
   Str.global_replace (Str.regexp_string input) output

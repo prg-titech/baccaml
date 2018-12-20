@@ -1,9 +1,10 @@
 open MinCaml
+open BacCaml
 
 type env = {
   prog : Asm.prog;
-  reg : BacCaml.Jit_config.value array;
-  mem : BacCaml.Jit_config.value array;
+  reg : Jit_util.value array;
+  mem : Jit_util.value array;
   red_args : string list;
   ex_name : string;
   merge_pc : int;
