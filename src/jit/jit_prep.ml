@@ -6,7 +6,7 @@ exception Error of string
 
 type env = Env of Asm.fundef list * Asm.t * Id.t list
 
-let create_mj_reds reds (Prog (_, fundefs, _)) =
+let create_reds reds (Prog (_, fundefs, _)) =
   let interp =
     List.find begin fun { name = Id.L (x) } ->
       (String.split_on_char '.' x |> List.hd) = "interp"
@@ -51,4 +51,4 @@ let prep ~prog:p ~name:n ~red_args:reds ~jit_type:jtyp =
         |> List.hd
         |> contains "interp") fundefs in
   let fundefs', interp_body = prep' p body in
-  Env (fundefs', interp_body, (create_mj_reds reds p))
+  Env (fundefs', interp_body, (create_reds reds p))

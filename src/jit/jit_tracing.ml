@@ -179,10 +179,11 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
     let reds = args |> List.filter ~f:(fun a -> (is_red reg.(int_of_id_t a))) in
     let { merge_pc; trace_name } = tj_env in
     if (value_of pc) <> merge_pc then
-      Inlining.inline_calldir_exp args fundef reg |> tj p reg mem tj_env
+      Inlining.inline_calldir_exp args fundef reg
+      |> tj p reg mem tj_env
     else
       Ans (CallDir (Id.L (trace_name), reds, []))
-  | IfEq (_, _, Ans (CallDir (id_l, _, _)), t2) when (let Id.L (x) = id_l in contains x "trace")->
+  | IfEq (_, _, Ans (CallDir (id_l, _, _)), t2) when (let Id.L (x) = id_l in contains x "trace") ->
     tj p reg mem tj_env t2
   | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) as exp ->
     tj_if p reg mem tj_env exp
@@ -276,6 +277,7 @@ let run_while p reg mem name reds index_pc merge_pc =
   let Prog (tbl, _, m) = p in
   let Jit_prep.Env (fdfs, ibody, reds) =
     Jit_prep.prep ~prog:p ~name:name ~red_args:reds ~jit_type:`Meta_tracing in
+
   let p' = Prog (tbl, fdfs, m) in
   let trace = tj p' reg mem { index_pc = index_pc; merge_pc = merge_pc; trace_name = name } ibody in
   { name = Id.L (name); args = reds; fargs = []; body = trace; ret = Type.Int }

@@ -20,7 +20,7 @@ let run_dump f =
     |> Trim.f
     |> Simm.f
     |> annot
-    |> Asm.show_prog
+    |> Emit_virtual.to_string_prog
     |> print_endline;
     In_channel.close inchan;
   with e ->
