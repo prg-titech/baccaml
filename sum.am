@@ -1,1 +1,7 @@
+Green (pc, 20)
+Green (bytecode, 100)
+Red (stack, 0)
+Red (sp, 4)
+Jit_type (tjit)
+Merge_pc (20)
 8 1 4 2 3 5 11 4 1 14 21 8 1 8 2 4 1 1 6 0 0 7 1 4 1 6 0 9
