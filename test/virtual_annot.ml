@@ -1,8 +1,8 @@
-(*let print_array f arr = print_string "[|"; Array.iter (fun a -> f a; print_string "; ") arr; print_string "|] " in
+let print_array f arr = print_string "[|"; Array.iter (fun a -> f a; print_string "; ") arr; print_string "|] " in
 let rec jit_dispatch _ _ _ _ = () in
 let rec loop_start _ = () in
 let rec loop_end _ = () in
-let rec is_mj _ = true in *)
+let rec is_mj _ = false in
 
 let rec loop stack old_base new_base ret n i =
   if n = i then (stack.(old_base + n) <- ret; old_base + n + 1)
@@ -18,8 +18,8 @@ let rec frame_reset stack sp o l n =
 in
 
 let rec interp stack sp bytecode pc =
-  jit_dispatch (pc=0) stack sp bytecode;
   let instr = bytecode.(pc) in
+  print_int pc; print_newline ();
   (* Printf.printf "is: %d\tsp: %d\tpc: %d\n" instr sp pc; *)
   (* print_newline (); print_array print_int stack; print_newline (); *)
   if instr = 0 then             (* ADD *)
@@ -65,6 +65,7 @@ let rec interp stack sp bytecode pc =
       let v = stack.(sp - 1) in   (* sp: sp - 1 *)
       let pc2 = stack.(sp - 2) in (* sp: sp - 2 *)
       stack.(sp - n - 2) <- v;    (* sp: sp - 2 - n + 1 = sp - 1 - n *)
+      print_endline (string_of_int pc2);
       interp stack (sp - n - 1) bytecode pc2)
   else if instr = 8 then        (* DUP *)
     let n = bytecode.(pc + 1) in
@@ -101,13 +102,44 @@ let stack = Array.make 10000000 0 in
 (* fib *)
 (* for meta tracing *)
 (* 8 1 4 2 3 5 11 4 1 14 26 8 1 4 1 1 6 0 8 2 4 2 1 6 0 0 7 1 4 10 6 0 9 *)
-code.(0) <- 8; code.(1) <- 1; code.(2) <- 4; code.(3) <- 2; code.(4) <- 3; code.(5) <- 5; code.(6) <- 11; code.(7) <- 8; code.(8) <- 1; code.(9) <- 14; code.(10) <- 26; code.(11) <- 8; code.(12) <- 1; code.(13) <- 4; code.(14) <- 1; code.(15) <- 1; code.(16) <- 6; code.(17) <- 0; code.(18) <- 8; code.(19) <- 2; code.(20) <- 4; code.(21) <- 2; code.(22) <- 1; code.(23) <- 6; code.(24) <- 0; code.(25) <- 0; code.(26) <- 7; code.(27) <- 1; code.(28) <- 4; code.(29) <- 40; code.(30) <- 6; code.(31) <- 0; code.(32) <- 9;
-print_int ((interp stack 0 code 28) - 1000000)
+(* code.(0) <- 8; code.(1) <- 1; code.(2) <- 4; code.(3) <- 2; code.(4) <- 3; code.(5) <- 5; code.(6) <- 11; code.(7) <- 8; code.(8) <- 1; code.(9) <- 14; code.(10) <- 26; code.(11) <- 8; code.(12) <- 1; code.(13) <- 4; code.(14) <- 1; code.(15) <- 1; code.(16) <- 6; code.(17) <- 0; code.(18) <- 8; code.(19) <- 2; code.(20) <- 4; code.(21) <- 2; code.(22) <- 1; code.(23) <- 6; code.(24) <- 0; code.(25) <- 0; code.(26) <- 7; code.(27) <- 1; code.(28) <- 4; code.(29) <- 2; code.(30) <- 6; code.(31) <- 0; code.(32) <- 9;
+print_int ((interp stack 0 code 28)) *)
 
 (* for meta method *)
 (* 8 0 4 2 3 5 11 4 1 14 26 8 0 4 1 1 6 0 8 1 4 2 1 6 0 0 7 4 10 6 0 9 *)
-(* code.(0) <- 8; code.(1) <- 0; code.(2) <- 4; code.(3) <- 2; code.(4) <- 3; code.(5) <- 5; code.(6) <- 11; code.(7) <- 4; code.(8) <- 1; code.(9) <- 14; code.(10) <- 26; code.(11) <- 8; code.(12) <- 0; code.(13) <- 4; code.(14) <- 1; code.(15) <- 1; code.(16) <- 6; code.(17) <- 0; code.(18) <- 8; code.(19) <- 1; code.(20) <- 4; code.(21) <- 2; code.(22) <- 1; code.(23) <- 6; code.(24) <- 0; code.(25) <- 0; code.(26) <- 7; code.(27) <- 4; code.(28) <- 10; code.(29) <- 6; code.(30) <- 0; code.(31) <- 9;
- * print_int (interp stack 0 code 27) *)
+(* code.(0) <- 8; code.(1) <- 0; code.(2) <- 4; code.(3) <- 2; code.(4) <- 3; code.(5) <- 5; code.(6) <- 11; code.(7) <- 4; code.(8) <- 1; code.(9) <- 14; code.(10) <- 26; code.(11) <- 8; code.(12) <- 0; code.(13) <- 4; code.(14) <- 1; code.(15) <- 1; code.(16) <- 6; code.(17) <- 0; code.(18) <- 8; code.(19) <- 1; code.(20) <- 4; code.(21) <- 2; code.(22) <- 1; code.(23) <- 6; code.(24) <- 0; code.(25) <- 0; code.(26) <- 7; code.(27) <- 4; code.(28) <- 2; code.(29) <- 6; code.(30) <- 0; code.(31) <- 9;
+print_int (interp stack 0 code 27) *)
+
+(* meta tracing *)
+code.(0) <- 8;
+code.(1) <- 1;
+code.(2) <- 4;
+code.(3) <- 2;
+code.(4) <- 3;
+code.(5) <- 5;
+code.(6) <- 11;
+code.(7) <- 4;
+code.(8) <- 1;
+code.(9) <- 14;
+code.(10) <- 21;
+code.(11) <- 8;
+code.(12) <- 1;
+code.(13) <- 8;
+code.(14) <- 2;
+code.(15) <- 4;
+code.(16) <- 1;
+code.(17) <- 1;
+code.(18) <- 6;
+code.(19) <- 0;
+code.(20) <- 0;
+code.(21) <- 7;
+code.(22) <- 1;
+code.(23) <- 4;
+code.(24) <- 10;
+code.(25) <- 6;
+code.(26) <- 0;
+code.(27) <- 9;
+print_int (interp stack 0 code 23)
 
 (* tak *)
 (* for meta tracing *)
