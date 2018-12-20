@@ -1,5 +1,6 @@
 let rec interp stack sp bytecode pc =
-  jit_dispatch (pc=0) stack sp bytecode;
+  if pc = 0 then trace_entry stack sp bytecode else
+  if pc = 19 then test_trace_2 stack sp else
   let instr = bytecode.(pc) in
   if instr = 0 then             (* ADD *)
     let v2 = stack.(sp - 1) in  (* sp: sp - 1 *)
@@ -41,10 +42,12 @@ let rec interp stack sp bytecode pc =
      stack.(sp - 1)
     else
      (let n = bytecode.(pc + 1) in
-     let v = stack.(sp - 1) in   (* sp: sp - 1 *)
-     let pc2 = stack.(sp - 2) in (* sp: sp - 2 *)
-     stack.(sp - n - 2) <- v;    (* sp: sp - 2 - n + 1 = sp - 1 - n *)
-     interp stack (sp - n - 1) bytecode pc2)
+      let v = stack.(sp - 1) in   (* sp: sp - 1 *)
+      let pc2 = stack.(sp - 2) in (* sp: sp - 2 *)
+      stack.(sp - n - 2) <- v;    (* sp: sp - 2 - n + 1 = sp - 1 - n *)
+      let m = sp - n - 1 in
+      can_enter_jit stack m bytecode pc2;
+      interp stack m bytecode pc2)
   else if instr = 8 then        (* DUP *)
     let n = bytecode.(pc + 1) in
     let v = stack.(sp - n - 1) in
@@ -61,8 +64,7 @@ let rec interp stack sp bytecode pc =
     let addr = bytecode.(pc + 1) in
     interp stack sp bytecode addr
   else
-    (print_int instr;
-     print_newline ();
+    (print_int instr; print_newline ();
     -1000) in
 let code = Array.make 100 0 in
 let stack = Array.make 10000 0 in
@@ -97,8 +99,11 @@ code.(27) <- 9;
 let rec loop x =
   if x = 0 then ()
   else
-    let _ = interp stack 0 code 23 in
-    loop (x - 1)
+    let res = interp stack 0 code 23 in
+    if res = -1000 then
+      print_int (100000000000)
+    else
+      (loop (x - 1))
 in
 let start = get_micro_time () in
 let _ = loop 100000 in

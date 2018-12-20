@@ -38,6 +38,9 @@ let find_value reg id =
     | Some (i, v) -> (i, v)
     | None -> assert false
 
+let find_reds ~reg ~args =
+  List.filter args ~f:(fun a -> a |> int_of_id_t |> Array.get reg |> is_red)
+
 let rec connect (id_t, typ) instr body =
   let rec go id_t  body = function
     | Let (a, e, t) -> Let (a, e, go id_t t body)
@@ -71,28 +74,46 @@ module Guard = struct
       in
       begin match path with
         | `True  when pc = merge_pc -> Ans ((CallDir (Id.L (trace_name), args, fargs)))
-        | `True -> Ans ((CallDir (Id.L ("min_caml_mid_layer"), args, fargs)))
-        | `False -> Ans ((CallDir (Id.L ("guard_failure." ^ x), args, fargs)))
+        | `True -> Ans ((CallDir (Id.L ("guard_failure." ^ x), args, fargs)))
+        | `False -> Ans ((CallDir (Id.L ("min_caml_mid_layer"), args, fargs)))
       end
     | Ans (exp) -> Ans (exp)
     | Let ((id, typ), exp, body) ->
       Let ((id, typ), exp, add_guard_label reg path tj_env body)
 
-  let restore_green reg path tj_env cont =
+  let create_guard reg path tj_env ?wlist:(ws=[]) cont =
     let free_vars = unique (get_free_vars cont) in
+    let ignored x ys =
+      List.exists ys ~f:(fun y -> String.split ~on:'.' x |> List.hd_exn = y)
+    in
     let rec restore cont = function
       | [] -> cont
-      | hd :: tl ->
-        match reg.(int_of_id_t hd) with
+      | hd :: tl when not (ignored hd ws) ->
+        begin match reg.(int_of_id_t hd) with
         | Green n ->
           Let ((hd, Type.Int), Set (n), restore cont tl)
         | _ ->
-          restore cont tl
-    in restore cont free_vars |> add_guard_label reg path tj_env
+          restore cont tl end
+      | hd :: tl ->
+        restore cont tl
+    in restore cont free_vars
 end
+
+open Guard
 
 let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) = function
   | Ans (exp) -> tj_exp p reg mem tj_env exp
+  | Let ((dest, typ), CallDir (Id.L ("min_caml_can_enter_jit"), args, fargs), body) ->
+    let nextpc = List.last_exn args in
+    let { merge_pc; trace_name } = tj_env in
+    let reds = find_reds ~reg:reg ~args:args in
+    Ans (
+      IfEq (
+        nextpc, C (merge_pc),
+        (Ans (CallDir (Id.L (trace_name), reds, []))),
+        (Ans (CallDir (Id.L ("min_caml_mid_layer"), args, fargs)))
+        |> Guard.create_guard reg `False tj_env ~wlist:[nextpc]
+      ))
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     let fundef = find_fundef id_l p in
     let t = Inlining.inline_calldir_exp args fundef reg in
@@ -153,19 +174,16 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
   | CallDir (id_l, args, fargs) ->
     Logs.debug (fun m -> m "CallDir (%s)" (string_of_id_l id_l));
     let fundef =  find_fundef id_l p in
-    let pc_id = (tj_env.index_pc) |> List.nth_exn args  in
-    let bc_id = args |> List.find_exn ~f:(fun r -> name_of r = "bytecode" || name_of r = "code") in
     let pc = args |> find_pc tj_env |> Array.get reg in
     Logs.debug (fun m -> m "pc : %d" (value_of pc));
-    let reds = args |> List.filter ~f:(fun a ->
-          (is_red reg.(int_of_id_t a)))
-    in
-    let (v, i) = find_value reg bc_id in
+    let reds = args |> List.filter ~f:(fun a -> (is_red reg.(int_of_id_t a))) in
     let { merge_pc; trace_name } = tj_env in
     if (value_of pc) <> merge_pc then
       Inlining.inline_calldir_exp args fundef reg |> tj p reg mem tj_env
     else
       Ans (CallDir (Id.L (trace_name), reds, []))
+  | IfEq (_, _, Ans (CallDir (id_l, _, _)), t2) when (let Id.L (x) = id_l in contains x "trace")->
+    tj p reg mem tj_env t2
   | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) as exp ->
     tj_if p reg mem tj_env exp
   | exp ->
@@ -199,29 +217,35 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
         if exp |*| (n1, n2) then
           Ans (exp |%| (id_t, C (n2),
                         tj p reg mem tj_env t1,
-                        Guard.restore_green reg `False tj_env t2))
+                        Guard.create_guard reg `False tj_env t2
+                        |> tj_guard_over p reg mem `False tj_env))
         else
           Ans (exp |%| (id_t, C (n2),
-                        Guard.restore_green reg `True tj_env t1,
+                        Guard.create_guard reg `False tj_env t1
+                        |> tj_guard_over p reg mem `False tj_env,
                         tj p reg mem tj_env t2))
       | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
         let id_r2 = match id_or_imm with V (id) -> id | C (n) -> failwith "id_or_imm should be string" in
         if exp |*| (n1, n2) then
           Ans (exp |%| (id_r2, C (n1),
                         tj p reg mem tj_env t1,
-                        Guard.restore_green reg `False tj_env t2))
+                        Guard.create_guard reg `False tj_env t2
+                        |> tj_guard_over p reg mem `False tj_env))
         else
           Ans (exp |%| (id_r2, C (n1),
-                        Guard.restore_green reg `True tj_env t1,
+                        Guard.create_guard reg `False tj_env t1
+                        |> tj_guard_over p reg mem `False tj_env,
                         tj p reg mem tj_env t2))
       | Red (n1), Red (n2) ->
         if exp |*| (n1, n2) then
           Ans (exp |%| (id_t, id_or_imm,
                         tj p reg mem tj_env t1,
-                        Guard.restore_green reg `False tj_env t2))
+                        Guard.create_guard reg `False tj_env t2
+                        |> tj_guard_over p reg mem `False tj_env))
         else
           Ans (exp |%| (id_t, id_or_imm,
-                        Guard.restore_green reg `True tj_env t1,
+                        Guard.create_guard reg `False tj_env t1
+                        |> tj_guard_over p reg mem `False tj_env,
                         tj p reg mem tj_env t2))
     end
   | e ->
@@ -229,6 +253,24 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
       | Specialized (v) -> Ans (Set (value_of v))
       | Not_specialized (e, v) -> Ans (e)
     end
+
+and tj_guard_over p reg mem path tj_env = function
+  | Ans (CallDir (Id.L (x), args, fargs)) ->
+    let fundef =  find_fundef (Id.L (x)) p in
+    let { index_pc; merge_pc; trace_name } = tj_env in
+    let pc  = match List.nth args index_pc with
+      | Some (id) -> reg.(int_of_id_t id) |> value_of
+      | None -> failwith (Printf.sprintf "specified index_pc is invalid: %d" index_pc)
+    in
+    begin match path with
+      | `True  when pc = merge_pc -> Ans ((CallDir (Id.L (trace_name), args, fargs)))
+      | `True -> Inlining.inline_calldir_exp args fundef reg |> tj p reg mem tj_env
+      | `False -> Ans ((CallDir (Id.L ("guard_failure." ^ x), args, fargs)))
+    end
+  | Ans (exp) -> Ans (exp)
+  | Let ((id, typ), exp, body) ->
+    Let ((id, typ), exp, tj_guard_over p reg mem path tj_env body)
+
 
 let run_while p reg mem name reds index_pc merge_pc =
   let Prog (tbl, _, m) = p in
