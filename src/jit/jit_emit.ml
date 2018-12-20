@@ -183,20 +183,17 @@ and create_asm' = function
     Printf.sprintf "\tmovsd\t%d(%s), %s\n" (offset y) reg_sp x
   (* 末尾だったら計算結果を第一レジスタにセットしてret (caml2html: emit_tailret) *)
   | Tail, (Nop | St _ | StDF _ | Comment _ | Save _ as exp) ->
-    Buffer.create 100
-    |> fun buf ->
+    let buf = Buffer.create 100 in
     Buffer.add_string buf @@ create_asm' (NonTail (Id.gentmp Type.Unit), exp);
     Buffer.add_string buf @@ Printf.sprintf "\tret\n";
     Buffer.contents buf
   | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Ld _ as exp) ->
-    Buffer.create 100
-    |> fun buf ->
+    let buf = Buffer.create 100 in
     Buffer.add_string buf @@  create_asm' (NonTail (regs.(0)), exp);
     Buffer.add_string buf @@ Printf.sprintf "\tret\n";
     Buffer.contents buf
   | Tail, (FMovD _ | FNegD _ | FAddD _ | FSubD _ | FMulD _ | FDivD _ | LdDF _  as exp) ->
-    Buffer.create 100
-    |> fun buf ->
+    let buf = Buffer.create 100 in
     Buffer.add_string buf @@ create_asm' (NonTail (fregs.(0)), exp);
     Buffer.add_string buf @@ Printf.sprintf "\tret\n";
     Buffer.contents buf
@@ -237,15 +234,12 @@ and create_asm' = function
     (Printf.sprintf "\tcomisd\t%s, %s\n" y x) ^
     create_asm'_non_tail_if (NonTail(z)) e1 e2 "jbe" "ja"
   | Tail, CallCls(x, ys, zs) -> (* 末尾呼び出し (caml2html: emit_tailcall) *)
-    Buffer.create 100
-    |> fun buf ->
-    Buffer.add_string buf @@ (create_asm'_args [(x, reg_cl)] ys zs)
-    |> fun _ ->
-    Buffer.add_string buf @@ Printf.sprintf "\tjmp\t*(%s)\n" reg_cl
-    |> fun _ -> Buffer.contents buf
+    let buf = Buffer.create 100 in
+    Buffer.add_string buf @@ (create_asm'_args [(x, reg_cl)] ys zs);
+    Buffer.add_string buf @@ Printf.sprintf "\tjmp\t*(%s)\n" reg_cl;
+    Buffer.contents buf
   | Tail, CallDir(Id.L (x), ys, zs) -> (* 末尾呼び出し *)
-    Buffer.create 100
-    |> fun buf ->
+    let buf = Buffer.create 100 in
     Buffer.add_string buf @@ create_asm'_args [] ys zs;
     if List.for_all (fun c -> String.contains x c) (Stringext.to_list "guard_failure") then
       Buffer.add_string buf @@ Printf.sprintf "\tjmp\t%s\n" "min_caml_mid_layer"
@@ -253,8 +247,7 @@ and create_asm' = function
       Buffer.add_string buf @@ Printf.sprintf "\tjmp\t%s\n" x;
     Buffer.contents buf
   | NonTail(a), CallCls(x, ys, zs) ->
-    Buffer.create 100
-    |> fun buf ->
+    let buf = Buffer.create 100 in
     Buffer.add_string buf @@ create_asm'_args [(x, reg_cl)] ys zs;
     let ss = stacksize () in
     if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\taddl\t$%d, %s\n" ss reg_sp;
@@ -266,8 +259,7 @@ and create_asm' = function
        Buffer.add_string buf @@ Printf.sprintf "\tmovsd\t%s, %s\n" fregs.(0) a);
     Buffer.contents buf
   | NonTail(a), CallDir(Id.L(x), ys, zs) ->
-    Buffer.create 100
-    |> fun buf ->
+    let buf = Buffer.create 100 in
     let ss = stacksize () in
     Buffer.add_string buf @@ create_asm'_args [] ys zs;
     if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\taddl\t$%d, %s\n" ss reg_sp;
