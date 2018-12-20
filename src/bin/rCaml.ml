@@ -1,8 +1,10 @@
 open MinCaml
-open Bc_front_lib
 open Asm
+
 open BacCaml
 open Jit_util
+
+open Bc_front_lib
 
 type env = {
   prog : prog;
@@ -200,21 +202,22 @@ let run = (fun f ->
     let file = !file in
     let output = !output in
     (* let bytes = Util.string_of_array ~f:int_of_string !codes in *)
-    let bytes = Bc_front_lib.Bc_front.(parse_stdin |> array_of_exps) in
+    (* let bytes = Bc_front.(parse_stdin |> array_of_exps) in *)
+    let bc_front_env = Bc_front.env_stdin in
     let annots = Util.string_of_array ~f:int_of_string !annots in
     let reds = Util.parse_pair_list !reds in
     let greens = Util.parse_pair_list !greens in
-    let jittype' = match !jittype with
+    let jittype' = match bc_front_env.jit_type with
       | "tjit" -> `Meta_tracing
       | "mjit" -> `Meta_method
       | _ -> raise @@ Jittype_error "-type (tjit|mjit) is missing."
     in
     let arg = { file = file;
                 ex_name = output;
-                code = bytes;
+                code = bc_front_env.insts;
                 annot = annots;
-                reds = reds;
-                greens = greens;
-                merge_pc = !merge_pc;
+                reds = bc_front_env.red;
+                greens = bc_front_env.green;
+                merge_pc = bc_front_env.merge_pc;
                 trace_name = !name } in
     f jittype' (prepare_env jittype' arg))

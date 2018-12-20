@@ -1,10 +1,20 @@
+;; mode: tuareg-jbuild-mode
+
 (ocamllex (modules bc_lexer))
 (menhir (modules bc_parser))
 
 (library
-  (name bc_front_lib)
-  (public_name baccaml.front)
-  (modules bc_front bc_lexer bc_parser sub)
+ (name bc_front_lib)
+ (public_name baccaml.front)
+ (modules bc_front bc_lexer bc_parser sub)
+ (flags (-w -4-33-40-41-42-43-34-44
+         -short-paths
+         -strict-sequence
+         -strict-formats
+         -short-paths
+         -keep-locs))
+ (libraries core toml)
+  (preprocess (pps ppx_deriving.show))
 )
 
 (library
@@ -13,11 +23,11 @@
  (libraries logs bacCaml minCaml bc_front_lib)
  (modules rCaml)
  (flags (-w -4-33-40-41-42-43-34-44
-  -short-paths
-  -strict-sequence
-  -strict-formats
-  -short-paths
-  -keep-locs))
+         -short-paths
+         -strict-sequence
+         -strict-formats
+         -short-paths
+         -keep-locs))
  (preprocess (pps ppx_fields_conv)))
 
 (executable
@@ -26,11 +36,11 @@
  (modules baccaml_cli)
  (libraries minCaml bacCaml rCaml core logs fmt stringext)
  (flags (-w -4-33-40-41-42-43-34-44
-  -short-paths
-  -strict-sequence
-  -strict-formats
-  -short-paths
-  -keep-locs))
+         -short-paths
+         -strict-sequence
+         -strict-formats
+         -short-paths
+         -keep-locs))
  (preprocess (pps ppx_fields_conv ppx_deriving.show)))
 
 (executable
@@ -39,11 +49,11 @@
  (modules baccaml_builder)
  (libraries minCaml bacCaml core logs fmt stringext)
  (flags (-w -4-33-40-41-42-43-34-44
-  -short-paths
-  -strict-sequence
-  -strict-formats
-  -short-paths
-  -keep-locs))
+         -short-paths
+         -strict-sequence
+         -strict-formats
+         -short-paths
+         -keep-locs))
  (preprocess (pps ppx_fields_conv ppx_deriving.show)))
 
 (executable
@@ -52,9 +62,9 @@
  (modules bc_front_test)
  (libraries bc_front_lib core logs fmt stringext rCaml)
  (flags (-w -4-33-40-41-42-43-34-44
-  -short-paths
-  -strict-sequence
-  -strict-formats
-  -short-paths
-  -keep-locs))
+         -short-paths
+         -strict-sequence
+         -strict-formats
+         -short-paths
+         -keep-locs))
  (preprocess (pps ppx_fields_conv ppx_deriving.show)))
