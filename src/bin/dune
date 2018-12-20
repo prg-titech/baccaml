@@ -13,7 +13,7 @@
          -strict-formats
          -short-paths
          -keep-locs))
- (libraries core toml)
+ (libraries core)
   (preprocess (pps ppx_deriving.show))
 )
 
