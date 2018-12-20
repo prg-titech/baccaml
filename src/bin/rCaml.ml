@@ -49,8 +49,14 @@ let prepare_reds trace_args (Prog (_, fundefs, _)) =
     List.exists (fun trace_arg -> trace_arg = arg_name) trace_args
   end args
 
-let prepare_tenv' (Prog (table, fundefs, main)) t reds =
-  begin match Simm.t t |> Jit_trim.trim with
+let prepare_tenv ~prog:p ~name:n ~red_args:reds =
+  let Prog (table, fundefs, main) = p in
+  let { body } =
+    List.find begin fun { name = Id.L (x) } ->
+      String.split_on_char '.' x |> List.hd |> contains "interp"
+    end fundefs
+  in
+  begin match Simm.t body |> Jit_trim.trim with
     | Let (_, Set (_), Let (_,  IfEq (_, _, _, _), Let (_, CallDir (id_l, args, fargs), interp_body)))
     | Let (_,  IfEq (_, _, _, _), Let (_, CallDir (id_l, args, fargs), interp_body))
     | Ans (IfEq (_, _, Ans (CallDir (id_l, args, fargs)), interp_body)) ->
@@ -67,15 +73,6 @@ let prepare_tenv' (Prog (table, fundefs, main)) t reds =
     | _ ->
       raise (Error "Missing hint function: jit_dispatch")
   end
-
-let prepare_tenv ~prog:p ~name:n ~red_args:reds =
-  let Prog (table, fundefs, main) = p in
-  let { body } =
-    List.find begin fun { name = Id.L (x) } ->
-      String.split_on_char '.' x |> List.hd |> contains "interp"
-    end fundefs
-  in
-  prepare_tenv' p body (prepare_reds reds p)
 
 let prepare_var red_lst green_lst =
   let red_tbl = Hashtbl.create 10 in
@@ -110,15 +107,19 @@ let prepare_env jit_type { file; ex_name; code; annot; reds; greens; merge_pc; t
   let tenv =
     prepare_tenv
       ~prog:p
-      ~name:"min_caml_test_trace"
+      ~name:trace_name
       ~red_args:red_args in
   let { greentbl; redtbl } = prepare_var reds greens  in
   Colorizer.colorize_reg redtbl greentbl reg (List.hd (tenv.fundefs)) (tenv.ibody);
   let addr =
-    match greens |> List.find_opt (fun arg' -> fst arg' = "bytecode" || fst arg' = "code") with
+    match
+      greens |> List.find_opt (fun arg' -> fst arg' = "bytecode" || fst arg' = "code")
+    with
      | Some x -> x |> snd
      | None ->
-       match reds |> List.find_opt (fun arg' -> fst arg' = "bytecode" || fst arg' = "code") with
+       match
+         reds |> List.find_opt (fun arg' -> fst arg' = "bytecode" || fst arg' = "code")
+       with
        | Some x -> x |> snd
        | None -> raise Not_found
    in
@@ -190,14 +191,16 @@ let speclist = [
 ]
 
 let run = (fun f ->
+    let prog_file_name = ref "" in
     Arg.parse
       speclist
-      (fun x -> raise (Arg.Bad ("Bad argument : " ^ x)))
+      (fun f -> prog_file_name := f)
       usage;
     Logs.set_reporter @@ Logs.format_reporter ();
     let file = !file in
     let output = !output in
-    let bytes = Util.string_of_array ~f:int_of_string !codes in
+    (* let bytes = Util.string_of_array ~f:int_of_string !codes in *)
+    let bytes = Bc_front_lib.Bc_front.(parse_stdin |> array_of_exps) in
     let annots = Util.string_of_array ~f:int_of_string !annots in
     let reds = Util.parse_pair_list !reds in
     let greens = Util.parse_pair_list !greens in

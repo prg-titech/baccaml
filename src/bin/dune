@@ -1,7 +1,16 @@
+(ocamllex (modules bc_lexer))
+(menhir (modules bc_parser))
+
+(library
+  (name bc_front_lib)
+  (public_name baccaml.front)
+  (modules bc_front bc_lexer bc_parser sub)
+)
+
 (library
  (name        rCaml)
  (public_name baccaml.rcaml)
- (libraries logs bacCaml minCaml)
+ (libraries logs bacCaml minCaml bc_front_lib)
  (modules rCaml)
  (flags (-w -4-33-40-41-42-43-34-44
   -short-paths
@@ -29,6 +38,19 @@
  (public_name baccaml.builder)
  (modules baccaml_builder)
  (libraries minCaml bacCaml core logs fmt stringext)
+ (flags (-w -4-33-40-41-42-43-34-44
+  -short-paths
+  -strict-sequence
+  -strict-formats
+  -short-paths
+  -keep-locs))
+ (preprocess (pps ppx_fields_conv ppx_deriving.show)))
+
+(executable
+ (name bc_front_test)
+ (public_name baccaml.front_test)
+ (modules bc_front_test)
+ (libraries bc_front_lib core logs fmt stringext rCaml)
  (flags (-w -4-33-40-41-42-43-34-44
   -short-paths
   -strict-sequence
