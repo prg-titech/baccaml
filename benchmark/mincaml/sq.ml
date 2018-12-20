@@ -1,9 +1,8 @@
 let rec sq n =
-  let a = Array.make 1 0 in
-  let rec loop i =
-    if i = 0 then a.(0)
-    else (a.(0) <- a.(0) + n; loop (i - 1))
-  in loop n
+  let rec loop i acc =
+    if i = 0 then acc
+    else loop (i - 1) (acc + n)
+  in loop n 0
 in
 let s = get_micro_time () in
 let rec time i =
