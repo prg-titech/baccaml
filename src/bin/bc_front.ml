@@ -1,12 +1,12 @@
 exception Error of string
 
-let parse_stdin =
-  Lexing.from_channel stdin
-  |> Bc_parser.program Bc_lexer.token
-
 let parse_from_channel ic =
-  Lexing.from_channel ic
-  |> Bc_parser.program Bc_lexer.token
+  try
+    let exps =
+      Lexing.from_channel ic
+      |> Bc_parser.program Bc_lexer.token
+    in close_in ic; exps
+  with e -> close_in ic; raise e
 
 let array_of_exps exps =
   exps
@@ -42,10 +42,13 @@ let env_of_exps exps =
     insts = array_of_exps exps
   }
 
-let env_stdin =
-  parse_stdin |> env_of_exps
+let env_from_channel c =
+  parse_from_channel c
+  |> env_of_exps
 
 let env_from_file file =
-  open_in (file)
-  |> parse_from_channel
-  |> env_of_exps
+  let ic = open_in file in
+  try
+    let env = ic |> parse_from_channel |> env_of_exps in
+    close_in ic; env
+  with e -> close_in ic; raise e

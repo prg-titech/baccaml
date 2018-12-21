@@ -33,4 +33,3 @@ type tenv = {
 }
 
 val prepare_env : [< `Meta_method | `Meta_tracing] -> arg -> env
-val run : ([> `Meta_method | `Meta_tracing] -> env -> 'a) -> 'a

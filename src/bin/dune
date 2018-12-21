@@ -31,10 +31,10 @@
  (preprocess (pps ppx_fields_conv)))
 
 (executable
- (name baccaml_cli)
+ (name        baccaml_cli)
  (public_name baccaml.cli)
  (modules baccaml_cli)
- (libraries minCaml bacCaml rCaml core logs fmt stringext)
+ (libraries bc_front_lib minCaml bacCaml rCaml core logs fmt stringext)
  (flags (-w -4-33-40-41-42-43-34-44
          -short-paths
          -strict-sequence

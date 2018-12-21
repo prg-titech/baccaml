@@ -377,18 +377,23 @@ let emit_trace jtype trace file interp =
   Printf.fprintf oc "%s" res;
   close_out oc
 
-let emit_result ~jit_type:jtype ~prog:(Prog (_, fundefs, _)) ~traces:trs ~file:f =
+let emit_result
+    ?midflg:(midflg=false)
+    ~jit_type:jtype
+    ~out:out
+    ~prog:(Prog (_, fundefs, _))
+    ~traces:trs =
   stackset := S.empty;
   stackmap := [];
-  let interp_name = find_interp_name fundefs in
-  let buf = Buffer.create 1000 in
-  List.iter begin fun fundef ->
-    create_asm_fundef fundef |> Buffer.add_buffer buf
-  end trs;
-  emit_mid_layer jtype f interp_name
-  |> Buffer.add_buffer buf;
-  let res = Buffer.contents buf in
-  Logs.debug (fun m -> m "\n!!EMIT TRACE!!\n%s)" res);
-  let oc = open_out (f ^ ".s") in
-  Printf.fprintf oc "%s" res;
-  close_out oc
+  let oc = open_out (out ^ ".s") in
+  try
+    let interp_name = find_interp_name fundefs in
+    let buf = Buffer.create 1000 in
+    trs |> List.iter (fun fundef -> create_asm_fundef fundef |> Buffer.add_buffer buf);
+    if midflg then emit_mid_layer jtype out interp_name |> Buffer.add_buffer buf;
+    let res = Buffer.contents buf in
+    Logs.debug (fun m -> m "\n!!EMIT TRACE!!\n%s)" res);
+    Printf.fprintf oc "%s" res;
+    close_out oc;
+  with e ->
+    close_out oc; raise e

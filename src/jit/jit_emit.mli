@@ -8,8 +8,6 @@ val emit_trace :
   unit
 
 val emit_result :
+  ?midflg:bool ->
   jit_type:[< `Meta_method | `Meta_tracing ] ->
-  prog:Asm.prog ->
-  traces:Asm.fundef list ->
-  file:string ->
-  unit
+  out:string -> prog:Asm.prog -> traces:Asm.fundef list -> unit
