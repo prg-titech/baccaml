@@ -1,6 +1,6 @@
 let rec interp stack sp bytecode pc =
   if pc = 0 then trace_entry stack sp bytecode else
-  if pc = 20 then test_trace_2 stack sp else
+  if pc = 20 then test_trace_1 stack sp else
   let instr = bytecode.(pc) in
   if instr = 0 then             (* ADD *)
     let v2 = stack.(sp - 1) in  (* sp: sp - 1 *)
