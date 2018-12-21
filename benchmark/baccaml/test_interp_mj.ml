@@ -157,7 +157,9 @@ code.(31) <- 9;
 let start = get_micro_time () in
 let rec loop n =
   if n = 0 then ()
-  else let _ = interp stack 0 code 27 in loop (n -1)
+  else let res = interp stack 0 code 27 in
+    print_int res; print_newline ();
+    loop (n -1)
 in
 loop 10;
 let stop = get_micro_time () in

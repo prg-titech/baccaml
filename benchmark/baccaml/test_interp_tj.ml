@@ -10,7 +10,8 @@
  * let jit_dispatch _ _ _ _ = () in *)
 
 let rec interp stack sp bytecode pc =
-  jit_dispatch (pc=0) stack sp bytecode;
+  if pc = 0 then trace_entry stack sp else
+  if pc = 18 then test_trace_1 stack sp else
   let instr = bytecode.(pc) in
   (* Printf.printf "is: %d\tsp: %d\tpc: %d\t" instr sp pc;
    * print_array print_int stack; print_newline (); *)
@@ -57,7 +58,9 @@ let rec interp stack sp bytecode pc =
      let v = stack.(sp - 1) in   (* sp: sp - 1 *)
      let pc2 = stack.(sp - 2) in (* sp: sp - 2 *)
      stack.(sp - n - 2) <- v;    (* sp: sp - 2 - n + 1 = sp - 1 - n *)
-     interp stack (sp - n - 1) bytecode pc2)
+     let m = sp - n - 1 in
+     can_enter_jit stack m bytecode pc2;
+     interp stack m bytecode pc2)
   else if instr = 8 then        (* DUP *)
     let n = bytecode.(pc + 1) in
     let v = stack.(sp - n - 1) in

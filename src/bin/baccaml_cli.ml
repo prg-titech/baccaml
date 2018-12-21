@@ -90,11 +90,13 @@ let run
     } |> prepare_env jittype' in
     let trace = match jittype' with
       | `Meta_tracing ->
-        [Jit_tracing.run_while prog reg mem trace_name (red_args) 3 merge_pc]
+        [Jit_tracing.run_while prog reg mem trace_name red_args 3 merge_pc]
       | `Meta_method ->
-        Jit_method.run_while prog reg mem trace_name ("stack" :: red_args)
+        Jit_method.run_while prog reg mem trace_name red_args
     in
-    Logs.debug (fun m -> List.iter (fun t -> m "%s\n" (Emit_virtual.to_string_fundef t)) trace);
+    Logs.debug (fun m ->
+        trace |> List.iter (fun t ->
+            m "%s\n" (Emit_virtual.to_string_fundef t)));
     Jit_emit.emit_result
       ~midflg:midflg
       ~out:out
