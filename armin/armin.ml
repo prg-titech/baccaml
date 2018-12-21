@@ -16,5 +16,5 @@ let _ =
   Arg.parse
     [("-debug", Arg.Unit (fun _ -> (Logs.set_level @@ Some Logs.Debug)), "set loglevel as debug.");
      ("-err", Arg.Unit (fun _ -> (Logs.set_level @@ Some Logs.Error)), "set loglevel as error.");]
-    (fun f -> files := !files @ [f]) "The interface language for BacCaml.";
+    (fun f -> files := !files @ [f]) "The interface language for Bc_jit.";
   List.iter ~f:(fun f -> main f) !files

@@ -1,5 +1,5 @@
 open MinCaml
-open BacCaml
+open Bc_jit
 
 open Jit_config
 open Jit_util

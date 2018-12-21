@@ -1,6 +1,6 @@
 open Core
 open MinCaml
-open BacCaml
+open Bc_jit
 
 let level = ref `Dump
 

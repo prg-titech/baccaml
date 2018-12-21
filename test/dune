@@ -7,4 +7,4 @@
          -strict-formats
          -short-paths
          -keep-locs))
- (libraries core str re logs fmt stringext oUnit minCaml bacCaml rCaml))
+ (libraries core str re logs fmt stringext oUnit minCaml bc_jit rCaml))

@@ -1,6 +1,6 @@
 open MinCaml
 open Bc_lib
-open BacCaml
+open Bc_jit
 open Bc_front_lib
 
 exception Jittype_error of string

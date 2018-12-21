@@ -1,6 +1,6 @@
 open Bc_lib
 open MinCaml
-open BacCaml
+open Bc_jit
 open Jit_config
 
 let _ =

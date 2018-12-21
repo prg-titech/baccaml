@@ -4,7 +4,7 @@ open OUnit
 open MinCaml
 open Asm
 
-open BacCaml
+open Bc_jit
 open Jit_config
 
 module TJ = Tracing_jit

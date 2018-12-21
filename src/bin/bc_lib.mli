@@ -1,5 +1,5 @@
 open MinCaml
-open BacCaml
+open Bc_jit
 
 type env = {
   prog : Asm.prog;

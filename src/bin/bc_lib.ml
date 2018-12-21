@@ -1,7 +1,7 @@
 open MinCaml
 open Asm
 
-open BacCaml
+open Bc_jit
 open Jit_util
 
 open Bc_front_lib

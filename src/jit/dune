@@ -1,5 +1,5 @@
 (library
- (name          bacCaml)
+ (name          bc_jit)
  (public_name   baccaml.jit)
  (flags         (-w -4-33-40-41-42-43-34-44
 		 -short-paths
