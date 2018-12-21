@@ -18,10 +18,10 @@
 )
 
 (library
- (name        rCaml)
- (public_name baccaml.rcaml)
+ (name        bc_lib)
+ (public_name baccaml.lib)
  (libraries logs bacCaml minCaml bc_front_lib)
- (modules rCaml)
+ (modules bc_lib)
  (flags (-w -4-33-40-41-42-43-34-44
          -short-paths
          -strict-sequence
@@ -34,7 +34,7 @@
  (name        baccaml_cli)
  (public_name baccaml.cli)
  (modules baccaml_cli)
- (libraries bc_front_lib minCaml bacCaml rCaml core logs fmt stringext)
+ (libraries bc_front_lib minCaml bacCaml bc_lib core logs fmt stringext)
  (flags (-w -4-33-40-41-42-43-34-44
          -short-paths
          -strict-sequence
@@ -60,7 +60,7 @@
  (name bc_front_test)
  (public_name baccaml.front_test)
  (modules bc_front_test)
- (libraries bc_front_lib core logs fmt stringext rCaml)
+ (libraries bc_front_lib bc_lib core logs fmt stringext)
  (flags (-w -4-33-40-41-42-43-34-44
          -short-paths
          -strict-sequence
