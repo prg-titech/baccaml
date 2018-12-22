@@ -1,4 +1,4 @@
-hhhlet rec interp stack sp bytecode pc =
+let rec interp stack sp bytecode pc =
   let instr = bytecode.(pc) in
   if instr = 0 then             (* ADD *)
     let v2 = stack.(sp - 1) in  (* sp: sp - 1 *)

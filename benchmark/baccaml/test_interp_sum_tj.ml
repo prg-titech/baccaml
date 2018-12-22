@@ -97,15 +97,12 @@ code.(25) <- 6;
 code.(26) <- 0;
 code.(27) <- 9;
 let rec loop x =
-  if x = 0 then ()
-  else
-    let res = interp stack 0 code 23 in
-    if res = -1000 then
-      print_int (100000000000)
-    else
-      (loop (x - 1))
+  let res = interp stack 0 code 23 in
+  if x = 0 then res
+  else loop (x - 1)
 in
 let start = get_micro_time () in
-let _ = loop 100000 in
+let r = loop 100000 in
 let stop = get_micro_time () in
-print_int (stop - start); print_newline ()
+print_int (stop - start); print_newline ();
+print_int r; print_newline ()
