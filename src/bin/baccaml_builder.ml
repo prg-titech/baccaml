@@ -4,8 +4,10 @@ open Bc_jit
 
 let level = ref `Dump
 
+let out = ref "a.out"
 let interp = ref ""
 let trace = ref ""
+let traces = ref []
 let jit_type = ref `Not_specified
 let jit_type_str = ref ""
 
@@ -20,7 +22,7 @@ let jit_typ typ = match typ with
 
 let tran_annot typ p =
   match typ with
-  | `Meta_tracing | `Meta_method as typ -> Jit_annot.gen_mj typ p
+  | `Meta_tracing | `Meta_method as typ -> Bc_lib.annot typ p
   | `Not_specified -> failwith "jit type is not specified."
 
 let dump typ file =
@@ -80,6 +82,21 @@ let build_executable interp trace =
   in
   Sys.command_exn cmd
 
+let build_executables interp traces out =
+  let str_obj_of_list strs =
+    strs
+    |> List.fold ~init:"" ~f:(fun acc str -> acc ^ " " ^ str ^ ".o")
+  in
+
+  let cmd =
+    Printf.sprintf "gcc -g -m32 %s %s %s %s -o %s"
+      ("stub/stub.c")
+      ("stub/libbaccaml.S")
+      (interp ^ ".o")
+      (str_obj_of_list traces)
+      (out)
+  in Sys.command_exn cmd
+
 let clean trace =
   let cmd = Printf.sprintf "rm -rf %s.dSYM" trace in
   Sys.command_exn cmd
@@ -95,6 +112,16 @@ let build typ interp trace =
     Printf.eprintf "building %s %s is failed.\n" interp trace;
     raise e
 
+let builds typ interp traces out =
+  try
+    gen_interp_asm typ interp;
+    build_object_file interp;
+    traces |> List.iter ~f:(fun f -> build_object_file f);
+    build_executables interp traces out;
+    traces |> List.iter ~f:clean;
+  with e ->
+    Printf.eprintf "building %s is failed.\n" interp
+
 let usage =
   "usage: " ^ Sys.argv.(0) ^ "[-interp] [-trace] [-dump] [-type (tjit|mjit)]"
 
@@ -103,7 +130,8 @@ let spec_list = [
   ("-emit", Arg.Unit (fun _ -> level := `Emit), "Emit assembly file");
   ("-build", Arg.Unit (fun _ -> level := `Build), "Build executable");
   ("-interp", Arg.Set_string interp, "Specify interpreter file");
-  ("-trace", Arg.Set_string trace, "Specify trace name");
+  ("-trace", Arg.String (fun f -> traces := !traces @ [f]), "Specify trace name");
+  ("-o", Arg.Set_string out, "Output file name");
   ("-type", Arg.String begin fun arg ->
       jit_type_str := arg;
       match arg with
@@ -120,5 +148,5 @@ let _ =
     match !level with
     | `Dump -> dump !jit_type f
     | `Emit -> compile !jit_type f
-    | `Build -> build !jit_type_str (get_prefix f) !trace
+    | `Build -> builds !jit_type_str (get_prefix f) !traces !out
   end

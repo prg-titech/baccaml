@@ -17,4 +17,4 @@
  (public_name    baccaml.min_caml)
  (flags          (-w -4-33-40-41))
  (modules        Min_caml)
- (libraries      core minCaml bc_jit))
+ (libraries      core minCaml bc_lib))

@@ -33,3 +33,5 @@ type tenv = {
 }
 
 val prepare_env : [< `Meta_method | `Meta_tracing] -> arg -> env
+
+val annot : [< `Meta_method | `Meta_tracing ] -> Asm.prog -> Asm.prog

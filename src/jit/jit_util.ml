@@ -60,11 +60,15 @@ let contains s1 s2 =
   try ignore (Str.search_forward re s1 0); true
   with _ -> false
 
-let rec find_fundef prog name =
+let find_fundef prog name =
   let Asm.Prog (_, fundefs, _) = prog in
   match List.find_opt (fun fundef -> fundef.name = name) fundefs with
   | Some (body) -> body
   | None -> failwith "find_fundef in Method jit is failed"
+
+let find_fundef_fuzzy (Prog(tbl, fundefs, main)) name =
+  fundefs |> List.find (fun fundef ->
+      let Id.L (x) = fundef.name in contains x name)
 
 let jit_value_of_id_t reg id_t = reg.(int_of_id_t id_t)
 

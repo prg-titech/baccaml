@@ -3,6 +3,7 @@ open Asm
 
 open Bc_jit
 open Jit_util
+open Operands
 
 open Bc_front_lib
 
@@ -133,3 +134,39 @@ let prepare_env jit_type { file; ex_name; code; annot; reds; greens; merge_pc; t
      ex_name = ex_name;
      merge_pc = merge_pc;
      trace_name = trace_name }
+
+let rec annot' is_mj t = match t with
+  | Ans (e) ->
+    begin match e with
+      | IfEq (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfLE (x, y, t1, t2) ->
+        Ans (e |%| (x, y, annot' is_mj t1, annot' is_mj t2))
+      | IfFLE (x, y, t1, t2) | IfFEq (x, y, t1, t2) ->
+        Ans (e |%| (x, V (y), annot' is_mj t1, annot' is_mj t2))
+      | _ -> Ans (e)
+    end
+  | Let (x, CallDir (id_l, args, fargs), t) when id_l = (Id.L ("min_caml_is_mj"))->
+    begin match t with
+      | Ans (IfEq (_, _, t1, t2)) ->
+        (* if is_mj () then t1 else t2 is compiled to *)
+        (* IfEq((x, 0, t2, t1)                        *)
+        begin
+          match is_mj with
+          | `Meta_method -> t2
+          | `Meta_tracing -> t1
+        end
+      | _ ->
+        Let (x, CallDir (id_l, args, fargs), annot' is_mj t)
+    end
+  | Let (r, x, t) ->
+    Let (r, x, annot' is_mj t)
+
+let annot is_mj (Prog (table, fundefs, main) as p) =
+  let { name; args; fargs; body; ret } = find_fundef_fuzzy p "interp" in
+  let other_fundefs = List.filter (fun fundef -> fundef.name <> name ) fundefs in
+  let new_fundefs =
+    { name = name;
+      args = args;
+      fargs = fargs;
+      ret = ret;
+      body = annot' is_mj body; } :: other_fundefs in
+  Prog (table, new_fundefs, main)

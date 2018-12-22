@@ -31,9 +31,9 @@
  (preprocess (pps ppx_fields_conv)))
 
 (executable
- (name        baccaml_cli)
- (public_name baccaml.cli)
- (modules baccaml_cli)
+ (name        baccaml)
+ (public_name baccaml)
+ (modules     baccaml)
  (libraries bc_front_lib minCaml bc_jit bc_lib core logs fmt stringext)
  (flags (-w -4-33-40-41-42-43-34-44
          -short-paths
@@ -47,7 +47,7 @@
  (name baccaml_builder)
  (public_name baccaml.builder)
  (modules baccaml_builder)
- (libraries minCaml bc_jit core logs fmt stringext)
+ (libraries minCaml bc_jit bc_lib core logs fmt stringext)
  (flags (-w -4-33-40-41-42-43-34-44
          -short-paths
          -strict-sequence

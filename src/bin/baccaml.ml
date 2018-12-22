@@ -49,14 +49,8 @@ let name      = ref "min_caml_test_trace"
 let usage  = "usage: " ^ Sys.argv.(0) ^ " [-file string] [-green string list] [-red string list] [-code int list] [-annot int list]"
 
 let speclist = [
-  ("-file", Arg.Set_string file, "Specify file name");
-  ("-green", Arg.Set_string greens, "Specify green variables");
-  ("-red", Arg.Set_string reds, "Specify red variables");
-  ("-code", Arg.Set_string codes, "Specify bytecode");
-  ("-annot", Arg.Set_string annots, "Specify annotations for bytecode");
-  ("-type", Arg.Set_string jittype, "Specify jit type");
-  ("-merge-pc", Arg.Set_int merge_pc, "Specify merge pc");
-  ("-name", Arg.Set_string name, "Specify the name of trace");
+  ("-file", Arg.Set_string file, "Specify the filename of your interpreter");
+  ("-annot", Arg.Set_string annots, "Specify annotations for your bytecodes");
   ("-o", Arg.Set_string output, "Set executable's name");
   ("-dbg", Arg.Unit (fun _ -> Logs.set_level @@ Some Logs.Debug), "Enable debug mode");
 ]

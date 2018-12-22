@@ -1,6 +1,5 @@
 open Core
 open MinCaml
-open Bc_jit
 
 let run_typ = ref `Emit
 
@@ -10,7 +9,7 @@ let id x = x
 
 let annot p = match !jit_typ with
   | `Not_specified -> p
-  | `Meta_method | `Meta_tracing as typ -> Jit_annot.gen_mj typ p
+  | `Meta_method | `Meta_tracing as typ -> Bc_lib.annot typ p
 
 let run_dump f =
   let inchan = In_channel.create (f ^ ".ml") in
