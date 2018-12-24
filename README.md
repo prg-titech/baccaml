@@ -6,37 +6,27 @@
 
 ---
 
-<div style="text-align: center;">
 This is an experimental meta-hybrid JIT compiler using both approach of method and tracing JIT.
-This project is forked from <a href="https://github.com/esumii/min-caml">min-caml</a>, an educational mini ML compiler.
-</div>
-
+This project is forked from <a href="https://github.com/esumii/min-caml">MinCaml</a>.
 
 ## Usage
 
-### Building a trace
-
 ```bash
-$ dune exec src/bin/baccaml_cli.exe -- \
-	-file [filename] \
-	-type (mjit|tjit) \
-	-red [red variables] \
-	-green [green variables] \
-	-code [bytecode] \
-	-o [output]
+$ dune exec baccaml -- -file [interpreter].ml [file.arg]
+$ dune exec src/bin/baccaml_builder.exe -- [interpreter].ml \
+	-type (tjit|mjit) -trace [name of trace] -o [output] -build
 ```
 
-### Building an executable
+### Example
 
 ```bash
-$ dune exec src/bin/baccaml_cli.exe -- \
-	-type (mjit|tjit) \
-	-(dump|emit|build) \
-	-trace [trace name] \
-	[intepreter name]
+$ dune exec baccaml -- -file benchmark/baccaml/test_interp_tj.ml
+	benchmark/armin/fib.am benchmark/armin/fib_26.am benchmark/armin/fib_18.am
+$ dune exec src/bin/baccaml_builder.exe -- benchmark/baccaml/test_interp_tj.ml \
+	-type tjit -trace fib -trace fib_26 -o test_fib_tj -build
 ```
 
-### Development
+## Development
 
 - Install dependencies:
 
