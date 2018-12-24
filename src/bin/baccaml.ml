@@ -82,12 +82,15 @@ let run
       greens = bc_front_env.green;
       merge_pc = bc_front_env.merge_pc;
     } |> prepare_env jittype' in
-    let trace = match jittype' with
+    let trace =
+      (match jittype' with
       | `Meta_tracing ->
         [Jit_tracing.run_while prog reg mem trace_name red_args 3 merge_pc]
       | `Meta_method ->
-        Jit_method.run_while prog reg mem trace_name red_args
+        Jit_method.run_while prog reg mem trace_name red_args)
+      |> List.map Jit_elim.elim_fundef
     in
+
     Logs.debug (fun m ->
         trace |> List.iter (fun t ->
             m "%s\n" (Emit_virtual.to_string_fundef t)));
