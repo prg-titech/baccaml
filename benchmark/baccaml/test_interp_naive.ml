@@ -135,17 +135,18 @@ code.(24) <- 0;
 code.(25) <- 0;
 code.(26) <- 7;
 code.(27) <- 4;
-code.(28) <- 40;
+code.(28) <- read_int ();
 code.(29) <- 6;
 code.(30) <- 0;
 code.(31) <- 9;
 (* 8 0 4 2 3 5 11 4 1 14 26 8 0 4 1 1 6 0 8 1 4 2 1 6 0 0 7 4 10 6 0 9 *)
-let start = get_micro_time () in
 let rec loop n =
   if n = 0 then ()
   else let _ = interp stack 0 code 27 in loop (n -1)
 in
-loop 10;
+let r = read_int () in
+let start = get_micro_time () in
+loop r;
 let stop = get_micro_time () in
 print_int (stop - start);
 print_newline ()

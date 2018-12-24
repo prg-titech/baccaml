@@ -149,19 +149,20 @@ code.(24) <- 0;
 code.(25) <- 0;
 code.(26) <- 7;
 code.(27) <- 4;
-code.(28) <- 40;
+code.(28) <- read_int ();
 code.(29) <- 6;
 code.(30) <- 0;
 code.(31) <- 9;
 (* 8 0 4 2 3 5 11 4 1 14 26 8 0 4 1 1 6 0 8 1 4 2 1 6 0 0 7 4 10 6 0 9 *)
-let start = get_micro_time () in
 let rec loop n =
-  if n = 0 then ()
-  else let res = interp stack 0 code 27 in
-    print_int res; print_newline ();
-    loop (n -1)
+  let res = interp stack 0 code 27 in
+  if n = 0 then res
+  else     loop (n -1)
 in
-loop 10;
+let r = read_int () in
+let start = get_micro_time () in
+let res = loop r in
 let stop = get_micro_time () in
+print_int res; print_newline ();
 print_int (stop - start);
 print_newline ()

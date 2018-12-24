@@ -11,7 +11,7 @@
 
 let rec interp stack sp bytecode pc =
   if pc = 0 then trace_entry stack sp else
-  if pc = 18 then test_trace_1 stack sp else
+  if pc = 26 then test_trace_1 stack sp else
   let instr = bytecode.(pc) in
   (* Printf.printf "is: %d\tsp: %d\tpc: %d\t" instr sp pc;
    * print_array print_int stack; print_newline (); *)
@@ -117,7 +117,7 @@ code.(25) <- 0;
 code.(26) <- 7;
 code.(27) <- 1;
 code.(28) <- 4;
-code.(29) <- 28;
+code.(29) <- read_int ();
 code.(30) <- 6;
 code.(31) <- 0;
 code.(32) <- 9;
@@ -157,13 +157,15 @@ code.(32) <- 9;
  * code.(30) <- 0;
  * code.(31) <- 9; *)
 (* 8 0 4 2 3 5 11 4 1 14 26 8 0 4 1 1 6 0 8 1 4 2 1 6 0 0 7 4 10 6 0 9 *)
-let start = get_micro_time () in
 let rec loop n =
-  if n = 0 then ()
-  else
-    let res = interp stack 0 code 28 in (* tj *)
-    loop (n -1)
+  let res = interp stack 0 code 28 in
+  if n = 0
+  then res
+  else loop (n -1)
 in
-loop 10;
+let n = read_int () in
+let start = get_micro_time () in
+let r = loop n in
 let stop = get_micro_time () in
-print_int (stop - start); print_newline ()
+print_int (stop - start); print_newline ();
+print_int (r); print_newline ()

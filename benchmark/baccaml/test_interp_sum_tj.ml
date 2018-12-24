@@ -101,8 +101,9 @@ let rec loop x =
   if x = 0 then res
   else loop (x - 1)
 in
+let n = read_int () in
 let start = get_micro_time () in
-let r = loop 100000 in
+let r = loop n in
 let stop = get_micro_time () in
 print_int (stop - start); print_newline ();
 print_int r; print_newline ()
