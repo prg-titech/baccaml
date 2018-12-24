@@ -1,9 +1,8 @@
 open Core
-
 open MinCaml
-open Asm
-
 open Corext
+open Asm
+open Operands
 
 let (=|=) lhs rhs =
   String.get_prefix lhs = String.get_prefix rhs
@@ -61,7 +60,6 @@ let replace_ld_st ~lhs ~rhs = function
     |> fun (a, b) -> St (a, b, C (i), n)
   | _ -> assert false
 
-
 let rec replace ~lhs ~rhs = function
   | Ans (exp) -> Ans (replace_exp ~lhs:lhs ~rhs:rhs exp)
   | Let ((x, typ), exp, t) ->
@@ -70,8 +68,9 @@ let rec replace ~lhs ~rhs = function
 and replace_exp ~lhs ~rhs exp = match exp with
   | Mov (x) when x =|= lhs -> Mov (rhs)
   | Neg (x) when x =|= lhs -> Neg (rhs)
-  | Add _ | Sub _
-  | IfEq _ | IfGE _ | IfLE _ -> replace_xy lhs rhs exp
+  | Add (x, y) | Sub (x, y) -> replace_xy lhs rhs exp
+  | IfEq (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfLE (x, y, t1,t2) ->
+    replace_if ~lhs:lhs ~rhs:rhs exp
   | Ld _ | St _ -> replace_ld_st lhs rhs exp
   | CallDir (id_l, args, fargs) ->
     CallDir (
@@ -84,6 +83,28 @@ and replace_exp ~lhs ~rhs exp = match exp with
       args |> List.map ~f:(fun a -> if a =|= lhs then rhs else a),
       fargs |> List.map ~f:(fun a -> if a =|= lhs then rhs else a))
   | exp -> exp
+
+and replace_if ~lhs ~rhs exp = match exp with
+  | IfEq (x, y, t1, t2) | IfLE (x, y, t1, t2) | IfGE (x, y, t1, t2) ->
+    begin match y with
+    | V (y) ->
+      begin match x =|= lhs, y =|= lhs with
+        | true, true ->
+          exp |%| (rhs, V (rhs), replace lhs rhs t1, replace lhs rhs t2)
+        | true, false ->
+          exp |%| (rhs, V (y), replace lhs rhs t1, replace lhs rhs t2)
+        | false, true ->
+          exp |%| (x, V (rhs), replace lhs rhs t1, replace lhs rhs t2)
+        | false, false ->
+          exp |%| (x, V (y), replace lhs rhs t1, replace lhs rhs t2)
+      end
+    | C (n) ->
+      if x =|= lhs then
+        exp |%| (rhs, C (n), replace lhs rhs t1, replace lhs rhs t2)
+      else
+        exp |%| (x, C (n), replace lhs rhs t1, replace lhs rhs t2)
+    end
+  | _ -> assert false
 
 let rec iter i t =
   let rec f = function
@@ -98,5 +119,8 @@ let rec iter i t =
     let t2 = f t in
     iter (i - 1) t2
 
-let rec elim ?(i = 100) t =
+let rec elim ?(i = 10000) t =
   iter i t
+
+let rec elim_fundef ?(i = 10000) { name; args; fargs; body; ret } =
+  { name; args; fargs; body = iter i body; ret }
