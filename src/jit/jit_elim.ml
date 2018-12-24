@@ -11,11 +11,6 @@ let (|>|) exp (lhs, rhs) =
   match exp with
   | Add _ -> Add (lhs, rhs)
   | Sub _ -> Sub (lhs, rhs)
-  | IfEq (_, _, t1, t2) -> IfEq (lhs, rhs, t1, t2)
-  | IfLE (_, _, t1, t2) -> IfLE (lhs, rhs, t1, t2)
-  | IfGE (_, _, t1, t2) -> IfGE (lhs, rhs, t1, t2)
-  | Ld (_, _, n) -> Ld (lhs, rhs, n)
-  | LdDF (_, _, n) -> Ld (lhs, rhs, n)
   | _ -> failwith "Add or Sub should be come here."
 
 let replace_xy' ~x ~y ~lhs ~rhs exp =
@@ -34,9 +29,6 @@ let replace_xy' ~x ~y ~lhs ~rhs exp =
 let replace_xy ~lhs ~rhs exp = match exp with
   | Add (x, y) -> replace_xy' x y lhs rhs exp
   | Sub (x, y) -> replace_xy' x y lhs rhs exp
-  | IfEq (x, y, t1, t2)
-  | IfLE (x, y, t1, t2)
-  | IfGE (x, y, t1, t2) -> replace_xy' x y lhs rhs exp
   | _ -> failwith "Add, Sub, If should be come here."
 
 let replace_ld_st ~lhs ~rhs = function
@@ -109,10 +101,8 @@ and replace_if ~lhs ~rhs exp = match exp with
 let rec iter i t =
   let rec f = function
     | Ans (exp) -> Ans (exp)
-    | Let ((x, typ), Mov (y), t) when x =|= y ->
-      replace ~lhs:x ~rhs:y t
-    | Let ((x, typ), exp, t) ->
-      Let ((x, typ), exp, f t)
+    | Let ((x, typ), Mov (y), t) when x =|= y -> replace ~lhs:x ~rhs:y t
+    | Let ((x, typ), exp, t) -> Let ((x, typ), exp, f t)
   in
   if i = 0 then t
   else
