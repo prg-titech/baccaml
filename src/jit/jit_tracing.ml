@@ -115,7 +115,7 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
       ))
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     let fundef = find_fundef id_l p in
-    let t = Inlining.inline_calldir_exp args fundef reg in
+    let t = Inlining.inline_fundef reg args fundef in
     let t' = tj p reg mem tj_env t  in
     connect (dest, typ) t' (tj p reg mem tj_env body)
   | Let ((dest, typ), exp, body) ->
@@ -178,7 +178,7 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
     let reds = args |> List.filter ~f:(fun a -> (is_red reg.(int_of_id_t a))) in
     let { merge_pc; trace_name } = tj_env in
     if (value_of pc) <> merge_pc then
-      Inlining.inline_calldir_exp args fundef reg
+      Inlining.inline_fundef reg args fundef
       |> tj p reg mem tj_env
     else
       Ans (CallDir (Id.L (trace_name), reds, []))
@@ -264,7 +264,7 @@ and tj_guard_over p reg mem path tj_env = function
     in
     begin match path with
       | `True  when pc = merge_pc -> Ans ((CallDir (Id.L (trace_name), args, fargs)))
-      | `True -> Inlining.inline_calldir_exp args fundef reg |> tj p reg mem tj_env
+      | `True -> Inlining.inline_fundef reg args fundef |> tj p reg mem tj_env
       | `False -> Ans ((CallDir (Id.L ("guard_failure." ^ x), args, fargs)))
     end
   | Ans (exp) -> Ans (exp)

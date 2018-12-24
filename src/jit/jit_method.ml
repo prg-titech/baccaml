@@ -90,7 +90,7 @@ and mj_exp p reg mem fenv name = function
   | CallDir (id_l, args, fargs) ->
     Logs.debug (fun m -> m  "CallDir (%s)" (string_of_id_l id_l));
     let fundef = find_fundef p id_l in
-    let t = Inlining.inline_calldir_exp args fundef reg in
+    let t = Inlining.inline_fundef reg args fundef in
     mj p reg mem fenv name t
   | IfEq _ | IfGE _ | IfLE _ as exp ->
     mj_if p reg mem fenv name exp
