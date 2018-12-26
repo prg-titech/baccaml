@@ -20,7 +20,7 @@ $ dune exec src/bin/baccaml_builder.exe -- [interpreter].ml \
 ### Example
 
 ```bash
-$ dune exec baccaml -- -file benchmark/baccaml/test_interp_tj.ml
+$ dune exec baccaml -- -file benchmark/baccaml/test_interp_tj.ml \
 	benchmark/armin/fib.am benchmark/armin/fib_26.am benchmark/armin/fib_18.am
 $ dune exec src/bin/baccaml_builder.exe -- benchmark/baccaml/test_interp_tj.ml \
 	-type tjit -trace fib -trace fib_26 -o test_fib_tj -build
