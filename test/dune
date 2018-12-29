@@ -1,5 +1,17 @@
-(executables
- (names jit_loop_test)
+(library
+ (name interp_util)
+ (modules Interp_util)
+ (flags (-w -4-33-40-41-42-43-34-44
+         -g
+         -short-paths
+         -strict-sequence
+         -strict-formats
+         -short-paths
+         -keep-locs)))
+
+(tests
+ (names interp_tlbc)
+ (modules (:standard \ interp_util))
  (flags (-w -4-33-40-41-42-43-34-44
          -g
          -short-paths
@@ -7,4 +19,4 @@
          -strict-formats
          -short-paths
          -keep-locs))
- (libraries core str re logs fmt stringext oUnit minCaml bc_jit rCaml))
+ (libraries core str re logs fmt stringext oUnit minCaml bc_jit interp_util))
