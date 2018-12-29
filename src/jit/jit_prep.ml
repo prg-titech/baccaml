@@ -44,7 +44,7 @@ let prep' p t =
   end
 
 let prep ~prog:p ~name:n ~red_args:reds ~jit_type:jtyp =
-  let Prog (table, fundefs, main) = p |> Jit_annot.gen_mj jtyp in
+  let Prog (table, fundefs, main) = p |> Jit_annot.annotate jtyp in
   let { body } =
     List.find (fun { name = Id.L (x) } ->
         String.split_on_char '.' x

@@ -102,7 +102,7 @@ let prepare_env jit_type { file; ex_name; code; annot; reds; greens; merge_pc; t
     |> Lexing.from_channel
     |> Util.virtualize
     |> Simm.f
-    |> Jit_annot.gen_mj jit_type
+    |> Jit_annot.annotate jit_type
   in
   let reg = Array.make 10000000 (Red (0)) in
   let mem = Array.make 10000000 (Red (0)) in
