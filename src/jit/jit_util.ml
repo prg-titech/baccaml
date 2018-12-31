@@ -70,12 +70,6 @@ let find_fundef_fuzzy (Prog(tbl, fundefs, main)) name =
   fundefs |> List.find (fun fundef ->
       let Id.L (x) = fundef.name in contains x name)
 
-let jit_value_of_id_t reg id_t = reg.(int_of_id_t id_t)
-
-let jit_value_of_id_or_imm reg = function
-  | V (id) -> reg.(int_of_id_t id)
-  | C (n) -> Green (n)
-
 let name_of id =
   try List.hd (String.split_on_char '.' id) with
   | _ -> id
