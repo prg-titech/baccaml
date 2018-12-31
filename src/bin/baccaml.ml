@@ -82,28 +82,31 @@ let run
       greens = bc_front_env.green;
       merge_pc = bc_front_env.merge_pc;
     } |> prepare_env jittype' in
-    let trace =
-      (match jittype' with
+    begin match jittype' with
       | `Meta_tracing ->
-        [Jit_tracing.run_while prog reg mem trace_name red_args 3 merge_pc]
+        begin
+          let t = [Jit_tracing.run_while prog reg mem trace_name red_args 3 merge_pc] in
+          ignore (t |> List.map (fun trace ->
+              Logs.debug (fun m -> m "%s\n" (Emit_virtual.to_string_fundef trace))));
+          t
+        end
       | `Meta_method ->
-        Jit_method.run_while prog reg mem trace_name red_args)
-      |> List.map Jit_elim.elim_fundef
-    in
-
-    Logs.debug (fun m ->
-        trace |> List.iter (fun t ->
-            m "%s\n" (Emit_virtual.to_string_fundef t)));
-    Jit_emit.emit_result
-      ~midflg:midflg
-      ~out:out
-      ~jit_type:jittype'
-      ~prog:prog
-      ~traces:trace;
-    close_in ic;
+        begin
+          let t = Jit_method.run_while prog reg mem trace_name red_args in
+          ignore (t |> List.map (fun trace ->
+              Logs.debug (fun m -> m "%s\n" (Emit_virtual.to_string_fundef trace))));
+          t
+        end
+    end
+    |> List.map Jit_elim.elim_fundef
+    |> List.map Simm.h
+    |> List.map RegAlloc.h
+    |> Jit_emit_base.(
+        let env = { jit_typ = jittype'; out = out ^ "_v2"; prog = prog; } in
+        emit ~midflg:midflg env
+      )
   with e ->
-    close_in ic;
-    raise e
+    close_in ic; raise e
 
 let () =
   let files = ref [] in

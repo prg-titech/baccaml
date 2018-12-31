@@ -192,7 +192,10 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprim
     Printf.fprintf oc "\tjmp\t*(%s)\n" reg_cl;
   | Tail, CallDir(Id.L(x), ys, zs) -> (* 末尾呼び出し *)
     g'_args oc [] ys zs;
-    Printf.fprintf oc "\tjmp\t%s\n" x;
+    if String.split_on_char '.' x |> List.hd = "guard_failure" then
+      Printf.fprintf oc "\tjmp\t%s\n" "min_caml_mid_layer"
+    else
+      Printf.fprintf oc "\tjmp\t%s\n" x;
   | NonTail(a), CallCls(x, ys, zs) ->
     g'_args oc [(x, reg_cl)] ys zs;
     let ss = stacksize () in
@@ -203,8 +206,6 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprim
       Printf.fprintf oc "\tmovl\t%s, %s\n" regs.(0) a
     else if List.mem a allfregs && a <> fregs.(0) then
       Printf.fprintf oc "\tmovsd\t%s, %s\n" fregs.(0) a
-  | _, CallDir (Id.L ("min_caml_dispatch"), _, _) ->
-    ()
   | NonTail(a), CallDir(Id.L(x), ys, zs) ->
     g'_args oc [] ys zs;
     let ss = stacksize () in
