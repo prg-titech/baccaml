@@ -59,7 +59,7 @@
 
 (executable
  (name           min_caml)
- (public_name    baccaml.mincaml)
+ (public_name    min-caml)
  (flags          (-w -4-33-40-41))
  (modules        Min_caml)
  (libraries      core minCaml bc_lib))
