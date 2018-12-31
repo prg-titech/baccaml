@@ -86,10 +86,10 @@ let is_opcode id =
 let _ =
   assert (is_opcode "instr")
 
-let rec connect id_t instr body =
-  let rec go id_t instr body = match instr with
-    | Let (a, Nop, t) -> go id_t t body
-    | Let (a, e, t) -> Let (a, e, go id_t t body)
-    | Ans Nop -> body
-    | Ans e -> Let ((id_t, Type.Int), e, body)
-  in go id_t instr body
+let rec connect id_t t1 t2 =
+  let rec go id_t t1 t2 = match t1 with
+    | Let (a, Nop, t) -> go id_t t t2
+    | Let (a, e, t) -> Let (a, e, go id_t t t2)
+    | Ans Nop -> t2
+    | Ans e -> Let ((id_t, Type.Int), e, t2)
+  in go id_t t1 t2

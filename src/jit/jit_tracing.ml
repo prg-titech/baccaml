@@ -1,4 +1,5 @@
 open Core
+open Corext
 open MinCaml
 open Asm
 open Inlining
@@ -114,10 +115,16 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
         |> Guard.create_guard reg `False tj_env ~wlist:[nextpc]
       ))
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
+    let rec f lst acc = match lst with
+      | [] -> acc
+      | (l, r) :: tl -> f tl (Let ((l, Type.Int), Mov (r), acc))
+    in
     let fundef = find_fundef id_l p in
-    let t = Inlining.inline_fundef reg args fundef in
-    let t' = tj p reg mem tj_env t  in
-    connect (dest, typ) t' (tj p reg mem tj_env body)
+    let t = Inlining.inline_fundef reg args fundef
+            |> tj p reg mem tj_env in
+    (* connect (dest, typ) t' (tj p reg mem tj_env body)
+     * |> f (List.zip_exn (fundef.args) args) *)
+    connect (dest, typ) (tj p reg mem tj_env body) (f (List.zip_exn (fundef.args) args) t)
   | Let ((dest, typ), exp, body) ->
     match exp with
     | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) ->
@@ -177,11 +184,11 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
     Logs.debug (fun m -> m "pc : %d" (value_of pc));
     let reds = args |> List.filter ~f:(fun a -> (is_red reg.(int_of_id_t a))) in
     let { merge_pc; trace_name } = tj_env in
-    if (value_of pc) <> merge_pc then
+    if (value_of pc) = merge_pc && (let Id.L x = id_l in String.contains x "interp") then
+      Ans (CallDir (Id.L (trace_name), reds, []))
+    else
       Inlining.inline_fundef reg args fundef
       |> tj p reg mem tj_env
-    else
-      Ans (CallDir (Id.L (trace_name), reds, []))
   | IfEq (_, _, Ans (CallDir (id_l, _, _)), t2) when (let Id.L (x) = id_l in contains x "trace") ->
     tj p reg mem tj_env t2
   | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) as exp ->
