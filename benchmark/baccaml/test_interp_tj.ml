@@ -167,5 +167,4 @@ let n = read_int () in
 let start = get_micro_time () in
 let r = loop n in
 let stop = get_micro_time () in
-print_int (stop - start); print_newline ();
-print_int (r); print_newline ()
+print_int (stop - start); print_newline ()
