@@ -141,12 +141,13 @@ code.(30) <- 0;
 code.(31) <- 9;
 (* 8 0 4 2 3 5 11 4 1 14 26 8 0 4 1 1 6 0 8 1 4 2 1 6 0 0 7 4 10 6 0 9 *)
 let rec loop n =
-  if n = 0 then ()
-  else let _ = interp stack 0 code 27 in loop (n -1)
+  let r = interp stack 0 code 27 in
+  if n = 0 then r
+  else loop (n -1)
 in
 let r = read_int () in
 let start = get_micro_time () in
-loop r;
+let res = loop r in
 let stop = get_micro_time () in
-print_int (stop - start);
-print_newline ()
+print_int (stop - start); print_newline ();
+print_int (res); print_newline ()
