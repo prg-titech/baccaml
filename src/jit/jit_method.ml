@@ -8,6 +8,11 @@ open Operands
 (* function_name -> (arguments, following expressions) *)
 module M = Map.Make(String)
 
+type mj_env = {
+  trace_name : string;
+  red_args : string list;
+}
+
 let empty_fenv () = M.empty
 
 let extend_fenv name args func fenv = M.add name (args, func) fenv
@@ -167,3 +172,6 @@ let run_while p reg mem name reds =
   List.map begin fun (body, name, args) ->
     { name = Id.L (name); args = args; fargs = []; body = body; ret = Type.Int }
   end loops
+
+let run prog reg mem { trace_name; red_args } =
+  run_while prog reg mem trace_name red_args

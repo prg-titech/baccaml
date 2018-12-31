@@ -83,20 +83,27 @@ let run
       merge_pc = bc_front_env.merge_pc;
     } |> prepare_env jittype' in
     begin match jittype' with
-      | `Meta_tracing ->
-        begin
-          let t = [Jit_tracing.run_while prog reg mem trace_name red_args 3 merge_pc] in
+      | `Meta_tracing -> Jit_tracing.(
+          let tj_env = {
+            trace_name = trace_name;
+            red_args = red_args;
+            index_pc = 3;
+            merge_pc = merge_pc;
+          } in
+          let t = run prog reg mem tj_env in
+          Logs.debug (fun m -> m "%s\n" (Emit_virtual.to_string_fundef t));
+          [t]
+        )
+      | `Meta_method -> Jit_method.(
+          let mj_env = {
+            trace_name = trace_name;
+            red_args = red_args;
+          } in
+          let t = run prog reg mem mj_env in
           ignore (t |> List.map (fun trace ->
               Logs.debug (fun m -> m "%s\n" (Emit_virtual.to_string_fundef trace))));
           t
-        end
-      | `Meta_method ->
-        begin
-          let t = Jit_method.run_while prog reg mem trace_name red_args in
-          ignore (t |> List.map (fun trace ->
-              Logs.debug (fun m -> m "%s\n" (Emit_virtual.to_string_fundef trace))));
-          t
-        end
+        )
     end
     |> List.map Jit_elim.elim_fundef
     |> List.map Simm.h

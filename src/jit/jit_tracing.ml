@@ -7,9 +7,18 @@ open Renaming
 open Operands
 open Jit_util
 
-type tj_env =
-  { index_pc: int; merge_pc: int; trace_name: string }
-[@@deriving fields]
+type tj_env = {
+  trace_name : string;
+  red_args : string list;
+  index_pc : int;
+  merge_pc : int;
+}
+
+type tj_env' = {
+  index_pc: int;
+  merge_pc: int;
+  trace_name: string
+} [@@deriving fields]
 
 let rec unique list =
   let rec go l s =  match l with
@@ -101,7 +110,7 @@ end
 
 open Guard
 
-let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) = function
+let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env') = function
   | Ans (exp) -> tj_exp p reg mem tj_env exp
   | Let ((dest, typ), CallDir (Id.L ("min_caml_can_enter_jit"), args, fargs), body) ->
     let nextpc = List.last_exn args in
@@ -176,7 +185,7 @@ and optimize_exp p reg mem tj_env (dest, typ) body exp =
     reg.(int_of_id_t dest) <- v;
     Let ((dest, typ), e, tj p reg mem tj_env body)
 
-and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) = function
+and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env') = function
   | CallDir (id_l, args, fargs) ->
     Logs.debug (fun m -> m "CallDir (%s)" (string_of_id_l id_l));
     let fundef =  find_fundef id_l p in
@@ -199,7 +208,7 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
       | Not_specialized (e, v) -> Ans (e)
     end
 
-and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) = function
+and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env') = function
   | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) as exp ->
     Logs.debug begin fun m ->
       let if_rep = match exp with
@@ -285,5 +294,8 @@ let run_while p reg mem name reds index_pc merge_pc =
     Jit_prep.prep ~prog:p ~name:name ~red_args:reds ~jit_type:`Meta_tracing in
 
   let p' = Prog (tbl, fdfs, m) in
-  let trace = tj p' reg mem { index_pc = index_pc; merge_pc = merge_pc; trace_name = name } ibody in
+  let trace = tj p' reg mem { index_pc = index_pc; merge_pc = merge_pc; trace_name = name; } ibody in
   { name = Id.L (name); args = reds; fargs = []; body = trace; ret = Type.Int }
+
+let run p reg mem { index_pc; merge_pc; trace_name; red_args } =
+  run_while p reg mem trace_name red_args index_pc merge_pc

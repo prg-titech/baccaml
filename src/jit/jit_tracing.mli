@@ -1,6 +1,11 @@
 open MinCaml
 
-type tj_env = { index_pc: int; merge_pc: int; trace_name: string }
+type tj_env = {
+  trace_name : string;
+  red_args : string list;
+  index_pc : int;
+  merge_pc : int;
+}
 
 val run_while :
   Asm.prog ->
@@ -11,3 +16,5 @@ val run_while :
   int ->
   int ->
   Asm.fundef
+
+val run : Asm.prog -> Jit_util.reg -> Jit_util.mem -> tj_env -> Asm.fundef
