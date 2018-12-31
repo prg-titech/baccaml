@@ -109,7 +109,7 @@ let run
     |> List.map Simm.h
     |> List.map RegAlloc.h
     |> Jit_emit_base.(
-        let env = { jit_typ = jittype'; out = out ^ "_v2"; prog = prog; } in
+        let env = { jit_typ = jittype'; out = out; prog = prog; } in
         emit ~midflg:midflg env
       )
   with e ->
