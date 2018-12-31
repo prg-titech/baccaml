@@ -1,6 +1,6 @@
 open Core
-open MinCaml
 open Corext
+open MinCaml
 open Asm
 open Operands
 
@@ -100,6 +100,9 @@ and replace_if ~lhs ~rhs exp = match exp with
 
 let rec iter i t =
   let rec f = function
+    | Ans (IfEq (x, y, t1, t2)) -> Ans (IfEq (x, y, f t1, f t2))
+    | Ans (IfGE (x, y, t1, t2)) -> Ans (IfGE (x, y, f t1, f t2))
+    | Ans (IfLE (x, y, t1, t2)) -> Ans (IfLE (x, y, f t1, f t2))
     | Ans (exp) -> Ans (exp)
     | Let ((x, typ), Mov (y), t) when x =|= y -> replace ~lhs:x ~rhs:y t
     | Let ((x, typ), exp, t) -> Let ((x, typ), exp, f t)
@@ -109,8 +112,8 @@ let rec iter i t =
     let t2 = f t in
     iter (i - 1) t2
 
-let rec elim ?(i = 10000) t =
+let rec elim ?(i = 100000) t =
   iter i t
 
-let rec elim_fundef ?(i = 10000) { name; args; fargs; body; ret } =
+let rec elim_fundef ?(i = 100000) { name; args; fargs; body; ret } =
   { name; args; fargs; body = iter i body; ret }
