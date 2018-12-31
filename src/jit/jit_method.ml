@@ -42,6 +42,8 @@ let rec mj p reg mem fenv name = function
     Logs.debug (fun m -> m "min_caml_loop_end.");
     Ans (CallDir (Id.L (name), args, fargs)), M.empty
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
+    (* [TODO] pc の値が method の先頭でかつ
+     * interpreter 呼び出しの場合のみ call するように変更 *)
     let restored_call =
       restore_args
         (Let ((dest, typ), CallDir (Id.L (name), args, fargs), Ans (Nop)))
