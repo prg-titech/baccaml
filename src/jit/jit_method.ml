@@ -44,7 +44,7 @@ let rec mj p reg mem fenv name = function
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     let restored_call =
       restore_args
-        (Let ((dest, typ), CallDir (id_l, args, fargs), Ans (Nop)))
+        (Let ((dest, typ), CallDir (Id.L (name), args, fargs), Ans (Nop)))
         reg
         args in
     let t, x = mj p reg mem fenv name body in
