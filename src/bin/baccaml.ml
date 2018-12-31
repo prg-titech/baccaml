@@ -90,7 +90,7 @@ let run
             index_pc = 3;
             merge_pc = merge_pc;
           } in
-          let t = run prog reg mem tj_env in
+          let t = run prog reg mem tj_env |> Jit_elim.elim_fundef in
           Logs.debug (fun m -> m "%s\n" (Emit_virtual.to_string_fundef t));
           [t]
         )
@@ -99,13 +99,12 @@ let run
             trace_name = trace_name;
             red_args = red_args;
           } in
-          let t = run prog reg mem mj_env in
+          let t = run prog reg mem mj_env |> List.map Jit_elim.elim_fundef in
           ignore (t |> List.map (fun trace ->
               Logs.debug (fun m -> m "%s\n" (Emit_virtual.to_string_fundef trace))));
           t
         )
     end
-    |> List.map Jit_elim.elim_fundef
     |> List.map Simm.h
     |> List.map RegAlloc.h
     |> Jit_emit_base.(
