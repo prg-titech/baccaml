@@ -1,15 +1,16 @@
 APPS = test_fib_mj test_fib_tj test_interp_naive test_interp_sum test_sum_mj test_sum_tj
-APP := fib
+TARGET := fib
 JIT := mj
 
-CLI := src/bin/baccaml_cli.exe
-BUILDER := src/bin/baccaml_builder.exe
+BACCAML := dune exec baccaml
+BUILDER := dune exec baccaml_builder
+MINCAML := dune exec min-caml
 
-ifeq ($(APP), fib)
+ifeq ($(TARGET), fib)
 $(APP): test_fib_tj test_fib_mj test_interp_naive
 else
-ifeq ($(APP), sum)
-$(APP): test_sum_tj test_sum_tj test_interp_sum
+ifeq ($(TARGET), sum)
+$(APP): test_sum_tj test_sum_mj test_interp_sum
 endif
 endif
 
@@ -17,65 +18,41 @@ all: $(APPS)
 
 test_fib_tj:
 	cd ../../ && \
-	dune exec $(CLI) -- \
-		-file benchmark/baccaml/test_interp_tj.ml \
-		-green "bytecode 100; pc 0" \
-		-red "stack 0; sp 3" \
-		-code "8 1 4 2 3 5 11 4 1 14 26 8 1 4 1 1 6 0 8 2 4 2 1 6 0 0 7 1 4 10 6 0 9"  \
-		-o test_fib_tj \
-		-type tjit && \
-	dune exec $(BUILDER) -- -type tjit -build -trace test_fib_tj benchmark/baccaml/test_interp_tj.ml && \
+	$(BACCAML) -- -file benchmark/baccaml/test_interp_tj.ml benchmark/armin/fib.am benchmark/armin/fib_26.am && \
+	$(BUILDER) -- benchmark/baccaml/test_interp_tj.ml -type tjit -trace fib -trace fib_26 -o test_fib_tj -build && \
 	mv test_fib_tj benchmark/baccaml
 
 test_fib_mj:
 	cd ../../ && \
-	dune exec $(CLI) -- \
-		-file benchmark/baccaml/test_interp_mj.ml \
-		-green "bytecode 100; pc 0" \
-		-red "stack 0; sp 1" \
-		-code "8 0 4 2 3 5 11 4 1 14 26 8 0 4 1 1 6 0 8 1 4 2 1 6 0 0 7 4 10 6 0 9"  \
-		-o test_fib_mj \
-		-type mjit && \
-	dune exec $(BUILDER) -- -type mjit -build -trace test_fib_mj benchmark/baccaml/test_interp_mj.ml; \
+	$(BACCAML) -- -file benchmark/baccaml/test_interp_mj.ml benchmark/armin/fib_mj.am -elim 1 && \
+	$(BUILDER) -- benchmark/baccaml/test_interp_mj.ml -type mjit -trace fib_mj -o test_fib_mj -build && \
 	mv test_fib_mj benchmark/baccaml
 
-test_sum_mj: test_sum.ml
-	$(eval INTERP := test_interp_sum_mj)
+test_sum_mj:
 	cd ../../ && \
-	dune exec $(CLI) -- \
-		-file benchmark/baccaml/$(INTERP).ml \
-		-green "bytecode 100; pc 0" \
-		-red "stack 0; sp 1" \
-		-code "8 0 4 2 3 5 11 4 1 14 21 8 0 8 1 4 1 1 6 0 0 7 4 10 6 0 9" \
-		-o $(basename $<)_mj \
-		-type mjit && \
-	dune exec $(BUILDER) -- -type mjit -build -trace test_sum_mj  \
-		benchmark/baccaml/$(INTERP).ml; \
-	mv $(basename $<)_mj benchmark/baccaml
+	$(BACCAML) -- -file benchmark/baccaml/test_interp_sum_mj.ml benchmark/armin/sum_mj.am && \
+	$(BUILDER) -- benchmark/baccaml/test_interp_tj.ml -type mjit -trace sumb_mj -o sum_mj -build && \
+	mv test_sum_mj benchmark/baccaml
 
-test_sum_tj: test_sum.ml
-	$(eval INTERP := test_interp_sum_tj)
+test_sum_tj:
 	cd ../../ && \
-	dune exec $(CLI) -- \
-		-file benchmark/baccaml/$(INTERP).ml \
-		-green "bytecode 100; pc 0" \
-		-red "stack 0; sp 2" \
-		-code "8 1 4 2 3 5 11 4 1 14 21 8 1 8 2 4 1 1 6 0 0 7 1 4 10 6 0 9" \
-		-o $(basename $<)_tj \
-		-type tjit && \
-	dune exec $(BUILDER) -- -type tjit -build -trace test_sum_tj \
-		benchmark/baccaml/$(INTERP).ml; \
-	mv $(basename $<)_tj benchmark/baccaml
+	$(BACCAML) -- -file benchmark/baccaml/test_interp_sum_tj.ml benchmark/armin/sum.am benchmark/armin/sum_20.am && \
+	$(BUILDER) -- benchmark/baccaml/test_interp_sum_tj.ml -type tjit -trace sum -trace sum_20 -o test_sum_tj -build && \
+	mv test_sum_tj benchmark/baccaml
 
 test_interp_naive: test_interp_naive.ml
 	cd ../../ && \
-	dune exec src/base/min_caml.exe -- -type mjit benchmark/baccaml/test_interp_naive.ml; \
+	$(MINCAML) -- -type mjit benchmark/baccaml/test_interp_naive.ml; \
 	gcc -m32 stub/stub.c stub/libmincaml.S benchmark/baccaml/test_interp_naive.s -o benchmark/baccaml/test_interp_naive
 
 test_interp_sum: test_interp_sum.ml
 	cd ../../ && \
-	dune exec src/base/min_caml.exe -- -type mjit benchmark/baccaml/$<; \
+	$(MINCAML) -- -type mjit benchmark/baccaml/$<; \
 	gcc -m32 stub/stub.c stub/libmincaml.S benchmark/baccaml/$(basename $<).s -o benchmark/baccaml/$(basename $<)
 
 clean:
 	$(RM) $(APPS)
+
+clean-dSYM:
+	cd ../../ && \
+	$(RM) -rf *.dSYM
