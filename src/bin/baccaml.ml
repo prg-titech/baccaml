@@ -44,6 +44,7 @@ let greens    = ref ""
 let output    = ref "out"
 let jittype   = ref ""
 let merge_pc  = ref 0
+let elim      = ref 1
 let name      = ref "min_caml_test_trace"
 
 let usage  = "usage: " ^ Sys.argv.(0) ^ " [-file string] [-green string list] [-red string list] [-code int list] [-annot int list]"
@@ -51,6 +52,7 @@ let usage  = "usage: " ^ Sys.argv.(0) ^ " [-file string] [-green string list] [-
 let speclist = [
   ("-file", Arg.Set_string file, "Specify the filename of your interpreter");
   ("-annot", Arg.Set_string annots, "Specify annotations for your bytecodes");
+  ("-elim", Arg.Set_int elim, "Specify the number of identity move elimination");
   ("-o", Arg.Set_string output, "Set executable's name");
   ("-dbg", Arg.Unit (fun _ -> Logs.set_level @@ Some Logs.Debug), "Enable debug mode");
 ]
@@ -101,7 +103,7 @@ let run
             index_pc = 3;
             merge_pc = merge_pc;
           } in
-          let t = run prog reg mem mj_env |> List.map Jit_elim.elim_fundef in
+          let t = run prog reg mem mj_env |> List.map (Jit_elim.elim_fundef ~i:!elim) in
           ignore (t |> List.map (fun trace ->
               Logs.debug (fun m -> m "%s\n" (Emit_virtual.to_string_fundef trace))));
           t
