@@ -98,6 +98,8 @@ let run
           let mj_env = {
             trace_name = trace_name;
             red_args = red_args;
+            index_pc = 3;
+            merge_pc = merge_pc;
           } in
           let t = run prog reg mem mj_env |> List.map Jit_elim.elim_fundef in
           ignore (t |> List.map (fun trace ->

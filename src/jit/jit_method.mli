@@ -3,6 +3,8 @@ open MinCaml
 type mj_env = {
   trace_name : string;
   red_args : string list;
+  index_pc : int;
+  merge_pc : int;
 }
 
 (* run method jit compilation *)

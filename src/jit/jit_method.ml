@@ -11,13 +11,26 @@ module M = Map.Make(String)
 type mj_env = {
   trace_name : string;
   red_args : string list;
+  index_pc : int;
+  merge_pc : int;
 }
+
+exception Error of string
+
+let index_pc = ref 0
+
+let merge_pc = ref 0
 
 let empty_fenv () = M.empty
 
 let extend_fenv name args func fenv = M.add name (args, func) fenv
 
 let gen_fname id = Id.genid id
+
+let find_pc args =
+  match List.nth_opt args !index_pc with
+  | Some (v) -> int_of_id_t v
+  | None -> raise (Error (Printf.sprintf "find_pc is failed. index_pc: %d" !index_pc))
 
 let rec restore_args cont reg = function
     [] -> cont
@@ -44,9 +57,11 @@ let rec mj p reg mem fenv name = function
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     (* [TODO] pc の値が method の先頭でかつ
      * interpreter 呼び出しの場合のみ call するように変更 *)
+    let pc = find_pc args |> Array.get reg |> value_of in
+    let callee_id = if pc = !merge_pc then Id.L (name) else id_l in
     let restored_call =
       restore_args
-        (Let ((dest, typ), CallDir (Id.L (name), args, fargs), Ans (Nop)))
+        (Let ((dest, typ), CallDir (callee_id, args, fargs), Ans (Nop)))
         reg
         args in
     let t, x = mj p reg mem fenv name body in
@@ -175,5 +190,6 @@ let run_while p reg mem name reds =
     { name = Id.L (name); args = args; fargs = []; body = body; ret = Type.Int }
   end loops
 
-let run prog reg mem { trace_name; red_args } =
+let run prog reg mem { trace_name; red_args; index_pc = x; merge_pc = y } =
+  index_pc := x; merge_pc := y;
   run_while prog reg mem trace_name red_args
