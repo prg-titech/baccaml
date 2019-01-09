@@ -33,12 +33,12 @@ def test():
     for _ in range(y):
         summary(n)
 
-    start = micros()
+    start = time.clock()
     for _ in range(x):
         summary(n)
-    end = micros()
+    end = time.clock()
 
-    print "TIME: %f us" % ((end - start))
+    print "TIME: %f s" % ((end - start))
     return (end - start)
 
 

@@ -1,5 +1,5 @@
 let rec sum n =
-  if n = 0 then 0
+  if n = 1 then 1
   else n + sum (n - 1)
 in
 let rec loop_sum n =

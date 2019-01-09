@@ -26,12 +26,12 @@ test_fib_mj:
 	cd ../../ && \
 	$(BACCAML) -- -file benchmark/baccaml/test_interp_mj.ml benchmark/armin/fib_mj.am -elim 1 && \
 	$(BUILDER) -- benchmark/baccaml/test_interp_mj.ml -type mjit -trace fib_mj -o test_fib_mj -build && \
-	mv test_fib_mj benchmark/baccaml
+	cp test_fib_mj benchmark/baccaml
 
 test_sum_mj:
 	cd ../../ && \
 	$(BACCAML) -- -file benchmark/baccaml/test_interp_sum_mj.ml benchmark/armin/sum_mj.am && \
-	$(BUILDER) -- benchmark/baccaml/test_interp_tj.ml -type mjit -trace sumb_mj -o sum_mj -build && \
+	$(BUILDER) -- benchmark/baccaml/test_interp_sum_mj.ml -type mjit -trace sum_mj -o test_sum_mj -build && \
 	mv test_sum_mj benchmark/baccaml
 
 test_sum_tj:

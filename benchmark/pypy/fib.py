@@ -18,20 +18,22 @@ def main():
 
     wstart = time.time()
     for i in range(W):
-        tstart = time.time()
+        tstart = time.clock()
         res = fib(n)
-        print "%f," % ((time.time() - tstart) * 1000000.0)
+        tend = time.clock()
+        print (tend - tstart)
 
     wend = time.time()
 
     print "WARMUP TIME: %f s" % ((wend - wstart) / float(W))
-    start = time.time()
+    start = time.clock()
     for j in range(N):
-        estart = time.time()
+        tstart = time.clock()
         res = fib(n)
-        print "%f" % ((time.time() - estart) * 1000000.0)
+        tend = time.clock()
+        print (tend - tstart)
 
-    end = time.time()
+    end = time.clock()
     print "TIME: %f s" % ((end - start) / float(N))
 
 

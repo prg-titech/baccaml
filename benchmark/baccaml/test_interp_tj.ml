@@ -85,7 +85,7 @@ let rec interp stack sp bytecode pc =
   else
     -1000 in
 let code = Array.make 40 0 in
-let stack = Array.make 10000 0 in
+let stack = Array.make 100000 0 in
 (* for meta tracing *)
 (* 8 1 4 2 3 5 11 4 1 14 26 8 1 4 1 1 6 0 8 2 4 2 1 6 0 0 7 1 4 10 6 0 9 *)
 code.(0) <- 8;
