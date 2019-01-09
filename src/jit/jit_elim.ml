@@ -33,22 +33,25 @@ let replace_xy ~lhs ~rhs exp = match exp with
 
 let replace_ld_st ~lhs ~rhs = function
   | Ld (x, V (y), z) ->
+    let f = fun (id, b) -> if b then rhs else id in
     Tuple2.create (x, x =|= lhs) (y, y =|= lhs)
-    |> Tuple2.map_fst ~f:(fun (id, b) -> if b then rhs else id)
-    |> Tuple2.map_snd ~f:(fun (id, b) -> if b then rhs else id)
+    |> Tuple2.map_fst ~f:f
+    |> Tuple2.map_snd ~f:f
     |> fun (a, b) -> Ld (a, V (b), z)
   | Ld (x, C (i), n) ->
     if x =|= lhs then Ld (rhs, C (i), n) else Ld (x, C (i), n)
   | St (x, y, V (z), n) ->
+    let f = fun (id, b) -> if b then rhs else id in
     Tuple3.create (x, x =|= lhs) (y, y =|= lhs) (z, z =|= lhs)
-    |> Tuple3.map_fst ~f:(fun (id, b) -> if b then rhs else id)
-    |> Tuple3.map_snd ~f:(fun (id, b) -> if b then rhs else id)
-    |> Tuple3.map_trd ~f:(fun (id, b) -> if b then rhs else id)
+    |> Tuple3.map_fst ~f:f
+    |> Tuple3.map_snd ~f:f
+    |> Tuple3.map_trd ~f:f
     |> fun (a, b, c) -> St (a, b, V (c), n)
   | St (x, y, C (i), n) ->
+    let f = fun (id, b) -> if b then rhs else id in
     Tuple2.create (x, x =|= lhs) (y, y =|= lhs)
-    |> Tuple2.map_fst ~f:(fun (id, b) -> if b then rhs else id)
-    |> Tuple2.map_snd ~f:(fun (id, b) -> if b then rhs else id)
+    |> Tuple2.map_fst ~f:f
+    |> Tuple2.map_snd ~f:f
     |> fun (a, b) -> St (a, b, C (i), n)
   | _ -> assert false
 
