@@ -95,11 +95,11 @@ code.(25) <- 0;
 code.(26) <- 9;
 let rec loop x =
   let r = interp stack 0 code 22 in
-  if x = 0 then r
+  if x = 1 then r
   else loop (x - 1)
 in
 let n = read_int () in
 let start = get_micro_time () in
-let r = loop n in
+let _ = loop n in
 let stop = get_micro_time () in
 print_int (stop - start); print_newline ()

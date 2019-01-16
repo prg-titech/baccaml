@@ -94,8 +94,9 @@ code.(25) <- 0;
 code.(26) <- 9;
 let n = read_int () in
 let rec loop x =
-  if x = 0 then ()
-  else let _ = interp stack 0 code 22 in loop (x - 1)
+  let r = interp stack 0 code 22 in
+  if x = 1 then r
+  else loop (x - 1)
 in
 let start = get_micro_time () in
 let _ = loop n in
