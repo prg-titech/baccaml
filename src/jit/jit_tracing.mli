@@ -7,14 +7,4 @@ type tj_env = {
   merge_pc : int;
 }
 
-val run_while :
-  Asm.prog ->
-  Jit_util.value array ->
-  Jit_util.value array ->
-  string ->
-  string list ->
-  int ->
-  int ->
-  Asm.fundef
-
 val run : Asm.prog -> Jit_util.reg -> Jit_util.mem -> tj_env -> Asm.fundef
