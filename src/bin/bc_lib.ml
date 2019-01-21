@@ -161,7 +161,7 @@ let rec annot' is_mj t = match t with
     Let (r, x, annot' is_mj t)
 
 let annot is_mj (Prog (table, fundefs, main) as p) =
-  let { name; args; fargs; body; ret } = find_fundef_fuzzy p "interp" in
+  let { name; args; fargs; body; ret } = find_fundef' p "interp" in
   let other_fundefs = List.filter (fun fundef -> fundef.name <> name ) fundefs in
   let new_fundefs =
     { name = name;

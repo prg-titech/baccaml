@@ -61,14 +61,15 @@ let contains s1 s2 =
   with _ -> false
 
 let find_fundef prog name =
-  let Asm.Prog (_, fundefs, _) = prog in
-  match List.find_opt (fun fundef -> fundef.name = name) fundefs with
+  let Prog (_, fundefs, _) = prog in
+  match fundefs |> List.find_opt (fun { name = n } -> name = name) with
   | Some (body) -> body
   | None -> failwith "find_fundef in Method jit is failed"
 
-let find_fundef_fuzzy (Prog(tbl, fundefs, main)) name =
-  fundefs |> List.find (fun fundef ->
-      let Id.L (x) = fundef.name in contains x name)
+let find_fundef' (Prog (tbl, fundefs, main)) name =
+  fundefs |> List.find begin fun { name = Id.L (x) } ->
+    contains x name
+  end
 
 let name_of id =
   try List.hd (String.split_on_char '.' id) with
