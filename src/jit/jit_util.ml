@@ -1,6 +1,8 @@
 open MinCaml
 open Asm
 
+exception Error
+
 let zero = "zero.0"
 
 type value = Red of int | Green of int | LightGreen of int
@@ -13,20 +15,22 @@ type jit_result =
   | Specialized of value
   | Not_specialized of exp * value
 
-let int_of_id_t id =
-  if id = "min_caml_hp" then
-    failwith ("int_of_id_t min_caml_hp is not supported.")
-  else
-    try
-      let x = String.split_on_char '.' id  in
-      List.nth x (List.length x - 1) |> int_of_string
-    with
-    | _ ->
-      try
-        let y = String.split_on_char 'u' id  in
-        List.nth y (List.length y - 1) |> int_of_string
-      with
-      | _ -> failwith @@ Printf.sprintf "int_of_id_t is failed: %s" id
+let int_of_id_t = function
+  | "min_caml_hp" ->
+    failwith "min_caml_hp is not supported."
+  | id ->
+    let int_of_id_t' c id =
+      let x = String.split_on_char c id in
+      match (List.length x - 1) |> List.nth_opt x with
+      | Some (v) -> int_of_string_opt v
+      | None -> None
+    in
+    match int_of_id_t' '.' id with
+    | Some (v) -> v
+    | None ->
+      match int_of_id_t' 'u' id with
+      | Some (v) -> v
+      | None -> raise Error
 
 let value_of = function
   | Red (n) | Green (n) | LightGreen (n) -> n
