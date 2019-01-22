@@ -41,6 +41,20 @@ let run_interp f =
     In_channel.close ic;
     raise e
 
+let run_parser f =
+  let ic = In_channel.create (f ^ ".ml") in
+  Id.counter := 0;
+  Typing.extenv := M.empty;
+  try
+    Lexing.from_channel ic
+    |> Parser.exp Lexer.token
+    |> Syntax.show
+    |> Out_channel.print_endline
+  with
+    e ->
+    In_channel.close ic;
+    raise e
+
 let run_compile f =
   let inchan = In_channel.create (f ^ ".ml") in
   let outchan = Out_channel.create (f ^ ".s") in
@@ -67,6 +81,7 @@ let spec_list = [
   ("-debug", Arg.Unit(fun _ -> Logs.set_level (Some (Logs.Debug))), "Specify loglevel as debug");
   ("-dump", Arg.Unit(fun _ -> run_typ := `Dump), "emit virtual machine code");
   ("-interp", Arg.Unit(fun _ -> run_typ := `Interp), "run as interpreter");
+  ("-p", Arg.Unit(fun _ -> run_typ := `Parser), "run parser");
 ]
 
 let usage =
@@ -85,4 +100,5 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: m
       `Dump -> run_dump
     | `Interp -> run_interp
     | `Emit -> run_compile
+    | `Parser -> run_parser
   end

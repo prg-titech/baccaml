@@ -3,6 +3,7 @@ type t = (* MinCamlの型を表現するデータ型 (caml2html: type_t) *)
   | Bool
   | Int
   | Float
+  | String
   | Fun of t list * t (* arguments are uncurried *)
   | Tuple of t list
   | Array of t

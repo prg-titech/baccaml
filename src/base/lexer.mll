@@ -52,6 +52,8 @@ rule token = parse
     { LESS }
 | '>'
     { GREATER }
+| '"'
+    { DQUOT }
 | "if"
     { IF }
 | "then"
