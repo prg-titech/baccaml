@@ -203,6 +203,7 @@ let run p e reg mem = match e with
         end
     end
   | _ ->
-    (Emit_virtual.string_of_exp e)
-    |> Printf.sprintf "%s is not supported in optimization."
-    |> fun s -> raise @@ Not_optimization_supported s
+    raise @@
+      Not_optimization_supported (
+        Printf.sprintf "%s is not supported in optimization."
+          (Emit_virtual.string_of_exp e))
