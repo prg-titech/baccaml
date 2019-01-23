@@ -44,7 +44,7 @@ let rec string_of_ids ids =
     "[" ^ (String.concat "; " ids') ^ "]"
 
 (* Asm.exp to string *)
-let rec to_string_exp exp =
+let rec string_of_exp exp =
   match exp with
   | Nop -> "Nop"
   | Set (i) -> Printf.sprintf "Set (%d)" i
@@ -102,11 +102,11 @@ let rec to_string_exp exp =
 and string_of_t t =
   match t with
   | Ans (exp) ->
-    Printf.sprintf "\n  Ans (%s)" (to_string_exp exp)
+    Printf.sprintf "\n  Ans (%s)" (string_of_exp exp)
   | Let (x', exp, t') ->
     match x' with
     | (id', type') ->
-      Printf.sprintf "\n  Let ((\"%s\", %s), %s, %s)" id' (string_of_type type') (to_string_exp exp) (string_of_t t')
+      Printf.sprintf "\n  Let ((\"%s\", %s), %s, %s)" id' (string_of_type type') (string_of_exp exp) (string_of_t t')
 
 (* fundef to string *)
 let string_of_fundef fundef' =

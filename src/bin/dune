@@ -14,7 +14,6 @@
          -short-paths
          -keep-locs))
  (libraries core)
-  (preprocess (pps ppx_deriving.show))
 )
 
 (library
@@ -27,8 +26,7 @@
          -strict-sequence
          -strict-formats
          -short-paths
-         -keep-locs))
- (preprocess (pps ppx_fields_conv)))
+         -keep-locs)))
 
 (executable
  (name        baccaml)
@@ -41,8 +39,7 @@
          -strict-sequence
          -strict-formats
          -short-paths
-         -keep-locs))
- (preprocess (pps ppx_fields_conv ppx_deriving.show)))
+         -keep-locs)))
 
 (executable
  (name baccaml_builder)
@@ -54,8 +51,7 @@
          -strict-sequence
          -strict-formats
          -short-paths
-         -keep-locs))
- (preprocess (pps ppx_fields_conv ppx_deriving.show)))
+         -keep-locs)))
 
 (executable
  (name           min_caml)
