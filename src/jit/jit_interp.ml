@@ -108,7 +108,7 @@ module Jit = struct
 
 end
 
-let rec interp prog reg mem instr : res =
+let rec eval_t prog reg mem instr : res =
   match instr with
   | Ans exp ->
     let res = exp |> eval_exp prog reg mem  in
@@ -118,19 +118,19 @@ let rec interp prog reg mem instr : res =
     let res = exp |> eval_exp prog reg mem |> value_of_res in
     Logs.debug (fun m -> m "Let (id: %s, reg_num: %d, res: %d)" "min_caml_hp" !heap res);
     heap := res;
-    t |> interp prog reg mem
+    t |> eval_t prog reg mem
   | Let (_, CallDir (Id.L ("min_caml_can_enter_jit"), args, fargs), t) ->
      incr counter;
      if !counter > 100 then
        assert false
      else
-       t |> interp prog reg mem
+       t |> eval_t prog reg mem
   | Let ((id, _), exp, t) ->
     let n = int_of_id_t id in
     let res = exp |> eval_exp prog reg mem |> value_of_res in
     Logs.debug (fun m -> m "Let (id: %s, reg_num: %d, res: %d)" id n res);
     reg.(n) <- res;
-    t |> interp prog reg mem
+    t |> eval_t prog reg mem
 
 and eval_exp prog reg mem e : res =
   match e with
@@ -249,9 +249,9 @@ and eval_exp prog reg mem e : res =
     in
     Logs.debug (fun m -> m  "IfEq (id1: %s, id2: %s, t1: %d, t2: %d)" id1 (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 = r2 then
-      t1 |> interp prog reg mem
+      t1 |> eval_t prog reg mem
     else
-      t2 |> interp prog reg mem
+      t2 |> eval_t prog reg mem
   | IfLE (id, id_or_imm, t1, t2) ->
     let r1 = match id with "min_caml_hp" -> !heap | _ -> reg.(int_of_id_t id) in
     let r2 = match id_or_imm with
@@ -260,9 +260,9 @@ and eval_exp prog reg mem e : res =
     in
     Logs.debug (fun m -> m  "IfLE (id: %s, id_or_imm: %s, t1: %d, t2: %d)" id (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 <= r2 then
-      t1 |> interp prog reg mem
+      t1 |> eval_t prog reg mem
     else
-      t2 |> interp prog reg mem
+      t2 |> eval_t prog reg mem
   | IfGE (id, id_or_imm, t1, t2) ->
     let r1 = match id with "min_caml_hp" -> !heap | _ -> reg.(int_of_id_t id) in
     let r2 = match id_or_imm with
@@ -271,9 +271,9 @@ and eval_exp prog reg mem e : res =
     in
     Logs.debug (fun m -> m  "IfGE (id1: %s, id2: %s, t1: %d, t2: %d)" id (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 >= r2 then
-      t1 |> interp prog reg mem
+      t1 |> eval_t prog reg mem
     else
-      t2 |> interp prog reg mem
+      t2 |> eval_t prog reg mem
   | CallCls (id_t, args, _) ->
     let r1 = reg.(int_of_id_t id_t) in
     let m1 = mem.(r1) in
@@ -282,7 +282,7 @@ and eval_exp prog reg mem e : res =
     let { args = args'; body } = Util.lookup_by_id_l prog (Id.L (id)) in
     let reg' = Util.new_reg reg args' args in
     reg'.(int_of_id_t id) <- r1;
-    body |> interp prog reg' mem
+    body |> eval_t prog reg' mem
   | CallDir (Id.L ("min_caml_print_int"), [arg], _) ->
     let v = reg.(int_of_id_t arg) in
     Logs.debug (fun m -> m  "CallDir min_caml_print_int %d" v);
@@ -312,7 +312,7 @@ and eval_exp prog reg mem e : res =
     let { args = args'; body } = Util.lookup_by_id_l prog name in
     let reg' = Util.new_reg reg args' args in
     let Id.L s = name in Logs.debug (fun m -> m  "CallDir %s" s);
-    body |> interp prog reg' mem
+    body |> eval_t prog reg' mem
   | _ ->
     raise (Error "Not implemented.")
 
@@ -321,6 +321,6 @@ let f prog =
   let mem = Array.create regsize 0 in
   let prog' = Util.prog'_of_prog prog in
   let Prog' (_, _, t, labels) = prog' in
-  match t |> interp prog' reg mem with
+  match t |> eval_t prog' reg mem with
   | Jit _ -> assert false
   | Value n -> n

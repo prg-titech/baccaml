@@ -13,8 +13,7 @@
          -strict-formats
          -short-paths
          -keep-locs))
- (libraries core)
-)
+ (libraries core))
 
 (library
  (name        bc_lib)

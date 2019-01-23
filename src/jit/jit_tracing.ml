@@ -48,7 +48,7 @@ let find_value reg id =
     | None -> assert false
 
 let find_reds ~reg ~args =
-  List.filter args ~f:(fun a -> a |> int_of_id_t |> Array.get reg |> is_red)
+  args |> List.filter ~f:(fun a -> a |> int_of_id_t |> Array.get reg |> is_red)
 
 let rec connect (id_t, typ) instr body =
   let rec go id_t  body = function
