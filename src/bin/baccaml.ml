@@ -93,7 +93,7 @@ let run
             merge_pc = merge_pc;
           } in
           let t = run prog reg mem tj_env |> Jit_elim.elim_fundef in
-          Logs.debug (fun m -> m "%s\n" (Emit_virtual.to_string_fundef t));
+          Logs.debug (fun m -> m "%s\n" (Emit_virtual.string_of_fundef t));
           [t]
         )
       | `Meta_method -> Jit_method.(
@@ -105,7 +105,7 @@ let run
           } in
           let t = run prog reg mem mj_env |> List.map (Jit_elim.elim_fundef ~i:!elim) in
           ignore (t |> List.map (fun trace ->
-              Logs.debug (fun m -> m "%s\n" (Emit_virtual.to_string_fundef trace))));
+              Logs.debug (fun m -> m "%s\n" (Emit_virtual.string_of_fundef trace))));
           t
         )
     end

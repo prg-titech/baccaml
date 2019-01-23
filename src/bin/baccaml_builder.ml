@@ -32,7 +32,7 @@ let dump typ file =
   |> Trim.f
   |> Simm.f
   |> tran_annot typ
-  |> Emit_virtual.to_string_prog
+  |> Emit_virtual.string_of_prog
   |> Out_channel.print_endline
 
 let compile typ f =
