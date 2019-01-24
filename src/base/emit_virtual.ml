@@ -21,7 +21,6 @@ and string_of_type typ =
   | Type.Bool -> "Bool"
   | Type.Int -> "Int"
   | Type.Float -> "Float"
-  | Type.String -> "String"
   | Type.Fun ([], _) -> Printf.sprintf "Fun ()"
   | Type.Fun (hd :: tl, t) ->
     Printf.sprintf "Fun (%s, %s, %s)" (string_of_type hd) (string_of_types tl) (string_of_type t)
