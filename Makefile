@@ -21,13 +21,12 @@ all: build test
 build:
 	dune build
 
-clean:
+clean: git-clean
 	dune clean
-	git clean -dfXq
 	rm -rf $(TRASH)
 
-clean-dSYM:
-	rm -rf *.dSYM
+git-clean:
+	git clean -f
 
 test:
 	dune runtest -f
