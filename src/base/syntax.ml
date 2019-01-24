@@ -3,7 +3,6 @@ type t = (* MinCamlの構文を表現するデータ型 (caml2html: syntax_t) *)
   | Bool of bool
   | Int of int
   | Float of float
-  | String of string
   | Not of t
   | Neg of t
   | Add of t * t

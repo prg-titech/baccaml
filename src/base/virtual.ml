@@ -34,7 +34,6 @@ let expand xts ini addf addi =
 let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
   | Closure.Unit -> Ans(Nop)
   | Closure.Int(i) -> Ans(Set(i))
-  | Closure.String(s) -> Ans(Mov(s))
   | Closure.Float(d) ->
     let l =
       try

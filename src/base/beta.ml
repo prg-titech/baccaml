@@ -6,7 +6,6 @@ let rec g env = function (* β簡約ルーチン本体 (caml2html: beta_g) *)
   | Unit -> Unit
   | Int(i) -> Int(i)
   | Float(d) -> Float(d)
-  | String(s) -> String(s)
   | Neg(x) -> Neg(find x env)
   | Add(x, y) -> Add(find x env, find y env)
   | Sub(x, y) -> Sub(find x env, find y env)

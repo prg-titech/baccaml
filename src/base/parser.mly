@@ -1,7 +1,7 @@
 %{
-    (* parserが利用する変数、関数、型などの定義 *)
-    open Syntax
-    let addtyp x = (x, Type.gentyp ())
+(* parserが利用する変数、関数、型などの定義 *)
+open Syntax
+let addtyp x = (x, Type.gentyp ())
 %}
 
 /* (* 字句を表すデータ型の定義 (caml2html: parser_token) *) */
@@ -15,7 +15,6 @@
 %token PLUS_DOT
 %token AST_DOT
 %token SLASH_DOT
-%token DQUOT
 %token EQUAL
 %token LESS_GREATER
 %token LESS_EQUAL
@@ -70,20 +69,14 @@ simple_exp:
     { Int($1) }
 | FLOAT
     { Float($1) }
-| DQUOT INT DQUOT
-    { String(string_of_int $2) }
-| DQUOT FLOAT DQUOT
-    { String(string_of_float $2) }
-| DQUOT IDENT DQUOT
-    { String($2) }
 | IDENT
     { Var($1) }
+| simple_exp DOT LPAREN exp RPAREN
+    { Get($1, $4) }
 
 exp:
 | simple_exp
     { $1 }
-| exp DOT LPAREN exp RPAREN
-    { Get($1, $4) }
 | NOT exp
     %prec prec_app
     { Not($2) }
