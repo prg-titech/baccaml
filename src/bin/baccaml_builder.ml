@@ -1,4 +1,4 @@
-open Core
+
 open MinCaml
 open Bc_jit
 
@@ -13,7 +13,8 @@ let jit_type_str = ref ""
 
 let cwd = Sys.getcwd ()
 
-let get_prefix f = String.split f ~on:'.' |> List.hd |> Option.value ~default:f
+let get_prefix f =
+  String.split_on_char '.'  f |> List.hd
 
 let jit_typ typ = match typ with
   | "tjit" -> `Meta_tracing
@@ -26,19 +27,19 @@ let tran_annot typ p =
   | `Not_specified -> failwith "jit type is not specified."
 
 let dump typ file =
-  In_channel.create file
+  open_in file
   |> Lexing.from_channel
   |> Util.virtualize
   |> Trim.f
   |> Simm.f
   |> tran_annot typ
   |> Emit_virtual.string_of_prog
-  |> Out_channel.print_endline
+  |> print_endline
 
 let compile typ f =
   let f = get_prefix f in
-  let ic = In_channel.create (f ^ ".ml") in
-  let oc = Out_channel.create (f ^ ".s") in
+  let ic = open_in (f ^ ".ml") in
+  let oc = open_out (f ^ ".s") in
   try
     Lexing.from_channel ic
     |> Util.virtualize
@@ -47,19 +48,15 @@ let compile typ f =
     |> tran_annot typ
     |> RegAlloc.f
     |> Emit.f oc;
-    In_channel.close ic;
-    Out_channel.close oc;
+    close_in ic;
+    close_out oc;
   with e ->
-    In_channel.close ic;
-    Out_channel.close oc;
+    close_in ic;
+    close_out oc;
     raise e
 
 exception No_such_file of string
 
-let validate_file file =
-  match Sys.is_file file with
-  | `Yes -> ()
-  | `No | `Unknown -> raise (No_such_file file)
 
 let gen_interp_asm typ file =
   compile (jit_typ typ) file
@@ -67,9 +64,8 @@ let gen_interp_asm typ file =
 let build_object_file file =
   let from = cwd ^ "/" ^ file ^ ".s" in
   let to' = cwd ^ "/" ^ file ^ ".o" in
-  validate_file from;
   Printf.sprintf "gcc -g -c -m32 %s -o %s" from to'
-  |> Sys.command_exn
+  |> Sys.command
 
 let build_executable interp trace =
   let cmd =
@@ -80,12 +76,11 @@ let build_executable interp trace =
       (trace ^ ".o")
       (trace)
   in
-  Sys.command_exn cmd
+  Sys.command cmd
 
 let build_executables interp traces out =
   let str_obj_of_list strs =
-    strs
-    |> List.fold ~init:"" ~f:(fun acc str -> acc ^ " " ^ str ^ ".o")
+    List.fold_left (fun acc str -> acc ^ " " ^ str ^ ".o") "" strs
   in
 
   let cmd =
@@ -95,18 +90,18 @@ let build_executables interp traces out =
       (interp ^ ".o")
       (str_obj_of_list traces)
       (out)
-  in Sys.command_exn cmd
+  in Sys.command cmd
 
 let clean trace =
   let cmd = Printf.sprintf "rm -rf %s.dSYM" trace in
-  Sys.command_exn cmd
+  Sys.command cmd
 
 let build typ interp trace =
   try
     gen_interp_asm typ interp;
-    build_object_file interp;
-    build_object_file trace;
-    build_executable interp trace;
+    build_object_file interp |> ignore;
+    build_object_file trace |> ignore;
+    build_executable interp trace |> ignore;
     clean trace
   with e ->
     Printf.eprintf "building %s %s is failed.\n" interp trace;
@@ -115,10 +110,10 @@ let build typ interp trace =
 let builds typ interp traces out =
   try
     gen_interp_asm typ interp;
-    build_object_file interp;
-    traces |> List.iter ~f:(fun f -> build_object_file f);
-    build_executables interp traces out;
-    traces |> List.iter ~f:clean;
+    build_object_file interp |> ignore;
+    traces |> List.iter (fun f -> build_object_file f |> ignore);
+    build_executables interp traces out |> ignore;
+    traces |> List.iter (fun t -> clean t |> ignore);
   with e ->
     Printf.eprintf "building %s is failed.\n" interp
 
@@ -144,7 +139,7 @@ let spec_list = [
 let _ =
   let files = ref [] in
   Arg.parse spec_list (fun s -> files := !files @ [s]) usage;
-  List.iter !files ~f:begin fun f ->
+  !files |> List.iter begin fun f ->
     match !level with
     | `Dump -> dump !jit_type f
     | `Emit -> compile !jit_type f

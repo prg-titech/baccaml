@@ -12,8 +12,8 @@ let rec unique list =
   in go list []
 
 let split str =
-  let str' = (Core.String.split ~on:'.' str) in
-  List.hd str', Core.List.last_exn str'
+  let str' = (String.split_on_char '.' str) in
+  List.hd str', (str' |> List.rev |> List.hd)
 
 let rec get_free_vars = function
   | Ans (exp) -> get_free_vars' exp

@@ -8,5 +8,5 @@
  (public_name    baccaml.base)
  (modules        (:standard \ anchor))
  (flags          (-w -4-33-40-41))
- (libraries      str core logs stringext corext)
+ (libraries      str logs stringext)
  (c_names        float))

@@ -1,5 +1,4 @@
 open Asm
-open Core
 
 let trace_entry = "min_caml_trace_entry"
 
@@ -11,7 +10,7 @@ let rec convert = function
       | Let ((dest, typ), CallDir (id_l, args, fargs), body)
         when (id_l = Id.L "min_caml_jit_dispatch" || id_l = Id.L "jit_merge_point") ->
         Ans (IfEq (x, C(n),
-                   Ans (CallDir (Id.L ("min_caml_trace_entry"), List.tl_exn args, fargs)),
+                   Ans (CallDir (Id.L ("min_caml_trace_entry"), List.tl args, fargs)),
                    body
                   ))
       | t -> t
@@ -20,8 +19,9 @@ let rec convert = function
 
 let f (Prog (table, fundefs, main)) =
   let fundefs' =
-    List.map fundefs
-      ~f:(fun { name; args; fargs; body; ret } ->
+    fundefs
+    |> List.map
+         (fun { name; args; fargs; body; ret } ->
           let body' = body |> convert in
           { name = name
           ; args = args

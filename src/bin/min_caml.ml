@@ -1,4 +1,3 @@
-open Core
 open MinCaml
 
 let run_typ = ref `Emit
@@ -12,7 +11,7 @@ let annot p = match !jit_typ with
   | `Meta_method | `Meta_tracing as typ -> Bc_lib.annot typ p
 
 let run_dump f =
-  let inchan = In_channel.create (f ^ ".ml") in
+  let inchan = open_in (f ^ ".ml") in
   try
     Lexing.from_channel inchan
     |> Util.virtualize
@@ -21,13 +20,13 @@ let run_dump f =
     |> annot
     |> Emit_virtual.string_of_prog
     |> print_endline;
-    In_channel.close inchan;
+    close_in inchan;
   with e ->
-    In_channel.close inchan;
+    close_in inchan;
     raise e
 
 let run_interp f =
-  let ic = In_channel.create (f ^ ".ml") in
+  let ic = open_in (f ^ ".ml") in
   try
     Lexing.from_channel ic
     |> Util.virtualize
@@ -38,12 +37,12 @@ let run_interp f =
     |> string_of_int
     |> print_endline
   with e ->
-    In_channel.close ic;
+    close_in ic;
     raise e
 
 let run_compile f =
-  let inchan = In_channel.create (f ^ ".ml") in
-  let outchan = Out_channel.create (f ^ ".s") in
+  let inchan = open_in (f ^ ".ml") in
+  let outchan = open_out (f ^ ".s") in
   try
     Lexing.from_channel inchan
     |> Util.virtualize
@@ -52,9 +51,9 @@ let run_compile f =
     |> annot
     |> RegAlloc.f
     |> Emit.f outchan;
-    In_channel.close inchan;
-    Out_channel.close outchan
-  with e -> (In_channel.close inchan; Out_channel.close outchan; raise e)
+    close_in inchan;
+    close_out outchan
+  with e -> (close_in inchan; close_out outchan; raise e)
 
 let spec_list = [
   ("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
@@ -76,11 +75,11 @@ let usage =
 let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
   let files = ref [] in
   Arg.parse spec_list begin fun f ->
-    files := !files @ [String.split f ~on:'.'
-                       |> List.hd
-                       |> Option.value ~default:f]
+    files := !files @ [f
+                       |> String.split_on_char '.'
+                       |> List.hd]
   end usage;
-  List.iter !files ~f:begin
+  !files |> List.iter begin
     match !run_typ with
       `Dump -> run_dump
     | `Interp -> run_interp

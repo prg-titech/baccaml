@@ -1,4 +1,3 @@
-open Core
 open Asm
 
 exception Not_supported of string
@@ -32,9 +31,7 @@ module Util = struct
   let int_of_id_t = function
     | "min_caml_hp" -> failwith ("int_of_id_t min_caml_hp is not supported.")
     | id ->
-      match List.last (String.split id ~on:'.') with
-      | Some v -> int_of_string v
-      | None -> print_endline id; int_of_string id
+       id |> String.split_on_char '.' |> List.rev |> List.hd |> int_of_string
 
   let string_of_id_or_imm = function
     | C (n) -> string_of_int n
@@ -46,7 +43,7 @@ module Util = struct
 
   let rec find_label prog num =
     let ProgWithLabel (_, _, _, labels) = prog in
-    match List.find ~f:(fun (id_l, n) -> n = num) labels with
+    match labels |> List.find_opt (fun (id_l, n) -> n = num) with
     | Some (id, _) -> id
     | None ->
       Logs.err (fun m -> m "num: %d" num);
@@ -54,7 +51,7 @@ module Util = struct
 
   let rec lookup_by_id_l prog name =
     let ProgWithLabel (_, fundefs, _, _) = prog in
-    match List.find ~f:(fun fundef -> (fundef.name = name)) fundefs with
+    match fundefs |> List.find_opt (fun fundef -> (fundef.name = name)) with
     | Some (fundef) -> fundef
     | None ->
       Logs.err (fun m -> let Id.L s = name in m "CallCls %s is not found" s);
@@ -62,19 +59,25 @@ module Util = struct
 
   let rec lookup_by_id_t prog name =
     let ProgWithLabel (_, fundefs, _, _) = prog in
-    match List.find ~f:(fun fundef -> (let Id.L s = fundef.name in s) = name) fundefs with
+    match fundefs |> List.find_opt (fun fundef -> (let Id.L s = fundef.name in s) = name) with
     | Some (fundef) -> fundef
     | None ->
       Logs.err (fun m -> m "CallCls %s" name);
       assert false
 
   let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数がしまわれている reg を作る *)
-    let regs_tmp = List.map ~f:int_of_id_t args_tmp in
-    let regs_real = List.map ~f:int_of_id_t args_real in
+    let regs_tmp = List.map int_of_id_t args_tmp in
+    let regs_real = List.map int_of_id_t args_real in
     let arr = Array.create register_size 0 in
+    let rec zip x y =
+      match x, y with
+      | [], [] -> []
+      | h1 :: t1, h2 :: t2 -> (h1, h2) :: (zip t1 t2)
+      | _ -> assert false
+    in
     List.iter
-      ~f:(fun (x, y) -> arr.(x) <- reg.(y))
-      (List.zip_exn regs_tmp regs_real);
+      (fun (x, y) -> arr.(x) <- reg.(y))
+      (zip regs_tmp regs_real);
     arr
 
 end
@@ -259,10 +262,10 @@ and eval_exp prog exp' reg mem  =
   | CallDir (Id.L ("min_caml_print_int"), [arg], _) ->
     let v = reg.(int_of_id_t arg) in
     Logs.debug (fun m -> m  "CallDir min_caml_print_int %d" v);
-    Out_channel.output_string stdout (string_of_int v);
+    print_int v;
     0
   | CallDir (Id.L ("min_caml_print_newline"), _, _) ->
-    Out_channel.newline stdout;
+    print_newline ();
     0
   | CallDir (Id.L ("min_caml_truncate"), _, [farg]) ->
     raise (Un_implemented_instruction "min_caml_truncate is not implemented.")
@@ -278,7 +281,7 @@ and eval_exp prog exp' reg mem  =
     a
   | CallDir (name, args, _) ->
     (* fundef.args: 仮引数 args: 実引数 *)
-    let pc = Array.get (List.to_array args) 1 in
+    let pc = Array.get (Array.of_list args) 1 in
     print_endline (int_of_id_t pc |> Array.get reg |> string_of_int);
     let fundef = lookup_by_id_l prog name in
     let reg' = make_reg reg (fundef.args) args in

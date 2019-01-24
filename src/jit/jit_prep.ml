@@ -30,7 +30,7 @@ let prep' p t =
                  interp_body)) ->
       let Prog (table, fundefs, main) = p in
       let fundefs' =
-        Core.List.map fundefs ~f:begin fun fundef ->
+        fundefs |> List.map begin fun fundef ->
           let Id.L (x) = fundef.name in
           match String.split_on_char '.' x |> List.hd with
           | name' when name' = "interp" ->

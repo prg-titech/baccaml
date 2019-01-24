@@ -264,12 +264,11 @@ and create_asm' = function
     Buffer.add_string buf @@ create_asm'_args [] ys zs;
     if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\taddl\t$%d, %s\n" ss reg_sp;
     Buffer.add_string buf @@ begin
-      Core.(
-        if String.exists x ~f:(String.contains "interp") then
+        if contains x "interp" then
           Printf.sprintf "\tcall\t%s\n" "min_caml_mid_layer"
         else
           Printf.sprintf "\tcall\t%s\n" x
-      ) end;
+      end;
     if ss > 0 then Buffer.add_string buf @@ Printf.sprintf "\tsubl\t$%d, %s\n" ss reg_sp;
     (if List.mem a allregs && a <> regs.(0) then
        Buffer.add_string buf @@ Printf.sprintf "\tmovl\t%s, %s\n" regs.(0) a

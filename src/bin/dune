@@ -1,4 +1,4 @@
-;; mode: tuareg-jbuild-mode
+;; -*- mode: tuareg-jbuild -*-
 
 (ocamllex (modules bc_lexer))
 (menhir (modules bc_parser))
@@ -12,8 +12,7 @@
          -strict-sequence
          -strict-formats
          -short-paths
-         -keep-locs))
- (libraries core))
+         -keep-locs)))
 
 (library
  (name        bc_lib)
@@ -32,7 +31,7 @@
  (public_name baccaml)
  (package     baccaml)
  (modules     baccaml)
- (libraries bc_front_lib minCaml bc_jit bc_lib core logs fmt stringext)
+ (libraries bc_front_lib minCaml bc_jit bc_lib logs fmt stringext)
  (flags (-w -4-33-40-41-42-43-34-44
          -short-paths
          -strict-sequence
@@ -44,7 +43,7 @@
  (name baccaml_builder)
  (public_name baccaml_builder)
  (modules baccaml_builder)
- (libraries minCaml bc_jit bc_lib core logs fmt stringext)
+ (libraries minCaml bc_jit bc_lib logs fmt stringext)
  (flags (-w -4-33-40-41-42-43-34-44
          -short-paths
          -strict-sequence
@@ -57,7 +56,7 @@
  (public_name    min-caml)
  (flags          (-w -4-33-40-41))
  (modules        Min_caml)
- (libraries      core minCaml bc_lib))
+ (libraries      minCaml bc_lib))
 
 (executable
  (name           min_c)
