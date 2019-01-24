@@ -1,7 +1,0 @@
-(library
- (name X86)
- (public_name baccaml.x86)
- (flags (-w -4-33-40-41))
- (libraries str core logs stringext corext)
- (preprocess (pps ppx_deriving.show))
-)
