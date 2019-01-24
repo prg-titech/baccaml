@@ -1,15 +1,15 @@
 open MinCaml
 open Asm
 
-open Core
-
 let trace_entry = "min_caml_trace_entry"
 
 let ignore_list = ["min_caml_jit_dispatch"; "jit_merge_point"; "min_caml_jit_merge_point"]
 
 let can_ignore id =
-  List.exists ignore_list ~f:(fun i -> i = id) ||
-  List.exists ~f:(fun c -> String.contains id c) (String.to_list "trace")
+  ignore_list
+  |> List.exists  (fun i -> i = id) ||
+    (String.to_seq "trace" |> List.of_seq)
+    |> List.exists (fun c -> String.contains id c)
 
 let rec trim_global = function
   (* jit_dispatch (pc = 0) bytecode a *)
@@ -20,7 +20,7 @@ let rec trim_global = function
     begin
       Ans (
         IfEq (x, C (n0),
-              Ans (CallDir (Id.L (trace_entry), List.tl_exn args, fargs)),
+              Ans (CallDir (Id.L (trace_entry), List.tl args, fargs)),
               body))
     end
   | Let (_, IfEq (x, y, Ans (Set (n1)), Ans (Set (n2))),
@@ -28,7 +28,7 @@ let rec trim_global = function
               body)) when (can_ignore id) ->
     Ans (
       IfEq (x, C (0),
-            Ans (CallDir (Id.L (trace_entry), List.tl_exn args, fargs)),
+            Ans (CallDir (Id.L (trace_entry), List.tl args, fargs)),
             body))
   | t -> t
 

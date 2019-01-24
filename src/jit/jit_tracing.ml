@@ -1,5 +1,3 @@
-open Core
-open Corext
 open MinCaml
 open Asm
 open Inlining
@@ -24,37 +22,48 @@ let rec unique list =
   let rec go l s =  match l with
       [] -> s
     | first :: rest ->
-      if List.exists ~f:(fun e -> e = first) s
+      if List.exists (fun e -> e = first) s
       then go rest s
       else go rest (s @ [first])
   in go list []
 
 let find_pc { index_pc; } args =
-  match List.nth args index_pc with
+  match List.nth_opt args index_pc with
   | Some (s) -> int_of_id_t s
   | None -> failwith "find_pc is failed"
 
 let find_fundef name prog =
   let Prog (_, fundefs, _) = prog in
-  match List.find ~f:(fun fundef -> fundef.name = name) fundefs with
+  match fundefs |> List.find_opt (fun fundef -> fundef.name = name) with
   | Some (body) -> body
   | None ->
     let Id.L (x) = name in
     failwith @@ Printf.sprintf "find_fundef is failed: %s" x
 
 let find_value reg id =
-    match Array.findi reg (fun i r -> i = (int_of_id_t id)) with
+  match
+    reg
+    |> Array.to_list
+    |> List.mapi (fun i r -> (i, r))
+    |> List.find_opt (fun (i, r) -> i = (int_of_id_t id))
+  with
     | Some (i, v) -> (i, v)
     | None -> assert false
 
 let find_reds ~reg ~args =
-  args |> List.filter ~f:(fun a -> a |> int_of_id_t |> Array.get reg |> is_red)
+  args |> List.filter (fun a -> a |> int_of_id_t |> Array.get reg |> is_red)
 
 let rec connect (id_t, typ) instr body =
   let rec go id_t  body = function
     | Let (a, e, t) -> Let (a, e, go id_t t body)
     | Ans e -> Let ((id_t, typ), e, body)
   in go id_t instr body
+
+let rec zip x y =
+  match x, y with
+  | [], [] -> []
+  | h1 :: t1, h2 :: t2 -> (h1, h2) :: (zip t1 t2)
+  | _ -> failwith "the lengths of x and y are not equeal"
 
 module Guard = struct
   let rec get_free_vars = function
@@ -77,7 +86,7 @@ module Guard = struct
   let rec add_guard_label reg path tj_env = function
     | Ans (CallDir (Id.L (x), args, fargs)) ->
       let { index_pc; merge_pc; trace_name } = tj_env in
-      let pc  = match List.nth args index_pc with
+      let pc  = match List.nth_opt args index_pc with
         | Some (id) -> reg.(int_of_id_t id) |> value_of
         | None -> failwith (Printf.sprintf "specified index_pc is invalid: %d" index_pc)
       in
@@ -93,7 +102,7 @@ module Guard = struct
   let create_guard reg path tj_env ?wlist:(ws=[]) cont =
     let free_vars = unique (get_free_vars cont) in
     let ignored x ys =
-      List.exists ys ~f:(fun y -> String.split ~on:'.' x |> List.hd_exn = y)
+      ys |> List.exists (fun y -> String.split_on_char '.' x |> List.hd = y)
     in
     let rec restore cont = function
       | [] -> cont
@@ -113,7 +122,7 @@ open Guard
 let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env') = function
   | Ans (exp) -> tj_exp p reg mem tj_env exp
   | Let ((dest, typ), CallDir (Id.L ("min_caml_can_enter_jit"), args, fargs), body) ->
-    let nextpc = List.last_exn args in
+    let nextpc = args |> List.rev |> List.hd in
     let { merge_pc; trace_name } = tj_env in
     let reds = find_reds ~reg:reg ~args:args in
     Ans (
@@ -133,7 +142,7 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env')
             |> tj p reg mem tj_env in
     (* connect (dest, typ) t' (tj p reg mem tj_env body)
      * |> f (List.zip_exn (fundef.args) args) *)
-    connect (dest, typ) (tj p reg mem tj_env body) (f (List.zip_exn (fundef.args) args) t)
+    connect (dest, typ) (tj p reg mem tj_env body) (f (zip (fundef.args) args) t)
   | Let ((dest, typ), exp, body) ->
     match exp with
     | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) ->
@@ -191,9 +200,10 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env')
     let fundef =  find_fundef id_l p in
     let pc = args |> find_pc tj_env |> Array.get reg in
     Logs.debug (fun m -> m "pc : %d" (value_of pc));
-    let reds = args |> List.filter ~f:(fun a -> (is_red reg.(int_of_id_t a))) in
+    let reds = args |> List.filter (fun a -> (is_red reg.(int_of_id_t a))) in
     let { merge_pc; trace_name } = tj_env in
-    if (value_of pc) = merge_pc && (let Id.L x = id_l in String.contains x "interp") then
+    if (value_of pc) = merge_pc &&
+         (let Id.L x = id_l in contains x "interp") then
       Ans (CallDir (Id.L (trace_name), reds, []))
     else
       Inlining.inline_fundef reg args fundef
@@ -274,7 +284,7 @@ and tj_guard_over p reg mem path tj_env = function
   | Ans (CallDir (Id.L (x), args, fargs)) ->
     let fundef =  find_fundef (Id.L (x)) p in
     let { index_pc; merge_pc; trace_name } = tj_env in
-    let pc  = match List.nth args index_pc with
+    let pc  = match List.nth_opt args index_pc with
       | Some (id) -> reg.(int_of_id_t id) |> value_of
       | None -> failwith (Printf.sprintf "specified index_pc is invalid: %d" index_pc)
     in

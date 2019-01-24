@@ -1,4 +1,3 @@
-open Core
 open MinCaml
 open Asm
 open Jit_util
@@ -40,7 +39,7 @@ module Util = struct
 
   let rec find_label prog num =
     let Prog' (_, _, _, labels) = prog in
-    match List.find ~f:(fun (id_l, n) -> n = num) labels with
+    match List.find_opt (fun (id_l, n) -> n = num) labels with
     | Some (id, _) -> id
     | None ->
       Logs.err (fun m -> m "num: %d" num);
@@ -48,7 +47,7 @@ module Util = struct
 
   let rec lookup_by_id_l prog name =
     let Prog' (_, fundefs, _, _) = prog in
-    match List.find ~f:(fun fundef -> (fundef.name = name)) fundefs with
+    match List.find_opt (fun fundef -> (fundef.name = name)) fundefs with
     | Some (fundef) -> fundef
     | None ->
       Logs.err (fun m -> let Id.L s = name in m "CallCls %s is not found" s);
@@ -56,7 +55,7 @@ module Util = struct
 
   let rec lookup_by_id_t prog name =
     let Prog' (_, fundefs, _, _) = prog in
-    match List.find ~f:(fun fundef -> (let Id.L s = fundef.name in s) = name) fundefs with
+    match List.find_opt (fun fundef -> (let Id.L s = fundef.name in s) = name) fundefs with
     | Some (fundef) -> fundef
     | None ->
       Logs.err (fun m -> m "CallCls %s" name);
@@ -64,26 +63,34 @@ module Util = struct
 
   (* 仮引数のレジスタに実引数がしまわれている reg を作る *)
   let new_reg reg args_tmp args_real =
-    let regs_tmp = List.map ~f:int_of_id_t args_tmp in
-    let regs_real = List.map ~f:int_of_id_t args_real in
+    let regs_tmp = List.map int_of_id_t args_tmp in
+    let regs_real = List.map int_of_id_t args_real in
     let arr = Array.create regsize 0 in
-    List.zip_exn regs_tmp regs_real
-    |> List.iter ~f:(fun (x, y) -> arr.(x) <- reg.(y));
+    let rec zip x y =
+      match x, y with
+      | [], [] -> []
+      | h1 :: t1, h2 :: t2 -> (h1, h2) :: (zip t1 t2)
+      | _ -> assert false
+    in
+    zip regs_tmp regs_real
+    |> List.iter (fun (x, y) -> arr.(x) <- reg.(y));
     arr
 
 end
 
 module Jit = struct
 
+  let last l = l |> List.rev |> List.hd
+
   let paint_colors_reg greens fvs reg =
-    let reg' = Array.create ~len:(Array.length reg) (Red (0)) in
-    List.iter fvs ~f:begin fun fv ->
+    let reg' = Array.create (Array.length reg) (Red (0)) in
+    fvs |> List.iter begin fun fv ->
       let fvn, fvi =
-        let fv' = String.split ~on:'.' fv in
-        List.hd_exn fv', List.last_exn fv' |> int_of_string
+        let fv' = String.split_on_char '.' fv in
+        List.hd fv', last fv' |> int_of_string
       in
       let n = reg.(fvi) in
-      if List.exists greens ~f:(fun green -> green = fvn) then
+      if greens |> List.exists (fun green -> green = fvn) then
         reg'.(fvi) <- Green (n)
       else
         reg'.(fvi) <- Red (n)
@@ -91,8 +98,8 @@ module Jit = struct
     reg'
 
   let paint_colors_mem mem =
-    let mem' = Array.create ~len:(Array.length mem) (Green (0)) in
-    Array.iteri mem ~f:begin fun i m ->
+    let mem' = Array.create (Array.length mem) (Green (0)) in
+    mem |> Array.iteri begin fun i m ->
       mem'.(i) <- Green (mem.(i))
     end;
     mem'
@@ -286,10 +293,10 @@ and eval_exp prog reg mem e : res =
   | CallDir (Id.L ("min_caml_print_int"), [arg], _) ->
     let v = reg.(int_of_id_t arg) in
     Logs.debug (fun m -> m  "CallDir min_caml_print_int %d" v);
-    Out_channel.output_string stdout (string_of_int v);
+    print_int v;
     Value (0)
   | CallDir (Id.L ("min_caml_print_newline"), _, _) ->
-    Out_channel.newline stdout;
+    print_newline ();
     Value (0)
   | CallDir (Id.L ("min_caml_create_array"), arg1 :: arg2 :: [], _) ->
     let size = reg.(int_of_id_t arg1) in
@@ -303,11 +310,11 @@ and eval_exp prog reg mem e : res =
     Value (a)
   | CallDir (Id.L ("min_caml_read_int"), args, fargs) ->
     Logs.debug (fun m -> m "CallDir (read_int)");
-    Out_channel.(flush stdout);
-    Value (int_of_string In_channel.(input_line_exn stdin))
+    let v = read_int () in
+    Value (v)
   | CallDir (name, args, _) ->
     (* { args' }: 仮引数 args: 実引数 *)
-    let pc = Array.get (List.to_array args) 1 |> int_of_id_t |> Array.get reg in
+    let pc = Array.get (Array.of_list args) 1 |> int_of_id_t |> Array.get reg in
     Logs.debug (fun m -> m "CallDir (%s), pc: %d" (let Id.L (x) = name in x) pc);
     let { args = args'; body } = Util.lookup_by_id_l prog name in
     let reg' = Util.new_reg reg args' args in

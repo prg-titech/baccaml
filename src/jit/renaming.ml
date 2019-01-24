@@ -1,6 +1,5 @@
 open MinCaml
 open Asm
-open Core
 open Jit_util
 
 type rename_env = Id.t -> Id.t
@@ -30,7 +29,7 @@ let rec rename_exp rename = function
   | IfEq (id_t1, id_t2, t1, t2) -> IfEq (rename id_t1, rename_id_or_imm rename id_t2, rename_t rename t1, rename_t rename t2)
   | IfLE (id_t1, id_t2, t1, t2) -> IfLE (rename id_t1, rename_id_or_imm rename id_t2, rename_t rename t1, rename_t rename t2)
   | IfGE (id_t1, id_t2, t1, t2) -> IfGE (rename id_t1, rename_id_or_imm rename id_t2, rename_t rename t1, rename_t rename t2)
-  | CallDir (id_l, args, fargs) -> CallDir (id_l, List.map ~f:rename args, List.map ~f:rename fargs)
+  | CallDir (id_l, args, fargs) -> CallDir (id_l, List.map rename args, List.map rename fargs)
   | exp -> exp
 
 and rename_t env = function
@@ -43,9 +42,9 @@ and rename_t env = function
 let rename_fundef ({name = name; args = args'; fargs = fargs; body = body; ret = ret;}) =
   let (args, rename) =
     List.fold_right
-      ~f:(fun id (ids, env) -> let env' = extend_env env id in ((env' id) :: ids, env'))
+      (fun id (ids, env) -> let env' = extend_env env id in ((env' id) :: ids, env'))
       args'
-      ~init:([], empty_env)
+      ([], empty_env)
   in
   let res =
     { name = name

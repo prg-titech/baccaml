@@ -1,5 +1,3 @@
-open Core
-
 open MinCaml
 open Asm
 open Jit_util
@@ -22,9 +20,13 @@ let run p e reg mem = match e with
        Logs.debug (fun m -> m "Mov (%d): Red" n);
        Not_specialized (exp, Red (n)))
   | Add (id_t1, id_or_imm) as exp ->
-    let r1 = match List.last (String.split id_t1 ~on:'.') with
-      | Some (str) -> int_of_string str |> Array.get reg
-      | None -> failwith "In Add, getting r1 is failed."
+     let r1 =
+       id_t1
+       |> String.split_on_char '.'
+       |> List.rev
+       |> List.hd
+       |> int_of_string
+       |> Array.get reg
     in
     let r2 = match id_or_imm with
       | V (id_t) -> reg.(int_of_id_t id_t)
@@ -57,10 +59,14 @@ let run p e reg mem = match e with
              id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2));
        Not_specialized (exp, Red (n1 + n2)))
   | Sub (id_t1, id_or_imm) as exp ->
-    let r1 = match List.last (String.split id_t1 ~on:'.') with
-      | Some (str) -> int_of_string str |> Array.get reg
-      | None -> failwith "In Sub, getting r1 is failed."
-    in
+     let r1 =
+       id_t1
+       |> String.split_on_char '.'
+       |> List.rev
+       |> List.hd
+       |> int_of_string
+       |> Array.get reg
+     in
     let r2 = match id_or_imm with
       | V (id_t) -> reg.(int_of_id_t id_t)
       | C (n) -> Green (n)

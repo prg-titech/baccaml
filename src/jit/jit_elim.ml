@@ -1,11 +1,12 @@
-open Core
-open Corext
 open MinCaml
 open Asm
 open Operands
 
+let get_prefix s =
+  s |> (String.split_on_char '.') |> List.rev |> List.hd
+
 let (=|=) lhs rhs =
-  String.get_prefix lhs = String.get_prefix rhs
+  get_prefix lhs = get_prefix rhs
 
 let (|>|) exp (lhs, rhs) =
   match exp with
@@ -34,24 +35,17 @@ let replace_xy ~lhs ~rhs exp = match exp with
 let replace_ld_st ~lhs ~rhs = function
   | Ld (x, V (y), z) ->
     let f = fun (id, b) -> if b then rhs else id in
-    Tuple2.create (x, x =|= lhs) (y, y =|= lhs)
-    |> Tuple2.map_fst ~f:f
-    |> Tuple2.map_snd ~f:f
+    (f (x, x =|= lhs), f (y, y =|= lhs))
     |> fun (a, b) -> Ld (a, V (b), z)
   | Ld (x, C (i), n) ->
     if x =|= lhs then Ld (rhs, C (i), n) else Ld (x, C (i), n)
   | St (x, y, V (z), n) ->
     let f = fun (id, b) -> if b then rhs else id in
-    Tuple3.create (x, x =|= lhs) (y, y =|= lhs) (z, z =|= lhs)
-    |> Tuple3.map_fst ~f:f
-    |> Tuple3.map_snd ~f:f
-    |> Tuple3.map_trd ~f:f
+    (f (x, x =|= lhs), f (y, y =|= lhs),  f(z, z =|= lhs))
     |> fun (a, b, c) -> St (a, b, V (c), n)
   | St (x, y, C (i), n) ->
     let f = fun (id, b) -> if b then rhs else id in
-    Tuple2.create (x, x =|= lhs) (y, y =|= lhs)
-    |> Tuple2.map_fst ~f:f
-    |> Tuple2.map_snd ~f:f
+    (f (x, x =|= lhs), f (y, y =|= lhs))
     |> fun (a, b) -> St (a, b, C (i), n)
   | _ -> assert false
 
@@ -70,13 +64,13 @@ and replace_exp ~lhs ~rhs exp = match exp with
   | CallDir (id_l, args, fargs) ->
     CallDir (
       id_l,
-      args |> List.map ~f:(fun a -> if a =|= lhs then rhs else a),
-      fargs |> List.map ~f:(fun a -> if a =|= lhs then rhs else a))
+      args |> List.map (fun a -> if a =|= lhs then rhs else a),
+      fargs |> List.map (fun a -> if a =|= lhs then rhs else a))
   | CallCls (x, args, fargs) ->
     CallCls (
       (if x =|= lhs then rhs else x),
-      args |> List.map ~f:(fun a -> if a =|= lhs then rhs else a),
-      fargs |> List.map ~f:(fun a -> if a =|= lhs then rhs else a))
+      args |> List.map (fun a -> if a =|= lhs then rhs else a),
+      fargs |> List.map (fun a -> if a =|= lhs then rhs else a))
   | exp -> exp
 
 and replace_if ~lhs ~rhs exp = match exp with
