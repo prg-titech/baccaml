@@ -20,8 +20,8 @@ let _ = run_test_tt_main begin
           | _ -> failwith "Error."
         in
         let instr = fundef.body in
-        let reg = Array.create 1000 (Red 0) in
-        let mem = Array.create 1000 (Red 0) in
+        let reg = Array.make 1000 (Red 0) in
+        let mem = Array.make 1000 (Red 0) in
         let bytecode =
           [|1; 0; 1; 2; 2; 0; 4; 1; 0; 2; 2; 3; 1; 1; 2; 2; 0; 0; 4; 2; 2; 5|]
         in
@@ -46,8 +46,8 @@ let _ = run_test_tt_main begin
         in
         let trace = exec_tracing_jit prog instr reg mem jit_args in
         let prog' = Prog ([], trace :: [], Ans(Nop)) in
-        let reg' = Array.create 10000 0 in
-        let mem' = Array.create 10000 0 in
+        let reg' = Array.make 10000 0 in
+        let mem' = Array.make 10000 0 in
         Out_channel.print_endline (Emit_virtual.to_string_fundef trace);
         (* Jit_compiler.compile prog' "test/pypy_fig3.s"; *)
       end

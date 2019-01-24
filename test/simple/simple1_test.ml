@@ -30,8 +30,8 @@ let _ = run_test_tt_main begin
         let Prog (_, fundefs, main) = prog in
         let fundef = List.hd_exn fundefs in
         let { body; } = fundef in
-        let reg = Array.create 1000 (Red 0) in
-        let mem = Array.create 1000 (Red 0) in
+        let reg = Array.make 1000 (Red 0) in
+        let mem = Array.make 1000 (Red 0) in
         mem.(0 * 4) <- Green (1);
         mem.(1 * 4) <- Green (2);
         mem.(2 * 4) <- Green (0);

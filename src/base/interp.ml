@@ -68,7 +68,7 @@ module Util = struct
   let make_reg reg args_tmp args_real = (* 仮引数のレジスタに実引数がしまわれている reg を作る *)
     let regs_tmp = List.map int_of_id_t args_tmp in
     let regs_real = List.map int_of_id_t args_real in
-    let arr = Array.create register_size 0 in
+    let arr = Array.make register_size 0 in
     let rec zip x y =
       match x, y with
       | [], [] -> []
@@ -291,8 +291,8 @@ and eval_exp prog exp' reg mem  =
 
 
 let f prog =
-  let reg = Array.create register_size 0 in
-  let mem = Array.create register_size 0 in
+  let reg = Array.make register_size 0 in
+  let mem = Array.make register_size 0 in
   let prog' = prog_with_label prog in
   let ProgWithLabel (_, _, instructions, labels) = prog' in
   interp prog' instructions reg mem

@@ -46,8 +46,8 @@ let _ = run_test_tt_main begin
               backedge_pcs = [6]
             }) in
         let { body } = fundef in
-        let reg = Array.create 100000 (Red (0)) in
-        let mem = Array.create 100000 (Red (0)) in
+        let reg = Array.make 100000 (Red (0)) in
+        let mem = Array.make 100000 (Red (0)) in
         reg.(89) <- Green (0);
         reg.(90) <- Green (6);
         reg.(91) <- Red (0);

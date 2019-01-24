@@ -29,8 +29,8 @@ let _ = run_test_tt_main begin
             backedge_pcs = [0];
           }) in
         let { body } = fundef in
-        let reg = Array.create 10000 (Red 0) in
-        let mem = Array.create 10000 (Red 0) in
+        let reg = Array.make 10000 (Red 0) in
+        let mem = Array.make 10000 (Red 0) in
         reg.(129) <- Green (0);
         reg.(130) <- Green (6);
         reg.(131) <- Green (100);
@@ -62,8 +62,8 @@ let _ = run_test_tt_main begin
             loop_header = 6;
             loop_pc_place = 1;
           }) in
-        let reg = Array.create 100000 (Red 0) in
-        let mem = Array.create 100000 (Red 0) in
+        let reg = Array.make 100000 (Red 0) in
+        let mem = Array.make 100000 (Red 0) in
         reg.(129) <- Green (0);
         reg.(130) <- Green (6);
         reg.(131) <- Green (100);

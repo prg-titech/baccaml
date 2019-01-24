@@ -65,7 +65,7 @@ module Util = struct
   let new_reg reg args_tmp args_real =
     let regs_tmp = List.map int_of_id_t args_tmp in
     let regs_real = List.map int_of_id_t args_real in
-    let arr = Array.create regsize 0 in
+    let arr = Array.make regsize 0 in
     let rec zip x y =
       match x, y with
       | [], [] -> []
@@ -83,7 +83,7 @@ module Jit = struct
   let last l = l |> List.rev |> List.hd
 
   let paint_colors_reg greens fvs reg =
-    let reg' = Array.create (Array.length reg) (Red (0)) in
+    let reg' = Array.make (Array.length reg) (Red (0)) in
     fvs |> List.iter begin fun fv ->
       let fvn, fvi =
         let fv' = String.split_on_char '.' fv in
@@ -98,7 +98,7 @@ module Jit = struct
     reg'
 
   let paint_colors_mem mem =
-    let mem' = Array.create (Array.length mem) (Green (0)) in
+    let mem' = Array.make (Array.length mem) (Green (0)) in
     mem |> Array.iteri begin fun i m ->
       mem'.(i) <- Green (mem.(i))
     end;
@@ -324,8 +324,8 @@ and eval_exp prog reg mem e : res =
     raise (Error "Not implemented.")
 
 let f prog =
-  let reg = Array.create regsize 0 in
-  let mem = Array.create regsize 0 in
+  let reg = Array.make regsize 0 in
+  let mem = Array.make regsize 0 in
   let prog' = Util.prog'_of_prog prog in
   let Prog' (_, _, t, labels) = prog' in
   match t |> eval_t prog' reg mem with

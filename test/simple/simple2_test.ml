@@ -38,8 +38,8 @@ let _ = run_test_tt_main begin
               loop_headers = [];
               backedge_pcs = []
             }) in
-        let reg = Array.create 10000 (Red (0)) in
-        let mem = Array.create 10000 (Red (0)) in
+        let reg = Array.make 10000 (Red (0)) in
+        let mem = Array.make 10000 (Red (0)) in
         for i = 0 to (Array.length bytecode - 1) do
           mem.(0 + i * 4) <- Green (bytecode.(i))
         done;
@@ -62,8 +62,8 @@ let _ = run_test_tt_main begin
               loop_header = 0;
               loop_pc_place = 1
             }) in
-        let reg = Array.create 100000 (Red (0)) in
-        let mem = Array.create 100000 (Red (0)) in
+        let reg = Array.make 100000 (Red (0)) in
+        let mem = Array.make 100000 (Red (0)) in
         reg.(70) <- Green (0);
         reg.(71) <- Green (0);
         for i = 0 to (Array.length bytecode - 1) do
