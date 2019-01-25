@@ -9,4 +9,4 @@
 		 -strict-formats
 		 -short-paths
 		 -keep-locs))
- (libraries     str stringext libs minCaml))
+ (libraries     str libs minCaml))
