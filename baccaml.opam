@@ -10,12 +10,5 @@ build:
   [[ "dune" "build" "--only-packages" "%{name}%" "--root" "." "-j" jobs "@install" ]]
 depends: [
   "dune" {build}
-  "core"
   "str"
-  "sequence"
-  "logs"
-  "fmt"
-  "stringext"
-  "ppx_deriving"
-  "oUnit"
 ]

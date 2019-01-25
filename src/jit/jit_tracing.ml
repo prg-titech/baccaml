@@ -1,3 +1,4 @@
+open Libs
 open MinCaml
 open Asm
 open Inlining
@@ -196,10 +197,10 @@ and optimize_exp p reg mem tj_env (dest, typ) body exp =
 
 and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env') = function
   | CallDir (id_l, args, fargs) ->
-    Logs.debug (fun m -> m "CallDir (%s)" (string_of_id_l id_l));
+    Log.debug (Printf.sprintf "CallDir (%s)" (string_of_id_l id_l));
     let fundef =  find_fundef id_l p in
     let pc = args |> find_pc tj_env |> Array.get reg in
-    Logs.debug (fun m -> m "pc : %d" (value_of pc));
+    Log.debug (Printf.sprintf "pc : %d" (value_of pc));
     let reds = args |> List.filter (fun a -> (is_red reg.(int_of_id_t a))) in
     let { merge_pc; trace_name } = tj_env in
     if (value_of pc) = merge_pc &&
@@ -220,14 +221,14 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env')
 
 and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env') = function
   | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) as exp ->
-    Logs.debug begin fun m ->
+    Log.debug begin
       let if_rep = match exp with
         | IfEq _ -> "IfEq"
         | IfLE _ -> "IfLE"
         | IfGE _ -> "IfGE"
         | _ -> failwith "If expression should be come here."
       in
-      m "%s (%s, %s)" if_rep id_t (string_of_id_or_imm id_or_imm)
+      Printf.sprintf "%s (%s, %s)" if_rep id_t (string_of_id_or_imm id_or_imm)
     end;
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with

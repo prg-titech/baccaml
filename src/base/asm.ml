@@ -1,11 +1,10 @@
 (* 2オペランドではなく3オペランドのx86アセンブリもどき *)
-
 type id_or_imm = V of Id.t | C of int
-[@@deriving show]
+
 type t = (* 命令の列 (caml2html: sparcasm_t) *)
   | Ans of exp
   | Let of (Id.t * Type.t) * exp * t
-[@@deriving show]
+
 and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *)
   | Nop
   | Set of int
@@ -36,20 +35,11 @@ and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *
   | CallDir of Id.l * Id.t list * Id.t list
   | Save of Id.t * Id.t (* レジスタ変数の値をスタック変数へ保存 (caml2html: sparcasm_save) *)
   | Restore of Id.t (* スタック変数から値を復元 (caml2html: sparcasm_restore) *)
-[@@deriving show]
 
 type fundef = { name : Id.l; args : Id.t list; fargs : Id.t list; body : t; ret : Type.t }
-[@@deriving show]
-
-let find_fundef name fundefs =
-  List.find begin fun fundef ->
-    let Id.L (n) = fundef.name in
-    List.for_all (fun x -> String.contains n x) (Stringext.to_list name)
-  end fundefs
 
 (* プログラム全体 = 浮動小数点数テーブル + トップレベル関数 + メインの式 (caml2html: sparcasm_prog) *)
 type prog = Prog of (Id.l * float) list * fundef list * t
-[@@deriving show]
 
 let fletd(x, e1, e2) = Let((x, Type.Float), e1, e2)
 let seq(e1, e2) = Let((Id.gentmp Type.Unit, Type.Unit), e1, e2)

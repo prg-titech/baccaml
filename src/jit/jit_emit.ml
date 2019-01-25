@@ -241,7 +241,7 @@ and create_asm' = function
   | Tail, CallDir(Id.L (x), ys, zs) -> (* 末尾呼び出し *)
     let buf = Buffer.create 100 in
     Buffer.add_string buf @@ create_asm'_args [] ys zs;
-    if List.for_all (fun c -> String.contains x c) (Stringext.to_list "guard_failure") then
+    if List.for_all (fun c -> String.contains x c) (List.of_seq (String.to_seq "guard_failure")) then
       Buffer.add_string buf @@ Printf.sprintf "\tjmp\t%s\n" "min_caml_mid_layer"
     else
       Buffer.add_string buf @@ Printf.sprintf "\tjmp\t%s\n" x;
@@ -373,7 +373,7 @@ let emit_trace jtype trace file interp =
   Printf.sprintf "%s:\n" x |> Buffer.add_string buf;
   create_asm (Tail, body) |> Buffer.add_string buf;
   let res = Buffer.contents buf in
-  Logs.debug (fun m -> m  "\n!!EMIT TRACE!!\n%s" res);
+  print_endline ("[EMIT]\n" ^ res);
   let oc = open_out (file ^ ".s") in
   Printf.fprintf oc "%s" res;
   close_out oc
@@ -393,7 +393,7 @@ let emit_result
     trs |> List.iter (fun fundef -> create_asm_fundef fundef |> Buffer.add_buffer buf);
     if midflg then emit_mid_layer jtype out interp_name |> Buffer.add_buffer buf;
     let res = Buffer.contents buf in
-    Logs.debug (fun m -> m "\n!!EMIT TRACE!!\n%s)" res);
+    print_endline ("[EMIT]\n" ^ res);
     Printf.fprintf oc "%s" res;
     close_out oc;
   with e ->

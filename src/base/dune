@@ -7,6 +7,7 @@
  (name           minCaml)
  (public_name    baccaml.base)
  (modules        (:standard \ anchor))
- (flags          (-w -4-33-40-41))
- (libraries      str logs stringext)
+ (flags          (-annot
+ 		 -w -4-33-40-41))
+ (libraries      libs str)
  (c_names        float))

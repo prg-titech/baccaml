@@ -1,3 +1,4 @@
+open Libs
 open MinCaml
 open Asm
 open Inlining
@@ -46,13 +47,13 @@ let rec mj p reg mem fenv name = function
   | Ans (exp) ->
     mj_exp p reg mem fenv name exp
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_start"), args, fargs), body) ->
-    Logs.debug (fun m -> m "min_caml_loop_start");
+    Log.debug (Printf.sprintf "min_caml_loop_start");
     let fname = gen_fname "loop_start" in
     let extended_fenv = extend_fenv fname args body fenv in
     Ans (CallDir (Id.L (fname), args, fargs)), extended_fenv
   | Let ((dest, typ), CallDir (Id.L ("min_caml_loop_end"), args, fargs), body) ->
     (* [TODO] インタプリタに差しもどす処理を入れる *)
-    Logs.debug (fun m -> m "min_caml_loop_end.");
+    Log.debug (Printf.sprintf "min_caml_loop_end.");
     Ans (CallDir (Id.L (name), args, fargs)), M.empty
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
     (* [TODO] pc の値が method の先頭でかつ
@@ -110,7 +111,7 @@ and optimize_exp p exp reg mem fenv name (dest, typ) body =
 
 and mj_exp p reg mem fenv name = function
   | CallDir (id_l, args, fargs) ->
-    Logs.debug (fun m -> m  "CallDir (%s)" (string_of_id_l id_l));
+    Log.debug (Printf.sprintf  "CallDir (%s)" (string_of_id_l id_l));
     let fundef = find_fundef p id_l in
     let t = Inlining.inline_fundef reg args fundef in
     mj p reg mem fenv name t
@@ -128,7 +129,7 @@ and mj_exp p reg mem fenv name = function
 
 and mj_if p reg mem fenv name = function
   | IfGE (id_t, id_or_imm, t1, t2) | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) as exp when (is_opcode id_t) ->
-    Logs.debug (fun m -> m  "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
+    Log.debug (Printf.sprintf  "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
     let r1 = value_of reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
       | V (id) -> value_of reg.(int_of_id_t id)
@@ -138,7 +139,7 @@ and mj_if p reg mem fenv name = function
     then mj p reg mem fenv name t1
     else mj p reg mem fenv name t2
   | IfEq (id_t, id_or_imm, t1, t2) | IfLE (id_t, id_or_imm, t1, t2) | IfGE (id_t, id_or_imm, t1, t2) as exp ->
-    Logs.debug (fun m -> m  "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
+    Log.debug (Printf.sprintf  "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with
         V (id) -> reg.(int_of_id_t id)

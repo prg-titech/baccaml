@@ -1,3 +1,4 @@
+;; -*- mode: tuareg-jbuild -*-
 (library
  (name          bc_jit)
  (public_name   baccaml.jit)
@@ -8,4 +9,4 @@
 		 -strict-formats
 		 -short-paths
 		 -keep-locs))
- (libraries     str stringext logs fmt minCaml))
+ (libraries     str stringext libs minCaml))

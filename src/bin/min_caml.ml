@@ -1,3 +1,4 @@
+open Libs
 open MinCaml
 
 let run_typ = ref `Emit
@@ -62,8 +63,8 @@ let spec_list = [
        | "mjit" -> jit_typ := `Meta_method
        | "tjit" -> jit_typ := `Meta_tracing
        | _ -> ()), "specify jit type");
-  ("-err", Arg.Unit(fun _ -> Logs.set_level (Some (Logs.Error))), "Specify loglevel as error");
-  ("-debug", Arg.Unit(fun _ -> Logs.set_level (Some (Logs.Debug))), "Specify loglevel as debug");
+  ("-err", Arg.Unit(fun _ -> Log.log_level := `Error), "Specify loglevel as error");
+  ("-debug", Arg.Unit(fun _ -> Log.log_level := `Debug), "Specify loglevel as debug");
   ("-dump", Arg.Unit(fun _ -> run_typ := `Dump), "emit virtual machine code");
   ("-interp", Arg.Unit(fun _ -> run_typ := `Interp), "run as interpreter");
 ]

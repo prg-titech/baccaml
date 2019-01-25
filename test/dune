@@ -19,4 +19,4 @@
          -strict-formats
          -short-paths
          -keep-locs))
- (libraries core str re logs fmt stringext oUnit minCaml bc_jit interp_util))
+ (libraries str re oUnit libs minCaml bc_jit interp_util))

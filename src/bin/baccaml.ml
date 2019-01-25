@@ -1,3 +1,4 @@
+open Libs
 open MinCaml
 open Bc_lib
 open Bc_jit
@@ -54,7 +55,7 @@ let speclist = [
   ("-annot", Arg.Set_string annots, "Specify annotations for your bytecodes");
   ("-elim", Arg.Set_int elim, "Specify the number of identity move elimination");
   ("-o", Arg.Set_string output, "Set executable's name");
-  ("-dbg", Arg.Unit (fun _ -> Logs.set_level @@ Some Logs.Debug), "Enable debug mode");
+  ("-dbg", Arg.Unit (fun _ -> Log.log_level := `Debug), "Enable debug mode");
 ]
 
 let run
@@ -93,7 +94,7 @@ let run
             merge_pc = merge_pc;
           } in
           let t = run prog reg mem tj_env |> Jit_elim.elim_fundef in
-          Logs.debug (fun m -> m "%s\n" (Emit_virtual.string_of_fundef t));
+          Log.debug (Printf.sprintf "%s\n" (Emit_virtual.string_of_fundef t));
           [t]
         )
       | `Meta_method -> Jit_method.(
@@ -105,7 +106,7 @@ let run
           } in
           let t = run prog reg mem mj_env |> List.map (Jit_elim.elim_fundef ~i:!elim) in
           ignore (t |> List.map (fun trace ->
-              Logs.debug (fun m -> m "%s\n" (Emit_virtual.string_of_fundef trace))));
+              Log.debug (Printf.sprintf "%s\n" (Emit_virtual.string_of_fundef trace))));
           t
         )
     end
@@ -124,7 +125,6 @@ let () =
     speclist
     (fun f -> files := !files @ [f])
     usage;
-  Logs.set_reporter @@ Logs.format_reporter ();
   let tr = "min_caml_test_trace" in
   !files |> List.iteri (fun i f ->
       let out = f |> Filename.basename |> Filename.remove_extension in

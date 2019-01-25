@@ -1,6 +1,7 @@
 open MinCaml
 open Asm
 open Operands
+open Jit_util
 
 exception Error
 
@@ -29,8 +30,8 @@ let rec annotate_t is_mj t = match t with
   | Let (r, x, t) ->
     Let (r, x, annotate_t is_mj t)
 
-let rec annotate is_mj (Prog (table, fundefs, main)) =
-  let { name; args; fargs; body; ret } = find_fundef "interp" fundefs in
+let rec annotate is_mj (Prog (table, fundefs, main) as p) =
+  let { name; args; fargs; body; ret } = find_fundef' p "interp" in
   let other_fundefs = List.filter (fun fundef -> fundef.name <> name ) fundefs in
   let new_fundefs =
     { name = name;

@@ -1,3 +1,4 @@
+open Libs
 open MinCaml
 open Asm
 open Jit_util
@@ -42,23 +43,23 @@ module Util = struct
     match List.find_opt (fun (id_l, n) -> n = num) labels with
     | Some (id, _) -> id
     | None ->
-      Logs.err (fun m -> m "num: %d" num);
-      failwith (Printf.sprintf "Not found num: %d" num)
+       Log.error ("num: " ^ (string_of_int num));
+       failwith (Printf.sprintf "Not found num: %d" num)
 
   let rec lookup_by_id_l prog name =
     let Prog' (_, fundefs, _, _) = prog in
     match List.find_opt (fun fundef -> (fundef.name = name)) fundefs with
     | Some (fundef) -> fundef
     | None ->
-      Logs.err (fun m -> let Id.L s = name in m "CallCls %s is not found" s);
-      assert false
+       let msg = let Id.L s = name in Printf.sprintf "CallCls %s is not found" s in
+       raise (Error msg)
 
   let rec lookup_by_id_t prog name =
     let Prog' (_, fundefs, _, _) = prog in
     match List.find_opt (fun fundef -> (let Id.L s = fundef.name in s) = name) fundefs with
     | Some (fundef) -> fundef
     | None ->
-      Logs.err (fun m -> m "CallCls %s" name);
+      Log.error (Printf.sprintf "CallCls %s" name);
       assert false
 
   (* 仮引数のレジスタに実引数がしまわれている reg を作る *)
@@ -119,13 +120,13 @@ let rec eval_t prog reg mem instr : res =
   match instr with
   | Ans exp ->
     let res = exp |> eval_exp prog reg mem  in
-    Logs.debug (fun m -> m  "Ans (%d)" (res |> value_of_res));
+    Log.debug (Printf.sprintf  "Ans (%d)" (res |> value_of_res));
     res
   | Let (("min_caml_hp", _), exp, t) ->
-    let res = exp |> eval_exp prog reg mem |> value_of_res in
-    Logs.debug (fun m -> m "Let (id: %s, reg_num: %d, res: %d)" "min_caml_hp" !heap res);
-    heap := res;
-    t |> eval_t prog reg mem
+     let res = exp |> eval_exp prog reg mem |> value_of_res in
+     Log.debug (Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" "min_caml_hp" !heap res);
+     heap := res;
+     t |> eval_t prog reg mem
   | Let (_, CallDir (Id.L ("min_caml_can_enter_jit"), args, fargs), t) ->
      incr counter;
      if !counter > 100 then
@@ -135,34 +136,34 @@ let rec eval_t prog reg mem instr : res =
   | Let ((id, _), exp, t) ->
     let n = int_of_id_t id in
     let res = exp |> eval_exp prog reg mem |> value_of_res in
-    Logs.debug (fun m -> m "Let (id: %s, reg_num: %d, res: %d)" id n res);
+    Log.debug (Printf.sprintf "Let (id: %s, reg_num: %d, res: %d)" id n res);
     reg.(n) <- res;
     t |> eval_t prog reg mem
 
 and eval_exp prog reg mem e : res =
   match e with
   | Nop ->
-    Logs.debug (fun m -> m "Nop");
+    Log.debug (Printf.sprintf "Nop");
     Value (0)
   | Set n ->
-    Logs.debug (fun m -> m  "Set (%d)" n);
+    Log.debug (Printf.sprintf  "Set (%d)" n);
     Value (n)
   | Neg n ->
     let res = reg.(int_of_id_t n) in
-    Logs.debug (fun m -> m  "Neg %d" res);
+    Log.debug (Printf.sprintf  "Neg %d" res);
     Value (- res)
   | SetL id_l ->
     let Prog' (_, _, _, labels) = prog in
     let res = Util.find_label_number id_l labels in
-    Logs.debug (fun m -> m  "SetL (%s: %d)" (let Id.L s = id_l in s) res);
+    Log.debug (Printf.sprintf  "SetL (%s: %d)" (let Id.L s = id_l in s) res);
     Value (res)
   | Mov "min_caml_hp" ->
-    Logs.debug (fun m -> m  "Mov (min_caml_hp: %d)" !heap);
+    Log.debug (Printf.sprintf  "Mov (min_caml_hp: %d)" !heap);
     Value (!heap)
   | Mov id_t ->
     let n = int_of_id_t id_t in
     let res = reg.(n) in
-    Logs.debug (fun m -> m  "Mov (id_t: %s, regnum: %d, res: %d)" id_t n res);
+    Log.debug (Printf.sprintf  "Mov (id_t: %s, regnum: %d, res: %d)" id_t n res);
     Value (res)
   | Add (id_t1, V (id_t2)) ->
     (match id_t1 with
@@ -170,25 +171,25 @@ and eval_exp prog reg mem e : res =
        let r1 = !heap in
        let r2 = int_of_id_t id_t2 in
        let res = r1 + reg.(r2) in
-       Logs.debug (fun m -> m  "Add (r1: %d, r2: %d, res: %d)" r1 r2 res);
+       Log.debug (Printf.sprintf  "Add (r1: %d, r2: %d, res: %d)" r1 r2 res);
        Value (res)
      | _ ->
        let r1 = int_of_id_t id_t1 in
        let r2 = int_of_id_t id_t2 in
        let res = reg.(r1) + reg.(r2) in
-       Logs.debug (fun m -> m  "Add (r1: %d, r2: %d, res: %d)" r1 r2 res);
+       Log.debug (Printf.sprintf  "Add (r1: %d, r2: %d, res: %d)" r1 r2 res);
        Value (res))
   | Add (id_t, C n) ->
     (match id_t with
      | "min_caml_hp" ->
        let r1 = !heap in
        let res = r1 + n in
-       Logs.debug (fun m -> m  "AddImm (r1: %d, r2: %d, res: %d)" r1 n res);
+       Log.debug (Printf.sprintf  "AddImm (r1: %d, r2: %d, res: %d)" r1 n res);
        Value (res)
      | _ ->
        let r1 = int_of_id_t id_t in
        let res = reg.(r1) + n in
-       Logs.debug (fun m -> m  "AddImm (r1: %d, r2: %d, res: %d)" r1 n res);
+       Log.debug (Printf.sprintf  "AddImm (r1: %d, r2: %d, res: %d)" r1 n res);
        Value (res))
   | Sub (id_t1, V (id_t2)) ->
     (match id_t1 with
@@ -196,25 +197,25 @@ and eval_exp prog reg mem e : res =
        let r1 = !heap in
        let r2 = reg.(int_of_id_t id_t2) in
        let res = r1 - r2 in
-       Logs.debug (fun m -> m  "Sub (r1: %d, r2: %d, res: %d)" r1 r2 res);
+       Log.debug (Printf.sprintf  "Sub (r1: %d, r2: %d, res: %d)" r1 r2 res);
        Value (res)
      | _ ->
        let r1 = int_of_id_t id_t1 in
        let r2 = int_of_id_t id_t2 in
        let res = reg.(r1) - reg.(r2) in
-       Logs.debug (fun m -> m  "Sub (r1: %d, r2: %d, res: %d)" r1 r2 res);
+       Log.debug (Printf.sprintf  "Sub (r1: %d, r2: %d, res: %d)" r1 r2 res);
        Value (res))
   | Sub (id_t, C (n)) ->
     (match id_t with
        "min_caml_hp" ->
        let r1 = !heap in
        let res = r1 - n in
-       Logs.debug (fun m -> m  "SubImm (r1: %d, r2: %d, res: %d)" r1 n res);
+       Log.debug (Printf.sprintf  "SubImm (r1: %d, r2: %d, res: %d)" r1 n res);
        Value (res)
      | _ ->
        let r1 = int_of_id_t id_t in
        let res = reg.(r1) - n in
-       Logs.debug (fun m -> m  "SubImm (r1: %d, r2: %d, res: %d)" r1 n res);
+       Log.debug (Printf.sprintf  "SubImm (r1: %d, r2: %d, res: %d)" r1 n res);
        Value (res))
   | Ld (id_t, id_or_imm, x) ->
     (* id_t + id_or_imm * x の番地から load *)
@@ -227,7 +228,7 @@ and eval_exp prog reg mem e : res =
         | C n -> n) * x
     in
     let res = mem.(dest + offset) in
-    Logs.debug (fun m -> m  "Ld (id_t: %s, dest: %d, offset: %d, m: %d, res: %d)" id_t dest offset (dest + offset) res);
+    Log.debug (Printf.sprintf  "Ld (id_t: %s, dest: %d, offset: %d, m: %d, res: %d)" id_t dest offset (dest + offset) res);
     Value (res)
   | St (id_t1, id_t2, id_or_imm, x) ->
     (* id_t2 + id_or_imm * x の番地に id_t1 を store *)
@@ -245,7 +246,7 @@ and eval_exp prog reg mem e : res =
         | C n -> n) * x
     in
     let m' = dest + offset in
-    Logs.debug (fun m -> m  "St (id_t1: %s, id_t2: %s, dest: %d, offset: %d, m: %d), res: %d" id_t1 id_t2 dest offset m' src);
+    Log.debug (Printf.sprintf  "St (id_t1: %s, id_t2: %s, dest: %d, offset: %d, m: %d), res: %d" id_t1 id_t2 dest offset m' src);
     mem.(m') <- src;
     Value (0)
   | IfEq (id1, id_or_imm, t1, t2) ->
@@ -254,7 +255,7 @@ and eval_exp prog reg mem e : res =
         V (id_t) -> reg.(int_of_id_t id_t)
       | C (i) -> i
     in
-    Logs.debug (fun m -> m  "IfEq (id1: %s, id2: %s, t1: %d, t2: %d)" id1 (string_of_id_or_imm id_or_imm) r1 r2);
+    Log.debug (Printf.sprintf  "IfEq (id1: %s, id2: %s, t1: %d, t2: %d)" id1 (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 = r2 then
       t1 |> eval_t prog reg mem
     else
@@ -265,7 +266,7 @@ and eval_exp prog reg mem e : res =
         V (id_t) -> reg.(int_of_id_t id_t)
       | C (i) -> i
     in
-    Logs.debug (fun m -> m  "IfLE (id: %s, id_or_imm: %s, t1: %d, t2: %d)" id (string_of_id_or_imm id_or_imm) r1 r2);
+    Log.debug (Printf.sprintf  "IfLE (id: %s, id_or_imm: %s, t1: %d, t2: %d)" id (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 <= r2 then
       t1 |> eval_t prog reg mem
     else
@@ -276,7 +277,7 @@ and eval_exp prog reg mem e : res =
         V (id_t) -> reg.(int_of_id_t id_t)
       | C (i) -> i
     in
-    Logs.debug (fun m -> m  "IfGE (id1: %s, id2: %s, t1: %d, t2: %d)" id (string_of_id_or_imm id_or_imm) r1 r2);
+    Log.debug (Printf.sprintf  "IfGE (id1: %s, id2: %s, t1: %d, t2: %d)" id (string_of_id_or_imm id_or_imm) r1 r2);
     if r1 >= r2 then
       t1 |> eval_t prog reg mem
     else
@@ -285,14 +286,14 @@ and eval_exp prog reg mem e : res =
     let r1 = reg.(int_of_id_t id_t) in
     let m1 = mem.(r1) in
     let Id.L id = Util.find_label prog m1 in
-    Logs.debug (fun m -> m  "CallCls (id_t: %s, r1: %d, r2: %d, id_l: %s)" id_t r1 m1 id);
+    Log.debug (Printf.sprintf  "CallCls (id_t: %s, r1: %d, r2: %d, id_l: %s)" id_t r1 m1 id);
     let { args = args'; body } = Util.lookup_by_id_l prog (Id.L (id)) in
     let reg' = Util.new_reg reg args' args in
     reg'.(int_of_id_t id) <- r1;
     body |> eval_t prog reg' mem
   | CallDir (Id.L ("min_caml_print_int"), [arg], _) ->
     let v = reg.(int_of_id_t arg) in
-    Logs.debug (fun m -> m  "CallDir min_caml_print_int %d" v);
+    Log.debug (Printf.sprintf  "CallDir min_caml_print_int %d" v);
     print_int v;
     Value (0)
   | CallDir (Id.L ("min_caml_print_newline"), _, _) ->
@@ -306,19 +307,19 @@ and eval_exp prog reg mem e : res =
     for i = 0 to size do
       mem.(a + i * 4) <- init
     done;
-    Logs.debug (fun m -> m  "CallDir (min_caml_create_array, arg1: %d, arg2: %d)" size init);
+    Log.debug (Printf.sprintf  "CallDir (min_caml_create_array, arg1: %d, arg2: %d)" size init);
     Value (a)
   | CallDir (Id.L ("min_caml_read_int"), args, fargs) ->
-    Logs.debug (fun m -> m "CallDir (read_int)");
+    Log.debug (Printf.sprintf "CallDir (read_int)");
     let v = read_int () in
     Value (v)
   | CallDir (name, args, _) ->
     (* { args' }: 仮引数 args: 実引数 *)
     let pc = Array.get (Array.of_list args) 1 |> int_of_id_t |> Array.get reg in
-    Logs.debug (fun m -> m "CallDir (%s), pc: %d" (let Id.L (x) = name in x) pc);
+    Log.debug (Printf.sprintf "CallDir (%s), pc: %d" (let Id.L (x) = name in x) pc);
     let { args = args'; body } = Util.lookup_by_id_l prog name in
     let reg' = Util.new_reg reg args' args in
-    let Id.L s = name in Logs.debug (fun m -> m  "CallDir %s" s);
+    let Id.L s = name in Log.debug (Printf.sprintf  "CallDir %s" s);
     body |> eval_t prog reg' mem
   | _ ->
     raise (Error "Not implemented.")
