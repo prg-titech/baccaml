@@ -2,6 +2,7 @@
   open Sub
 %}
 
+%token EOF
 %token COMMA
 %token LBRAC
 %token RBRAC
@@ -22,10 +23,12 @@
 
 %%
 
-program:| exp* EOF { $1 }
+program:| exp EOF { [$1] }
+        | exp program { $1 :: $2 }
+
 exp:    | INST { Inst $1 }
         | VAR { Var $1 }
-        | GREEN LPAREN v1 = VAR COMMA i1 = INST RPAREN { Green (v1, i1) }
-        | RED LPAREN v1 =  VAR COMMA i1 = INST RPAREN { Red (v1, i1) }
-        | JIT_TYPE LPAREN v = VAR RPAREN { Jit_type (v) }
-        | MERGE_PC LPAREN i = INST RPAREN { Merge_pc (i) }
+        | GREEN LPAREN VAR COMMA INST RPAREN { Green ($3, $5) }
+        | RED LPAREN VAR COMMA INST RPAREN { Red ($3, $5) }
+        | JIT_TYPE LPAREN VAR RPAREN { Jit_type ($3) }
+        | MERGE_PC LPAREN INST RPAREN { Merge_pc ($3) }

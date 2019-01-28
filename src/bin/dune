@@ -1,7 +1,7 @@
 ;; -*- mode: tuareg-jbuild -*-
 
 (ocamllex (modules bc_lexer))
-(menhir (modules bc_parser))
+(ocamlyacc (modules bc_parser))
 
 (library
  (name bc_front_lib)
