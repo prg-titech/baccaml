@@ -1,13 +1,13 @@
-#include<string.h>
-#include<stdio.h>
-#include<stdlib.h>
-#include<stdbool.h>
-#include<math.h>
-#include"csyntax.h"
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <math.h>
+#include "csyntax.h"
 
 static inline Value* make_int_array(int size, int initial_value){
   int x;
-  Value* array = NULL;  
+  Value* array = NULL;
   if(size < 1){
     size = 1;
   }
@@ -24,7 +24,7 @@ static inline Value* make_int_array(int size, int initial_value){
 
 static inline Value* make_double_array(int size, double initial_value){
   int x;
-  Value* array = NULL;  
+  Value* array = NULL;
   if(size < 1){
     size = 1;
   }
@@ -41,7 +41,7 @@ static inline Value* make_double_array(int size, double initial_value){
 
 static inline Value* make_multi_array(int size, Value* initial_value){
   int x;
-  Value* array = NULL;  
+  Value* array = NULL;
   if(size < 1){
     size = 1;
   }
@@ -58,7 +58,7 @@ static inline Value* make_multi_array(int size, Value* initial_value){
 
 static inline Value* make_closure_array(int size, Closure* initial_value){
   int x;
-  Value* array = NULL;  
+  Value* array = NULL;
   if(size < 1){
     size = 1;
   }
