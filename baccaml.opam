@@ -11,5 +11,4 @@ build:
 depends: [
   "dune" {build}
   "str"
-  "menhir"
 ]
