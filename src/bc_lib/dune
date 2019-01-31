@@ -1,0 +1,19 @@
+(ocamllex (modules bc_lexer))
+(ocamlyacc (modules bc_parser))
+
+(library
+ (name bc_front)
+ (public_name baccaml.bc_front)
+ (modules bc_front bc_parser bc_lexer sub))
+
+(library
+ (name        bc_lib)
+ (public_name baccaml.lib)
+ (libraries bc_jit minCaml bc_front)
+ (modules bc_lib)
+ (flags (-w -4-33-40-41-42-43-34-44
+         -short-paths
+         -strict-sequence
+         -strict-formats
+         -short-paths
+         -keep-locs)))
