@@ -12,7 +12,6 @@
 
 # Binary
 *.o
-*.s
 
 # omake
 *.omc
