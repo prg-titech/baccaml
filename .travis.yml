@@ -1,12 +1,20 @@
-sudo: required
-
 language: c
-
-services:
-  - docker
-
+env:
+  - OCAML_VERSION=4.07.1
+cache:
+  directories:
+    - ${HOME}/.opam
 before_install:
-  - docker pull micchon/baccaml
-
+  - wget -O ${HOME}/opam https://github.com/ocaml/opam/releases/download/2.0.2/opam-2.0.2-x86_64-linux
+  - chmod +x ${HOME}/opam
+  - export PATH=${HOME}:${PATH}
+  - export OPAMYES=1
+  - export OPAMJOBS=2
+  - opam init --compiler=${OCAML_VERSION} --disable-sandboxing
+  - eval `opam config env`
+  - export OPAMVERBOSE=1
+install:
+  - opam update --upgrade
+  - opam install -y oUnit
 script:
-  - docker run -u root -v $(pwd):/tmp --rm -it micchon/baccaml sh -c 'dune build && dune runtest -f'
+  - make
