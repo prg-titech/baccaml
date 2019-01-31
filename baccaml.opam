@@ -1,4 +1,4 @@
-opam-version: "1.2"
+opam-version: "2.0"
 maintainer: "yuizalp@gmail.com"
 authors: ["Yusuke Izawa"]
 homepage: "https://github.com/prg-titech/baccaml"

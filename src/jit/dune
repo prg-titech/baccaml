@@ -1,12 +1,11 @@
-;; -*- mode: tuareg-jbuild -*-
 (library
  (name          bc_jit)
  (public_name   baccaml.jit)
- (flags         (-w -4-33-40-41-42-43-34-44
-                 -annot
-		 -short-paths
-		 -strict-sequence
-		 -strict-formats
-		 -short-paths
-		 -keep-locs))
+ (flags        (-w -6-39-27
+                -annot
+                -short-paths
+                -strict-sequence
+                -strict-formats
+                -short-paths
+                -keep-locs))
  (libraries     str libs minCaml))
