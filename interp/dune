@@ -1,18 +1,4 @@
 (executable
- (name           min_caml)
- (public_name    min-caml)
- (flags          (-w -4-33-40-41))
- (modules        Min_caml)
- (libraries      minCaml bc_lib))
-
-(executable
- (name           min_c)
- (public_name    min-c)
- (flags          (-w -4-33-40-41))
- (modules        min_c)
- (libraries      minCaml))
-
-(executable
  (name jit_entry)
  (modules jit_entry)
  (libraries minCaml bc_jit)
@@ -30,7 +16,7 @@
 (rule
  (targets test_interp.mc.s)
  (deps test_interp.mc.ml)
- (action (run ./min_caml.exe %{targets})))
+ (action (run ../bin/min_caml.exe %{targets})))
 
 (rule
  (targets test_interp.exe)
