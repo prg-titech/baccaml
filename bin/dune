@@ -1,43 +1,24 @@
 (executable
- (name           min_caml)
- (public_name    min-caml)
- (flags          (-w -4-33-40-41))
- (modules        Min_caml)
- (libraries      minCaml bc_lib))
-
-(executable
- (name           min_c)
- (public_name    min-c)
- (flags          (-w -4-33-40-41))
- (modules        min_c)
- (libraries      minCaml))
-
-(executable
- (name jit_entry)
- (modules jit_entry)
- (libraries minCaml bc_jit)
+ (name        baccaml)
+ (public_name baccaml)
+ (package     baccaml)
+ (modules     baccaml)
+ (libraries minCaml bc_jit bc_lib)
  (flags (-w -4-33-40-41-42-43-34-44
-            -short-paths
-            -strict-sequence
-            -strict-formats
-            -short-paths
-            -keep-locs))
- (modes
-  (native exe)
-  (native object)
-  (native shared_object)))
+         -short-paths
+         -strict-sequence
+         -strict-formats
+         -short-paths
+         -keep-locs)))
 
-(rule
- (targets test_interp.mc.s)
- (deps test_interp.mc.ml)
- (action (run %{bin:min-caml} %{deps})))
-
-(rule
- (targets stub.exe)
- (deps jit_entry.exe%{ext_obj} stub.c libmincaml.S jit_entry_interop.s jit_entry_wrap.c test_interp.mc.s)
- (action (run %{cc} -o %{targets} -I %{ocaml_where} -L %{ocaml_where} -I . %{deps}
-           %{ocaml-config:native_c_libraries})))
-
-(alias
- (name runtest)
- (action (run ./stub.exe)))
+(executable
+ (name        baccaml_builder)
+ (public_name baccaml_builder)
+ (modules     baccaml_builder)
+ (libraries   minCaml bc_jit bc_lib)
+ (flags       (-w -4-33-40-41-42-43-34-44
+               -short-paths
+               -strict-sequence
+               -strict-formats
+               -short-paths
+               -keep-locs)))
