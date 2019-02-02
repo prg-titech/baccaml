@@ -69,15 +69,12 @@ let usage =
       Sys.argv.(0)
 
 let () =
-  (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
+  let filename f =
+    if Filename.check_suffix f ".mc" then f
+    else Filename.chop_extension f
+  in
   let files = ref [] in
-  Arg.parse spec_list
-    (fun f ->
-      files :=
-        !files
-        @ [ ( if Filename.check_suffix f ".ml" then Filename.chop_suffix f ".ml"
-            else String.split_on_char '.' f |> List.hd ) ] )
-    usage ;
+  Arg.parse spec_list (fun f -> files := !files @ [filename f]) usage ;
   !files
   |> List.iter
        ( match !run_typ with
