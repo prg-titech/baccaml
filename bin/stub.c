@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <caml/mlvalues.h>
-#include <caml/callbacks.h>
+#include <caml/callback.h>
 
 extern void min_caml_start(char *, char *);
 
@@ -14,7 +14,7 @@ FILE *min_caml_stderr;
 
 int main(int argv, char **argc) {
   char *hp, *sp;
-  caml_startup(argv);
+  caml_startup(argc);
   min_caml_stderr = stderr;
   sp = alloca(1000000); hp = malloc(4000000);
   if (hp == NULL || sp == NULL) {

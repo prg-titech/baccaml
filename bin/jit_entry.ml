@@ -1,7 +1,7 @@
 open Bc_jit
 open Jit_util
 
-let dummy_fun x = print_int x ; print_newline ()
+let dummy_fun x = x + 1
 
 let jit_entry bytecode stack pc sp =
   let size = 10000 in
