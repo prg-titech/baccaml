@@ -51,9 +51,9 @@ let contains s1 s2 =
     true
   with _ -> false
 
-let find_fundef prog name =
+let find_fundef prog target =
   let (Prog (_, fundefs, _)) = prog in
-  match fundefs |> List.find_opt (fun {name= n} -> name = name) with
+  match fundefs |> List.find_opt (fun {name= n} -> n = target) with
   | Some body -> body
   | None -> failwith "find_fundef in Method jit is failed"
 
