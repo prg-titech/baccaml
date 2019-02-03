@@ -1,0 +1,10 @@
+(library
+ (name utils)
+ (public_name baccaml.utils)
+ (flags (-w -4-33-40-41-42-43-34-44
+         -annot
+         -short-paths
+         -strict-sequence
+         -strict-formats
+         -short-paths
+         -keep-locs)))

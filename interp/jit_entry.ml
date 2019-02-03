@@ -1,8 +1,9 @@
-open Libs.Ext
+open Utils.Std
 open MinCaml
 open Bc_jit
 open Jit_util
 
+(* For test *)
 let dummy_fun x =
   print_string "apply dummy_fun to " ;
   print_int x ;

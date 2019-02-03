@@ -4,7 +4,6 @@ build:
 	dune build
 
 clean:
-	git clean -f
 	dune clean
 
 test:

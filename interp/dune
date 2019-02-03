@@ -1,7 +1,7 @@
 (executable
  (name jit_entry)
  (modules jit_entry)
- (libraries minCaml bc_jit libs)
+ (libraries minCaml bc_jit utils)
  (flags (-w -4-33-40-41-42-43-34-44
             -short-paths
             -strict-sequence
