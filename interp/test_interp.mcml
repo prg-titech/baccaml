@@ -1,3 +1,4 @@
+(* -*- tuareg -*- *)
 let rec make_values x y =
   let values = Array.make 2 0 in
   values.(0) <- x; values.(1) <- y;

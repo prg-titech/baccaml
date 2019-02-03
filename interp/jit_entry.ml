@@ -18,7 +18,7 @@ let jit_entry bytecode stack values =
   Array.print_array print_int values; print_newline ();
   let reg = Array.make size (Red 0) in
   let mem = Array.make size (Green 0) in
-  let ic = open_in "./test_interp.mc.ml" in
+  let ic = open_in "./test_interp.mcml" in
   let prog = Lexing.from_channel ic |> Util.virtualize in
   Emit_virtual.string_of_prog prog |> print_endline ;
   ()

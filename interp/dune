@@ -14,9 +14,9 @@
   (native shared_object)))
 
 (rule
- (targets test_interp.mc.s)
- (deps test_interp.mc.ml)
- (action (run ../bin/min_caml.exe %{targets})))
+ (targets test_interp.s)
+ (deps test_interp.mcml)
+ (action (run ../bin/min_caml.exe %{deps})))
 
 (rule
  (targets test_interp.exe)
@@ -26,7 +26,7 @@
    libmincaml.S
    jit_entry_interop.s
    jit_entry_wrap.c
-   test_interp.mc.s)
+   test_interp.s)
  (action (run %{cc} -o %{targets} -I %{ocaml_where} -L %{ocaml_where} -I . %{deps}
            %{ocaml-config:native_c_libraries})))
 

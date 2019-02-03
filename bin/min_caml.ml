@@ -13,7 +13,7 @@ let annot p =
   | (`Meta_method | `Meta_tracing) as typ -> Bc_lib.annot typ p
 
 let run_dump f =
-  let inchan = open_in (f ^ ".ml") in
+  let inchan = open_in f in
   try
     Lexing.from_channel inchan |> Util.virtualize |> Trim.f |> Simm.f |> annot
     |> Emit_virtual.string_of_prog |> print_endline ;
@@ -21,15 +21,15 @@ let run_dump f =
   with e -> close_in inchan ; raise e
 
 let run_interp f =
-  let ic = open_in (f ^ ".ml") in
+  let ic = open_in f in
   try
     Lexing.from_channel ic |> Util.virtualize |> Trim.f |> Simm.f |> annot
     |> Interp.f |> string_of_int |> print_endline
   with e -> close_in ic ; raise e
 
 let run_compile f =
-  let inchan = open_in (f ^ ".ml") in
-  let outchan = open_out (f ^ ".s") in
+  let inchan = open_in f in
+  let outchan = open_out ((Filename.remove_extension f) ^ ".s") in
   try
     Lexing.from_channel inchan |> Util.virtualize |> Trim.f |> Simm.f |> annot
     |> RegAlloc.f |> Emit.f outchan ;
@@ -69,12 +69,8 @@ let usage =
       Sys.argv.(0)
 
 let () =
-  let filename f =
-    if Filename.check_suffix f ".mc" then f
-    else Filename.chop_extension f
-  in
   let files = ref [] in
-  Arg.parse spec_list (fun f -> files := !files @ [filename f]) usage ;
+  Arg.parse spec_list (fun f -> files := !files @ [f]) usage ;
   !files
   |> List.iter
        ( match !run_typ with
