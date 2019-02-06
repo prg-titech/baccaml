@@ -1,4 +1,5 @@
-open Utils.Std
+open Utils
+open Std
 open MinCaml
 open Asm
 open Bc_jit
@@ -37,15 +38,12 @@ let make_mem bytecode stack =
   stack |> Array.iteri (fun i a -> mem.(st_addr + i) <- Red a) ;
   mem
 
-let jit_entry bytecode stack values =
+let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   Array.print_array print_int bytecode ;
   print_newline () ;
   Array.print_array print_int stack ;
   print_newline () ;
-  Array.print_array print_int values ;
-  print_newline () ;
-  let pc = values.(0) in
-  let sp = values.(1) in
+  Printf.eprintf "pc %d, sp %d, bc_ptr %d, st_ptr %d\n" pc sp bc_ptr st_ptr;
   let prog =
     let ic = open_in "./test_interp.mcml" in
     try
@@ -53,7 +51,6 @@ let jit_entry bytecode stack values =
       close_in ic ; v
     with e -> close_in ic ; raise e
   in
-  print_endline (Emit_virtual.string_of_prog prog) ;
   (* let reg = make_reg prog sp in
    * let mem = make_mem bytecode stack in
    * Jit_tracing.(

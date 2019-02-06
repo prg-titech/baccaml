@@ -16,7 +16,7 @@ let rec frame_reset stack old_base new_base ret n i =
         frame_reset stack old_base new_base ret n (i + 1))
 in
 let rec interp stack sp bytecode pc =
-  jit_dispatch (pc=0) stack sp bytecode;
+  (* jit_dispatch (pc=0) stack sp bytecode; *)
   let instr = bytecode.(pc) in
   (* print_int pc; print_newline (); *)
   (* Printf.printf "is: %d\tsp: %d\tpc: %d\n" instr sp pc; *)
@@ -55,22 +55,14 @@ let rec interp stack sp bytecode pc =
       interp stack (sp - 1) bytecode (pc + 2)
   else if instr = 6 then        (* CALL *)
     let addr = bytecode.(pc + 1) in
-    if is_mj () then
-      let r = interp stack sp bytecode addr in
-      stack.(sp - 1) <- r;
-      interp stack sp bytecode (pc + 2)
-    else
-      (stack.(sp) <- pc + 2;
-       interp stack (sp + 1) bytecode addr)
+    (stack.(sp) <- pc + 2;
+     interp stack (sp + 1) bytecode addr)
   else if instr = 7 then        (* RET *)
-    if is_mj () then
-      stack.(sp - 1)
-    else
-     (let n = bytecode.(pc + 1) in
-      let v = stack.(sp - 1) in   (* sp: sp - 1 *)
-      let pc2 = stack.(sp - 2) in (* sp: sp - 2 *)
-      stack.(sp - n - 2) <- v;    (* sp: sp - 2 - n + 1 = sp - 1 - n *)
-      interp stack (sp - n - 1) bytecode pc2)
+    (let n = bytecode.(pc + 1) in
+     let v = stack.(sp - 1) in   (* sp: sp - 1 *)
+     let pc2 = stack.(sp - 2) in (* sp: sp - 2 *)
+     stack.(sp - n - 2) <- v;    (* sp: sp - 2 - n + 1 = sp - 1 - n *)
+     interp stack (sp - n - 1) bytecode pc2)
   else if instr = 8 then        (* DUP *)
     let n = bytecode.(pc + 1) in
     let v = stack.(sp - n - 1) in
@@ -97,16 +89,19 @@ let rec interp stack sp bytecode pc =
     if addr < pc then
       let args = make_args bytecode stack pc sp in
       call_caml_jit_entry args;
-      interp stack (sp - 1) bytecode addr
+      addr
     else
       interp stack (sp - 1) bytecode addr
+  else if instr = 15 then
+    let args = make_args bytecode stack pc sp in
+    call_caml_jit_entry args;
+    interp stack (sp - 1) bytecode (pc + 1)
   else
     -1000 in
 let code = Array.make 50 0 in
-code.(0) <- 4;
-code.(1) <- 9;
-code.(2) <- 4;
-code.(3) <- 10;
+code.(0) <- 4; code.(1) <- 10;
+code.(2) <- 8; code.(3) <- 1;
+code.(4) <- 14; code.(5) <- 2;
 let st = Array.make 50 0 in
-st.(0) <- 1 ;
+st.(0) <- 10 ;
 print_int (interp st 1 code 0)
