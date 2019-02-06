@@ -15,11 +15,7 @@ int call_caml_dummy_fun(int x) {
 }
 
 value init_f(int n) {
-  if (n == -1) {
-    return Val_int(0);
-  } else {
-    return Val_int(n);
-  }
+  return Val_int(n);
 }
 
 void call_caml_jit_entry(int **x) {

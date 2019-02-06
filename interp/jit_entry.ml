@@ -1,7 +1,7 @@
 open Utils.Std
 open MinCaml
+open Asm
 open Bc_jit
-
 open Jit_util
 
 (* For test *)
@@ -15,20 +15,57 @@ let dummy_fun x =
 
 let size = 100000
 
-let make_reg prog stack =
+(* TODO: specify extenally *)
+let greens = ["pc"; "bytecode"]
+
+let bc_addr = 0
+
+let st_addr = 100
+
+let make_reg prog sp =
   let reg = Array.make size (Red 0) in
-  let interp = find_fundef' prog "interp" in
-  ()
+  let {args; body= t} = find_fundef' prog "interp" in
+  fv t
+  |> List.iteri (fun i a ->
+         if List.mem (String.get_name a) greens then reg.(i) <- Green 0
+         else reg.(i) <- Red 0 ) ;
+  reg
+
+let make_mem bytecode stack =
+  let mem = Array.make size (Green 0) in
+  bytecode |> Array.iteri (fun i a -> mem.(bc_addr + i) <- Green a) ;
+  stack |> Array.iteri (fun i a -> mem.(st_addr + i) <- Red a) ;
+  mem
 
 let jit_entry bytecode stack values =
-  Array.print_array print_int bytecode; print_newline ();
-  Array.print_array print_int stack; print_newline ();
-  Array.print_array print_int values; print_newline ();
-  let reg = Array.make size (Red 0) in
-  let mem = Array.make size (Green 0) in
-  let ic = open_in "./test_interp.mcml" in
-  let prog = Lexing.from_channel ic |> Util.virtualize in
-  Emit_virtual.string_of_prog prog |> print_endline ;
+  Array.print_array print_int bytecode ;
+  print_newline () ;
+  Array.print_array print_int stack ;
+  print_newline () ;
+  Array.print_array print_int values ;
+  print_newline () ;
+  let pc = values.(0) in
+  let sp = values.(1) in
+  let prog =
+    let ic = open_in "./test_interp.mcml" in
+    try
+      let v = ic |> Lexing.from_channel |> Util.virtualize in
+      close_in ic ; v
+    with e -> close_in ic ; raise e
+  in
+  print_endline (Emit_virtual.string_of_prog prog) ;
+  (* let reg = make_reg prog sp in
+   * let mem = make_mem bytecode stack in
+   * Jit_tracing.(
+   *   let env = {
+   *       index_pc = 2;
+   *       merge_pc = pc;
+   *       trace_name = "test_trace";
+   *       red_args = ["stack"; "sp"];
+   *     } in
+   *   let trace = Jit_tracing.run prog reg mem env in
+   *   print_endline (Emit_virtual.string_of_fundef trace)
+   * ); *)
   ()
 
 let () =

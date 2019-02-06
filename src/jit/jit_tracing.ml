@@ -300,14 +300,11 @@ and tj_guard_over p reg mem path tj_env = function
 
 
 let run_while p reg mem name reds index_pc merge_pc =
-  let Prog (tbl, _, m) = p in
-  let Jit_prep.Env (fdfs, ibody, reds) =
-    Jit_prep.prep ~prog:p ~name:name ~red_args:reds ~jit_type:`Meta_tracing
-  in
-  let p' = Prog (tbl, fdfs, m) in
+  let Prog (tbl, fundefs, m) = p in
+  let {body=ibody} = find_fundef' p "interp" in
   let trace =
     ibody
-    |> tj p' reg mem { index_pc = index_pc; merge_pc = merge_pc; trace_name = name; }
+    |> tj p reg mem { index_pc = index_pc; merge_pc = merge_pc; trace_name = name; }
   in
   { name = Id.L (name); args = reds; fargs = []; body = trace; ret = Type.Int }
 

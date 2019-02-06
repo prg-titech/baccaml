@@ -55,7 +55,7 @@ let find_fundef prog target =
   let (Prog (_, fundefs, _)) = prog in
   match fundefs |> List.find_opt (fun {name= n} -> n = target) with
   | Some body -> body
-  | None -> failwith "find_fundef in Method jit is failed"
+  | None -> failwith "find_fundef is failed"
 
 let find_fundef' (Prog (tbl, fundefs, main)) name =
   fundefs |> List.find (fun {name= Id.L x} -> contains x name)
