@@ -92,10 +92,6 @@ let rec interp stack sp bytecode pc =
       addr
     else
       interp stack (sp - 1) bytecode addr
-  else if instr = 15 then
-    let args = make_args bytecode stack pc sp in
-    call_caml_jit_entry args;
-    interp stack (sp - 1) bytecode (pc + 1)
   else
     -1000 in
 let code = Array.make 50 0 in

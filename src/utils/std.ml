@@ -14,5 +14,9 @@ module String = struct
   let get_name x =
     x |> String.split_on_char '.' |> List.hd
 
+  let get_extension x =
+    x |> String.split_on_char '.' |> List.rev |> List.hd
+  ;;
+
 end
 ;;

@@ -19,9 +19,14 @@ let size = 100000
 (* TODO: specify extenally *)
 let greens = ["pc"; "bytecode"]
 
-let bc_addr = 0
+let bc_tmp_addr = 0
 
-let st_addr = 100
+let st_tmp_addr = 100
+
+let get_ir_addr args name =
+  args
+  |> List.find (fun a -> String.get_name a = name)
+  |> String.get_extension |> int_of_string
 
 let make_reg prog sp =
   let reg = Array.make size (Red 0) in
@@ -34,8 +39,8 @@ let make_reg prog sp =
 
 let make_mem bytecode stack =
   let mem = Array.make size (Green 0) in
-  bytecode |> Array.iteri (fun i a -> mem.(bc_addr + i) <- Green a) ;
-  stack |> Array.iteri (fun i a -> mem.(st_addr + i) <- Red a) ;
+  bytecode |> Array.iteri (fun i a -> mem.(bc_tmp_addr + i) <- Green a) ;
+  stack |> Array.iteri (fun i a -> mem.(st_tmp_addr + i) <- Red a) ;
   mem
 
 let jit_entry bytecode stack pc sp bc_ptr st_ptr =
@@ -43,7 +48,7 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   print_newline () ;
   Array.print_array print_int stack ;
   print_newline () ;
-  Printf.eprintf "pc %d, sp %d, bc_ptr %d, st_ptr %d\n" pc sp bc_ptr st_ptr;
+  Printf.eprintf "pc %d, sp %d, bc_ptr %d, st_ptr %d\n" pc sp bc_ptr st_ptr ;
   let prog =
     let ic = open_in "./test_interp.mcml" in
     try
@@ -51,18 +56,29 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
       close_in ic ; v
     with e -> close_in ic ; raise e
   in
-  (* let reg = make_reg prog sp in
-   * let mem = make_mem bytecode stack in
-   * Jit_tracing.(
-   *   let env = {
-   *       index_pc = 2;
-   *       merge_pc = pc;
-   *       trace_name = "test_trace";
-   *       red_args = ["stack"; "sp"];
-   *     } in
-   *   let trace = Jit_tracing.run prog reg mem env in
-   *   print_endline (Emit_virtual.string_of_fundef trace)
-   * ); *)
+  let {args; body} = find_fundef' prog "interp" in
+  let reg = make_reg prog sp in
+  let mem = make_mem bytecode stack in
+  let pc_ir_addr = get_ir_addr args "pc" in
+  let sp_ir_addr = get_ir_addr args "sp" in
+  let bc_ir_addr = get_ir_addr args "bytecode" in
+  let st_ir_addr = get_ir_addr args "stack" in
+  reg.(pc_ir_addr) <- Green pc ;
+  reg.(sp_ir_addr) <- Red sp ;
+  reg.(bc_ir_addr) <- Green bc_tmp_addr ;
+  reg.(st_ir_addr) <- Red st_tmp_addr ;
+  Jit_tracing.(
+    let env =
+      { index_pc= 2
+      ; merge_pc= pc
+      ; trace_name= "test_trace"
+      ; red_args=
+          args
+          |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
+      }
+    in
+    let trace = Jit_tracing.run prog reg mem env in
+    print_endline (Emit_virtual.string_of_fundef trace)) ;
   ()
 
 let () =
