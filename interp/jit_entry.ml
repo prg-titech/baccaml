@@ -28,10 +28,10 @@ let get_ir_addr args name =
   |> List.find (fun a -> String.get_name a = name)
   |> String.get_extension |> int_of_string
 
-let make_reg prog sp =
+let make_reg prog args sp =
   let reg = Array.make size (Red 0) in
   let {args; body= t} = find_fundef' prog "interp" in
-  fv t
+  fv t @ args
   |> List.iteri (fun i a ->
          if List.mem (String.get_name a) greens then reg.(i) <- Green 0
          else reg.(i) <- Red 0 ) ;
@@ -39,8 +39,8 @@ let make_reg prog sp =
 
 let make_mem bytecode stack =
   let mem = Array.make size (Green 0) in
-  bytecode |> Array.iteri (fun i a -> mem.(bc_tmp_addr + i) <- Green a) ;
-  stack |> Array.iteri (fun i a -> mem.(st_tmp_addr + i) <- Red a) ;
+  bytecode |> Array.iteri (fun i a -> mem.(bc_tmp_addr + (4 * i)) <- Green a) ;
+  stack |> Array.iteri (fun i a -> mem.(st_tmp_addr + (4 * i)) <- Red a) ;
   mem
 
 let jit_entry bytecode stack pc sp bc_ptr st_ptr =
@@ -57,7 +57,7 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
     with e -> close_in ic ; raise e
   in
   let {args; body} = find_fundef' prog "interp" in
-  let reg = make_reg prog sp in
+  let reg = make_reg prog args sp in
   let mem = make_mem bytecode stack in
   let pc_ir_addr = get_ir_addr args "pc" in
   let sp_ir_addr = get_ir_addr args "sp" in
@@ -69,7 +69,7 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   reg.(st_ir_addr) <- Red st_tmp_addr ;
   Jit_tracing.(
     let env =
-      { index_pc= 2
+      { index_pc= 3
       ; merge_pc= pc
       ; trace_name= "test_trace"
       ; red_args=

@@ -6,8 +6,8 @@ let rec make_values x y =
 in
 let rec make_args x y z w =
   let arr = Array.make 3 (Array.make 0 0) in
-  arr.(0) <- x; arr.(1) <- y;
-  arr.(2) <- (make_values z w);
+  let vals = make_values z w in
+  arr.(0) <- x; arr.(1) <- y; arr.(2) <- vals;
   arr
 in
 let rec frame_reset stack old_base new_base ret n i =
@@ -89,7 +89,7 @@ let rec interp stack sp bytecode pc =
     if addr < pc then
       let args = make_args bytecode stack pc sp in
       call_caml_jit_entry args;
-      addr
+      pc
     else
       interp stack (sp - 1) bytecode addr
   else
