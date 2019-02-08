@@ -15,6 +15,12 @@
 #define ALIGNSTACK3
 #endif
 .text
+.globl min_caml_can_enter_jit
+min_caml_can_enter_jit:
+    ret
+.globl min_caml_jit_merge_point
+min_caml_jit_merge_point:
+    ret
 .globl min_caml_trace_entry
 min_caml_trace_entry:
     ret

@@ -17,6 +17,7 @@ let rec frame_reset stack old_base new_base ret n i =
 in
 let rec interp stack sp bytecode pc =
   (* jit_dispatch (pc=0) stack sp bytecode; *)
+  jit_merge_point pc stack sp;
   let instr = bytecode.(pc) in
   (* print_int pc; print_newline (); *)
   (* Printf.printf "is: %d\tsp: %d\tpc: %d\n" instr sp pc; *)
@@ -87,6 +88,7 @@ let rec interp stack sp bytecode pc =
   else if instr = 14 then       (* JUMP *)
     let addr = bytecode.(pc + 1) in
     if addr < pc then
+      can_enter_jit pc stack sp;
       let args = make_args bytecode stack addr sp in
       call_caml_jit_entry args;
       pc
@@ -97,7 +99,9 @@ let rec interp stack sp bytecode pc =
 let code = Array.make 50 0 in
 code.(0) <- 4; code.(1) <- 10;
 code.(2) <- 8; code.(3) <- 1;
-code.(4) <- 14; code.(5) <- 2;
+code.(4) <- 4; code.(5) <- 2;
+code.(6) <- 2;
+code.(7) <- 14; code.(8) <- 2;
 let st = Array.make 50 0 in
 st.(0) <- 10 ;
 print_int (interp st 1 code 0)
