@@ -82,5 +82,6 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   ()
 
 let () =
+  Log.log_level := `Debug;
   Callback.register "jit_entry" jit_entry ;
   Callback.register "dummy_fun" dummy_fun
