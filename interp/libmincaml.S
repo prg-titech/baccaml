@@ -15,31 +15,6 @@
 #define ALIGNSTACK3
 #endif
 .text
-.globl min_caml_can_enter_jit
-min_caml_can_enter_jit:
-    ret
-.globl min_caml_jit_merge_point
-min_caml_jit_merge_point:
-    ret
-.globl min_caml_trace_entry
-min_caml_trace_entry:
-    ret
-.globl min_caml_jit_dispatch
-min_caml_jit_dispatch:
-    ret
-.globl min_caml_loop_start
-min_caml_loop_start:
-	ret
-.globl min_caml_loop_end
-min_caml_loop_end:
-	ret
-.globl min_caml_print_debug
-min_caml_print_debug:
-	pushl %eax
-	call min_caml_print_int
-	call min_caml_print_newline
-	popl %eax
-	ret
 .globl min_caml_print_newline
 min_caml_print_newline:
 	pushl	%ebp
