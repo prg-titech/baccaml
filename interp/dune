@@ -32,4 +32,5 @@
 
 (alias
  (name runtest)
- (action (run ./test_interp.exe)))
+ (deps test_interp.mcml)
+ (action (run ./test_interp.exe %{deps})))

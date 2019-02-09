@@ -12,9 +12,11 @@ extern void min_caml_start(char *, char *);
 /*    Shaw for reporting the problem and proposing this solution. */
 FILE *min_caml_stderr;
 
-int main(int argv, char **argc) {
+int main(int argc, char *argv[]) {
   char *hp, *sp;
-  caml_startup(argc);
+
+  caml_main(argv);
+
   min_caml_stderr = stderr;
   sp = alloca(1000000); hp = malloc(4000000);
   if (hp == NULL || sp == NULL) {
