@@ -5,7 +5,9 @@ open Asm
 open Bc_jit
 open Jit_util
 
-let file_name = ref ""
+exception Error of string
+
+let file_name = ref None
 
 let size = 100000
 
@@ -15,6 +17,11 @@ let greens = ["pc"; "bytecode"]
 let bc_tmp_addr = 0
 
 let st_tmp_addr = 100
+
+let file_open () =
+  match !file_name with
+  | Some (name) -> open_in name
+  | None -> raise @@ Error "argument is not specified."
 
 let print_arr ?notation:(nt = None) f arr =
   let str = Array.string_of_array f arr in
@@ -47,7 +54,7 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   print_arr string_of_int stack ~notation:(Some "stack") ;
   Printf.eprintf "pc %d, sp %d, bc_ptr %d, st_ptr %d\n" pc sp bc_ptr st_ptr ;
   let prog =
-    let ic = open_in !file_name in
+    let ic = file_open () in
     try
       let v = ic |> Lexing.from_channel |> Util.virtualize in
       close_in ic ; v
@@ -77,6 +84,6 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   ()
 
 let () =
-  file_name := Sys.argv.(1) ;
+  file_name := Some Sys.argv.(1) ;
   Log.log_level := `Debug ;
   Callback.register "jit_entry" jit_entry
