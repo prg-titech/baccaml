@@ -5,14 +5,7 @@ open Asm
 open Bc_jit
 open Jit_util
 
-(* For test *)
-let dummy_fun x =
-  print_string "apply dummy_fun to " ;
-  print_int x ;
-  print_newline () ;
-  print_string "executed file is " ;
-  print_endline Sys.argv.(0) ;
-  x + 1
+let file_name = ref ""
 
 let size = 100000
 
@@ -22,6 +15,12 @@ let greens = ["pc"; "bytecode"]
 let bc_tmp_addr = 0
 
 let st_tmp_addr = 100
+
+let print_arr ?notation:(nt = None) f arr =
+  let str = Array.string_of_array f arr in
+  match nt with
+  | Some s -> Printf.eprintf "%s %s\n" s str
+  | None -> Printf.eprintf "%s\n" str
 
 let get_ir_addr args name =
   args
@@ -44,13 +43,11 @@ let make_mem bytecode stack =
   mem
 
 let jit_entry bytecode stack pc sp bc_ptr st_ptr =
-  Array.print_array print_int bytecode ;
-  print_newline () ;
-  Array.print_array print_int stack ;
-  print_newline () ;
+  print_arr string_of_int bytecode ~notation:(Some "bytecode") ;
+  print_arr string_of_int stack ~notation:(Some "stack") ;
   Printf.eprintf "pc %d, sp %d, bc_ptr %d, st_ptr %d\n" pc sp bc_ptr st_ptr ;
   let prog =
-    let ic = open_in "./test_interp.mcml" in
+    let ic = open_in !file_name in
     try
       let v = ic |> Lexing.from_channel |> Util.virtualize in
       close_in ic ; v
@@ -67,21 +64,19 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   reg.(sp_ir_addr) <- Red sp ;
   reg.(bc_ir_addr) <- Green bc_tmp_addr ;
   reg.(st_ir_addr) <- Red st_tmp_addr ;
-  Jit_tracing.(
-    let env =
+  let env =
+    Jit_tracing.
       { index_pc= 3
       ; merge_pc= pc
       ; trace_name= "test_trace"
-      ; red_args=
-          args
-          |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
+      ; red_args= args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
       }
-    in
-    let trace = Jit_tracing.run prog reg mem env in
-    print_endline (Emit_virtual.string_of_fundef trace)) ;
+  in
+  let trace = Jit_tracing.run prog reg mem env in
+  print_endline (Emit_virtual.string_of_fundef trace) ;
   ()
 
 let () =
-  Log.log_level := `Debug;
-  Callback.register "jit_entry" jit_entry ;
-  Callback.register "dummy_fun" dummy_fun
+  file_name := Sys.argv.(1) ;
+  Log.log_level := `Debug ;
+  Callback.register "jit_entry" jit_entry
