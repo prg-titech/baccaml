@@ -1,11 +1,18 @@
 open Utils
 open MinCaml
 
+let output_file = ref None
+
 let run_typ = ref `Emit
 
 let jit_typ = ref `Not_specified
 
 let id x = x
+
+let open_out_file f =
+  match !output_file with
+  | Some (name) -> open_out @@ (Filename.remove_extension name) ^ ".s"
+  | None -> open_out @@ (Filename.remove_extension f) ^ ".s"
 
 let annot p =
   match !jit_typ with
@@ -29,7 +36,7 @@ let run_interp f =
 
 let run_compile f =
   let inchan = open_in f in
-  let outchan = open_out ((Filename.remove_extension f) ^ ".s") in
+  let outchan = open_out_file f in
   try
     Lexing.from_channel inchan |> Util.virtualize |> Trim.f |> Simm.f |> annot
     |> RegAlloc.f |> Emit.f outchan ;
@@ -38,7 +45,10 @@ let run_compile f =
   with e -> close_in inchan ; close_out outchan ; raise e
 
 let spec_list =
-  [ ( "-inline"
+  [ ( "-o"
+    , Arg.String (fun out -> output_file := Some (out))
+    , "output file")
+  ; ( "-inline"
     , Arg.Int (fun i -> Inline.threshold := i)
     , "maximum size of functions inlined" )
   ; ( "-iter"
