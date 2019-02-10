@@ -92,7 +92,7 @@ let rec interp stack sp bytecode pc =
       can_enter_jit pc stack sp;
       let args = make_args bytecode stack addr sp in
       call_caml_jit_entry args;
-      pc)
+      interp stack (sp - 1) bytecode addr)
     else
       interp stack (sp - 1) bytecode addr
   else

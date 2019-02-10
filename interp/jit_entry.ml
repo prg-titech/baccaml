@@ -34,6 +34,8 @@ let get_ir_addr args name =
   |> List.find (fun a -> String.get_name a = name)
   |> String.get_extension |> int_of_string
 
+let gen_trace_name name = Id.genid name
+
 let make_reg prog args sp =
   let reg = Array.make size (Red 0) in
   let {args; body= t} = find_fundef' prog "interp" in
@@ -75,7 +77,7 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
     Jit_tracing.
       { index_pc= 3
       ; merge_pc= pc
-      ; trace_name= "test_trace"
+      ; trace_name= gen_trace_name "trace"
       ; red_args= args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
       ; bytecode_ptr = bc_ptr
       ; stack_ptr = st_ptr
