@@ -9,7 +9,7 @@ exception Error of string
 
 let file_name = ref None
 
-let size = 100000
+let size = 10000
 
 (* TODO: specify extenally *)
 let greens = ["pc"; "bytecode"]
@@ -20,7 +20,7 @@ let st_tmp_addr = 100
 
 let file_open () =
   match !file_name with
-  | Some (name) -> open_in name
+  | Some name -> open_in name
   | None -> raise @@ Error "argument is not specified."
 
 let print_arr ?notation:(nt = None) f arr =
@@ -43,10 +43,10 @@ let make_reg prog args sp =
          else reg.(i) <- Red 0 ) ;
   reg
 
-let make_mem bytecode stack =
+let make_mem ~bc_addr ~st_addr bytecode stack =
   let mem = Array.make size (Green 0) in
-  bytecode |> Array.iteri (fun i a -> mem.(bc_tmp_addr + (4 * i)) <- Green a) ;
-  stack |> Array.iteri (fun i a -> mem.(st_tmp_addr + (4 * i)) <- Red a) ;
+  bytecode |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Green a) ;
+  stack |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Red a) ;
   mem
 
 let jit_entry bytecode stack pc sp bc_ptr st_ptr =
@@ -62,7 +62,7 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   in
   let {args; body} = find_fundef' prog "interp" in
   let reg = make_reg prog args sp in
-  let mem = make_mem bytecode stack in
+  let mem = make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack in
   let pc_ir_addr = get_ir_addr args "pc" in
   let sp_ir_addr = get_ir_addr args "sp" in
   let bc_ir_addr = get_ir_addr args "bytecode" in
@@ -77,6 +77,8 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
       ; merge_pc= pc
       ; trace_name= "test_trace"
       ; red_args= args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
+      ; bytecode_ptr = bc_ptr
+      ; stack_ptr = st_ptr
       }
   in
   let trace = Jit_tracing.run prog reg mem env in
