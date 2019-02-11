@@ -18,16 +18,16 @@ let bc_tmp_addr = 0
 
 let st_tmp_addr = 100
 
-let file_open () =
-  match !file_name with
-  | Some name -> open_in name
-  | None -> raise @@ Error "argument is not specified."
-
 let print_arr ?notation:(nt = None) f arr =
   let str = Array.string_of_array f arr in
   match nt with
   | Some s -> Printf.eprintf "%s %s\n" s str
   | None -> Printf.eprintf "%s\n" str
+
+let file_open () =
+  match !file_name with
+  | Some name -> open_in name
+  | None -> raise @@ Error "argument is not specified."
 
 let get_ir_addr args name =
   args
@@ -79,15 +79,15 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
       ; merge_pc= pc
       ; trace_name= gen_trace_name "trace"
       ; red_args= args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
-      ; bytecode_ptr = bc_ptr
-      ; stack_ptr = st_ptr
-      }
+      ; bytecode_ptr= bc_ptr
+      ; stack_ptr= st_ptr }
   in
   let trace = Jit_tracing.run prog reg mem env in
   print_endline (Emit_virtual.string_of_fundef trace) ;
   ()
 
 let () =
-  file_name := Some Sys.argv.(1) ;
+  if Array.length Sys.argv < 2 then raise @@ Error "please specify your file."
+  else file_name := Some Sys.argv.(1) ;
   Log.log_level := `Debug ;
   Callback.register "jit_entry" jit_entry
