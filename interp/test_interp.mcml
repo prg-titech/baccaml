@@ -1,4 +1,4 @@
-(* -*- tuareg -*- *)
+(* -*- mode: tuareg -*- *)
 let rec make_values x y =
   let values = Array.make 2 0 in
   values.(0) <- x; values.(1) <- y;
@@ -92,9 +92,9 @@ let rec interp stack sp bytecode pc =
       can_enter_jit pc stack sp;
       let args = make_args bytecode stack addr sp in
       call_caml_jit_entry args;
-      interp stack (sp - 1) bytecode addr)
+      interp stack sp bytecode addr)
     else
-      interp stack (sp - 1) bytecode addr
+      interp stack sp bytecode addr
   else
     -1000 in
 let code = Array.make 50 0 in
