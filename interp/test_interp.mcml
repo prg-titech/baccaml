@@ -48,7 +48,7 @@ let rec interp stack sp bytecode pc =
     if v = 0 then (
       if addr < pc then (
         can_enter_jit pc stack sp;
-        let args = make_args bytecode stack pc sp in
+        let args = make_args bytecode stack addr sp in
         call_caml_jit_entry args;
         interp stack (sp - 1) bytecode addr)
       else (
