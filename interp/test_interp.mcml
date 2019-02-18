@@ -95,14 +95,18 @@ let rec interp stack sp bytecode pc =
       interp stack sp bytecode addr)
     else
       interp stack sp bytecode addr
+  else if instr = 15 then
+    (method_entry ();
+     interp stack sp bytecode (pc + 1))
   else
     -1000 in
 let code = Array.make 50 0 in
-code.(0) <- 4; code.(1) <- 10;
-code.(2) <- 8; code.(3) <- 1;
-code.(4) <- 2;
-code.(5) <- 5; code.(6) <- 2;
-code.(7) <- 9;
+code.(0) <- 15; code.(1) <- 2; code.(2) <- 7;
+code.(1) <- 4; code.(2) <- 10;
+code.(3) <- 8; code.(4) <- 1;
+code.(5) <- 2;
+code.(6) <- 5; code.(7) <- 3;
+code.(8) <- 9;
 let st = Array.make 50 0 in
 st.(0) <- 10;
 print_int (interp st 1 code 0)

@@ -10,6 +10,9 @@
 #define ALIGNSTACK3
 #endif
     .text
+    .globl min_caml_method_entry
+min_caml_method_entry:
+    ret
     .globl min_caml_can_enter_jit
 min_caml_can_enter_jit:
     ret

@@ -18,6 +18,8 @@ let bc_tmp_addr = 0
 
 let st_tmp_addr = 100
 
+let pc_method_annot_inst = 15
+
 let print_arr ?notation:(nt = None) f arr =
   let str = Array.string_of_array f arr in
   match nt with
@@ -36,6 +38,9 @@ let get_ir_addr args name =
 
 let gen_trace_name name = Id.genid name
 
+let get_red_args args =
+  args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
+
 let make_reg prog args sp =
   let reg = Array.make size (Red 0) in
   let {args; body= t} = find_fundef' prog "interp" in
@@ -50,6 +55,40 @@ let make_mem ~bc_addr ~st_addr bytecode stack =
   bytecode |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Green a) ;
   stack |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Red a) ;
   mem
+
+let jit_method bytecode stack pc sp bc_ptr st_ptr =
+  let prog =
+    let ic = file_open () in
+    try
+      let v = ic |> Lexing.from_channel |> Util.virtualize in
+      close_in ic ; v
+    with e -> close_in ic ; raise e
+  in
+  let {args; body} = find_fundef' prog "interp" in
+  let reg = make_reg prog args sp in
+  let mem = make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack in
+  let pc_method_entry =
+    bytecode |> Array.to_list
+    |> List.mapi (fun i a -> (i, a))
+    |> List.find (fun (i, a) -> a = pc_method_annot_inst)
+    |> fst
+  in
+  let pc_ir_addr = get_ir_addr args "pc" in
+  let sp_ir_addr = get_ir_addr args "sp" in
+  let bc_ir_addr = get_ir_addr args "bytecode" in
+  let st_ir_addr = get_ir_addr args "stack" in
+  reg.(pc_ir_addr) <- Green pc_method_entry ;
+  reg.(sp_ir_addr) <- Red sp ;
+  reg.(bc_ir_addr) <- Green bc_tmp_addr ;
+  reg.(st_ir_addr) <- Red st_tmp_addr ;
+  let env =
+    Jit_method.
+      { trace_name= gen_trace_name "trace"
+      ; red_args= get_red_args args
+      ; index_pc= 3
+      ; merge_pc= pc_method_entry }
+  in
+  Jit_method.run prog reg mem env
 
 let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   print_arr string_of_int bytecode ~notation:(Some "bytecode") ;
@@ -84,6 +123,8 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   in
   let trace = Jit_tracing.run prog reg mem env in
   print_endline (Emit_virtual.string_of_fundef trace) ;
+  let traces = jit_method bytecode stack pc sp bc_ptr st_ptr in
+  traces |> List.iter (fun trace -> print_endline (Emit_virtual.string_of_fundef trace)) ;
   ()
 
 let () =
