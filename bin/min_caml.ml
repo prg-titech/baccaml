@@ -11,8 +11,8 @@ let id x = x
 
 let open_out_file f =
   match !output_file with
-  | Some (name) -> open_out @@ (Filename.remove_extension name) ^ ".s"
-  | None -> open_out @@ (Filename.remove_extension f) ^ ".s"
+  | Some name -> open_out @@ Filename.remove_extension name ^ ".s"
+  | None -> open_out @@ Filename.remove_extension f ^ ".s"
 
 let annot p =
   match !jit_typ with
@@ -30,8 +30,8 @@ let run_dump f =
 let run_interp f =
   let ic = open_in f in
   try
-    Lexing.from_channel ic |> Util.virtualize |> Trim.f |> Simm.f |> annot
-    |> Interp.f |> string_of_int |> print_endline
+    Lexing.from_channel ic |> Util.virtualize |> Trim.f |> Simm.f |> annot |> Interp.f
+    |> string_of_int |> print_endline
   with e -> close_in ic ; raise e
 
 let run_compile f =
@@ -45,9 +45,7 @@ let run_compile f =
   with e -> close_in inchan ; close_out outchan ; raise e
 
 let spec_list =
-  [ ( "-o"
-    , Arg.String (fun out -> output_file := Some (out))
-    , "output file")
+  [ ("-o", Arg.String (fun out -> output_file := Some out), "output file")
   ; ( "-inline"
     , Arg.Int (fun i -> Inline.threshold := i)
     , "maximum size of functions inlined" )
@@ -62,20 +60,14 @@ let spec_list =
           | "tjit" -> jit_typ := `Meta_tracing
           | _ -> () )
     , "specify jit type" )
-  ; ( "-err"
-    , Arg.Unit (fun _ -> Log.log_level := `Error)
-    , "Specify loglevel as error" )
-  ; ( "-debug"
-    , Arg.Unit (fun _ -> Log.log_level := `Debug)
-    , "Specify loglevel as debug" )
+  ; ("-err", Arg.Unit (fun _ -> Log.log_level := `Error), "Specify loglevel as error")
+  ; ("-debug", Arg.Unit (fun _ -> Log.log_level := `Debug), "Specify loglevel as debug")
   ; ("-dump", Arg.Unit (fun _ -> run_typ := `Dump), "emit virtual machine code")
-  ; ("-interp", Arg.Unit (fun _ -> run_typ := `Interp), "run as interpreter")
-  ]
+  ; ("-interp", Arg.Unit (fun _ -> run_typ := `Interp), "run as interpreter") ]
 
 let usage =
   "Mitou Min-Caml Compiler (C) Eijiro Sumii\n"
-  ^ Printf.sprintf
-      "usage: %s [-inline m] [-iter n] ...filenames without \".ml\"..."
+  ^ Printf.sprintf "usage: %s [-inline m] [-iter n] ...filenames without \".ml\"..."
       Sys.argv.(0)
 
 let () =
