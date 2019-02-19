@@ -39,8 +39,8 @@ let get_ir_addr args name =
 let trace_name_count = ref 1000
 
 let gen_trace_name name =
-  let r = name ^ "." ^ (string_of_int !trace_name_count) in
-  incr trace_name_count; r
+  let r = name ^ "." ^ string_of_int !trace_name_count in
+  incr trace_name_count ; r
 
 let get_red_args args =
   args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
@@ -60,7 +60,10 @@ let make_mem ~bc_addr ~st_addr bytecode stack =
   stack |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Red a) ;
   mem
 
-let jit_method bytecode stack pc sp bc_ptr st_ptr prog =
+type env_jit =
+  {bytecode: int array; stack: int array; pc: int; sp: int; bc_ptr: int; st_ptr: int}
+
+let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let prog = Jit_annot.annotate `Meta_method prog in
   let {args; body} = find_fundef' prog "interp" in
   let reg = make_reg prog args sp in
@@ -71,7 +74,7 @@ let jit_method bytecode stack pc sp bc_ptr st_ptr prog =
     |> List.find (fun (i, a) -> a = pc_method_annot_inst)
     |> fst
   in
-  Printf.eprintf "pc_method_entry: %d\n" pc_method_entry;
+  Printf.eprintf "pc_method_entry: %d\n" pc_method_entry ;
   let pc_ir_addr = get_ir_addr args "pc" in
   let sp_ir_addr = get_ir_addr args "sp" in
   let bc_ir_addr = get_ir_addr args "bytecode" in
@@ -89,7 +92,7 @@ let jit_method bytecode stack pc sp bc_ptr st_ptr prog =
   in
   JM.run prog reg mem env
 
-let jit_tracing bytecode stack pc sp bc_ptr st_ptr prog =
+let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let prog = Jit_annot.annotate `Meta_tracing prog in
   let {args; body} = find_fundef' prog "interp" in
   let reg = make_reg prog args sp in
@@ -107,7 +110,8 @@ let jit_tracing bytecode stack pc sp bc_ptr st_ptr prog =
     { JT.index_pc= 3
     ; JT.merge_pc= pc
     ; JT.trace_name= gen_trace_name "trace"
-    ; JT.red_args= args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
+    ; JT.red_args=
+        args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
     ; JT.bytecode_ptr= bc_ptr
     ; JT.stack_ptr= st_ptr }
   in
@@ -125,10 +129,15 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
       close_in ic ; v
     with e -> close_in ic ; raise e
   in
-  let trace = prog |> jit_tracing bytecode stack pc sp bc_ptr st_ptr in
+  let env = {bytecode; stack; pc; sp; bc_ptr; st_ptr} in
+  let trace = prog |> jit_tracing env in
+  print_string "[TRACE EMITTED by TRACING JIT] " ;
   print_endline (Emit_virtual.string_of_fundef trace) ;
-  let traces = prog |> jit_method bytecode stack pc sp bc_ptr st_ptr in
-  traces |> List.iter (fun trace -> print_endline (Emit_virtual.string_of_fundef trace)) ;
+  let traces = prog |> jit_method env in
+  traces
+  |> List.iter (fun trace ->
+         print_string "[TRACE EMITTED by METHOD JIT] " ;
+         print_endline (Emit_virtual.string_of_fundef trace) ) ;
   ()
 
 let () =
