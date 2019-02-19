@@ -60,7 +60,8 @@ let jit_method bytecode stack pc sp bc_ptr st_ptr =
   let prog =
     let ic = file_open () in
     try
-      let v = ic |> Lexing.from_channel |> Util.virtualize in
+      let module A = Jit_annot in
+      let v = ic |> Lexing.from_channel |> Util.virtualize |> A.annotate `Meta_method in
       close_in ic ; v
     with e -> close_in ic ; raise e
   in
@@ -73,6 +74,7 @@ let jit_method bytecode stack pc sp bc_ptr st_ptr =
     |> List.find (fun (i, a) -> a = pc_method_annot_inst)
     |> fst
   in
+  Printf.eprintf "pc_method_entry: %d\n" pc_method_entry;
   let pc_ir_addr = get_ir_addr args "pc" in
   let sp_ir_addr = get_ir_addr args "sp" in
   let bc_ir_addr = get_ir_addr args "bytecode" in
@@ -90,14 +92,12 @@ let jit_method bytecode stack pc sp bc_ptr st_ptr =
   in
   Jit_method.run prog reg mem env
 
-let jit_entry bytecode stack pc sp bc_ptr st_ptr =
-  print_arr string_of_int bytecode ~notation:(Some "bytecode") ;
-  print_arr string_of_int stack ~notation:(Some "stack") ;
-  Printf.eprintf "pc %d, sp %d, bc_ptr %d, st_ptr %d\n" pc sp bc_ptr st_ptr ;
+let jit_tracing bytecode stack pc sp bc_ptr st_ptr =
   let prog =
     let ic = file_open () in
     try
-      let v = ic |> Lexing.from_channel |> Util.virtualize in
+      let module A = Jit_annot in
+      let v = ic |> Lexing.from_channel |> Util.virtualize |> A.annotate `Meta_tracing in
       close_in ic ; v
     with e -> close_in ic ; raise e
   in
@@ -112,16 +112,22 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   reg.(sp_ir_addr) <- Red sp ;
   reg.(bc_ir_addr) <- Green bc_tmp_addr ;
   reg.(st_ir_addr) <- Red st_tmp_addr ;
+  let module JT = Jit_tracing in
   let env =
-    Jit_tracing.
-      { index_pc= 3
-      ; merge_pc= pc
-      ; trace_name= gen_trace_name "trace"
-      ; red_args= args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
-      ; bytecode_ptr= bc_ptr
-      ; stack_ptr= st_ptr }
+    { JT.index_pc= 3
+    ; JT.merge_pc= pc
+    ; JT.trace_name= gen_trace_name "trace"
+    ; JT.red_args= args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
+    ; JT.bytecode_ptr= bc_ptr
+    ; JT.stack_ptr= st_ptr }
   in
-  let trace = Jit_tracing.run prog reg mem env in
+  JT.run prog reg mem env
+
+let jit_entry bytecode stack pc sp bc_ptr st_ptr =
+  print_arr string_of_int bytecode ~notation:(Some "bytecode") ;
+  print_arr string_of_int stack ~notation:(Some "stack") ;
+  Printf.eprintf "pc %d, sp %d, bc_ptr %d, st_ptr %d\n" pc sp bc_ptr st_ptr ;
+  let trace = jit_tracing bytecode stack pc sp bc_ptr st_ptr in
   print_endline (Emit_virtual.string_of_fundef trace) ;
   let traces = jit_method bytecode stack pc sp bc_ptr st_ptr in
   traces |> List.iter (fun trace -> print_endline (Emit_virtual.string_of_fundef trace)) ;

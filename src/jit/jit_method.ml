@@ -17,6 +17,11 @@ let index_pc = ref 0
 
 let merge_pc = ref 0
 
+let print_list f lst =
+  print_string "[";
+  List.map f lst |> String.concat "; " |> print_string;
+  print_string "]"
+
 let empty_fenv () = M.empty
 
 let extend_fenv name args func fenv = M.add name (args, func) fenv
@@ -49,10 +54,17 @@ let rec mj p reg mem fenv name = function
       (* [TODO] インタプリタに差しもどす処理を入れる *)
       Log.debug (Printf.sprintf "min_caml_loop_end.") ;
       (Ans (CallDir (Id.L name, args, fargs)), M.empty)
+  | Let ((dest, typ), CallDir (Id.L ("min_caml_method_entry"), args, fargs), body) ->
+     Log.debug ("min_caml_method_entry");
+     mj p reg mem fenv name body
+  | Let ((dest, typ), CallDir (Id.L ("min_caml_jit_merge_point"), args, fargs), body) ->
+     let pc = List.hd args |> int_of_id_t |> Array.get reg |> value_of in
+     Log.debug (Printf.sprintf "jit_merge_point pc: %d" pc);
+     mj p reg mem fenv name body
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
       (* [TODO] pc の値が method の先頭でかつ
        * interpreter 呼び出しの場合のみ call するように変更 *)
-      let pc = find_pc args |> Array.get reg |> value_of in
+      let pc = List.hd args |> int_of_id_t |> Array.get reg |> value_of in
       let callee_id = if pc = !merge_pc then Id.L name else id_l in
       let restored_call =
         restore_args
@@ -162,8 +174,7 @@ and mj_if p reg mem fenv name = function
       | Red n1, Red n2 -> (Ans (exp |%| (id_t, id_or_imm, fst t1', fst t2')), new_map) )
   | _ -> failwith "method_jit_if should accept conditional branches."
 
-let run_while p reg mem name reds =
-  let (Prog (_, fundefs, main)) = p in
+let run_while (Prog (_, fundefs, main) as p) reg mem name reds =
   (* let (Jit_prep.Env (fdfs, ibody, reds)) =
    *   Jit_prep.prep ~prog:p ~name ~red_args:reds ~jit_type:`Meta_method
    * in
