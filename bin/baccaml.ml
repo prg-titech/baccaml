@@ -54,18 +54,15 @@ let name = ref "min_caml_test_trace"
 
 let usage =
   "usage: " ^ Sys.argv.(0)
-  ^ " [-file string] [-green string list] [-red string list] [-code int list] \
-     [-annot int list]"
+  ^ " [-file string] [-green string list] [-red string list] [-code int list] [-annot \
+     int list]"
 
 let speclist =
   [ ("-file", Arg.Set_string file, "Specify the filename of your interpreter")
   ; ("-annot", Arg.Set_string annots, "Specify annotations for your bytecodes")
-  ; ( "-elim"
-    , Arg.Set_int elim
-    , "Specify the number of identity move elimination" )
+  ; ("-elim", Arg.Set_int elim, "Specify the number of identity move elimination")
   ; ("-o", Arg.Set_string output, "Set executable's name")
-  ; ("-dbg", Arg.Unit (fun _ -> Log.log_level := `Debug), "Enable debug mode")
-  ]
+  ; ("-dbg", Arg.Unit (fun _ -> Log.log_level := `Debug), "Enable debug mode") ]
 
 let run ?(midflg = false) ?(out = "a.out") ?(tr = "min_caml_test_trace") f =
   let file = !file in
@@ -95,22 +92,21 @@ let run ?(midflg = false) ?(out = "a.out") ?(tr = "min_caml_test_trace") f =
     ( match jittype' with
     | `Meta_tracing ->
         Jit_tracing.(
-          let tj_env = {trace_name; red_args; index_pc= 3; merge_pc} in
+          let tj_env =
+            {trace_name; red_args; index_pc= 3; merge_pc; bytecode_ptr= 0; stack_ptr= 100}
+          in
           let t = run prog reg mem tj_env |> Jit_elim.elim_fundef in
           Log.debug (Printf.sprintf "%s\n" (Emit_virtual.string_of_fundef t)) ;
           [t])
     | `Meta_method ->
         Jit_method.(
           let mj_env = {trace_name; red_args; index_pc= 3; merge_pc} in
-          let t =
-            run prog reg mem mj_env |> List.map (Jit_elim.elim_fundef ~i:!elim)
-          in
+          let t = run prog reg mem mj_env |> List.map (Jit_elim.elim_fundef ~i:!elim) in
           ignore
             ( t
             |> List.map (fun trace ->
                    Log.debug
-                     (Printf.sprintf "%s\n"
-                        (Emit_virtual.string_of_fundef trace)) ) ) ;
+                     (Printf.sprintf "%s\n" (Emit_virtual.string_of_fundef trace)) ) ) ;
           t) )
     |> List.map Simm.h |> List.map RegAlloc.h
     |> Jit_emit_base.(

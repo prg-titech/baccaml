@@ -1,8 +1,4 @@
-#include <caml/alloc.h>
-#include <caml/custom.h>
-#include <caml/major_gc.h>
-#include <caml/memory.h>
-#include <caml/stacks.h>
+#include <stdio.h>
 #include <caml/mlvalues.h>
 #include <caml/callback.h>
 
@@ -15,21 +11,21 @@ int call_caml_dummy_fun(int x) {
 }
 
 value init_f(int n) {
-  if (n == -1) {
-    return Val_int(0);
-  } else {
-    return Val_int(n);
-  }
+  return Val_int(n);
 }
 
 void call_caml_jit_entry(int **x) {
   static value * jit_entry_closure = NULL;
+  value ml_args[6];
   if (jit_entry_closure == NULL) {
     jit_entry_closure = caml_named_value("jit_entry");
   }
-  caml_callback3(*jit_entry_closure,
-                 caml_alloc_array(init_f, x[0]),
-                 caml_alloc_array(init_f, x[1]),
-                 caml_alloc_array(init_f, x[2]));
+  ml_args[0] = caml_alloc_array(init_f, x[0]);
+  ml_args[1] = caml_alloc_array(init_f, x[1]);
+  ml_args[2] = Val_int(x[2][0]);
+  ml_args[3] = Val_int(x[2][1]);
+  ml_args[4] = Val_int(x[0]);
+  ml_args[5] = Val_int(x[1]);
+  caml_callbackN(*jit_entry_closure, 6, ml_args);
   return;
 }

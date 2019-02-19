@@ -1,7 +1,7 @@
 (executable
  (name jit_entry)
  (modules jit_entry)
- (libraries minCaml bc_jit bc_lib utils)
+ (libraries str minCaml bc_jit bc_lib utils)
  (flags (-w -4-33-40-41-42-43-34-44
             -short-paths
             -strict-sequence
@@ -16,7 +16,7 @@
 (rule
  (targets test_interp.s)
  (deps test_interp.mcml)
- (action (run ../bin/min_caml.exe %{deps})))
+ (action (run ../bin/min_caml.exe -o %{targets} %{deps} -type tjit)))
 
 (rule
  (targets test_interp.exe)
@@ -27,9 +27,11 @@
    jit_entry_interop.s
    jit_entry_wrap.c
    test_interp.s)
- (action (run %{cc} -o %{targets} -I %{ocaml_where} -L %{ocaml_where} -I . %{deps}
-           %{ocaml-config:native_c_libraries})))
+ (action
+  (run %{cc} -o %{targets} -I %{ocaml_where} -L %{ocaml_where} -I . %{deps}
+    %{ocaml-config:native_c_libraries})))
 
 (alias
  (name runtest)
- (action (run ./test_interp.exe)))
+ (deps test_interp.mcml)
+ (action (run ./test_interp.exe %{deps})))
