@@ -36,7 +36,11 @@ let get_ir_addr args name =
   |> List.find (fun a -> String.get_name a = name)
   |> String.get_extension |> int_of_string
 
-let gen_trace_name name = Id.genid name
+let trace_name_count = ref 1000
+
+let gen_trace_name name =
+  let r = name ^ "." ^ (string_of_int !trace_name_count) in
+  incr trace_name_count; r
 
 let get_red_args args =
   args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
