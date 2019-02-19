@@ -60,15 +60,8 @@ let make_mem ~bc_addr ~st_addr bytecode stack =
   stack |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Red a) ;
   mem
 
-let jit_method bytecode stack pc sp bc_ptr st_ptr =
-  let prog =
-    let ic = file_open () in
-    try
-      let module A = Jit_annot in
-      let v = ic |> Lexing.from_channel |> Util.virtualize |> A.annotate `Meta_method in
-      close_in ic ; v
-    with e -> close_in ic ; raise e
-  in
+let jit_method bytecode stack pc sp bc_ptr st_ptr prog =
+  let prog = Jit_annot.annotate `Meta_method prog in
   let {args; body} = find_fundef' prog "interp" in
   let reg = make_reg prog args sp in
   let mem = make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack in
@@ -87,24 +80,17 @@ let jit_method bytecode stack pc sp bc_ptr st_ptr =
   reg.(sp_ir_addr) <- Red sp ;
   reg.(bc_ir_addr) <- Green bc_tmp_addr ;
   reg.(st_ir_addr) <- Red st_tmp_addr ;
+  let module JM = Jit_method in
   let env =
-    Jit_method.
-      { trace_name= gen_trace_name "trace"
-      ; red_args= get_red_args args
-      ; index_pc= 3
-      ; merge_pc= pc_method_entry }
+    { JM.trace_name= gen_trace_name "trace"
+    ; JM.red_args= get_red_args args
+    ; JM.index_pc= 3
+    ; JM.merge_pc= pc_method_entry }
   in
-  Jit_method.run prog reg mem env
+  JM.run prog reg mem env
 
-let jit_tracing bytecode stack pc sp bc_ptr st_ptr =
-  let prog =
-    let ic = file_open () in
-    try
-      let module A = Jit_annot in
-      let v = ic |> Lexing.from_channel |> Util.virtualize |> A.annotate `Meta_tracing in
-      close_in ic ; v
-    with e -> close_in ic ; raise e
-  in
+let jit_tracing bytecode stack pc sp bc_ptr st_ptr prog =
+  let prog = Jit_annot.annotate `Meta_tracing prog in
   let {args; body} = find_fundef' prog "interp" in
   let reg = make_reg prog args sp in
   let mem = make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack in
@@ -131,9 +117,17 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   print_arr string_of_int bytecode ~notation:(Some "bytecode") ;
   print_arr string_of_int stack ~notation:(Some "stack") ;
   Printf.eprintf "pc %d, sp %d, bc_ptr %d, st_ptr %d\n" pc sp bc_ptr st_ptr ;
-  let trace = jit_tracing bytecode stack pc sp bc_ptr st_ptr in
+  let prog =
+    let ic = file_open () in
+    try
+      let module A = Jit_annot in
+      let v = ic |> Lexing.from_channel |> Util.virtualize in
+      close_in ic ; v
+    with e -> close_in ic ; raise e
+  in
+  let trace = prog |> jit_tracing bytecode stack pc sp bc_ptr st_ptr in
   print_endline (Emit_virtual.string_of_fundef trace) ;
-  let traces = jit_method bytecode stack pc sp bc_ptr st_ptr in
+  let traces = prog |> jit_method bytecode stack pc sp bc_ptr st_ptr in
   traces |> List.iter (fun trace -> print_endline (Emit_virtual.string_of_fundef trace)) ;
   ()
 
