@@ -10,9 +10,9 @@ The important thing is that those strategies have their own pros and cons.
 We propose a _meta-hybrid JIT compilation framework_, and its' experimental implementation BacCaml.
 The three main features of BacCaml are:
 
-- enable to apply both method- and tracing-based compilation for different program parts
-- you can apply both two strategies with a sole interpreter definition
-- share many parts of implementation between method-based and tracing-based compilation
+- applying both method- and tracing-based compilation for different program parts
+- realiizing a hybrid JIT compiler with a single interpreter definition
+- sharing many parts of implementation between method-based and tracing-based compilation
 
 
 This project is forked from <a href="https://github.com/esumii/min-caml">MinCaml</a>.
