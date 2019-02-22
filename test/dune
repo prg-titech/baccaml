@@ -19,4 +19,4 @@
          -strict-formats
          -short-paths
          -keep-locs))
- (libraries str re oUnit utils minCaml bc_jit interp_util))
+ (libraries str oUnit utils minCaml bc_jit interp_util))
