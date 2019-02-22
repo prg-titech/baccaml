@@ -269,6 +269,7 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
 
 let f oc (Prog(data, fundefs, e)) =
   Format.eprintf "generating assembly...@.";
+  Printf.fprintf oc ".code32\n";
   Printf.fprintf oc ".data\n";
   Printf.fprintf oc ".balign\t8\n";
   List.iter

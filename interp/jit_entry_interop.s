@@ -9,7 +9,11 @@
 #define ALIGNSTACK2
 #define ALIGNSTACK3
 #endif
+    .code32
     .text
+    .globl min_caml_is_mj
+min_caml_is_mj:
+    ret
     .globl min_caml_method_entry
 min_caml_method_entry:
     ret
