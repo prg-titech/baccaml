@@ -72,7 +72,7 @@ let compile_dyn : string -> unit = fun name ->
     Printf.sprintf "gcc '-m32' '-dynamiclib' '-Wl,-undefined' '-Wl,dynamic_lookup' -o %s %s"
       dylib trace_file_name
   in
-  print_endline (cmd);
+  Log.debug (cmd);
   match Unix.system cmd with
   | Unix.WEXITED _ -> ()
   | Unix.WSIGNALED _ -> ()
