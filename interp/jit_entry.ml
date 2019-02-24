@@ -40,8 +40,12 @@ let get_ir_addr args name =
 
 let counter = ref 0
 
-let gen_trace_name : unit -> string = fun () ->
-  let name = "trace" ^ string_of_int !counter in
+let gen_trace_name : [< `Meta_tracing | `Meta_method] -> string = fun typ ->
+  let mark = match typ with
+  | `Meta_tracing -> "tj"
+  | `Meta_method -> "mj"
+  in
+  let name = "trace" ^ mark ^ string_of_int !counter in
   incr counter ; Id.genid name
 
 let get_dylib_name : string -> string = fun name ->
@@ -78,9 +82,9 @@ let compile_dyn : string -> 'a = fun name ->
   in
   Log.debug (cmd);
   match Unix.system cmd with
-  | Unix.WEXITED _ -> Try.Success (dylib)
-  | Unix.WSIGNALED _ -> Try.Success (dylib)
-  | Unix.WSTOPPED _ -> Try.Success (dylib)
+  | Unix.WEXITED _ -> Try.Success (name)
+  | Unix.WSIGNALED _ -> Try.Success (name)
+  | Unix.WSTOPPED _ -> Try.Success (name)
 
 type env_jit =
   {bytecode: int array; stack: int array; pc: int; sp: int; bc_ptr: int; st_ptr: int}
@@ -106,7 +110,7 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   reg.(bc_ir_addr) <- Green bc_tmp_addr ;
   reg.(st_ir_addr) <- Red st_tmp_addr ;
   let module JM = Jit_method in
-  let trace_name = gen_trace_name () in
+  let trace_name = gen_trace_name `Meta_method in
   Printf.eprintf "trace_name %s\n" trace_name;
   let env =
     { JM.trace_name= trace_name
@@ -133,7 +137,7 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   reg.(bc_ir_addr) <- Green bc_tmp_addr ;
   reg.(st_ir_addr) <- Red st_tmp_addr ;
   let module JT = Jit_tracing in
-  let trace_name = gen_trace_name () in
+  let trace_name = gen_trace_name `Meta_tracing in
   Printf.eprintf "trace_name %s\n" trace_name;
   let env =
     { JT.index_pc= 3
@@ -164,10 +168,17 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   let module E = Jit_emit_base in
   let env = {bytecode; stack; pc; sp; bc_ptr; st_ptr} in
   (match prog |> jit_tracing env with
-   | Try.Success _ -> ()
+   | Try.Success name ->
+      (* print_endline name;
+       * let r = Dynload_stub.call_arg2
+       *           ~lib:("./" ^ get_dylib_name name)
+       *           ~func:(String.split_on_char '.' name |> List.hd)
+       *           ~arg1:st_ptr ~arg2:1 in
+       * print_int r; *)
+      ()
    | Try.Failure _ -> ());
   (match prog |> jit_method env with
-   | Try.Success _ -> ()
+   | Try.Success name -> ()
    | Try.Failure _ -> ());
   ()
 
