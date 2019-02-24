@@ -269,6 +269,10 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
 
 let h_cinterop oc ({name= Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   let cname = Filename.chop_extension x in
+  Printf.fprintf oc ".code32\n";
+  Printf.fprintf oc ".data\n";
+  Printf.fprintf oc ".balign\t8\n";
+  Printf.fprintf oc ".text\n";
   Printf.fprintf oc ".globl _%s\n" cname;
   Printf.fprintf oc "_%s:\n" cname;
   Printf.fprintf oc "\tpushl\t%%ebp\n";
@@ -278,7 +282,7 @@ let h_cinterop oc ({name= Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
     (fun i _ ->
       Printf.fprintf oc "\tmovl\t%d(%%ebp), %s\n"
         ((i + 1) * 4 + 4)
-        (List.nth regs (List.length args - (i + 1))))
+        (List.nth regs i))
     args;
   Printf.fprintf oc "\tcall\t%s\n" x;
   Printf.fprintf oc "\tpopl\t%%ebp\n";

@@ -20,12 +20,21 @@ min_caml_jit_dispatch:
     ret
     .globl min_caml_loop_start
 min_caml_loop_start:
-	ret
+    ret
     .globl min_caml_loop_end
 min_caml_loop_end:
-	ret
+    ret
     .globl min_caml_call_caml_jit_entry
 min_caml_call_caml_jit_entry:
+    pushl   %ebp
+    movl    %esp, %ebp
+    pushl   %eax
+    call    _call_caml_jit_entry
+    movl    %ebp, %esp
+    popl    %ebp
+    ret
+    .globl min_caml_call_jit_exec
+min_caml_call_caml_jit_exec:
     pushl   %ebp
     movl    %esp, %ebp
     pushl   %eax

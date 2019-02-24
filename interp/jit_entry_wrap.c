@@ -29,3 +29,12 @@ void call_caml_jit_entry(int **x) {
   caml_callbackN(*jit_entry_closure, 6, ml_args);
   return;
 }
+
+int call_caml_jit_exec(int **x) {
+  static value * jit_exec_closure = NULL;
+  if (jit_exec_closure == NULL) {
+    jit_exec_closure = caml_named_value("jit_exec");
+  }
+  value res = caml_callback2(*jit_exec_closure, Val_int(x[0]), Val_int(x[1]));
+  return Int_val(res);
+}
