@@ -27,3 +27,7 @@ module String = struct
     with Not_found -> false
 
 end
+
+module Try = struct
+  type 'a t = Success of 'a | Failure of exn
+end

@@ -44,6 +44,9 @@ let gen_trace_name : unit -> string = fun () ->
   let name = "trace" ^ string_of_int !counter in
   incr counter ; Id.genid name
 
+let get_dylib_name : string -> string = fun name ->
+  "lib" ^ name ^ ".dylib"
+
 let get_red_args args =
   args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
 
@@ -65,18 +68,19 @@ let make_mem ~bc_addr ~st_addr bytecode stack =
 let emit_dyn : 'a -> fundef list -> unit = fun env traces ->
   traces |> List.map Simm.h |> List.map RegAlloc.h |> E.emit_dynamic env
 
-let compile_dyn : string -> unit = fun name ->
+let compile_dyn : string -> 'a = fun name ->
   let trace_file_name = name ^ ".s" in
-  let dylib = Printf.sprintf "lib%s.dylib" name in
+  let dylib = get_dylib_name name in
   let cmd =
-    Printf.sprintf "gcc '-m32' '-dynamiclib' '-Wl,-undefined' '-Wl,dynamic_lookup' -o %s %s"
+    Printf.sprintf
+      "gcc '-m32' '-dynamiclib' '-Wl,-undefined' '-Wl,dynamic_lookup' -o %s %s"
       dylib trace_file_name
   in
   Log.debug (cmd);
   match Unix.system cmd with
-  | Unix.WEXITED _ -> ()
-  | Unix.WSIGNALED _ -> ()
-  | Unix.WSTOPPED _ -> ()
+  | Unix.WEXITED _ -> Try.Success (dylib)
+  | Unix.WSIGNALED _ -> Try.Success (dylib)
+  | Unix.WSTOPPED _ -> Try.Success (dylib)
 
 type env_jit =
   {bytecode: int array; stack: int array; pc: int; sp: int; bc_ptr: int; st_ptr: int}
@@ -159,8 +163,12 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   in
   let module E = Jit_emit_base in
   let env = {bytecode; stack; pc; sp; bc_ptr; st_ptr} in
-  prog |> jit_tracing env;
-  prog |> jit_method env;
+  (match prog |> jit_tracing env with
+   | Try.Success _ -> ()
+   | Try.Failure _ -> ());
+  (match prog |> jit_method env with
+   | Try.Success _ -> ()
+   | Try.Failure _ -> ());
   ()
 
 let () =
