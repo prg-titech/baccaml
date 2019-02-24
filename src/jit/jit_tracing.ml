@@ -74,7 +74,7 @@ module Guard = struct
         in
         match path with
         | `True when pc = merge_pc -> Ans (CallDir (Id.L trace_name, args, fargs))
-        | `True -> Ans (CallDir (Id.L ("guard_failure." ^ x), args, fargs))
+        | `True -> Ans (CallDir (Id.L (x), args, fargs))
         | `False -> Ans (CallDir (Id.L "min_caml_mid_layer", args, fargs)) )
     | Ans exp -> Ans exp
     | Let ((id, typ), exp, body) ->
@@ -311,7 +311,7 @@ and tj_guard_over p reg mem path tj_env = function
       match path with
       | `True when pc = merge_pc -> Ans (CallDir (Id.L trace_name, args, fargs))
       | `True -> Inlining.inline_fundef reg args fundef |> tj p reg mem tj_env
-      | `False -> Ans (CallDir (Id.L ("guard_failure." ^ x), args, fargs)) )
+      | `False -> Ans (CallDir (Id.L (x), args, fargs)) )
   | Ans exp -> Ans exp
   | Let ((id, typ), exp, body) ->
       Let ((id, typ), exp, tj_guard_over p reg mem path tj_env body)

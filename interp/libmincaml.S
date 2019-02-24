@@ -14,7 +14,6 @@
 #define ALIGNSTACK2
 #define ALIGNSTACK3
 #endif
-.code32
 .text
 .globl min_caml_print_newline
 min_caml_print_newline:

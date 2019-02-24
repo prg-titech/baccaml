@@ -123,4 +123,5 @@ code.(8) <- 5; code.(9) <- 5;
 code.(10) <- 9;
 let st = Array.make 50 0 in
 st.(0) <- 10;
-print_int (interp st 1 code 3)
+let res = (interp st 1 code 3) in
+print_int res

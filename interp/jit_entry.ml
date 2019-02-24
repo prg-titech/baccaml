@@ -5,6 +5,8 @@ open Asm
 open Bc_jit
 open Jit_util
 
+module E = Jit_emit_base
+
 exception Error of string
 
 let file_name = ref None
@@ -60,15 +62,24 @@ let make_mem ~bc_addr ~st_addr bytecode stack =
   stack |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Red a) ;
   mem
 
-let emit_dyn : 'a -> fundef list -> unit =
- fun env traces ->
-  let module E = Jit_emit_base in
+let emit_dyn : 'a -> fundef list -> unit = fun env traces ->
   traces |> List.map Simm.h |> List.map RegAlloc.h |> E.emit_dynamic env
+
+let compile_dyn : string -> unit = fun name ->
+  let trace_file_name = name ^ ".s" in
+  let dylib = Printf.sprintf "lib%s.dylib" name in
+  let cmd =
+    Printf.sprintf "gcc '-m32' '-dynamiclib' '-Wl,-undefined' '-Wl,dynamic_lookup' -o %s %s"
+      dylib trace_file_name
+  in
+  print_endline (cmd);
+  match Unix.system cmd with
+  | Unix.WEXITED _ -> ()
+  | Unix.WSIGNALED _ -> ()
+  | Unix.WSTOPPED _ -> ()
 
 type env_jit =
   {bytecode: int array; stack: int array; pc: int; sp: int; bc_ptr: int; st_ptr: int}
-
-module E = Jit_emit_base
 
 let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let prog = Jit_annot.annotate `Meta_method prog in
@@ -91,16 +102,18 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   reg.(bc_ir_addr) <- Green bc_tmp_addr ;
   reg.(st_ir_addr) <- Red st_tmp_addr ;
   let module JM = Jit_method in
-  let name = gen_trace_name () in
+  let trace_name = gen_trace_name () in
+  Printf.eprintf "trace_name %s\n" trace_name;
   let env =
-    { JM.trace_name= name
+    { JM.trace_name= trace_name
     ; JM.red_args= get_red_args args
     ; JM.index_pc= 3
     ; JM.merge_pc= pc_method_entry }
   in
   let traces = JM.run prog reg mem env in
-  let emit_env = {E.out= name; E.jit_typ= `Meta_method; E.prog= prog} in
-  emit_dyn emit_env traces
+  let emit_env = {E.out= trace_name; E.jit_typ= `Meta_method; E.prog= prog} in
+  emit_dyn emit_env traces;
+  compile_dyn trace_name
 
 let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let prog = Jit_annot.annotate `Meta_tracing prog in
@@ -116,19 +129,21 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   reg.(bc_ir_addr) <- Green bc_tmp_addr ;
   reg.(st_ir_addr) <- Red st_tmp_addr ;
   let module JT = Jit_tracing in
-  let name = gen_trace_name () in
+  let trace_name = gen_trace_name () in
+  Printf.eprintf "trace_name %s\n" trace_name;
   let env =
     { JT.index_pc= 3
     ; JT.merge_pc= pc
-    ; JT.trace_name= name
+    ; JT.trace_name= trace_name
     ; JT.red_args=
         args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
     ; JT.bytecode_ptr= bc_ptr
     ; JT.stack_ptr= st_ptr }
   in
   let trace = JT.run prog reg mem env in
-  let emit_env = {E.out= name; E.jit_typ= `Meta_tracing; E.prog= prog} in
-  emit_dyn emit_env [trace]
+  let emit_env = {E.out= trace_name; E.jit_typ= `Meta_tracing; E.prog= prog} in
+  emit_dyn emit_env [trace];
+  compile_dyn trace_name
 
 let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   print_arr string_of_int bytecode ~notation:(Some "bytecode") ;
