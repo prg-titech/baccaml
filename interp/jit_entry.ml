@@ -36,7 +36,11 @@ let get_ir_addr args name =
   |> List.find (fun a -> String.get_name a = name)
   |> String.get_extension |> int_of_string
 
-let gen_trace_name name = Id.genid name
+let counter = ref 0
+
+let gen_trace_name : unit -> string = fun () ->
+  let name = "trace" ^ string_of_int !counter in
+  incr counter ; Id.genid name
 
 let get_red_args args =
   args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
@@ -56,8 +60,15 @@ let make_mem ~bc_addr ~st_addr bytecode stack =
   stack |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Red a) ;
   mem
 
+let emit_dyn : 'a -> fundef list -> unit =
+ fun env traces ->
+  let module E = Jit_emit_base in
+  traces |> List.map Simm.h |> List.map RegAlloc.h |> E.emit_dynamic env
+
 type env_jit =
   {bytecode: int array; stack: int array; pc: int; sp: int; bc_ptr: int; st_ptr: int}
+
+module E = Jit_emit_base
 
 let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let prog = Jit_annot.annotate `Meta_method prog in
@@ -80,13 +91,16 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   reg.(bc_ir_addr) <- Green bc_tmp_addr ;
   reg.(st_ir_addr) <- Red st_tmp_addr ;
   let module JM = Jit_method in
+  let name = gen_trace_name () in
   let env =
-    { JM.trace_name= gen_trace_name "trace"
+    { JM.trace_name= name
     ; JM.red_args= get_red_args args
     ; JM.index_pc= 3
     ; JM.merge_pc= pc_method_entry }
   in
-  JM.run prog reg mem env
+  let traces = JM.run prog reg mem env in
+  let emit_env = {E.out= name; E.jit_typ= `Meta_method; E.prog= prog} in
+  emit_dyn emit_env traces
 
 let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let prog = Jit_annot.annotate `Meta_tracing prog in
@@ -102,16 +116,19 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   reg.(bc_ir_addr) <- Green bc_tmp_addr ;
   reg.(st_ir_addr) <- Red st_tmp_addr ;
   let module JT = Jit_tracing in
+  let name = gen_trace_name () in
   let env =
     { JT.index_pc= 3
     ; JT.merge_pc= pc
-    ; JT.trace_name= gen_trace_name "trace"
+    ; JT.trace_name= name
     ; JT.red_args=
         args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
     ; JT.bytecode_ptr= bc_ptr
     ; JT.stack_ptr= st_ptr }
   in
-  JT.run prog reg mem env
+  let trace = JT.run prog reg mem env in
+  let emit_env = {E.out= name; E.jit_typ= `Meta_tracing; E.prog= prog} in
+  emit_dyn emit_env [trace]
 
 let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   print_arr string_of_int bytecode ~notation:(Some "bytecode") ;
@@ -125,15 +142,10 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
       close_in ic ; v
     with e -> close_in ic ; raise e
   in
+  let module E = Jit_emit_base in
   let env = {bytecode; stack; pc; sp; bc_ptr; st_ptr} in
-  let trace = prog |> jit_tracing env in
-  print_string "[TRACE EMITTED by TRACING JIT] " ;
-  print_endline (Emit_virtual.string_of_fundef trace) ;
-  let traces = prog |> jit_method env in
-  traces
-  |> List.iter (fun trace ->
-         print_string "[TRACE EMITTED by METHOD JIT] " ;
-         print_endline (Emit_virtual.string_of_fundef trace) ) ;
+  prog |> jit_tracing env;
+  prog |> jit_method env;
   ()
 
 let () =
