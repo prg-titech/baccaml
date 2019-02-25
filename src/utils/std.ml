@@ -30,4 +30,25 @@ end
 
 module Try = struct
   type 'a t = Success of 'a | Failure of exn
+
+  let create : ('a -> 'b) = fun f ->
+    try Success (f)
+    with e -> Failure (e)
+
+  let map : ('a -> 'b) -> 'a t -> 'b t = fun f tr ->
+    match tr with
+    | Success (a) -> Success (f a)
+    | Failure (exn) -> Failure (exn)
+
+  let value : 'a t -> 'a = function
+    | Success (a) -> a
+    | Failure (exn) -> raise exn
+
+  let is_success : 'a t -> bool = function
+    | Success _ -> true
+    | Failure _ -> false
+
+  let is_failure : 'a t -> bool = function
+    | Success _ -> false
+    | Failure _ -> true
 end
