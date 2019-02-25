@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <dlfcn.h>
 #include <caml/mlvalues.h>
 
@@ -25,6 +26,8 @@ CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1, value
 
   handle = dlopen(String_val(filename), RTLD_LAZY);
   if (handle == NULL) {fprintf(stderr, "error: dlopen\n"); return -1;}
+
+  printf("arg1 %d arg2 %d\n", Int_val(arg1), Int_val(arg2));
 
   sym = (fun_arg2)dlsym(handle, String_val(funcname));
   if (sym == NULL) {fprintf(stderr, "error: dlsym\n"); return -1;}
