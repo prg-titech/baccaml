@@ -80,9 +80,8 @@ let compile_dyn : string -> 'a =
   in
   Log.debug cmd ;
   match Unix.system cmd with
-  | Unix.WEXITED _ -> Try.Success name
-  | Unix.WSIGNALED _ -> Try.Success name
-  | Unix.WSTOPPED _ -> Try.Success name
+  | Unix.WEXITED (i) when i = 0 -> Try.Success (name)
+  | _ -> Try.Failure (Exit)
 
 type env_jit =
   { bytecode: int array
@@ -176,10 +175,14 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   ( match prog |> jit_tracing env with
   | Try.Success name ->
       let r =
-        Dynload_stub.call_arg2
-          ~lib:("./" ^ get_dylib_name name)
-          ~func:(String.split_on_char '.' name |> List.hd)
-          ~arg1:st_ptr ~arg2:sp
+        match
+          Try.create (
+              Dynload_stub.call_arg2
+                ~lib:("./" ^ get_dylib_name name)
+                ~func:(String.split_on_char '.' name |> List.hd)
+                ~arg1:st_ptr ~arg2:sp) with
+        | Try.Success (a) -> a
+        | Try.Failure (e) -> raise e
       in
       print_int r ; ()
   | Try.Failure _ -> () ) ;
