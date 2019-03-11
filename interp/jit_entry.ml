@@ -4,7 +4,6 @@ open MinCaml
 open Asm
 open Bc_jit
 open Jit_util
-
 module E = Jit_emit_base
 
 exception Error of string
@@ -40,16 +39,13 @@ let get_ir_addr args name =
 
 let counter = ref 0
 
-let gen_trace_name : [< `Meta_tracing | `Meta_method] -> string = fun typ ->
-  let mark = match typ with
-  | `Meta_tracing -> "tj"
-  | `Meta_method -> "mj"
-  in
+let gen_trace_name : [< `Meta_tracing | `Meta_method] -> string =
+ fun typ ->
+  let mark = match typ with `Meta_tracing -> "tj" | `Meta_method -> "mj" in
   let name = "trace" ^ mark ^ string_of_int !counter in
   incr counter ; Id.genid name
 
-let get_dylib_name : string -> string = fun name ->
-  "lib" ^ name ^ ".dylib"
+let get_dylib_name : string -> string = fun name -> "lib" ^ name ^ ".dylib"
 
 let get_red_args args =
   args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
@@ -69,10 +65,12 @@ let make_mem ~bc_addr ~st_addr bytecode stack =
   stack |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Red a) ;
   mem
 
-let emit_dyn : 'a -> fundef list -> unit = fun env traces ->
+let emit_dyn : 'a -> fundef list -> unit =
+ fun env traces ->
   traces |> List.map Simm.h |> List.map RegAlloc.h |> E.emit_dynamic env
 
-let compile_dyn : string -> 'a = fun name ->
+let compile_dyn : string -> 'a =
+ fun name ->
   let trace_file_name = name ^ ".s" in
   let dylib = get_dylib_name name in
   let cmd =
@@ -80,20 +78,27 @@ let compile_dyn : string -> 'a = fun name ->
       "gcc '-m32' '-dynamiclib' '-Wl,-undefined' '-Wl,dynamic_lookup' -o %s %s"
       dylib trace_file_name
   in
-  Log.debug (cmd);
+  Log.debug cmd ;
   match Unix.system cmd with
-  | Unix.WEXITED _ -> Try.Success (name)
-  | Unix.WSIGNALED _ -> Try.Success (name)
-  | Unix.WSTOPPED _ -> Try.Success (name)
+  | Unix.WEXITED _ -> Try.Success name
+  | Unix.WSIGNALED _ -> Try.Success name
+  | Unix.WSTOPPED _ -> Try.Success name
 
 type env_jit =
-  {bytecode: int array; stack: int array; pc: int; sp: int; bc_ptr: int; st_ptr: int}
+  { bytecode: int array
+  ; stack: int array
+  ; pc: int
+  ; sp: int
+  ; bc_ptr: int
+  ; st_ptr: int }
 
 let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let prog = Jit_annot.annotate `Meta_method prog in
   let {args; body} = find_fundef' prog "interp" in
   let reg = make_reg prog args sp in
-  let mem = make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack in
+  let mem =
+    make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack
+  in
   let pc_method_entry =
     bytecode |> Array.to_list
     |> List.mapi (fun i a -> (i, a))
@@ -111,23 +116,24 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   reg.(st_ir_addr) <- Red st_tmp_addr ;
   let module JM = Jit_method in
   let trace_name = gen_trace_name `Meta_method in
-  Printf.eprintf "trace_name %s\n" trace_name;
+  Printf.eprintf "trace_name %s\n" trace_name ;
   let env =
-    { JM.trace_name= trace_name
+    { JM.trace_name
     ; JM.red_args= get_red_args args
     ; JM.index_pc= 3
     ; JM.merge_pc= pc_method_entry }
   in
   let traces = JM.run prog reg mem env in
-  let emit_env = {E.out= trace_name; E.jit_typ= `Meta_method; E.prog= prog} in
-  emit_dyn emit_env traces;
-  compile_dyn trace_name
+  let emit_env = {E.out= trace_name; E.jit_typ= `Meta_method; E.prog} in
+  emit_dyn emit_env traces ; compile_dyn trace_name
 
 let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let prog = Jit_annot.annotate `Meta_tracing prog in
   let {args; body} = find_fundef' prog "interp" in
   let reg = make_reg prog args sp in
-  let mem = make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack in
+  let mem =
+    make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack
+  in
   let pc_ir_addr = get_ir_addr args "pc" in
   let sp_ir_addr = get_ir_addr args "sp" in
   let bc_ir_addr = get_ir_addr args "bytecode" in
@@ -138,19 +144,19 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   reg.(st_ir_addr) <- Red st_tmp_addr ;
   let module JT = Jit_tracing in
   let trace_name = gen_trace_name `Meta_tracing in
-  Printf.eprintf "trace_name %s\n" trace_name;
+  Printf.eprintf "trace_name %s\n" trace_name ;
   let env =
     { JT.index_pc= 3
     ; JT.merge_pc= pc
-    ; JT.trace_name= trace_name
+    ; JT.trace_name
     ; JT.red_args=
         args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
     ; JT.bytecode_ptr= bc_ptr
     ; JT.stack_ptr= st_ptr }
   in
   let trace = JT.run prog reg mem env in
-  let emit_env = {E.out= trace_name; E.jit_typ= `Meta_tracing; E.prog= prog} in
-  emit_dyn emit_env [trace];
+  let emit_env = {E.out= trace_name; E.jit_typ= `Meta_tracing; E.prog} in
+  emit_dyn emit_env [trace] ;
   compile_dyn trace_name
 
 let jit_entry bytecode stack pc sp bc_ptr st_ptr =
@@ -167,20 +173,17 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   in
   let module E = Jit_emit_base in
   let env = {bytecode; stack; pc; sp; bc_ptr; st_ptr} in
-  (match prog |> jit_tracing env with
-   | Try.Success name ->
-      (* print_endline name;
-       * let r = Dynload_stub.call_arg2
-       *           ~lib:("./" ^ get_dylib_name name)
-       *           ~func:(String.split_on_char '.' name |> List.hd)
-       *           ~arg1:st_ptr ~arg2:1 in
-       * print_int r; *)
-      ()
-   | Try.Failure _ -> ());
-  (match prog |> jit_method env with
-   | Try.Success name -> ()
-   | Try.Failure _ -> ());
-  ()
+  ( match prog |> jit_tracing env with
+  | Try.Success name ->
+      let r =
+        Dynload_stub.call_arg2
+          ~lib:("./" ^ get_dylib_name name)
+          ~func:(String.split_on_char '.' name |> List.hd)
+          ~arg1:st_ptr ~arg2:sp
+      in
+      print_int r ; ()
+  | Try.Failure _ -> () ) ;
+  ignore (prog |> jit_method env)
 
 let () =
   if Array.length Sys.argv < 2 then raise @@ Error "please specify your file."
