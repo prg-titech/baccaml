@@ -178,8 +178,8 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
                ~lib:("./" ^ get_dylib_name name)
                ~func:(String.split_on_char '.' name |> List.hd)
                ~arg1:st_ptr ~arg2:sp in
-     ()
-  | Try.Failure _ -> ()
+     print_int r; print_newline ()
+  | Try.Failure e -> raise e
   end
   (* ignore (prog |> jit_method env) *)
 
