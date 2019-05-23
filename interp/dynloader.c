@@ -42,5 +42,24 @@ CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1, value
     return -1;
   }
 
-  return Val_int(sym((int *)(Val_int(arg1)), Int_val(arg2)));
+  return Val_int(sym((int *)(Int_val(arg1)), Int_val(arg2)));
+}
+
+int call_dlfun(char* filename, char* funcname, int* stk, int st_ptr) {
+  fun_arg2 sym = NULL;
+  void *handle = NULL;
+
+  handle = dlopen(filename, RTLD_LAZY);
+  if (handle == NULL) {
+    dlerror();
+    return -1;
+  }
+
+  sym = (fun_arg2)dlsym(handle, funcname);
+  if (sym == NULL) {
+    dlerror();
+    return -1;
+  }
+
+  return sym(stk, st_ptr);
 }
