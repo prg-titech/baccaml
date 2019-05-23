@@ -116,11 +116,12 @@ let rec interp stack sp bytecode pc =
     -1000 in
 let code = Array.make 50 0 in
 code.(0) <- 15; code.(1) <- 1; code.(2) <- 7;
-code.(3) <- 4; code.(4) <- 10;
-code.(5) <- 8; code.(6) <- 1;
-code.(7) <- 2;
-code.(8) <- 5; code.(9) <- 5;
-code.(10) <- 9;
+code.(3) <- 4; code.(4) <- 1;
+code.(5) <- 2;
+code.(6) <- 4; code.(7) <- 0;
+code.(8) <- 3;
+code.(9) <- 5; code.(10) <- 3;
+code.(11) <- 9;
 let st = Array.make 50 0 in
 st.(0) <- 10;
 let res = (interp st 1 code 3) in
