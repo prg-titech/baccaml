@@ -172,21 +172,16 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   in
   let module E = Jit_emit_base in
   let env = {bytecode; stack; pc; sp; bc_ptr; st_ptr} in
-  ( match prog |> jit_tracing env with
+  begin match prog |> jit_tracing env with
   | Try.Success name ->
-      let r =
-        match
-          Try.create (
-              Dynload_stub.call_arg2
-                ~lib:("./" ^ get_dylib_name name)
-                ~func:(String.split_on_char '.' name |> List.hd)
-                ~arg1:st_ptr ~arg2:sp) with
-        | Try.Success (a) -> a
-        | Try.Failure (e) -> raise e
-      in
-      print_int r ; ()
-  | Try.Failure _ -> () ) ;
-  ignore (prog |> jit_method env)
+     let r = Dynload_stub.call_arg2
+               ~lib:("./" ^ get_dylib_name name)
+               ~func:(String.split_on_char '.' name |> List.hd)
+               ~arg1:st_ptr ~arg2:sp in
+     ()
+  | Try.Failure _ -> ()
+  end
+  (* ignore (prog |> jit_method env) *)
 
 let () =
   if Array.length Sys.argv < 2 then raise @@ Error "please specify your file."
