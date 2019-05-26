@@ -23,8 +23,8 @@ let pc_method_annot_inst = 15
 let print_arr ?notation:(nt = None) f arr =
   let str = Array.string_of_array f arr in
   match nt with
-  | Some s -> Printf.eprintf "%s %s\n" s str
-  | None -> Printf.eprintf "%s\n" str
+  | Some s -> Log.debug (Printf.sprintf "%s %s" s str)
+  | None -> Log.debug (Printf.sprintf "%s" str)
 
 let file_open () =
   match !file_name with
@@ -161,6 +161,7 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
 
 module Trace : sig
   val get_count_hash : unit -> (int, int) Hashtbl.t
+  val get_compiled_hash : unit -> (int, bool) Hashtbl.t
   val count_up : int -> unit
   val not_compiled : int -> bool
   val has_compiled : int -> unit
@@ -174,6 +175,8 @@ end = struct
 
   let get_count_hash () = count_hash
 
+  let get_compiled_hash () = compiled_hash
+
   let count_up pc =
     match Hashtbl.find_opt count_hash pc with
     | Some v ->
@@ -183,7 +186,8 @@ end = struct
 
   let not_compiled pc =
     match Hashtbl.find_opt compiled_hash pc with
-      Some _ -> false | None -> true
+    | Some _ -> false
+    | None -> true
 
   let has_compiled pc =
     match Hashtbl.find_opt compiled_hash pc with
@@ -193,9 +197,9 @@ end = struct
   let over_threshold pc =
     match Hashtbl.find_opt count_hash pc with
     | Some count ->
-       if count > threshold then begin
-           true
-       end else
+       if count > threshold then
+         true
+       else
          false
     | None ->
        false
