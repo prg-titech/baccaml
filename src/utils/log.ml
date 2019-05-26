@@ -19,10 +19,10 @@ let debug s =
 
 let warn s =
   match !log_level with
-  | `Warn -> print_endline ("[warn] " ^ s)
+  | `Error | `Warn -> print_endline ("[warn] " ^ s)
   | _ -> ()
 
 let app s =
   match !log_level with
-  | `App -> print_endline ("[app] " ^ s)
+  | `Error | `Warn | `App -> Format.printf "[app] %s\n" s
   | _ -> ()
