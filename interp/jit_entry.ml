@@ -160,22 +160,34 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
 
 
 module Trace : sig
-  val get_count_hash : unit -> (int, int) Hashtbl.t
-  val get_compiled_hash : unit -> (int, bool) Hashtbl.t
+  type count_tbl =  (int, int) Hashtbl.t
+  type compiled_tbl =  (int, bool) Hashtbl.t
+
+  val get_count_hash : unit -> count_tbl
+  val get_compiled_hash : unit -> compiled_tbl
+
   val count_up : int -> unit
   val not_compiled : int -> bool
   val has_compiled : int -> unit
   val over_threshold : int -> bool
+
+  type trace = Trc of int * string
+  type trace_tbl = (int, string) Hashtbl.t
+
+  val get_trace_hash : unit -> trace_tbl
+  val register : trace -> unit
+  val find : int -> string option
 end = struct
+  type count_tbl =  (int, int) Hashtbl.t
+  type compiled_tbl =  (int, bool) Hashtbl.t
+
   let threshold = 2
 
-  let count_hash = Hashtbl.create 100
+  let count_hash : count_tbl = Hashtbl.create 100
+  let compiled_hash : compiled_tbl = Hashtbl.create 100
 
-  let compiled_hash = Hashtbl.create 100
-
-  let get_count_hash () = count_hash
-
-  let get_compiled_hash () = compiled_hash
+  let get_count_hash () = Hashtbl.copy count_hash
+  let get_compiled_hash () = Hashtbl.copy compiled_hash
 
   let count_up pc =
     match Hashtbl.find_opt count_hash pc with
@@ -184,17 +196,17 @@ end = struct
     | None ->
        Hashtbl.add count_hash pc 1
 
-  let not_compiled pc =
+  let not_compiled (pc : int) : bool =
     match Hashtbl.find_opt compiled_hash pc with
     | Some _ -> false
     | None -> true
 
-  let has_compiled pc =
+  let has_compiled (pc : int) : unit =
     match Hashtbl.find_opt compiled_hash pc with
     | Some v -> Hashtbl.replace compiled_hash pc true
     | None -> Hashtbl.add compiled_hash pc true
 
-  let over_threshold pc =
+  let over_threshold (pc : int) : bool =
     match Hashtbl.find_opt count_hash pc with
     | Some count ->
        if count > threshold then
@@ -203,6 +215,22 @@ end = struct
          false
     | None ->
        false
+
+  type trace = Trc of int * string
+  type trace_tbl = (int, string) Hashtbl.t
+
+  let trace_hash : trace_tbl = Hashtbl.create 100
+
+  let get_trace_hash () = Hashtbl.copy trace_hash
+
+  let register (Trc (pc, name)) =
+    match Hashtbl.find_opt trace_hash pc with
+    | Some (v) -> ()
+    | None -> Hashtbl.add trace_hash pc name
+
+  let find (pc : int) : string option =
+    Hashtbl.find_opt trace_hash pc
+
 end
 
 let exec_dyn ~name ~arg1 ~arg2 =
@@ -214,25 +242,32 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   print_arr string_of_int bytecode ~notation:(Some "bytecode") ;
   print_arr string_of_int stack ~notation:(Some "stack") ;
   Log.debug (Printf.sprintf "pc %d, sp %d, bc_ptr %d, st_ptr %d" pc sp bc_ptr st_ptr);
-  if Trace.over_threshold pc && (Trace.not_compiled pc) then
-    let prog =
-      let ic = file_open () in
-      try
-        let module A = Jit_annot in
-        let v = ic |> Lexing.from_channel |> Util.virtualize in
-        close_in ic ; v
-      with e -> close_in ic ; raise e
-    in
-    let module E = Jit_emit_base in
-    let env = {bytecode; stack; pc; sp; bc_ptr; st_ptr} in
-    begin match prog |> jit_tracing env with
-    | Try.Success name ->
-       (* let r = exec_dyn ~name:name ~arg1:st_ptr ~arg2:sp in
-        * print_int r; print_newline () *)
-       ()
-    | Try.Failure e -> raise e
-    end;
-    Trace.has_compiled pc
+  if Trace.over_threshold pc then
+    begin if (Trace.not_compiled pc) then
+      let prog =
+        let ic = file_open () in
+        try
+          let module A = Jit_annot in
+          let v = ic |> Lexing.from_channel |> Util.virtualize in
+          close_in ic ; v
+        with e -> close_in ic ; raise e
+      in
+      let module E = Jit_emit_base in
+      let env = {bytecode; stack; pc; sp; bc_ptr; st_ptr} in
+      begin match prog |> jit_tracing env with
+      | Try.Success name ->
+         Trace.register (Trc (pc, name))
+      | Try.Failure e -> raise e
+      end;
+      Trace.has_compiled pc
+    else
+      begin match Trace.find pc with
+      | Some name ->
+         Printf.printf "executing %s at  %d...\n" name pc;
+         () (* execute the trace *)
+      | None -> ()
+      end
+    end
   else
     Trace.count_up pc
 
