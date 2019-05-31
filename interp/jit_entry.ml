@@ -74,7 +74,7 @@ let compile_dyn : string -> 'a =
   let dylib = get_dylib_name name in
   let cmd =
     Printf.sprintf
-      "gcc '-m32' '-dynamiclib' '-O2' '-Wl,-undefined' '-Wl,dynamic_lookup' -o %s %s"
+      "gcc '-m32' '-g' '-dynamiclib' '-Wl,-undefined' '-Wl,dynamic_lookup' -o %s %s"
       dylib trace_file_name
   in
   Log.debug cmd ;

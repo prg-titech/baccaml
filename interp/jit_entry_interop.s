@@ -29,7 +29,7 @@ min_caml_call_caml_jit_entry:
     pushl   %ebp
     movl    %esp, %ebp
     pushl   %eax
-    call    _call_caml_jit_entry
+    call    call_caml_jit_entry
     movl    %ebp, %esp
     popl    %ebp
     ret
@@ -38,7 +38,7 @@ min_caml_call_caml_jit_exec:
     pushl   %ebp
     movl    %esp, %ebp
     pushl   %eax
-    call    _call_caml_jit_entry
+    call    call_caml_jit_entry
     movl    %ebp, %esp
     popl    %ebp
     ret

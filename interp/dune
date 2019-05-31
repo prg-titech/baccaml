@@ -2,7 +2,8 @@
  (name dynload_stub)
  (modules dynload_stub)
  (flags (-annot -w -4-33-40-41))
- (c_names dynloader))
+ (c_names dynloader)
+ (c_library_flags (:standard -g)))
 
 (executable
  (name jit_entry)
@@ -21,15 +22,9 @@
 
 (rule
  (targets test_interp.exe)
- (deps
-   jit_entry.exe%{ext_obj}
-   stub.c
-   libmincaml.S
-   jit_entry_interop.s
-   jit_entry_wrap.c
-   test_interp.s)
+ (deps jit_entry.exe%{ext_obj} stub.c libmincaml.S jit_entry_interop.s jit_entry_wrap.c test_interp.s)
  (action
-  (run %{cc} -o %{targets} -I %{ocaml_where} -L %{ocaml_where} -I . %{deps}
+  (run %{cc} -g -o %{targets} -I %{ocaml_where} -L %{ocaml_where} -I . %{deps}
     %{ocaml-config:native_c_libraries})))
 
 (alias
