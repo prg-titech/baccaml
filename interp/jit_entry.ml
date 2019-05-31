@@ -264,6 +264,7 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
       begin match Trace.find pc with
       | Some name ->
          Printf.printf "executing %s at  %d...\n" name pc;
+         exec_dyn ~name:name ~arg1:st_ptr ~arg2:sp |> ignore;
          () (* execute the trace *)
       | None -> ()
       end
