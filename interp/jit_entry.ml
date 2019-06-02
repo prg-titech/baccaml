@@ -73,9 +73,15 @@ let compile_dyn : string -> 'a =
   let trace_file_name = name ^ ".s" in
   let dylib = get_dylib_name name in
   let cmd =
-    Printf.sprintf
-      "gcc '-m32' '-dynamiclib' '-O2' '-Wl,-undefined' '-Wl,dynamic_lookup' -o %s %s"
-      dylib trace_file_name
+    let ic = Unix.open_process_in "uname" in
+    let uname = input_line ic in
+    let () = close_in ic in
+    if uname = "Darwin" then
+      Printf.sprintf "gcc -m32 -dynamiclib -Wl,-undefined -Wl,dynamic_lookup -o %s %s" dylib trace_file_name
+    else if uname = "Linux" then
+      Printf.sprintf "gcc -m32 -shared -o %s %s" dylib trace_file_name
+    else
+      failwith "Please run on either macOS or Linux."
   in
   Log.debug cmd ;
   match Unix.system cmd with
