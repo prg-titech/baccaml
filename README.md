@@ -4,7 +4,7 @@
 
 Meta-interpreter-based just-in-time compiler frameworks (RPython, Truffle/Graal) are useful to build a performant language runtime.
 RPython and Truffle/Graal, two most successfully implemented frameworks employ different compilation strategies.
-RPython's strategy is based on a tracing, on the other hand Truffle's strategy is based on a method.
+RPython's strategy is based on a tracing, on the other hand Truffle's strategy is based on a method invocation.
 The important thing is that those strategies have their own pros and cons.
 
 We propose a _meta-hybrid JIT compilation framework_, and its' experimental implementation called BacCaml.
