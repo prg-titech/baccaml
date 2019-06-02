@@ -1,15 +1,15 @@
 (library
  (name dynload_stub)
  (modules dynload_stub)
- (flags (-annot -w -4-33-40-41))
+ (flags (-annot -g -w -4-33-40-41))
  (c_names dynloader)
  (c_library_flags (:standard -g)))
 
 (executable
  (name jit_entry)
- (modules jit_entry)
+ (modules trace_list jit_entry)
  (libraries str unix dynload_stub minCaml bc_jit bc_lib utils)
- (flags (-annot -w -4-33-40-41))
+ (flags (-annot -g -w -4-33-40-41))
  (modes
   (native exe)
   (native object)

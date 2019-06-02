@@ -158,81 +158,6 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   emit_dyn emit_env [trace] ;
   compile_dyn trace_name
 
-
-module Trace : sig
-  type count_tbl =  (int, int) Hashtbl.t
-  type compiled_tbl =  (int, bool) Hashtbl.t
-
-  val get_count_hash : unit -> count_tbl
-  val get_compiled_hash : unit -> compiled_tbl
-
-  val count_up : int -> unit
-  val not_compiled : int -> bool
-  val has_compiled : int -> unit
-  val over_threshold : int -> bool
-
-  type trace = Trc of int * string
-  type trace_tbl = (int, string) Hashtbl.t
-
-  val get_trace_hash : unit -> trace_tbl
-  val register : trace -> unit
-  val find : int -> string option
-end = struct
-  type count_tbl =  (int, int) Hashtbl.t
-  type compiled_tbl =  (int, bool) Hashtbl.t
-
-  let threshold = 2
-
-  let count_hash : count_tbl = Hashtbl.create 100
-  let compiled_hash : compiled_tbl = Hashtbl.create 100
-
-  let get_count_hash () = Hashtbl.copy count_hash
-  let get_compiled_hash () = Hashtbl.copy compiled_hash
-
-  let count_up pc =
-    match Hashtbl.find_opt count_hash pc with
-    | Some v ->
-       Hashtbl.replace count_hash pc (v + 1)
-    | None ->
-       Hashtbl.add count_hash pc 1
-
-  let not_compiled (pc : int) : bool =
-    match Hashtbl.find_opt compiled_hash pc with
-    | Some _ -> false
-    | None -> true
-
-  let has_compiled (pc : int) : unit =
-    match Hashtbl.find_opt compiled_hash pc with
-    | Some v -> Hashtbl.replace compiled_hash pc true
-    | None -> Hashtbl.add compiled_hash pc true
-
-  let over_threshold (pc : int) : bool =
-    match Hashtbl.find_opt count_hash pc with
-    | Some count ->
-       if count > threshold then
-         true
-       else
-         false
-    | None ->
-       false
-
-  type trace = Trc of int * string
-  type trace_tbl = (int, string) Hashtbl.t
-
-  let trace_hash : trace_tbl = Hashtbl.create 100
-
-  let get_trace_hash () = Hashtbl.copy trace_hash
-
-  let register (Trc (pc, name)) =
-    match Hashtbl.find_opt trace_hash pc with
-    | Some (v) -> ()
-    | None -> Hashtbl.add trace_hash pc name
-
-  let find (pc : int) : string option =
-    Hashtbl.find_opt trace_hash pc
-
-end
-
 let exec_dyn ~name ~arg1 ~arg2 =
   Dynload_stub.call_arg2
     ~lib:("./" ^ get_dylib_name name) ~func:(String.split_on_char '.' name |> List.hd)
@@ -242,8 +167,8 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   print_arr string_of_int bytecode ~notation:(Some "bytecode") ;
   print_arr string_of_int stack ~notation:(Some "stack") ;
   Log.debug (Printf.sprintf "pc %d, sp %d, bc_ptr %d, st_ptr %d" pc sp bc_ptr st_ptr);
-  if Trace.over_threshold pc then
-    begin if (Trace.not_compiled pc) then
+  if Trace_list.over_threshold pc then
+    begin if (Trace_list.not_compiled pc) then
       let prog =
         let ic = file_open () in
         try
@@ -256,12 +181,12 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
       let env = {bytecode; stack; pc; sp; bc_ptr; st_ptr} in
       begin match prog |> jit_tracing env with
       | Try.Success name ->
-         Trace.register (Trc (pc, name))
+         Trace_list.register (Content (pc, name))
       | Try.Failure e -> raise e
       end;
-      Trace.has_compiled pc
+      Trace_list.has_compiled pc
     else
-      begin match Trace.find pc with
+      begin match Trace_list.find_opt pc with
       | Some name ->
          Printf.printf "executing %s at  %d...\n" name pc;
          exec_dyn ~name:name ~arg1:st_ptr ~arg2:sp |> ignore;
@@ -270,7 +195,7 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
       end
     end
   else
-    Trace.count_up pc
+    Trace_list.count_up pc
 
 let () =
   if Array.length Sys.argv < 2 then raise @@ Error "please specify your file."
