@@ -273,8 +273,8 @@ let h_cinterop oc ({name= Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   Printf.fprintf oc ".data\n";
   Printf.fprintf oc ".balign\t8\n";
   Printf.fprintf oc ".text\n";
-  Printf.fprintf oc ".globl _%s\n" cname;
-  Printf.fprintf oc "_%s:\n" cname;
+  Printf.fprintf oc ".globl %s\n" cname;
+  Printf.fprintf oc "%s:\n" cname;
   Printf.fprintf oc "\tpushl\t%%ebp\n";
   Printf.fprintf oc "\tmovl\t%%esp, %%ebp\n";
   let regs = ["%eax"; "%ebx"; "%ecx"; "%edx"] in

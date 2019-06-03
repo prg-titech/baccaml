@@ -2,14 +2,13 @@
  (name dynload_stub)
  (modules dynload_stub)
  (flags (-annot -g -w -4-33-40-41))
- (c_names dynloader)
- (c_library_flags (:standard -g)))
+ (c_names dynloader))
 
 (executable
  (name jit_entry)
  (modules trace_list jit_entry)
  (libraries str unix dynload_stub minCaml bc_jit bc_lib utils)
- (flags (-annot -g -w -4-33-40-41))
+ (flags (-annot -w -4-33-40-41))
  (modes
   (native exe)
   (native object)
@@ -24,8 +23,8 @@
  (targets test_interp.exe)
  (deps jit_entry.exe%{ext_obj} stub.c libmincaml.S jit_entry_interop.s jit_entry_wrap.c test_interp.s)
  (action
-  (run %{cc} -g -o %{targets} -I %{ocaml_where} -L %{ocaml_where} -I . %{deps}
-    %{ocaml-config:native_c_libraries})))
+  (run %{cc} -rdynamic -o %{targets} -I %{ocaml_where} -L %{ocaml_where} -I . %{deps}
+    %{ocaml-config:native_c_libraries} -ldl)))
 
 (alias
  (name runtest)

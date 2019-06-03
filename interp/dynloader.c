@@ -32,7 +32,9 @@ CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1, value
 
   handle = dlopen(String_val(filename), RTLD_LAZY);
   if (handle == NULL) {
-    failwith("error: dlopen\n");
+    char s[100];
+    sprintf(s, "dlopen error: %s, %s", String_val(filename), String_val(funcname));
+    failwith(s);
     return -1;
   }
 
