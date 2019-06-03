@@ -1,5 +1,7 @@
 type pc = int
 
+type name = string
+
 type count_tbl =  (pc, int) Hashtbl.t
 
 type compiled_tbl =  (int, bool) Hashtbl.t
@@ -17,16 +19,16 @@ let get_compiled_hash () = Hashtbl.copy compiled_hash
 let count_up pc =
   match Hashtbl.find_opt count_hash pc with
   | Some v ->
-     Hashtbl.replace count_hash pc (v + 1)
+    Hashtbl.replace count_hash pc (v + 1)
   | None ->
-     Hashtbl.add count_hash pc 1
+    Hashtbl.add count_hash pc 1
 
 let not_compiled (pc : int) : bool =
   match Hashtbl.find_opt compiled_hash pc with
   | Some _ -> false
   | None -> true
 
-let has_compiled (pc : int) : unit =
+let make_compiled (pc : int) : unit =
   match Hashtbl.find_opt compiled_hash pc with
   | Some v -> Hashtbl.replace compiled_hash pc true
   | None -> Hashtbl.add compiled_hash pc true
