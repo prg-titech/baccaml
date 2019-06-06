@@ -78,7 +78,7 @@ module Guard = struct
         | `False -> Ans (CallDir (Id.L "min_caml_mid_layer", args, fargs)) )
     | Ans exp -> Ans exp
     | Let ((id, typ), exp, body) ->
-        Let ((id, typ), exp, add_guard_label reg path tj_env body)
+      Let ((id, typ), exp, add_guard_label reg path tj_env body)
 
   let create_guard reg tj_env ?wlist:(ws = []) cont =
     let free_vars = unique (fv cont) in
