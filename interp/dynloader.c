@@ -3,6 +3,8 @@
 #include <dlfcn.h>
 #include <caml/mlvalues.h>
 
+typedef int (*fun_arg3)(int*, int, int*);
+
 typedef int (*fun_arg2)(int*, int);
 
 typedef int (*fun_arg1)(int);
@@ -48,6 +50,32 @@ CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1, value
   int sp = Int_val(arg2);
 
   return Val_int(sym(stk, sp));
+}
+
+CAMLprim value call_dlfun_arg3(value filename, value funcname,
+                               value arg1, value arg2, value arg3) {
+  fun_arg3 sym = NULL;
+  void *handle = NULL;
+
+  handle = dlopen(String_val(filename), RTLD_LAZY);
+  if (handle == NULL) {
+    char s[100];
+    sprintf(s, "dlopen error: %s, %s", String_val(filename), String_val(funcname));
+    failwith(s);
+    return -1;
+  }
+
+  sym = (fun_arg3)dlsym(handle, String_val(funcname));
+  if (sym == NULL) {
+    failwith("error: dlsym\n");
+    return -1;
+  }
+
+  int *stk = (int *)(Int_val(arg1) << 2);
+  int sp = Int_val(arg2);
+  int *btk = (int *)(Int_val(arg3) << 2);
+
+  return Val_int(sym(stk, sp, btk));
 }
 
 int call_dlfun(char* filename, char* funcname, int* stk, int st_ptr) {
