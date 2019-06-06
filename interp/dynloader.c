@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <dlfcn.h>
 #include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <caml/custom.h>
 
 typedef int (*fun_arg3)(int*, int, int*);
 
@@ -46,7 +48,7 @@ CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1, value
     return -1;
   }
 
-  int *stk = (int *)(Int_val(arg1) << 2);
+  int *stk = Hp_val(arg1);
   int sp = Int_val(arg2);
 
   return Val_int(sym(stk, sp));

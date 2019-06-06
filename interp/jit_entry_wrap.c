@@ -3,14 +3,6 @@
 #include <caml/mlvalues.h>
 #include <caml/callback.h>
 
-int call_caml_dummy_fun(int x) {
-  static value * f_clsr = NULL;
-  if (f_clsr == NULL) {
-    f_clsr = caml_named_value("dummy_fun");
-  }
-  return Int_val(callback(*f_clsr, Val_int(x)));
-}
-
 value init_f(int n) {
   return Val_int(n);
 }
@@ -25,17 +17,8 @@ void call_caml_jit_entry(int **x) {
   ml_args[1] = caml_alloc_array(init_f, x[1]);
   ml_args[2] = Val_int(x[2][0]);
   ml_args[3] = Val_int(x[2][1]);
-  ml_args[4] = Val_int((int)x[0] >> 2);
-  ml_args[5] = Val_int((int)x[1] >> 2);
+  ml_args[4] = Val_hp(x[0]);
+  ml_args[5] = Val_hp(x[1]);
   caml_callbackN(*jit_entry_closure, 6, ml_args);
   return;
-}
-
-int call_caml_jit_exec(int **x) {
-  static value * jit_exec_closure = NULL;
-  if (jit_exec_closure == NULL) {
-    jit_exec_closure = caml_named_value("jit_exec");
-  }
-  value res = caml_callback2(*jit_exec_closure, Val_int(x[0]), Val_int(x[1]));
-  return Int_val(res);
 }
