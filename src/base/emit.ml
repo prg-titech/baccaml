@@ -206,6 +206,12 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprim
       Printf.fprintf oc "\tmovl\t%s, %s\n" regs.(0) a
     else if List.mem a allfregs && a <> fregs.(0) then
       Printf.fprintf oc "\tmovsd\t%s, %s\n" fregs.(0) a
+  | NonTail(a), CallDir(Id.L(x), ys, zs) when x = "restore_min_caml_bp" ->
+    Printf.fprintf oc "\tmovl\tmin_caml_bp,%s\n" a
+  | NonTail(a), CallDir(Id.L(x), ys, zs) when x = "min_caml_save_bp" ->
+    Printf.fprintf oc "\tmovl\t%%eax,min_caml_bp\n"
+  | NonTail(a), CallDir(Id.L(x), ys, zs) when x = "min_caml_save_sp" ->
+    Printf.fprintf oc "\tmovl\t%%eax,min_caml_sp\n"
   | NonTail(a), CallDir(Id.L(x), ys, zs) ->
     g'_args oc [] ys zs;
     let ss = stacksize () in
@@ -273,19 +279,25 @@ let h_cinterop oc ({name= Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   Printf.fprintf oc ".data\n";
   Printf.fprintf oc ".balign\t8\n";
   Printf.fprintf oc ".text\n";
-  Printf.fprintf oc ".globl _%s\n" cname;
-  Printf.fprintf oc "_%s:\n" cname;
+  Printf.fprintf oc ".globl %s\n" cname;
+  Printf.fprintf oc "%s:\n" cname;
+  Printf.fprintf oc "\tpushl\t%%eax\n";
+  Printf.fprintf oc "\tpushl\t%%ebx\n";
+  Printf.fprintf oc "\tpushl\t%%ecx\n";
+  Printf.fprintf oc "\tpushl\t%%edx\n";
+  Printf.fprintf oc "\tpushl\t%%esi\n";
+  Printf.fprintf oc "\tpushl\t%%edi\n";
   Printf.fprintf oc "\tpushl\t%%ebp\n";
-  Printf.fprintf oc "\tmovl\t%%esp, %%ebp\n";
-  let regs = ["%eax"; "%ebx"; "%ecx"; "%edx"] in
-  List.iteri
-    (fun i _ ->
-      Printf.fprintf oc "\tmovl\t%d(%%ebp), %s\n"
-        ((i + 1) * 4 + 4)
-        (List.nth regs i))
-    args;
+  Printf.fprintf oc "\tmovl\t32(%%esp),%s\n" regs.(0);
+  Printf.fprintf oc "\tmovl\t36(%%esp),%s\n" regs.(1);
   Printf.fprintf oc "\tcall\t%s\n" x;
   Printf.fprintf oc "\tpopl\t%%ebp\n";
+  Printf.fprintf oc "\tpopl\t%%edi\n";
+  Printf.fprintf oc "\tpopl\t%%esi\n";
+  Printf.fprintf oc "\tpopl\t%%edx\n";
+  Printf.fprintf oc "\tpopl\t%%ecx\n";
+  Printf.fprintf oc "\tpopl\t%%ebx\n";
+  Printf.fprintf oc "\tpopl\t%%eax\n";
   Printf.fprintf oc "\tret\n";
   h oc fundef
 

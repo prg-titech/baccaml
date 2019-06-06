@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 deps=(dune core menhir oUnit tuareg merlin)
 
