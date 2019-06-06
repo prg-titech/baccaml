@@ -6,7 +6,7 @@ type count_tbl =  (pc, int) Hashtbl.t
 
 type compiled_tbl =  (int, bool) Hashtbl.t
 
-let threshold = 2
+let threshold = 1
 
 let count_hash : count_tbl = Hashtbl.create 100
 

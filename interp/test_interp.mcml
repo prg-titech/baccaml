@@ -58,7 +58,7 @@ let rec interp stack sp bytecode pc =
     let v = stack.(sp - 1) in
     if v = 0 then (
       if addr < pc then (
-        can_enter_jit pc stack sp;
+        can_enter_jit pc stack (sp - 1);
         let args = make_args bytecode stack addr (sp - 1) in
         call_caml_jit_entry args;
         interp stack (sp - 1) bytecode addr)
@@ -140,6 +140,6 @@ code.(10) <- 3;
 code.(11) <- 5; code.(12) <- 3;
 code.(13) <- 9;
 let st = Array.make 10 0 in
-st.(0) <- 10;
+st.(0) <- 50;
 let res = (interp st 1 code 3) in
 print_int res
