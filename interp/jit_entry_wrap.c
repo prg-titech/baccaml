@@ -25,8 +25,8 @@ void call_caml_jit_entry(int **x) {
   ml_args[1] = caml_alloc_array(init_f, x[1]);
   ml_args[2] = Val_int(x[2][0]);
   ml_args[3] = Val_int(x[2][1]);
-  ml_args[4] = Val_int(x[0]);
-  ml_args[5] = Val_int(x[1]);
+  ml_args[4] = Val_int((int)x[0] >> 2);
+  ml_args[5] = Val_int((int)x[1] >> 2);
   caml_callbackN(*jit_entry_closure, 6, ml_args);
   return;
 }

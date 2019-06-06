@@ -90,8 +90,10 @@ module Guard = struct
       | hd :: tl when not (ignored hd ws) -> (
         match reg.(int_of_id_t hd) with
         | Green n when (String.contains hd "bytecode") ->
-           let { bytecode_ptr } = tj_env in
-           Let ((hd, Type.Int), Set bytecode_ptr, restore cont tl)
+          (* let { bytecode_ptr } = tj_env in
+           * Let ((hd, Type.Int), Set bytecode_ptr, restore cont tl) *)
+          Let ((hd, Type.Int),
+               CallDir (Id.L ("restore_min_caml_bp"), [], []), restore cont tl)
         | Green n -> Let ((hd, Type.Int), Set n, restore cont tl)
         | _ -> restore cont tl )
       | hd :: tl -> restore cont tl
@@ -135,8 +137,8 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
   | Let ((dest, typ), exp, body) -> (
     match exp with
     | IfEq (id_t, id_or_imm, t1, t2)
-     |IfLE (id_t, id_or_imm, t1, t2)
-     |IfGE (id_t, id_or_imm, t1, t2) ->
+    | IfLE (id_t, id_or_imm, t1, t2)
+    | IfGE (id_t, id_or_imm, t1, t2) ->
         connect (dest, typ) (tj_if p reg mem tj_env exp) (tj p reg mem tj_env body)
     | Ld (id_t, id_or_imm, x) -> (
         let r1 = int_of_id_t id_t |> Array.get reg in
@@ -183,11 +185,11 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
 and optimize_exp p reg mem tj_env (dest, typ) body exp =
   match Jit_optimizer.run p exp reg mem with
   | Specialized v ->
-      reg.(int_of_id_t dest) <- v ;
-      tj p reg mem tj_env body
+    reg.(int_of_id_t dest) <- v ;
+    tj p reg mem tj_env body
   | Not_specialized (e, v) ->
-      reg.(int_of_id_t dest) <- v ;
-      Let ((dest, typ), e, tj p reg mem tj_env body)
+    reg.(int_of_id_t dest) <- v ;
+    Let ((dest, typ), e, tj p reg mem tj_env body)
 
 and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
   function

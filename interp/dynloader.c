@@ -44,7 +44,10 @@ CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1, value
     return -1;
   }
 
-  return Val_int(sym((int *)(Int_val(arg1)), Int_val(arg2)));
+  int *stk = (int *)(Int_val(arg1) << 2);
+  int sp = Int_val(arg2);
+
+  return Val_int(sym(stk, sp));
 }
 
 int call_dlfun(char* filename, char* funcname, int* stk, int st_ptr) {
