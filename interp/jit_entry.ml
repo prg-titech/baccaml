@@ -56,9 +56,6 @@ let get_so_name : string -> string =
     else
       raise Exit
 
-let get_red_args args =
-  args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
-
 let make_reg prog args sp =
   let reg = Array.make size (Jit_util.Red 0) in
   let Asm.{args; body= t} = Jit_util.find_fundef' prog "interp" in
@@ -109,6 +106,10 @@ type env_jit =
   ; bc_ptr: int
   ; st_ptr: int }
 
+let filter typ args = match typ with
+    `Red -> args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
+  | `Green -> args |> List.filter (fun a -> List.mem (String.get_name a) greens)
+
 let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let prog = Jit_annot.annotate `Meta_method prog in
   let Asm.{args; body} = Jit_util.find_fundef' prog "interp" in
@@ -136,7 +137,7 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   Printf.eprintf "trace_name %s\n" trace_name ;
   let env =
     { JM.trace_name
-    ; JM.red_args = get_red_args args
+    ; JM.red_args = filter `Red args
     ; JM.index_pc = 3
     ; JM.merge_pc = pc_method_entry }
   in
@@ -166,7 +167,7 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
     { JT.index_pc = 3
     ; JT.merge_pc = pc
     ; JT.trace_name
-    ; JT.red_args = args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
+    ; JT.red_args = filter `Red args
     ; JT.bytecode_ptr= bc_ptr
     ; JT.stack_ptr = st_ptr }
   in
@@ -176,11 +177,17 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   emit_dyn emit_env [trace];
   compile_dyn trace_name
 
-let exec_dyn ~name ~arg1 ~arg2 =
+let exec_dyn_arg2 ~name ~arg1 ~arg2 =
   Dynload_stub.call_arg2
     ~lib:("./" ^ get_so_name name)
     ~func:(String.split_on_char '.' name |> List.hd)
     ~arg1:arg1 ~arg2:arg2
+
+let exec_dyn_arg3 ~name ~arg1 ~arg2 ~arg3 =
+  Dynload_stub.call_arg3
+    ~lib:("./" ^ get_so_name name)
+    ~func:(String.split_on_char '.' name |> List.hd)
+    ~arg1:arg1 ~arg2:arg2 ~arg3:arg3
 
 let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   print_arr string_of_int bytecode ~notation:(Some "bytecode") ;
@@ -209,7 +216,7 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
         begin match Trace_list.find_opt pc with
           | Some name ->
             Printf.printf "executing %s at  %d...\n" name pc;
-            exec_dyn ~name:name ~arg1:st_ptr ~arg2:sp |> ignore;
+            exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp |> ignore;
             () (* execute the trace *)
           | None -> ()
         end
