@@ -141,6 +141,6 @@ code.(10) <- 3;
 code.(11) <- 5; code.(12) <- 3;
 code.(13) <- 9;
 let st = Array.make 10 0 in
-st.(0) <- 100000;
+st.(0) <- 210000;
 let res = (interp st 1 code 3) in
 print_int res
