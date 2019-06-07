@@ -224,8 +224,8 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
         begin match Trace_list.find_opt pc with
           | Some name ->
             Printf.printf "executing %s at  %d...\n" name pc;
-            exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp |> ignore;
-            () (* execute the trace *)
+            (* execute the trace *)
+            exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp |> ignore
           | None -> ()
         end
     end
@@ -236,5 +236,5 @@ let () =
     [("--jit-off", Arg.Unit (fun _ -> Config.jit_flag := `Off), "disable jit compilation");
      ("--debug", Arg.Unit (fun _ -> Log.log_level := `Debug), "enable debug mode")]
     (fun file -> Config.file_name := Some file)
-    "./test_interp.exe [your interp]";
+    ("Usage: " ^ Sys.argv.(0) ^ " [--options] [your interp]");
   Callback.register "jit_entry" jit_entry
