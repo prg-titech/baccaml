@@ -33,12 +33,3 @@ min_caml_call_caml_jit_entry:
     movl    %ebp, %esp
     popl    %ebp
     ret
-    .globl min_caml_call_jit_exec
-min_caml_call_caml_jit_exec:
-    pushl   %ebp
-    movl    %esp, %ebp
-    pushl   %eax
-    call    call_caml_jit_entry
-    movl    %ebp, %esp
-    popl    %ebp
-    ret
