@@ -7,18 +7,26 @@ module E = Jit.Jit_emit_base
 
 exception Error of string
 
-let file_name = ref None
+module Config : sig
+  val file_name : string option ref
+  val size : int
+  val greens : string list
+  val bc_tmp_addr : int
+  val st_tmp_addr : int
+  val pc_method_annot_inst: int
 
-let size = 10000
+  val jit_flag : [`On | `Off] ref
+end = struct
+  let file_name = ref None
+  let size = 10000
+  (* TODO: specify extenally *)
+  let greens = ["pc"; "bytecode"]
+  let bc_tmp_addr = 0
+  let st_tmp_addr = 100
+  let pc_method_annot_inst = 15
 
-(* TODO: specify extenally *)
-let greens = ["pc"; "bytecode"]
-
-let bc_tmp_addr = 0
-
-let st_tmp_addr = 100
-
-let pc_method_annot_inst = 15
+  let jit_flag = ref `On
+end
 
 let print_arr ?notation:(nt = None) f arr =
   let str = Array.string_of_array f arr in
@@ -27,7 +35,7 @@ let print_arr ?notation:(nt = None) f arr =
   | None -> Log.debug (Printf.sprintf "%s" str)
 
 let file_open () =
-  match !file_name with
+  match !Config.file_name with
   | Some name -> open_in name
   | None -> raise @@ Error "argument is not specified."
 
@@ -57,16 +65,16 @@ let get_so_name : string -> string =
       raise Exit
 
 let make_reg prog args sp =
-  let reg = Array.make size (Jit_util.Red 0) in
+  let reg = Array.make Config.size (Jit_util.Red 0) in
   let Asm.{args; body= t} = Jit_util.find_fundef' prog "interp" in
   Asm.fv t @ args
   |> List.iteri (fun i a ->
-      if List.mem (String.get_name a) greens then reg.(i) <- Green 0
+      if List.mem (String.get_name a) Config.greens then reg.(i) <- Green 0
       else reg.(i) <- Red 0 ) ;
   reg
 
 let make_mem ~bc_addr ~st_addr bytecode stack =
-  let mem = Array.make size (Jit_util.Green 0) in
+  let mem = Array.make Config.size (Jit_util.Green 0) in
   bytecode |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Jit_util.Green a) ;
   stack |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Jit_util.Red a) ;
   mem
@@ -82,14 +90,14 @@ let compile_dyn trace_name =
   let uname = input_line ic in
   let () = close_in ic in
   if uname = "Linux" then
-    Printf.sprintf "gcc -g -DRUNTIME -o %s %s -shared -fPIC -ldl" so asm_name
+    Printf.sprintf "gcc -m32 -g -DRUNTIME -o %s %s -shared -fPIC -ldl" so asm_name
     |> Unix.system
     |> function
     | Unix.WEXITED (i) when i = 0 ->
       Some trace_name
     | _ -> None
   else if uname = "Darwin" then
-    Printf.sprintf "gcc -g -o %s -dynamiclib %s" so asm_name
+    Printf.sprintf "gcc -m32 -g -o %s -dynamiclib %s" so asm_name
     |> Unix.system
     |> function
     | Unix.WEXITED (i) when i = 0 ->
@@ -107,20 +115,20 @@ type env_jit =
   ; st_ptr: int }
 
 let filter typ args = match typ with
-    `Red -> args |> List.filter (fun a -> not (List.mem (String.get_name a) greens))
-  | `Green -> args |> List.filter (fun a -> List.mem (String.get_name a) greens)
+    `Red -> args |> List.filter (fun a -> not (List.mem (String.get_name a) Config.greens))
+  | `Green -> args |> List.filter (fun a -> List.mem (String.get_name a) Config.greens)
 
 let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let prog = Jit_annot.annotate `Meta_method prog in
   let Asm.{args; body} = Jit_util.find_fundef' prog "interp" in
   let reg = make_reg prog args sp in
   let mem =
-    make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack
+    make_mem ~bc_addr:Config.bc_tmp_addr ~st_addr:Config.st_tmp_addr bytecode stack
   in
   let pc_method_entry =
     bytecode |> Array.to_list
     |> List.mapi (fun i a -> (i, a))
-    |> List.find (fun (i, a) -> a = pc_method_annot_inst)
+    |> List.find (fun (i, a) -> a = Config.pc_method_annot_inst)
     |> fst
   in
   Printf.printf "pc_method_entry: %d\n" pc_method_entry ;
@@ -130,8 +138,8 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let st_ir_addr = get_ir_addr args "stack" in
   reg.(pc_ir_addr) <- Green pc_method_entry ;
   reg.(sp_ir_addr) <- Red sp ;
-  reg.(bc_ir_addr) <- Green bc_tmp_addr ;
-  reg.(st_ir_addr) <- Red st_tmp_addr ;
+  reg.(bc_ir_addr) <- Green Config.bc_tmp_addr ;
+  reg.(st_ir_addr) <- Red Config.st_tmp_addr ;
   let module JM = Jit_method in
   let trace_name = gen_trace_name `Meta_method in
   Printf.eprintf "trace_name %s\n" trace_name ;
@@ -150,7 +158,7 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let Asm.{args; body} = Jit_util.find_fundef' prog "interp" in
   let reg = make_reg prog args sp in
   let mem =
-    make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack
+    Config.(make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack)
   in
   let pc_ir_addr = get_ir_addr args "pc" in
   let sp_ir_addr = get_ir_addr args "sp" in
@@ -158,8 +166,8 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let st_ir_addr = get_ir_addr args "stack" in
   reg.(pc_ir_addr) <- Green pc ;
   reg.(sp_ir_addr) <- Red sp ;
-  reg.(bc_ir_addr) <- Green bc_tmp_addr ;
-  reg.(st_ir_addr) <- Red st_tmp_addr ;
+  reg.(bc_ir_addr) <- Green Config.bc_tmp_addr ;
+  reg.(st_ir_addr) <- Red Config.st_tmp_addr ;
   let module JT = Jit_tracing in
   let trace_name = gen_trace_name `Meta_tracing in
   Printf.printf "trace_name %s\n" trace_name ;
@@ -198,12 +206,10 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
         let prog =
           let ic = file_open () in
           try
-            let module A = Jit_annot in
             let v = ic |> Lexing.from_channel |> Util.virtualize in
             close_in ic; v
           with e -> close_in ic; raise e
         in
-        let module E = Jit_emit_base in
         let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
         begin match prog |> jit_tracing env with
           | Some name ->
@@ -212,6 +218,8 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
             failwith (Printf.sprintf "JIT compilation is failed.")
         end;
         Trace_list.make_compiled pc
+      else if !Config.jit_flag = `Off then
+        ()
       else
         begin match Trace_list.find_opt pc with
           | Some name ->
@@ -224,7 +232,9 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   else Trace_list.count_up pc
 
 let () =
-  if Array.length Sys.argv < 2 then raise @@ Error "please specify your file."
-  else file_name := Some Sys.argv.(1) ;
-  Log.log_level := `Debug ;
+  Arg.parse
+    [("--jit-off", Arg.Unit (fun _ -> Config.jit_flag := `Off), "disable jit compilation");
+     ("--debug", Arg.Unit (fun _ -> Log.log_level := `Debug), "enable debug mode")]
+    (fun file -> Config.file_name := Some file)
+    "./test_interp.exe [your interp]";
   Callback.register "jit_entry" jit_entry

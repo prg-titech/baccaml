@@ -56,10 +56,11 @@ let rec interp stack sp bytecode pc =
   else if instr = 5 then        (* JUMP_IF_ZERO *)
     let addr = bytecode.(pc + 1) in
     let v = stack.(sp - 1) in
+    let sp2 = sp - 1 in
     if v = 0 then (
       if addr < pc then (
-        can_enter_jit pc stack (sp - 1);
-        let args = make_args bytecode stack addr (sp - 1) in
+        can_enter_jit pc stack sp2;
+        let args = make_args bytecode stack addr sp2 in
         call_caml_jit_entry args;
         interp stack (sp - 1) bytecode addr)
       else (
@@ -140,6 +141,6 @@ code.(10) <- 3;
 code.(11) <- 5; code.(12) <- 3;
 code.(13) <- 9;
 let st = Array.make 10 0 in
-st.(0) <- 50;
+st.(0) <- 100000;
 let res = (interp st 1 code 3) in
 print_int res
