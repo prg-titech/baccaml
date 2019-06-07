@@ -1,6 +1,6 @@
 
 open MinCaml
-open Bc_jit
+open Jit
 
 let level = ref `Dump
 

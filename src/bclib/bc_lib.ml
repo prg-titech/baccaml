@@ -1,6 +1,6 @@
 open MinCaml
 open Asm
-open Bc_jit
+open Jit
 open Jit_util
 open Operands
 

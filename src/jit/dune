@@ -1,5 +1,5 @@
 (library
- (name          bc_jit)
+ (name          jit)
  (public_name   baccaml.jit)
  (flags        (-w -6-39-27
                 -annot

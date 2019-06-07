@@ -1,9 +1,9 @@
 open Utils
 open Std
 open MinCaml
-open Bc_jit
+open Jit
 
-module E = Bc_jit.Jit_emit_base
+module E = Jit.Jit_emit_base
 
 exception Error of string
 

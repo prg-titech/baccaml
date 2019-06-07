@@ -1,6 +1,6 @@
 open OUnit2
 open MinCaml
-open Bc_jit
+open Jit
 
 let test_1 _ =
   let input =

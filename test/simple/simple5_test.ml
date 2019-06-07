@@ -5,7 +5,7 @@ open MinCaml
 open Asm
 open Util
 
-open Bc_jit
+open Jit
 open Jit_config
 
 module MJ = Method_jit

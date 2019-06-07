@@ -2,7 +2,7 @@ open Utils
 open MinCaml
 open Bc_lib
 open Bc_front
-open Bc_jit
+open Jit
 
 exception Jittype_error of string
 
