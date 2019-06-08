@@ -7,6 +7,8 @@
 
 extern void min_caml_start(char *, char *);
 
+extern void call_caml_jit_entry(int **x) asm ("call_caml_jit_entry");
+
 extern int get_current_millis(void) asm ("min_caml_get_current_millis");
 
 value init_f(int n) {
