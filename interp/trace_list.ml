@@ -1,19 +1,13 @@
 type pc = int
-
 type name = string
-
 type count_tbl =  (pc, int) Hashtbl.t
-
 type compiled_tbl =  (int, bool) Hashtbl.t
 
-let threshold = 1
-
+let threshold = 100
 let count_hash : count_tbl = Hashtbl.create 100
-
 let compiled_hash : compiled_tbl = Hashtbl.create 100
 
 let get_count_hash () = Hashtbl.copy count_hash
-
 let get_compiled_hash () = Hashtbl.copy compiled_hash
 
 let count_up pc =
@@ -35,16 +29,10 @@ let make_compiled (pc : int) : unit =
 
 let over_threshold (pc : int) : bool =
   match Hashtbl.find_opt count_hash pc with
-  | Some count ->
-     if count > threshold then
-       true
-     else
-       false
-  | None ->
-     false
+  | Some count -> count > threshold
+  | None -> false
 
 type content = Content of int * string
-
 type trace_tbl = (int, string) Hashtbl.t
 
 let trace_hash : trace_tbl = Hashtbl.create 100

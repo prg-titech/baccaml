@@ -7,7 +7,7 @@
 (executable
  (name jit_entry)
  (modules trace_list jit_entry)
- (libraries str unix dynload_stub minCaml jit bc_lib utils)
+ (libraries str unix dynload_stub minCaml jit utils)
  (flags (-annot -w -4-33-40-41))
  (modes
   (native exe)
