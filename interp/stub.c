@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/time.h>
 #include <caml/mlvalues.h>
 #include <caml/callback.h>
 
 extern void min_caml_start(char *, char *);
+
+extern int get_current_millis(void) asm ("min_caml_get_current_millis");
 
 value init_f(int n) {
   return Val_int(n);
@@ -24,6 +27,13 @@ void call_caml_jit_entry(int **x) {
   ml_args[5] = Val_hp(x[1]);
   caml_callbackN(*jit_entry_closure, 6, ml_args);
   return;
+}
+
+int get_current_millis() {
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  int time_in_mill = (tv.tv_sec) * 1000 + (tv.tv_usec) / 1000;
+  return time_in_mill;
 }
 
 /* "stderr" is a macro and cannot be referred to in libmincaml.S, so */
