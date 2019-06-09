@@ -198,12 +198,11 @@ let exec_dyn_arg3 ~name ~arg1 ~arg2 ~arg3 =
     ~arg1:arg1 ~arg2:arg2 ~arg3:arg3
 
 let jit_entry bytecode stack pc sp bc_ptr st_ptr =
-  print_arr string_of_int bytecode ~notation:(Some "bytecode") ;
   print_arr string_of_int stack ~notation:(Some "stack") ;
-  Log.debug (Printf.sprintf "pc %d, sp %d, bc_ptr %d, st_ptr %d" pc sp bc_ptr st_ptr) ; 
-  if Trace_list.over_threshold pc then
-    begin if !Config.jit_flag = `Off then ()
-      else if (Trace_list.not_compiled pc) then
+  if !Config.jit_flag = `Off then ()
+  else if Trace_list.over_threshold pc then
+    begin
+      if (Trace_list.not_compiled pc) then
         let prog =
           let ic = file_open () in
           try
@@ -213,19 +212,19 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
         in
         let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
         begin match prog |> jit_tracing env with
-          | Some name ->
-            Trace_list.register (Content (pc, name))
-          | None ->
-            failwith (Printf.sprintf "JIT compilation is failed.")
+        | Some name ->
+           Trace_list.register (Content (pc, name))
+        | None ->
+           failwith (Printf.sprintf "JIT compilation is failed.")
         end;
         Trace_list.make_compiled pc
       else
         begin match Trace_list.find_opt pc with
-          | Some name ->
-            Printf.printf "executing %s at  %d...\n" name pc;
-            (* execute the trace *)
-            exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp |> ignore
-          | None -> ()
+        | Some name ->
+           Printf.printf "executing %s at  %d...\n" name pc;
+           (* execute the trace *)
+           exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp |> ignore
+        | None -> ()
         end
     end
   else Trace_list.count_up pc
