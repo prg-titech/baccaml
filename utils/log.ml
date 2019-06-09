@@ -9,20 +9,24 @@ let log_level : level ref = ref `Error
 
 let error s =
   match !log_level with
-  | `Error -> print_endline ("[err] " ^ s)
+  | `Error ->
+     Printf.fprintf stderr "[err] %s\n" s; flush stderr
   | _ -> ()
 
 let debug s =
   match !log_level with
-  | `Debug -> print_endline ("[debug] " ^ s)
+  | `Debug ->
+     Printf.fprintf stdout "[debug] %s\n" s; flush stdout
   | _ -> ()
 
 let warn s =
   match !log_level with
-  | `Error | `Warn -> print_endline ("[warn] " ^ s)
+  | `Error | `Warn ->
+     Printf.fprintf stdout "[warn] %s\n" s; flush stdout
   | _ -> ()
 
 let app s =
   match !log_level with
-  | `Error | `Warn | `App -> Format.printf "[app] %s\n" s
+  | `Error | `Warn | `App ->
+     Printf.fprintf stdout "[app] %s\n" s; flush stdout
   | _ -> ()
