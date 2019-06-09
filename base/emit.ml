@@ -302,7 +302,7 @@ let h_cinterop oc ({name= Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   h oc fundef
 
 let f oc (Prog(data, fundefs, e)) =
-  Format.eprintf "generating assembly...@.";
+  (* Format.eprintf "generating assembly...@."; *)
   Printf.fprintf oc ".code32\n";
   Printf.fprintf oc ".data\n";
   Printf.fprintf oc ".balign\t8\n";

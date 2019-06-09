@@ -79,7 +79,7 @@ let rec alloc cont regenv x t prefer =
       (* Format.eprintf "allocated %s to %s@." x r; *)
       Alloc(r)
     with Not_found ->
-      Format.eprintf "register allocation failed for %s@." x;
+      (* Format.eprintf "register allocation failed for %s@." x; *)
       let y = (* 型の合うレジスタ変数を探す *)
         List.find
           (fun y ->
@@ -87,7 +87,7 @@ let rec alloc cont regenv x t prefer =
              try List.mem (M.find y regenv) all
              with Not_found -> false)
           (List.rev free) in
-      Format.eprintf "spilling %s from %s@." y (M.find y regenv);
+      (* Format.eprintf "spilling %s from %s@." y (M.find y regenv); *)
       Spill(y)
 
 (* auxiliary function for g and g'_and_restore *)
@@ -228,7 +228,7 @@ let h { name = Id.L(x); args = ys; fargs = zs; body = e; ret = t } = (* 関数�
   { name = Id.L(x); args = arg_regs; fargs = farg_regs; body = e'; ret = t }
 
 let f (Prog(data, fundefs, e)) = (* プログラム全体のレジスタ割り当て (caml2html: regalloc_f) *)
-  Format.eprintf "register allocation: may take some time (up to a few minutes, depending on the size of functions)@.";
+  (* Format.eprintf "register allocation: may take some time (up to a few minutes, depending on the size of functions)@."; *)
   let fundefs' = List.map h fundefs in
   let e', regenv' = g (Id.gentmp Type.Unit, Type.Unit) (Ans(Nop)) M.empty e in
   Prog(data, fundefs', e')
