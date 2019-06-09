@@ -131,7 +131,6 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
     |> List.find (fun (i, a) -> a = Config.pc_method_annot_inst)
     |> fst
   in
-  Printf.printf "pc_method_entry: %d\n" pc_method_entry ;
   let pc_ir_addr = get_ir_addr args "pc" in
   let sp_ir_addr = get_ir_addr args "sp" in
   let bc_ir_addr = get_ir_addr args "bytecode" in
@@ -142,7 +141,6 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   reg.(st_ir_addr) <- Red Config.st_tmp_addr ;
   let module JM = Jit_method in
   let trace_name = gen_trace_name `Meta_method in
-  Printf.eprintf "trace_name %s\n" trace_name ;
   let env =
     { JM.trace_name
     ; JM.red_args = filter `Red args
@@ -151,7 +149,8 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   in
   let traces = JM.run prog reg mem env in
   let emit_env = {E.out= trace_name; E.jit_typ= `Meta_method; E.prog} in
-  emit_dyn emit_env traces ; compile_dyn trace_name
+  emit_dyn emit_env traces;
+  compile_dyn trace_name
 
 let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let prog = Jit_annot.annotate `Meta_tracing prog in
@@ -170,7 +169,6 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   reg.(st_ir_addr) <- Red Config.st_tmp_addr ;
   let module JT = Jit_tracing in
   let trace_name = gen_trace_name `Meta_tracing in
-  Printf.printf "trace_name %s\n" trace_name ;
   let env =
     { JT.index_pc = 3
     ; JT.merge_pc = pc
@@ -221,9 +219,9 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
       else
         begin match Trace_list.find_opt pc with
         | Some name ->
-           Printf.printf "executing %s at  %d...\n" name pc;
-           (* execute the trace *)
-           exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp |> ignore
+           Printf.printf "executing %s at pc: %d\n" name pc;
+           exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp;
+           ()
         | None -> ()
         end
     end
