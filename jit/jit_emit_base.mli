@@ -6,6 +6,4 @@ type 'a env = {
   prog : Asm.prog;
 }
 
-val emit_dynamic : [< `Meta_tracing | `Meta_method] env -> Asm.fundef list -> unit
-
 val emit : ?midflg:bool -> [< `Meta_tracing | `Meta_method] env -> Asm.fundef list -> unit

@@ -38,14 +38,6 @@ type 'a env = {
   prog : prog;
 }
 
-let emit_dynamic { out; jit_typ; prog = Prog (_, fundefs, _); } traces =
-  let module E = Emit in
-  let oc = open_out (out ^ ".s") in
-  try
-    List.iter (fun trace -> E.h_cinterop oc trace) traces;
-    close_out oc
-  with e -> close_out oc; raise e
-
 let emit ?(midflg=false) { out; jit_typ; prog = Prog (_, fundefs, _); } traces =
   Emit.(
     stackset := S.empty;

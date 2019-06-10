@@ -79,10 +79,6 @@ let make_mem ~bc_addr ~st_addr bytecode stack =
   stack |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Jit_util.Red a) ;
   mem
 
-let emit_dyn : 'a -> Asm.fundef list -> unit =
-  fun env traces ->
-    traces |> List.map Simm.h |> List.map RegAlloc.h |> E.emit_dynamic env
-
 let compile_dyn trace_name =
   let asm_name = trace_name ^ ".s" in
   let so = get_so_name trace_name in
@@ -107,6 +103,13 @@ let compile_dyn trace_name =
       | _ -> Error (Jit_compilation_failed)
   else
     Error (Jit_compilation_failed)
+
+let emit_dyn (oc : out_channel) (traces : Asm.fundef list) : 'a =
+  try
+    traces
+    |> List.iter (fun trace ->
+           trace |> Simm.h |> RegAlloc.h |> Emit.h_cinterop oc);
+  with e -> close_out oc; raise e
 
 type env_jit =
   { bytecode: int array
@@ -150,9 +153,12 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
     ; JM.merge_pc = pc_method_entry }
   in
   let traces = JM.run prog reg mem env in
-  let emit_env = {E.out= trace_name; E.jit_typ= `Meta_method; E.prog} in
-  emit_dyn emit_env traces;
-  compile_dyn trace_name
+  let oc = open_out (trace_name ^ ".s") in
+  try
+    emit_dyn oc traces; close_out oc;
+    compile_dyn trace_name
+  with e ->
+    close_out oc; raise e
 
 let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let prog = Jit_annot.annotate `Meta_tracing prog in
@@ -181,9 +187,15 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   in
   let trace = JT.run prog reg mem env in
   Log.debug (Emit_virtual.string_of_fundef trace);
-  let emit_env = {E.out = trace_name; E.jit_typ = `Meta_tracing; E.prog} in
-  emit_dyn emit_env [trace];
-  compile_dyn trace_name
+  let oc = open_out (trace_name ^ ".s") in
+  try
+    emit_dyn oc [trace];
+    close_out oc;
+    compile_dyn trace_name
+  with e ->
+    close_out oc; raise e
+
+
 
 let exec_dyn_arg2 ~name ~arg1 ~arg2 =
   Dynload_stub.call_arg2
