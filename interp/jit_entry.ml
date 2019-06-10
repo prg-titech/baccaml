@@ -3,9 +3,9 @@ open Std
 open MinCaml
 open Jit
 
-module E = Jit.Jit_emit_base
+module E = Jit_emit_base
 
-exception Error of string
+exception Jit_compilation_failed
 
 module Config : sig
   val file_name : string option ref
@@ -37,7 +37,7 @@ let print_arr ?notation:(nt = None) f arr =
 let file_open () =
   match !Config.file_name with
   | Some name -> open_in name
-  | None -> raise @@ Error "argument is not specified."
+  | None -> failwith "argument is not specified."
 
 let get_ir_addr args name =
   args
@@ -90,21 +90,23 @@ let compile_dyn trace_name =
   let uname = input_line ic in
   let () = close_in ic in
   if uname = "Linux" then
-    Printf.sprintf "gcc -m32 -g -DRUNTIME -o %s %s -shared -fPIC -ldl" so asm_name
+    Printf.sprintf
+      "gcc -m32 %s -DRUNTIME -o %s %s -shared -fPIC -ldl"
+      (match !Log.log_level with
+       | `Debug -> "-g"
+       | _ -> "-O2") so asm_name
     |> Unix.system
     |> function
-    | Unix.WEXITED (i) when i = 0 ->
-      Some trace_name
-    | _ -> None
+        Unix.WEXITED (i) when i = 0 -> Ok trace_name
+      | _ -> Error (Jit_compilation_failed)
   else if uname = "Darwin" then
     Printf.sprintf "gcc -m32 -g -o %s -dynamiclib %s" so asm_name
     |> Unix.system
     |> function
-    | Unix.WEXITED (i) when i = 0 ->
-      Some trace_name
-    | _ -> None
+        Unix.WEXITED (i) when i = 0 -> Ok trace_name
+      | _ -> Error (Jit_compilation_failed)
   else
-    raise Exit
+    Error (Jit_compilation_failed)
 
 type env_jit =
   { bytecode: int array
@@ -210,17 +212,21 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
         in
         let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
         begin match prog |> jit_tracing env with
-        | Some name ->
+        | Ok name ->
            Trace_list.register (Content (pc, name))
-        | None ->
-           failwith (Printf.sprintf "JIT compilation is failed.")
+        | Error e ->
+           raise e
         end;
         Trace_list.make_compiled pc
       else
         begin match Trace_list.find_opt pc with
         | Some name ->
            Printf.printf "executing %s at pc: %d\n" name pc;
-           exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp;
+           let s = Unix.gettimeofday () in
+           exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp |> ignore;
+           let e = Unix.gettimeofday () in
+           Printf.printf "ellapsed time in trace: %f\n" ((e -. s) *. 1000.0);
+           flush stdout;
            ()
         | None -> ()
         end
