@@ -40,7 +40,7 @@ void call_caml_jit_exec(int pc, int *st_ptr, int sp) {
   return;
 }
 
-void call_caml_mj_call(int *st, int sp, int *bc, int pc) {
+int call_caml_mj_call(int *st, int sp, int *bc, int pc) {
   static value * jit_mj_call_closure = NULL;
   value ml_args[6];
   if (jit_mj_call_closure == NULL) {
@@ -52,6 +52,5 @@ void call_caml_mj_call(int *st, int sp, int *bc, int pc) {
   ml_args[3] = Val_int(sp);
   ml_args[4] = Val_hp(bc);
   ml_args[5] = Val_hp(st);
-  caml_callbackN(*jit_mj_call_closure, 6, ml_args);
-  return;
+  return Int_val(caml_callbackN(*jit_mj_call_closure, 6, ml_args));
 }
