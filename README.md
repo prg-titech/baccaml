@@ -21,9 +21,18 @@ This project is forked from <a href="https://github.com/esumii/min-caml">MinCaml
 
 You need the OCaml 4.07.0+ configured with 32bit mode.
 
+## Usage
+
+To run the interpreter already defined, execute following commands.
+
+```bash
+$ dune build interp/test_interp.exe
+$ dune exec interp/test_interp.exe interp/test_interp.mcml
+```
+
 ## Debugging
 
-For ahead-of-time compilation:
+This function is used for ahead-of-time compilation and debugging generated traces.
 
 ```bash
 $ dune exec baccaml -- -file [interpreter].ml [file.arg]
@@ -32,7 +41,7 @@ $ dune exec src/bin/baccaml_builder.exe -- [interpreter].ml \
 
 # example
 $ dune exec baccaml -- -file benchmark/baccaml/test_interp_tj.ml \
-	benchmark/armin/fib.am benchmark/armin/fib_26.am benchmark/armin/fib_18.am
+    benchmark/armin/fib.am benchmark/armin/fib_26.am benchmark/armin/fib_18.am
 $ dune exec src/bin/baccaml_builder.exe -- benchmark/baccaml/test_interp_tj.ml \
-	-type tjit -trace fib -trace fib_26 -o test_fib_tj -build
+    -type tjit -trace fib -trace fib_26 -o test_fib_tj -build
 ```
