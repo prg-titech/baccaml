@@ -73,9 +73,9 @@ let rec interp stack sp bytecode pc =
       let r = interp stack sp bytecode addr in
       stack.(sp - 1) <- r;
       interp stack sp bytecode (pc + 2)
-    else
-      (stack.(sp) <- pc + 2;
-       interp stack (sp + 1) bytecode addr)
+    else (
+      stack.(sp) <- pc + 2;
+      interp stack (sp + 1) bytecode addr)
   else if instr = 7 then        (* RET *)
     if is_mj () then
       stack.(sp - 1)
@@ -145,5 +145,5 @@ st.(0) <- 220000;
 let s = get_current_millis () in
 let res = (interp st 1 code 3) in
 let e = get_current_millis () in
-print_int (e - s); print_newline ();
-print_int res
+print_int (e - s); print_newline ()
+(*; print_int res *)
