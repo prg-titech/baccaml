@@ -176,26 +176,24 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   reg.(bc_ir_addr) <- Green Config.bc_tmp_addr ;
   reg.(st_ir_addr) <- Red Config.st_tmp_addr ;
   let module JT = Jit_tracing in
-  let trace_name = gen_trace_name `Meta_tracing in
+  let trace_name = Trace_name.gen `Meta_tracing in
   let env =
     { JT.index_pc = 3
     ; JT.merge_pc = pc
-    ; JT.trace_name
+    ; JT.trace_name = Trace_name.value trace_name
     ; JT.red_args = filter `Red args
     ; JT.bytecode_ptr= bc_ptr
     ; JT.stack_ptr = st_ptr }
   in
   let trace = JT.run prog reg mem env in
   Log.debug (Emit_virtual.string_of_fundef trace);
-  let oc = open_out (trace_name ^ ".s") in
+  let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
     emit_dyn oc [trace];
     close_out oc;
-    compile_dyn trace_name
+    compile_dyn (Trace_name.value trace_name)
   with e ->
     close_out oc; raise e
-
-
 
 let exec_dyn_arg2 ~name ~arg1 ~arg2 =
   Dynload_stub.call_arg2
