@@ -6,7 +6,7 @@ cache:
     - ${HOME}/.opam
 before_install:
   - sudo apt-get update
-  - sudo apt-get install gcc-multilib g++-multi-lib
+  - sudo apt-get install -y gcc-multilib
   - wget -O ${HOME}/opam https://github.com/ocaml/opam/releases/download/2.0.2/opam-2.0.2-x86_64-linux
   - chmod +x ${HOME}/opam
   - export PATH=${HOME}:${PATH}
