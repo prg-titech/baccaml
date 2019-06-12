@@ -109,10 +109,11 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
   function
   | Ans exp -> tj_exp p reg mem tj_env exp
   | Let ((dest, typ), CallDir (Id.L "min_caml_can_enter_jit", args, fargs), body) ->
-      let pc = List.hd args |> int_of_id_t |> Array.get reg |> value_of in
-      Log.debug ("can_enter_jit: pc " ^ string_of_int pc) ;
-      let {index_pc; merge_pc; trace_name} = tj_env in
-      Ans (CallDir (Id.L trace_name, List.tl args, []))
+     let pc = List.last args |> int_of_id_t |> Array.get reg |> value_of in
+     let reds = List.nth args 0 :: List.nth args 1 :: [] in
+     Log.debug ("can_enter_jit: pc " ^ string_of_int pc) ;
+     let {index_pc; merge_pc; trace_name} = tj_env in
+     Ans (CallDir (Id.L trace_name, reds, []))
   | Let ((dest, typ), CallDir (Id.L "min_caml_jit_merge_point", args, fargs), body) ->
       let {index_pc; merge_pc; trace_name} = tj_env in
       let pc = List.hd args |> int_of_id_t |> Array.get reg |> value_of in

@@ -28,6 +28,17 @@ module String = struct
 
 end
 
+module List = struct
+  include List
+
+  exception Bad_access
+
+  let rec last = function
+    | [] -> raise Bad_access
+    | [x] -> x
+    | hd :: tl -> last tl
+end
+
 module Try = struct
   type 'a t = Success of 'a | Failure of exn
 

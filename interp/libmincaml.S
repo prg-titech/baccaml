@@ -269,6 +269,15 @@ min_caml_method_entry:
     ret
     .globl min_caml_can_enter_jit
 min_caml_can_enter_jit:
+    pushl   %ebp
+    movl    %esp, %ebp
+    pushl   %edx
+    pushl   %ecx
+    pushl   %ebx
+    pushl   %eax
+    call    call_caml_jit_entry
+    movl    %ebp, %esp
+    popl    %ebp
     ret
     .globl min_caml_jit_merge_point
 min_caml_jit_merge_point:
@@ -297,6 +306,9 @@ min_caml_loop_end:
 min_caml_call_caml_jit_entry:
     pushl   %ebp
     movl    %esp, %ebp
+    pushl   %edx
+    pushl   %ecx
+    pushl   %ebx
     pushl   %eax
     call    call_caml_jit_entry
     movl    %ebp, %esp
