@@ -28,6 +28,28 @@ end = struct
   let jit_flag = ref `On
 end
 
+module Trace_name : sig
+  type t = Trace_name of string
+
+  val gen : [< `Meta_tracing | `Meta_method] -> t
+  val value : t -> string
+end = struct
+  type t = Trace_name of string
+
+  let counter = ref 0
+
+  let gen typ =
+    let mark = match typ with
+        `Meta_tracing -> "tj"
+      | `Meta_method -> "mj"
+    in
+    let name = "trace" ^ mark ^ string_of_int !counter in
+    incr counter;
+    Trace_name (Id.genid name)
+
+  let value = function Trace_name s -> s
+end
+
 let print_arr ?notation:(nt = None) f arr =
   let str = Array.string_of_array f arr in
   match nt with
@@ -44,13 +66,6 @@ let get_ir_addr args name =
   |> List.find (fun a -> String.get_name a = name)
   |> String.get_extension |> int_of_string
 
-let counter = ref 0
-
-let gen_trace_name : [< `Meta_tracing | `Meta_method] -> string =
-  fun typ ->
-    let mark = match typ with `Meta_tracing -> "tj" | `Meta_method -> "mj" in
-    let name = "trace" ^ mark ^ string_of_int !counter in
-    incr counter ; Id.genid name
 
 let get_so_name : string -> string =
   fun name ->
@@ -145,18 +160,18 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   reg.(bc_ir_addr) <- Green Config.bc_tmp_addr ;
   reg.(st_ir_addr) <- Red Config.st_tmp_addr ;
   let module JM = Jit_method in
-  let trace_name = gen_trace_name `Meta_method in
+  let trace_name = Trace_name.gen `Meta_method in
   let env =
-    { JM.trace_name
+    { JM.trace_name = Trace_name.value trace_name
     ; JM.red_args = filter `Red args
     ; JM.index_pc = 3
     ; JM.merge_pc = pc_method_entry }
   in
   let traces = JM.run prog reg mem env in
-  let oc = open_out (trace_name ^ ".s") in
+  let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
     emit_dyn oc traces; close_out oc;
-    compile_dyn trace_name
+    compile_dyn (Trace_name.value trace_name)
   with e ->
     close_out oc; raise e
 
@@ -207,6 +222,17 @@ let exec_dyn_arg3 ~name ~arg1 ~arg2 ~arg3 =
     ~func:(String.split_on_char '.' name |> List.hd)
     ~arg1:arg1 ~arg2:arg2 ~arg3:arg3
 
+let jit_exec pc st_ptr sp =
+  match Trace_list.find_opt pc with
+  | Some (tname) ->
+     Printf.printf "executing %s at pc: %d ...\n" tname pc;
+     let s = Unix.gettimeofday () in
+     exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
+     let e = Unix.gettimeofday () in
+     Printf.printf "ellapsed time: %f ms\n" ((e -. s) *. 1000.0);
+     flush stdout
+  | None -> ()
+
 let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   print_arr string_of_int stack ~notation:(Some "stack") ;
   if !Config.jit_flag = `Off then ()
@@ -229,17 +255,7 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
         end;
         Trace_list.make_compiled pc
       else
-        begin match Trace_list.find_opt pc with
-        | Some name ->
-           Printf.printf "executing %s at pc: %d\n" name pc;
-           let s = Unix.gettimeofday () in
-           exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp |> ignore;
-           let e = Unix.gettimeofday () in
-           Printf.printf "ellapsed time in trace: %f\n" ((e -. s) *. 1000.0);
-           flush stdout;
-           ()
-        | None -> ()
-        end
+        jit_exec pc st_ptr sp
     end
   else Trace_list.count_up pc
 
@@ -249,4 +265,5 @@ let () =
      ("--debug", Arg.Unit (fun _ -> Log.log_level := `Debug), "enable debug mode")]
     (fun file -> Config.file_name := Some file)
     ("Usage: " ^ Sys.argv.(0) ^ " [--options] [your interp]");
-  Callback.register "jit_entry" jit_entry
+  Callback.register "jit_entry" jit_entry;
+  Callback.register "jit_exec" jit_exec;
