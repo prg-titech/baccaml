@@ -258,6 +258,20 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
     end
   else Trace_list.count_up pc
 
+let jit_mj_call bytecode stack pc sp bc_ptr st_ptr =
+  let ic = file_open () in
+  try
+    let p =
+      ic |> Lexing.from_channel |> Util.virtualize
+      |> Jit_annot.annotate `Meta_method
+    in
+    close_in ic;
+    let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+    match p |> jit_method env with
+    | Ok name -> exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp
+    | Error e -> raise e
+  with e -> close_in ic; raise e
+
 let () =
   Arg.parse
     [("--jit-off", Arg.Unit (fun _ -> Config.jit_flag := `Off), "disable jit compilation");
@@ -266,3 +280,4 @@ let () =
     ("Usage: " ^ Sys.argv.(0) ^ " [--options] [your interp]");
   Callback.register "jit_entry" jit_entry;
   Callback.register "jit_exec" jit_exec;
+  Callback.register "jit_mj_call" jit_mj_call
