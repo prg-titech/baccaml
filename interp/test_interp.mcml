@@ -128,18 +128,18 @@ let rec interp stack sp bytecode pc =
     -1000 in
 let code = Array.make 20 0 in
 save_bp ();
-code.(0) <- 15; code.(1) <- 1; code.(2) <- 7;
+code.(0) <- 15; code.(1) <- 2; code.(2) <- 7;
 code.(3) <- 4; code.(4) <- 1;
-code.(5) <- 2;
-code.(6) <- 4; code.(7) <- 1;
-code.(8) <- 8; code.(9) <- 1;
-code.(10) <- 3;
-code.(11) <- 5; code.(12) <- 3;
-code.(13) <- 9;
+code.(5) <- 6; code.(6) <- 0;
+code.(7) <- 4; code.(8) <- 1;
+code.(9) <- 8; code.(10) <- 1;
+code.(11) <- 3;
+code.(12) <- 5; code.(13) <- 3;
+code.(14) <- 9;
 let st = Array.make 10 0 in
-st.(0) <- 220000;
+st.(0) <- 100;
 let s = get_current_millis () in
 let res = (interp st 1 code 3) in
 let e = get_current_millis () in
 print_int (e - s); print_newline ()
-(*; print_int res *)
+(* ;print_int res *)

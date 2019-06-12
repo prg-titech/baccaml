@@ -102,10 +102,8 @@ let compile_dyn trace_name =
   let () = close_in ic in
   if uname = "Linux" then
     Printf.sprintf
-      "gcc -m32 %s -DRUNTIME -o %s %s -shared -fPIC -ldl"
-      (match !Log.log_level with
-       | `Debug -> "-g"
-       | _ -> "-O2") so asm_name
+      "gcc -m32 -g -DRUNTIME -o %s %s -shared -fPIC -ldl"
+      so asm_name
     |> Unix.system
     |> function
         Unix.WEXITED (i) when i = 0 -> Ok trace_name
@@ -225,16 +223,16 @@ let exec_dyn_arg3 ~name ~arg1 ~arg2 ~arg3 =
 let jit_exec pc st_ptr sp =
   match Trace_list.find_opt pc with
   | Some (tname) ->
-     Printf.printf "executing %s at pc: %d ...\n" tname pc;
+     Printf.printf "[tj] executing %s at pc: %d ...\n" tname pc;
      let s = Unix.gettimeofday () in
      exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
      let e = Unix.gettimeofday () in
-     Printf.printf "ellapsed time: %f ms\n" ((e -. s) *. 1000.0);
+     Printf.printf "[tj] ellapsed time: %f ms\n" ((e -. s) *. 1000.0);
      flush stdout
   | None -> ()
 
 let jit_entry bytecode stack pc sp bc_ptr st_ptr =
-  print_arr string_of_int stack ~notation:(Some "stack") ;
+  (* print_arr string_of_int stack ~notation:(Some "stack") ; *)
   if !Config.jit_flag = `Off then ()
   else if Trace_list.over_threshold pc then
     begin
@@ -259,6 +257,8 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   else Trace_list.count_up pc
 
 let jit_mj_call bytecode stack pc sp bc_ptr st_ptr =
+  print_arr string_of_int stack ~notation:(Some "stack") ;
+  print_arr string_of_int bytecode ~notation:(Some "bytecode") ;
   let ic = file_open () in
   try
     let p =
@@ -268,7 +268,15 @@ let jit_mj_call bytecode stack pc sp bc_ptr st_ptr =
     close_in ic;
     let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
     match p |> jit_method env with
-    | Ok name -> exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp
+    | Ok name ->
+       Printf.printf "[mj] executing %s at pc: %d ...\n" name pc;
+       let s = Unix.gettimeofday () in
+       let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
+       let e = Unix.gettimeofday () in
+       Printf.printf "[mj] ellapsed time: %f ms\n" ((e -. s) *. 1000.0);
+       Printf.printf "[mj] result: %d\n" r;
+       flush stdout;
+       r
     | Error e -> raise e
   with e -> close_in ic; raise e
 
