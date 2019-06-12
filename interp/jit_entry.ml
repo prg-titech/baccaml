@@ -117,20 +117,20 @@ let compile_dyn trace_name =
   else
     Error (Jit_compilation_failed)
 
-let emit_dyn : out_channel -> [`Meta_method | `Meta_tracing] -> Asm.fundef list -> 'a =
+let emit_dyn : out_channel -> [`Meta_method | `Meta_tracing] -> Asm.fundef list -> unit =
   fun oc typ traces ->
   match typ with
   | `Meta_tracing ->
      (try
         traces
         |> List.iter (fun trace ->
-               trace |> Simm.h |> RegAlloc.h |> Emit.h_cinterop oc);
+               trace |> Simm.h |> RegAlloc.h |> Emit.h_cinterop oc)
       with e -> close_out oc; raise e)
   | `Meta_method ->
      (try
         traces
         |> List.iter (fun trace ->
-               trace |> Simm.h |> RegAlloc.h |> Emit.h_cinterop_mj oc);
+               trace |> Simm.h |> RegAlloc.h |> Emit.h_cinterop_mj oc)
       with e -> close_out oc; raise e)
 
 type env_jit =
@@ -231,15 +231,16 @@ let exec_dyn_arg3 ~name ~arg1 ~arg2 ~arg3 =
 
 let jit_exec pc st_ptr sp =
   if !Config.jit_flag = `Off then ()
-  else match Trace_list.find_opt pc with
-  | Some (tname) ->
-     Printf.printf "[tj] executing %s at pc: %d ...\n" tname pc;
-     let s = Unix.gettimeofday () in
-     exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
-     let e = Unix.gettimeofday () in
-     Printf.printf "[tj] ellapsed time: %f ms\n" ((e -. s) *. 1000.0);
-     flush stdout
-  | None -> ()
+  else
+    match Trace_list.find_opt pc with
+    | Some (tname) ->
+       Printf.printf "[tj] executing %s at pc: %d ...\n" tname pc;
+       let s = Unix.gettimeofday () in
+       exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
+       let e = Unix.gettimeofday () in
+       Printf.printf "[tj] ellapsed time: %f ms\n" ((e -. s) *. 1000.0);
+       flush stdout
+    | None -> ()
 
 let jit_entry bytecode stack pc sp bc_ptr st_ptr =
   print_arr string_of_int stack ~notation:(Some "stack") ;
@@ -300,9 +301,9 @@ let jit_mj_call bytecode stack pc sp bc_ptr st_ptr =
        let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
        match p |> jit_method env with
        | Ok name ->
+          Printf.printf "[mj] compiled %s at pc: %d\n" name pc; flush stdout;
           Method_list.register (pc, name);
-          let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
-          r
+          exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp
        | Error e -> raise e
      with e -> close_in ic; raise e
 
