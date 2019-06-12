@@ -9,6 +9,8 @@ extern void min_caml_start(char *, char *);
 
 extern void call_caml_jit_entry(int **x) asm ("call_caml_jit_entry");
 
+extern void call_caml_jit_exec(int, int *, int) asm ("call_caml_jit_exec");
+
 extern int get_current_millis(void) asm ("min_caml_get_current_millis");
 
 value init_f(int n) {
@@ -28,6 +30,15 @@ void call_caml_jit_entry(int **x) {
   ml_args[4] = Val_hp(x[0]);
   ml_args[5] = Val_hp(x[1]);
   caml_callbackN(*jit_entry_closure, 6, ml_args);
+  return;
+}
+
+void call_caml_jit_exec(int pc, int *st_ptr, int sp) {
+  static value * jit_exec_closure = NULL;
+  if (jit_exec_closure == NULL) {
+    jit_exec_closure = caml_named_value("jit_exec");
+  }
+  caml_callback3(*jit_exec_closure, Val_int(pc), Val_hp(st_ptr), Val_int(sp));
   return;
 }
 

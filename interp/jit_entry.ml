@@ -254,8 +254,7 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
            raise e
         end;
         Trace_list.make_compiled pc
-      else
-        jit_exec pc st_ptr sp
+      else ()
     end
   else Trace_list.count_up pc
 

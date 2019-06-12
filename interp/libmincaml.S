@@ -272,6 +272,14 @@ min_caml_can_enter_jit:
     ret
     .globl min_caml_jit_merge_point
 min_caml_jit_merge_point:
+    pushl   %ebp
+    movl    %esp, %ebp
+    pushl   %ecx
+    pushl   %ebx
+    pushl   %eax
+    call    call_caml_jit_exec
+    movl    %ebp, %esp
+    popl    %ebp
     ret
     .globl min_caml_trace_entry
 min_caml_trace_entry:
