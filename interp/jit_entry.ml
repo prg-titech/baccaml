@@ -289,7 +289,11 @@ end
 let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
   match Method_list.find_opt pc with
   | Some name ->
-     exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp
+     let s = Unix.gettimeofday () in
+     let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
+     let e = Unix.gettimeofday () in
+     Printf.printf "[mj] elapced time: %fms\n" ((e -. s) *. 1000.); flush stdout;
+     r
   | None ->
      let ic = file_open () in
      try
@@ -301,9 +305,13 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
        let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
        match p |> jit_method env with
        | Ok name ->
-          Printf.printf "[mj] compiled %s at pc: %d\n" name pc; flush stdout;
+          Printf.printf "[mj] compiled %s at pc: %d\n" name pc;
           Method_list.register (pc, name);
-          exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp
+          let s = Unix.gettimeofday () in
+          let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
+          let e = Unix.gettimeofday () in
+          Printf.printf "[mj] elapced time: %fms\n" ((e -. s) *. 1000.); flush stdout;
+          r
        | Error e -> raise e
      with e -> close_in ic; raise e
 
