@@ -152,12 +152,7 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let mem =
     make_mem ~bc_addr:Config.bc_tmp_addr ~st_addr:Config.st_tmp_addr bytecode stack
   in
-  let pc_method_entry =
-    bytecode |> Array.to_list
-    |> List.mapi (fun i a -> (i, a))
-    |> List.find (fun (i, a) -> a = Config.pc_method_annot_inst)
-    |> fst
-  in
+  let pc_method_entry = pc in
   let pc_ir_addr = get_ir_addr args "pc" in
   let sp_ir_addr = get_ir_addr args "sp" in
   let bc_ir_addr = get_ir_addr args "bytecode" in
