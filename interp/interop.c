@@ -16,10 +16,10 @@ value init_f(int n) {
 }
 
 void call_caml_jit_entry(int *st, int sp, int *bc, int pc) {
-  static value * jit_entry_closure = NULL;
+  static value * jit_tracing_entry_closure = NULL;
   value ml_args[6];
-  if (jit_entry_closure == NULL) {
-    jit_entry_closure = caml_named_value("jit_entry");
+  if (jit_tracing_entry_closure == NULL) {
+    jit_tracing_entry_closure = caml_named_value("jit_tracing_entry");
   }
   ml_args[0] = caml_alloc_array(init_f, bc);
   ml_args[1] = caml_alloc_array(init_f, st);
@@ -27,7 +27,7 @@ void call_caml_jit_entry(int *st, int sp, int *bc, int pc) {
   ml_args[3] = Val_int(sp);
   ml_args[4] = Val_hp(bc);
   ml_args[5] = Val_hp(st);
-  caml_callbackN(*jit_entry_closure, 6, ml_args);
+  caml_callbackN(*jit_tracing_entry_closure, 6, ml_args);
   return;
 }
 
@@ -41,10 +41,10 @@ void call_caml_jit_exec(int pc, int *st_ptr, int sp) {
 }
 
 int call_caml_mj_call(int *st, int sp, int *bc, int pc) {
-  static value * jit_mj_call_closure = NULL;
+  static value * jit_method_call_closure = NULL;
   value ml_args[6];
-  if (jit_mj_call_closure == NULL) {
-    jit_mj_call_closure = caml_named_value("jit_mj_call");
+  if (jit_method_call_closure == NULL) {
+    jit_method_call_closure = caml_named_value("jit_method_call");
   }
   ml_args[0] = caml_alloc_array(init_f, bc);
   ml_args[1] = caml_alloc_array(init_f, st);
@@ -52,5 +52,5 @@ int call_caml_mj_call(int *st, int sp, int *bc, int pc) {
   ml_args[3] = Val_int(sp);
   ml_args[4] = Val_hp(bc);
   ml_args[5] = Val_hp(st);
-  return Int_val(caml_callbackN(*jit_mj_call_closure, 6, ml_args));
+  return Int_val(caml_callbackN(*jit_method_call_closure, 6, ml_args));
 }

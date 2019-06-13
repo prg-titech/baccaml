@@ -242,7 +242,7 @@ let jit_exec pc st_ptr sp =
        flush stdout
     | None -> ()
 
-let jit_entry bytecode stack pc sp bc_ptr st_ptr =
+let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
   print_arr string_of_int stack ~notation:(Some "stack") ;
   if !Config.jit_flag = `Off then ()
   else if Trace_list.over_threshold pc then
@@ -286,7 +286,7 @@ module Method_list = struct
 
 end
 
-let jit_mj_call bytecode stack pc sp bc_ptr st_ptr =
+let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
   match Method_list.find_opt pc with
   | Some name ->
      exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp
@@ -313,6 +313,6 @@ let () =
      ("--debug", Arg.Unit (fun _ -> Log.log_level := `Debug), "enable debug mode")]
     (fun file -> Config.file_name := Some file)
     ("Usage: " ^ Sys.argv.(0) ^ " [--options] [your interp]");
-  Callback.register "jit_entry" jit_entry;
+  Callback.register "jit_tracing_entry" jit_tracing_entry;
   Callback.register "jit_exec" jit_exec;
-  Callback.register "jit_mj_call" jit_mj_call;
+  Callback.register "jit_method_call" jit_method_call;
