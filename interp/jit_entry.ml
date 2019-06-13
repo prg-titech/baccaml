@@ -308,7 +308,7 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
 
 let () =
   Arg.parse
-    [("--jit-off", Arg.Unit (fun _ -> Config.jit_flag := `Off), "disable jit compilation");
+    [("--no-jit", Arg.Unit (fun _ -> Config.jit_flag := `Off), "disable jit compilation");
      ("--debug", Arg.Unit (fun _ -> Log.log_level := `Debug), "enable debug mode")]
     (fun file -> Config.file_name := Some file)
     ("Usage: " ^ Sys.argv.(0) ^ " [--options] [your interp]");
