@@ -102,10 +102,8 @@ let compile_dyn trace_name =
   let () = close_in ic in
   if uname = "Linux" then
     Printf.sprintf
-      "gcc -m32 %s -DRUNTIME -o %s %s -shared -fPIC -ldl"
-      (match !Log.log_level with
-       | `Debug -> "-g"
-       | _ -> "-O2") so asm_name
+      "gcc -m32 -g -DRUNTIME -o %s %s -shared -fPIC -ldl"
+      so asm_name
     |> Unix.system
     |> function
         Unix.WEXITED (i) when i = 0 -> Ok trace_name
@@ -119,12 +117,21 @@ let compile_dyn trace_name =
   else
     Error (Jit_compilation_failed)
 
-let emit_dyn (oc : out_channel) (traces : Asm.fundef list) : 'a =
-  try
-    traces
-    |> List.iter (fun trace ->
-           trace |> Simm.h |> RegAlloc.h |> Emit.h_cinterop oc);
-  with e -> close_out oc; raise e
+let emit_dyn : out_channel -> [`Meta_method | `Meta_tracing] -> Asm.fundef list -> unit =
+  fun oc typ traces ->
+  match typ with
+  | `Meta_tracing ->
+     (try
+        traces
+        |> List.iter (fun trace ->
+               trace |> Simm.h |> RegAlloc.h |> Emit.h_cinterop oc)
+      with e -> close_out oc; raise e)
+  | `Meta_method ->
+     (try
+        traces
+        |> List.iter (fun trace ->
+               trace |> Simm.h |> RegAlloc.h |> Emit.h_cinterop_mj oc)
+      with e -> close_out oc; raise e)
 
 type env_jit =
   { bytecode: int array
@@ -145,12 +152,7 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let mem =
     make_mem ~bc_addr:Config.bc_tmp_addr ~st_addr:Config.st_tmp_addr bytecode stack
   in
-  let pc_method_entry =
-    bytecode |> Array.to_list
-    |> List.mapi (fun i a -> (i, a))
-    |> List.find (fun (i, a) -> a = Config.pc_method_annot_inst)
-    |> fst
-  in
+  let pc_method_entry = pc in
   let pc_ir_addr = get_ir_addr args "pc" in
   let sp_ir_addr = get_ir_addr args "sp" in
   let bc_ir_addr = get_ir_addr args "bytecode" in
@@ -170,7 +172,7 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let traces = JM.run prog reg mem env in
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
-    emit_dyn oc traces; close_out oc;
+    emit_dyn oc `Meta_method traces; close_out oc;
     compile_dyn (Trace_name.value trace_name)
   with e ->
     close_out oc; raise e
@@ -204,7 +206,7 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   Log.debug (Emit_virtual.string_of_fundef trace);
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
-    emit_dyn oc [trace];
+    emit_dyn oc `Meta_tracing [trace];
     close_out oc;
     compile_dyn (Trace_name.value trace_name)
   with e ->
@@ -223,17 +225,19 @@ let exec_dyn_arg3 ~name ~arg1 ~arg2 ~arg3 =
     ~arg1:arg1 ~arg2:arg2 ~arg3:arg3
 
 let jit_exec pc st_ptr sp =
-  match Trace_list.find_opt pc with
-  | Some (tname) ->
-     Printf.printf "executing %s at pc: %d ...\n" tname pc;
-     let s = Unix.gettimeofday () in
-     exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
-     let e = Unix.gettimeofday () in
-     Printf.printf "ellapsed time: %f ms\n" ((e -. s) *. 1000.0);
-     flush stdout
-  | None -> ()
+  if !Config.jit_flag = `Off then ()
+  else
+    match Trace_list.find_opt pc with
+    | Some (tname) ->
+       Printf.printf "[tj] executing %s at pc: %d ...\n" tname pc;
+       let s = Unix.gettimeofday () in
+       exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
+       let e = Unix.gettimeofday () in
+       Printf.printf "[tj] ellapsed time: %f ms\n" ((e -. s) *. 1000.0);
+       flush stdout
+    | None -> ()
 
-let jit_entry bytecode stack pc sp bc_ptr st_ptr =
+let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
   print_arr string_of_int stack ~notation:(Some "stack") ;
   if !Config.jit_flag = `Off then ()
   else if Trace_list.over_threshold pc then
@@ -242,7 +246,10 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
         let prog =
           let ic = file_open () in
           try
-            let v = ic |> Lexing.from_channel |> Util.virtualize in
+            let v =
+              ic |> Lexing.from_channel |> Util.virtualize
+              |> Jit_annot.annotate `Meta_tracing
+            in
             close_in ic; v
           with e -> close_in ic; raise e
         in
@@ -254,9 +261,54 @@ let jit_entry bytecode stack pc sp bc_ptr st_ptr =
            raise e
         end;
         Trace_list.make_compiled pc
-      else ()
+      else jit_exec pc st_ptr sp
     end
   else Trace_list.count_up pc
+
+module Method_list = struct
+
+  type t = (int, string) Hashtbl.t
+
+  let tbl = Hashtbl.create 100
+
+  let register (pc, name) =
+    match Hashtbl.find_opt tbl pc with
+    | Some name -> ()
+    | None -> Hashtbl.add tbl pc name
+
+  let find_opt pc =
+    Hashtbl.find_opt tbl pc
+
+end
+
+let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
+  match Method_list.find_opt pc with
+  | Some name ->
+     let s = Unix.gettimeofday () in
+     let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
+     let e = Unix.gettimeofday () in
+     Printf.printf "[mj] elapced time: %fms\n" ((e -. s) *. 1000.); flush stdout;
+     r
+  | None ->
+     let ic = file_open () in
+     try
+       let p =
+         ic |> Lexing.from_channel |> Util.virtualize
+         |> Jit_annot.annotate `Meta_method
+       in
+       close_in ic;
+       let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+       match p |> jit_method env with
+       | Ok name ->
+          Printf.printf "[mj] compiled %s at pc: %d\n" name pc;
+          Method_list.register (pc, name);
+          let s = Unix.gettimeofday () in
+          let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
+          let e = Unix.gettimeofday () in
+          Printf.printf "[mj] elapced time: %fms\n" ((e -. s) *. 1000.); flush stdout;
+          r
+       | Error e -> raise e
+     with e -> close_in ic; raise e
 
 let () =
   Arg.parse
@@ -264,5 +316,6 @@ let () =
      ("--debug", Arg.Unit (fun _ -> Log.log_level := `Debug), "enable debug mode")]
     (fun file -> Config.file_name := Some file)
     ("Usage: " ^ Sys.argv.(0) ^ " [--options] [your interp]");
-  Callback.register "jit_entry" jit_entry;
+  Callback.register "jit_tracing_entry" jit_tracing_entry;
   Callback.register "jit_exec" jit_exec;
+  Callback.register "jit_method_call" jit_method_call;
