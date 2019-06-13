@@ -6,7 +6,7 @@
 
 (executable
  (name jit_entry)
- (modules trace_list jit_entry)
+ (modules jit_entry trace_list method_list)
  (libraries str unix dynload_stub minCaml jit utils)
  (flags (-annot -w -4-33-40-41))
  (modes

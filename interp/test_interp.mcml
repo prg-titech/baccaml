@@ -138,6 +138,7 @@ print_int (e - s); print_newline ();
 
 (* fib *)
 let code = Array.make 30 0 in
+save_bp ();
 code.(0) <- 15;
 code.(1) <- 16;
 code.(2) <- 4;

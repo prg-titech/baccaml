@@ -291,22 +291,6 @@ let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
     end
   else Trace_list.count_up pc
 
-module Method_list = struct
-
-  type t = (int, string) Hashtbl.t
-
-  let tbl = Hashtbl.create 100
-
-  let register (pc, name) =
-    match Hashtbl.find_opt tbl pc with
-    | Some name -> ()
-    | None -> Hashtbl.add tbl pc name
-
-  let find_opt pc =
-    Hashtbl.find_opt tbl pc
-
-end
-
 let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
   match Method_list.find_opt pc with
   | Some name ->
