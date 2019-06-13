@@ -18,7 +18,7 @@ module Config : sig
   val jit_flag : [`On | `Off] ref
 end = struct
   let file_name = ref None
-  let size = 10000
+  let size = 1000000
   (* TODO: specify extenally *)
   let greens = ["pc"; "bytecode"]
   let bc_tmp_addr = 0
@@ -145,6 +145,28 @@ let filter typ args = match typ with
     `Red -> args |> List.filter (fun a -> not (List.mem (String.get_name a) Config.greens))
   | `Green -> args |> List.filter (fun a -> List.mem (String.get_name a) Config.greens)
 
+let rec interp_of_mj_call trace_name t =
+  Asm.(
+    match t with
+    | Let (x, e, t) ->
+       begin match e with
+       | CallDir (id_l, args, fargs) when id_l = Id.L ("min_caml_mj_call") ->
+          Let (x, CallDir (Id.L (Trace_name.value trace_name), args, fargs),
+               interp_of_mj_call trace_name t)
+       | _ ->
+          Let (x, e, interp_of_mj_call trace_name t)
+       end
+    | Ans (e) ->
+       match e with
+       | IfEq (x, y, t1, t2) ->
+          Ans (IfEq (x, y, interp_of_mj_call trace_name t1, interp_of_mj_call trace_name t2))
+       | IfLE (x, y, t1, t2) ->
+          Ans (IfLE (x, y, interp_of_mj_call trace_name t1, interp_of_mj_call trace_name t2))
+       | IfGE (x, y, t1, t2) ->
+          Ans (IfGE (x, y, interp_of_mj_call trace_name t1, interp_of_mj_call trace_name t2))
+       | _ -> Ans (e)
+  )
+
 let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let prog = Jit_annot.annotate `Meta_method prog in
   let Asm.{args; body} = Jit_util.find_fundef' prog "interp" in
@@ -170,9 +192,17 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
     ; JM.merge_pc = pc_method_entry }
   in
   let traces = JM.run prog reg mem env in
+  List.iter (fun t -> Log.debug (Emit_virtual.string_of_fundef t)) traces;
+  let traces' =
+    traces  |> List.map (fun trace ->
+           let Asm.{name; args; fargs; body; ret} = trace in
+           let t = interp_of_mj_call trace_name body in
+           Asm.{name; args; fargs; body = t; ret})
+  in
+  List.iter (fun t -> Log.debug (Emit_virtual.string_of_fundef t)) traces';
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
-    emit_dyn oc `Meta_method traces; close_out oc;
+    emit_dyn oc `Meta_method traces'; close_out oc;
     compile_dyn (Trace_name.value trace_name)
   with e ->
     close_out oc; raise e
