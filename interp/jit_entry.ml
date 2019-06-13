@@ -243,25 +243,21 @@ let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
   else if Trace_list.over_threshold pc then
     begin
       if (Trace_list.not_compiled pc) then
-        let prog =
-          let ic = file_open () in
-          try
-            let v =
-              ic |> Lexing.from_channel |> Util.virtualize
-              |> Jit_annot.annotate `Meta_tracing
-            in
-            close_in ic; v
-          with e -> close_in ic; raise e
-        in
-        let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-        begin match prog |> jit_tracing env with
-        | Ok name ->
-           Trace_list.register (Content (pc, name))
-        | Error e ->
-           raise e
-        end;
-        Trace_list.make_compiled pc
-      else jit_exec pc st_ptr sp
+        let ic = file_open () in
+        try
+          let prog =
+            ic |> Lexing.from_channel |> Util.virtualize
+            |> Jit_annot.annotate `Meta_tracing
+          in
+          close_in ic;
+          let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+          match prog |> jit_tracing env with
+          | Ok name ->
+             Trace_list.register (Content (pc, name));
+             Trace_list.make_compiled pc
+          | Error e -> raise e
+        with e -> close_in ic; raise e
+      else ()
     end
   else Trace_list.count_up pc
 
