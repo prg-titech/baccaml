@@ -2,7 +2,7 @@ open Utils
 open Runtime
 open Jit_runtime
 
-let main =
+let () =
   Arg.parse
     [("--no-jit", Arg.Unit (fun _ -> Config.jit_flag := `Off), "disable jit compilation");
      ("--debug", Arg.Unit (fun _ -> Log.log_level := `Debug), "enable debug mode")]
