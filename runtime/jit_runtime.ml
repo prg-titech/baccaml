@@ -5,27 +5,6 @@ open Jit
 
 exception Jit_compilation_failed
 
-module Config : sig
-  val file_name : string option ref
-  val size : int
-  val greens : string list
-  val bc_tmp_addr : int
-  val st_tmp_addr : int
-  val pc_method_annot_inst: int
-
-  val jit_flag : [`On | `Off] ref
-end = struct
-  let file_name = ref None
-  let size = 1000000
-  (* TODO: specify extenally *)
-  let greens = ["pc"; "bytecode"]
-  let bc_tmp_addr = 0
-  let st_tmp_addr = 100
-  let pc_method_annot_inst = 15
-
-  let jit_flag = ref `On
-end
-
 module Trace_name : sig
   type t = Trace_name of string
 
@@ -315,3 +294,8 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
           r
        | Error e -> raise e
      with e -> close_in ic; raise e
+
+let callbacks () =
+  Callback.register "jit_tracing_entry" jit_tracing_entry;
+  Callback.register "jit_exec" jit_exec;
+  Callback.register "jit_method_call" jit_method_call;
