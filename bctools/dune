@@ -10,10 +10,16 @@
  (name        bc_lib)
  (public_name baccaml.lib)
  (libraries jit base bc_front)
- (modules bc_lib)
- (flags (-w -4-33-40-41-42-43-34-44
-         -short-paths
-         -strict-sequence
-         -strict-formats
-         -short-paths
-         -keep-locs)))
+ (modules bc_lib))
+
+(executable
+ (name        baccaml)
+ (public_name baccaml)
+ (modules     baccaml)
+ (libraries str base jit bc_lib))
+
+(executable
+ (name        baccaml_builder)
+ (public_name baccaml_builder)
+ (modules     baccaml_builder)
+ (libraries   base jit bc_lib))
