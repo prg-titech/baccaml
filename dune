@@ -1,0 +1,5 @@
+(env
+ (dev
+  (flags (-annot -g -w K)))
+ (release
+  (flags (-w K -O3))))

@@ -1,0 +1,11 @@
+(library
+ (name dynload_stub)
+ (public_name baccaml.dybload_stub)
+ (modules dynload_stub)
+ (c_names dynloader))
+
+(library
+ (name runtime)
+ (public_name baccaml.runtime)
+ (modules jit_runtime trace_list method_list)
+ (libraries str unix dynload_stub minCaml jit utils))

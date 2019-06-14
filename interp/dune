@@ -1,18 +1,27 @@
-(library
- (name dynload_stub)
- (modules dynload_stub)
- (flags (-annot -g -w -4-33-40-41))
- (c_names dynloader))
-
 (executable
  (name jit_entry)
- (modules jit_entry trace_list method_list)
- (libraries str unix dynload_stub minCaml jit utils)
- (flags (-annot -w -4-33-40-41))
+ (public_name baccaml.entry)
+ (modules jit_entry)
+ (libraries runtime)
  (modes
   (native exe)
   (native object)
   (native shared_object)))
+
+(rule
+ (targets stub.c)
+ (deps ../runtime/stub.c)
+ (action (copy %{deps} %{targets})))
+
+(rule
+ (targets interop.c)
+ (deps ../runtime/interop.c)
+ (action (copy %{deps} %{targets})))
+
+(rule
+ (targets libmincaml.S)
+ (deps ../runtime/libmincaml.S)
+ (action (copy %{deps} %{targets})))
 
 (rule
  (targets test_interp.s)
