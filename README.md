@@ -27,7 +27,7 @@ To run the interpreter already defined, execute following commands.
 
 ```bash
 $ dune build interp/test_interp.exe
-$ dune exec interp/test_interp.exe interp/test_interp.mcml
+$ dune exec interp/test_interp.exe
 ```
 
 ## Debugging
