@@ -8,4 +8,4 @@
  (name runtime)
  (public_name baccaml.runtime)
  (modules jit_runtime config trace_list method_list)
- (libraries str unix dynload_stub minCaml jit utils))
+ (libraries str unix dynload_stub base jit utils))

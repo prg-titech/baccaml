@@ -3,7 +3,7 @@
  (public_name baccaml)
  (package     baccaml)
  (modules     baccaml)
- (libraries str minCaml jit bc_lib)
+ (libraries str base jit bc_lib)
  (flags (-w -4-33-40-41-42-43-34-44
          -short-paths
          -strict-sequence
@@ -15,7 +15,7 @@
  (name        baccaml_builder)
  (public_name baccaml_builder)
  (modules     baccaml_builder)
- (libraries   minCaml jit bc_lib)
+ (libraries   base jit bc_lib)
  (flags       (-w -4-33-40-41-42-43-34-44
                -short-paths
                -strict-sequence
@@ -28,11 +28,11 @@
  (public_name    min-caml)
  (flags          (-w -4-33-40-41))
  (modules        Min_caml)
- (libraries      minCaml bc_lib))
+ (libraries      base bc_lib))
 
 (executable
  (name           min_c)
  (public_name    min-c)
  (flags          (-w -4-33-40-41))
  (modules        min_c)
- (libraries      minCaml))
+ (libraries      base))

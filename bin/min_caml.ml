@@ -1,5 +1,5 @@
 open Utils
-open MinCaml
+open Base
 
 let output_file = ref None
 

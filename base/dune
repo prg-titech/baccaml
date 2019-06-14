@@ -4,7 +4,7 @@
 ; (menhir ((modules (parser))))
 
 (library
- (name           minCaml)
+ (name           base)
  (public_name    baccaml.base)
  (modules        (:standard \ anchor))
  (flags          (-annot -w -4-33-40-41))

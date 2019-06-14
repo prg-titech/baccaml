@@ -1,4 +1,4 @@
-open MinCaml
+open Base
 open Asm
 
 let trace_entry = "min_caml_trace_entry"

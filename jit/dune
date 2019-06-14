@@ -8,4 +8,4 @@
                 -strict-formats
                 -short-paths
                 -keep-locs))
- (libraries     str utils minCaml))
+ (libraries     str utils base))

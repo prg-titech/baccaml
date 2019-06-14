@@ -1,6 +1,6 @@
 open Utils
 open Std
-open MinCaml
+open Base
 open Jit
 
 exception Jit_compilation_failed

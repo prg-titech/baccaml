@@ -1,5 +1,5 @@
 open Utils
-open MinCaml
+open Base
 open Asm
 open Inlining
 open Renaming

@@ -1,4 +1,4 @@
-open MinCaml
+open Base
 
 val emit_trace :
   [< `Meta_method | `Meta_tracing ] ->

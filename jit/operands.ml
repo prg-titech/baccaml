@@ -1,4 +1,4 @@
-open MinCaml.Asm
+open Base.Asm
 
 exception Error
 

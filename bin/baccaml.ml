@@ -1,5 +1,5 @@
 open Utils
-open MinCaml
+open Base
 open Bc_lib
 open Bc_front
 open Jit

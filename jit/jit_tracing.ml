@@ -1,6 +1,6 @@
 open Utils
 open Std
-open MinCaml
+open Base
 open Asm
 open Inlining
 open Renaming

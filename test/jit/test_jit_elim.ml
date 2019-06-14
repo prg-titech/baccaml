@@ -1,5 +1,5 @@
 open OUnit2
-open MinCaml
+open Base
 open Jit
 
 let test_1 _ =

@@ -1,4 +1,4 @@
-open MinCaml
+open Base
 open Emit_c
 
 (*Generates the intermediate code for use in debugging the translation*)

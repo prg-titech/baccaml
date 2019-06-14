@@ -1,4 +1,4 @@
-open MinCaml
+open Base
 
 val colorize_reg :
   (string, int) Hashtbl.t ->
