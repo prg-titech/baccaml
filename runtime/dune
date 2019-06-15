@@ -7,5 +7,5 @@
 (library
  (name runtime)
  (public_name baccaml.runtime)
- (modules jit_runtime config trace_list method_list)
+ (modules (:standard \ dynload_stub))
  (libraries str unix dynload_stub base jit utils))
