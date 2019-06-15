@@ -6,6 +6,10 @@ open Internal
 
 exception Jit_compilation_failed
 
+module Method_prof = Make_prof(struct let threshold = 100 end)
+
+module Trace_prof = Make_prof(struct let threshold = 100 end)
+
 module Trace_name : sig
   type t = Trace_name of string
 
@@ -248,7 +252,7 @@ let exec_dyn_arg3 ~name ~arg1 ~arg2 ~arg3 =
 let jit_exec pc st_ptr sp =
   if !Config.jit_flag = `Off then ()
   else
-    match Trace_list.find_opt pc with
+    match Trace_prof.find_opt pc with
     | Some (tname) ->
        Printf.printf "[tj] executing %s at pc: %d ...\n" tname pc;
        let s = Unix.gettimeofday () in
@@ -261,29 +265,28 @@ let jit_exec pc st_ptr sp =
 let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
   print_arr string_of_int stack ~notation:(Some "stack") ;
   if !Config.jit_flag = `Off then ()
-  else if Trace_list.over_threshold pc then
+  else if Trace_prof.over_threshold pc then
     begin
-      if (Trace_list.not_compiled pc) then
-        let ic = file_open () in
-        try
-          let prog =
-            ic |> Lexing.from_channel |> Util.virtualize
-            |> Jit_annot.annotate `Meta_tracing
-          in
-          close_in ic;
-          let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-          match prog |> jit_tracing env with
-          | Ok name ->
-             Trace_list.register (Content (pc, name));
-             Trace_list.make_compiled pc
-          | Error e -> raise e
-        with e -> close_in ic; raise e
-      else ()
+      match Trace_prof.find_opt pc with
+      | Some _ -> ()
+      | None ->
+         let ic = file_open () in
+         try
+           let prog =
+             ic |> Lexing.from_channel |> Util.virtualize
+             |> Jit_annot.annotate `Meta_tracing
+           in
+           close_in ic;
+           let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+           match prog |> jit_tracing env with
+           | Ok name -> Trace_prof.register (pc, name);
+           | Error e -> raise e
+         with e -> close_in ic; raise e
     end
-  else Trace_list.count_up pc
+  else Trace_prof.count_up pc
 
 let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
-  match Method_list.find_opt pc with
+    match Method_prof.find_opt pc with
   | Some name ->
      let s = Unix.gettimeofday () in
      let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
@@ -302,7 +305,7 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
        match p |> jit_method env with
        | Ok name ->
           Printf.printf "[mj] compiled %s at pc: %d\n" name pc;
-          Method_list.register (pc, name);
+          Method_prof.register (pc, name);
           let s = Unix.gettimeofday () in
           let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
           let e = Unix.gettimeofday () in
