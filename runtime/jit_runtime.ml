@@ -2,6 +2,7 @@ open Utils
 open Std
 open Base
 open Jit
+open Internal
 
 exception Jit_compilation_failed
 
@@ -25,6 +26,17 @@ end = struct
     Trace_name (Id.genid name)
 
   let value = function Trace_name s -> s
+end
+
+module Internal_conf = struct
+  let size = 1000000
+
+  (* TODO: specify extenally *)
+  let greens = ["pc"; "bytecode"]
+
+  let bc_tmp_addr = 0
+
+  let st_tmp_addr = 100
 end
 
 let print_arr ?notation:(nt = None) f arr =
@@ -57,18 +69,20 @@ let get_so_name : string -> string =
       raise Exit
 
 let make_reg prog args sp =
-  let reg = Array.make Config.size (Jit_util.Red 0) in
+  let reg = Array.make Internal_conf.size (Jit_util.Red 0) in
   let Asm.{args; body= t} = Jit_util.find_fundef' prog "interp" in
   Asm.fv t @ args
   |> List.iteri (fun i a ->
-      if List.mem (String.get_name a) Config.greens then reg.(i) <- Green 0
+      if List.mem (String.get_name a) Internal_conf.greens then reg.(i) <- Green 0
       else reg.(i) <- Red 0 ) ;
   reg
 
 let make_mem ~bc_addr ~st_addr bytecode stack =
-  let mem = Array.make Config.size (Jit_util.Green 0) in
-  bytecode |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Jit_util.Green a) ;
-  stack |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Jit_util.Red a) ;
+  let mem = Array.make Internal_conf.size (Jit_util.Green 0) in
+  bytecode
+  |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Jit_util.Green a) ;
+  stack
+  |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Jit_util.Red a) ;
   mem
 
 let compile_dyn trace_name =
@@ -118,9 +132,11 @@ type env_jit =
   ; bc_ptr: int
   ; st_ptr: int }
 
-let filter typ args = match typ with
-    `Red -> args |> List.filter (fun a -> not (List.mem (String.get_name a) Config.greens))
-  | `Green -> args |> List.filter (fun a -> List.mem (String.get_name a) Config.greens)
+let filter typ = match typ with
+    `Red ->
+     List.filter (fun a -> not (List.mem (String.get_name a) Internal_conf.greens))
+  | `Green ->
+     List.filter (fun a -> List.mem (String.get_name a) Internal_conf.greens)
 
 let rec tname_of_mj_call tname t =
   Asm.(
@@ -148,7 +164,7 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let Asm.{args; body} = Jit_util.find_fundef' prog "interp" in
   let reg = make_reg prog args sp in
   let mem =
-    make_mem ~bc_addr:Config.bc_tmp_addr ~st_addr:Config.st_tmp_addr bytecode stack
+    Internal_conf.(make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack)
   in
   let pc_method_entry = pc in
   let pc_ir_addr = get_ir_addr args "pc" in
@@ -157,8 +173,8 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let st_ir_addr = get_ir_addr args "stack" in
   reg.(pc_ir_addr) <- Green pc_method_entry ;
   reg.(sp_ir_addr) <- Red sp ;
-  reg.(bc_ir_addr) <- Green Config.bc_tmp_addr ;
-  reg.(st_ir_addr) <- Red Config.st_tmp_addr ;
+  reg.(bc_ir_addr) <- Green Internal_conf.bc_tmp_addr ;
+  reg.(st_ir_addr) <- Red Internal_conf.st_tmp_addr ;
   let module JM = Jit_method in
   let trace_name = Trace_name.gen `Meta_method in
   let env =
@@ -187,7 +203,7 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let Asm.{args; body} = Jit_util.find_fundef' prog "interp" in
   let reg = make_reg prog args sp in
   let mem =
-    Config.(make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack)
+    Internal_conf.(make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack)
   in
   let pc_ir_addr = get_ir_addr args "pc" in
   let sp_ir_addr = get_ir_addr args "sp" in
@@ -195,8 +211,8 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let st_ir_addr = get_ir_addr args "stack" in
   reg.(pc_ir_addr) <- Green pc ;
   reg.(sp_ir_addr) <- Red sp ;
-  reg.(bc_ir_addr) <- Green Config.bc_tmp_addr ;
-  reg.(st_ir_addr) <- Red Config.st_tmp_addr ;
+  reg.(bc_ir_addr) <- Green Internal_conf.bc_tmp_addr ;
+  reg.(st_ir_addr) <- Red Internal_conf.st_tmp_addr ;
   let module JT = Jit_tracing in
   let trace_name = Trace_name.gen `Meta_tracing in
   let env =
