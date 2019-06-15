@@ -7,7 +7,6 @@ module Make_prof (M_prof : Prof) = struct
 
   type pc = int
   type name = string
-  let threshold = 100
   let count_tbl = Hashtbl.create 100
   let compiled_tbl = Hashtbl.create 100
 
