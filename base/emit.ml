@@ -273,65 +273,52 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
   stackmap := [];
   g oc (Tail, e)
 
-let h_cinterop oc ({name= Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
-  let cname = Filename.chop_extension x in
-  Printf.fprintf oc ".code32\n";
-  Printf.fprintf oc ".data\n";
-  Printf.fprintf oc ".balign\t8\n";
-  Printf.fprintf oc ".text\n";
-  Printf.fprintf oc ".globl %s\n" cname;
-  Printf.fprintf oc "%s:\n" cname;
-  Printf.fprintf oc "\tpushl\t%%eax\n";
-  Printf.fprintf oc "\tpushl\t%%ebx\n";
-  Printf.fprintf oc "\tpushl\t%%ecx\n";
-  Printf.fprintf oc "\tpushl\t%%edx\n";
-  Printf.fprintf oc "\tpushl\t%%esi\n";
-  Printf.fprintf oc "\tpushl\t%%edi\n";
-  Printf.fprintf oc "\tpushl\t%%ebp\n";
-  Printf.fprintf oc "\tmovl\t32(%%esp),%s\n" regs.(0);
-  Printf.fprintf oc "\tmovl\t36(%%esp),%s\n" regs.(1);
-  Printf.fprintf oc "\tcall\t%s\n" x;
-  Printf.fprintf oc "\tpopl\t%%ebp\n";
-  Printf.fprintf oc "\tpopl\t%%edi\n";
-  Printf.fprintf oc "\tpopl\t%%esi\n";
-  Printf.fprintf oc "\tpopl\t%%edx\n";
-  Printf.fprintf oc "\tpopl\t%%ecx\n";
-  Printf.fprintf oc "\tpopl\t%%ebx\n";
-  Printf.fprintf oc "\tpopl\t%%eax\n";
-  Printf.fprintf oc "\tret\n";
-  h oc fundef
-
-let h_cinterop_mj oc ({name= Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
-  let cname = Filename.chop_extension x in
-  Printf.fprintf oc ".code32\n";
-  Printf.fprintf oc ".data\n";
-  Printf.fprintf oc "mj_result:\n";
-  Printf.fprintf oc "\t.long\t0x0\n";
-  Printf.fprintf oc ".balign\t8\n";
-  Printf.fprintf oc ".text\n";
-  Printf.fprintf oc ".globl %s\n" cname;
-  Printf.fprintf oc "%s:\n" cname;
-  Printf.fprintf oc "\tpushl\t%%eax\n";
-  Printf.fprintf oc "\tpushl\t%%ebx\n";
-  Printf.fprintf oc "\tpushl\t%%ecx\n";
-  Printf.fprintf oc "\tpushl\t%%edx\n";
-  Printf.fprintf oc "\tpushl\t%%esi\n";
-  Printf.fprintf oc "\tpushl\t%%edi\n";
-  Printf.fprintf oc "\tpushl\t%%ebp\n";
-  Printf.fprintf oc "\tmovl\t32(%%esp),%s\n" regs.(0);
-  Printf.fprintf oc "\tmovl\t36(%%esp),%s\n" regs.(1);
-  Printf.fprintf oc "\tcall\t%s\n" x;
-  Printf.fprintf oc "\tmovl\t%%eax, mj_result\n";
-  Printf.fprintf oc "\tpopl\t%%ebp\n";
-  Printf.fprintf oc "\tpopl\t%%edi\n";
-  Printf.fprintf oc "\tpopl\t%%esi\n";
-  Printf.fprintf oc "\tpopl\t%%edx\n";
-  Printf.fprintf oc "\tpopl\t%%ecx\n";
-  Printf.fprintf oc "\tpopl\t%%ebx\n";
-  Printf.fprintf oc "\tpopl\t%%eax\n";
-  Printf.fprintf oc "\tmovl\tmj_result, %%eax\n";
-  Printf.fprintf oc "\tret\n";
-  h oc fundef
+module Interop : sig
+  val h : out_channel -> [< `Meta_method | `Meta_tracing ] -> Asm.fundef -> unit
+end = struct
+  let h oc typ ({name= Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
+    let cname = Filename.chop_extension x in
+    Printf.fprintf oc ".code32\n";
+    Printf.fprintf oc ".data\n";
+    (match typ with
+     | `Meta_method ->
+        Printf.fprintf oc "mj_result:\n";
+        Printf.fprintf oc "\t.long\t0x0\n";
+     | `Meta_tracing -> ());
+    Printf.fprintf oc ".balign\t8\n";
+    Printf.fprintf oc ".text\n";
+    Printf.fprintf oc ".globl %s\n" cname;
+    Printf.fprintf oc "%s:\n" cname;
+    Printf.fprintf oc "\tpushl\t%%eax\n";
+    Printf.fprintf oc "\tpushl\t%%ebx\n";
+    Printf.fprintf oc "\tpushl\t%%ecx\n";
+    Printf.fprintf oc "\tpushl\t%%edx\n";
+    Printf.fprintf oc "\tpushl\t%%esi\n";
+    Printf.fprintf oc "\tpushl\t%%edi\n";
+    Printf.fprintf oc "\tpushl\t%%ebp\n";
+    Printf.fprintf oc "\tmovl\t32(%%esp),%s\n" regs.(0);
+    Printf.fprintf oc "\tmovl\t36(%%esp),%s\n" regs.(1);
+    Printf.fprintf oc "\tcall\t%s\n" x;
+    (match typ with
+     | `Meta_method ->
+        Printf.fprintf oc "\tmovl\t%%eax, mj_result\n"
+     | `Meta_tracing ->
+        ());
+    Printf.fprintf oc "\tpopl\t%%ebp\n";
+    Printf.fprintf oc "\tpopl\t%%edi\n";
+    Printf.fprintf oc "\tpopl\t%%esi\n";
+    Printf.fprintf oc "\tpopl\t%%edx\n";
+    Printf.fprintf oc "\tpopl\t%%ecx\n";
+    Printf.fprintf oc "\tpopl\t%%ebx\n";
+    Printf.fprintf oc "\tpopl\t%%eax\n";
+    (match typ with
+     | `Meta_method ->
+        Printf.fprintf oc "\tmovl\tmj_result, %%eax\n";
+     | `Meta_tracing ->
+        ());
+    Printf.fprintf oc "\tret\n";
+    h oc fundef
+end
 
 let f oc (Prog(data, fundefs, e)) =
   (* Format.eprintf "generating assembly...@."; *)

@@ -114,19 +114,13 @@ let compile_dyn trace_name =
 
 let emit_dyn : out_channel -> [`Meta_method | `Meta_tracing] -> Asm.fundef list -> unit =
   fun oc typ traces ->
-  match typ with
-  | `Meta_tracing ->
-     (try
-        traces
-        |> List.iter (fun trace ->
-               trace |> Simm.h |> RegAlloc.h |> Emit.h_cinterop oc)
-      with e -> close_out oc; raise e)
-  | `Meta_method ->
-     (try
-        traces
-        |> List.iter (fun trace ->
-               trace |> Simm.h |> RegAlloc.h |> Emit.h_cinterop_mj oc)
-      with e -> close_out oc; raise e)
+  (try
+     traces
+     |> List.iter (fun trace ->
+            Simm.h trace
+            |> RegAlloc.h
+            |> Emit.Interop.h oc typ)
+   with e -> close_out oc; raise e)
 
 type env_jit =
   { bytecode: int array
