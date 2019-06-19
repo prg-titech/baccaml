@@ -308,16 +308,3 @@ min_caml_mj_call:
     movl    %ebp, %esp
     popl    %ebp
     ret
-.globl min_caml_func
-min_caml_func:
-    pushl   %ebp
-    movl    %esp, %ebp
-    pushl   %esi
-    pushl   %edx
-    pushl   %ebx
-    pushl   %ebx
-    pushl   %eax
-    jmp     %esi
-    movl    %ebp, %esp
-    popl    %ebp
-    ret
