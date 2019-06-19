@@ -256,6 +256,14 @@ let jit_exec pc st_ptr sp =
        flush stdout
     | None -> ()
 
+let jit_exec_method pc st_ptr sp =
+  if !Config.jit_flag = `Off then ()
+  else
+    let ic = file_open () in
+    let prog = Lexing.from_channel ic |> Util.virtualize |> Jit_annot.annotate `Meta_method in
+    let intep = Jit_util.find_fundef' prog "interp" in
+    ()
+
 let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
   print_arr string_of_int stack ~notation:(Some "stack") ;
   if !Config.jit_flag = `Off then ()

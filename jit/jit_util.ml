@@ -6,11 +6,8 @@ exception Error
 let zero = "zero.0"
 
 type value = Red of int | Green of int | LightGreen of int
-
 type reg = value array
-
 type mem = value array
-
 type jit_result = Specialized of value | Not_specialized of exp * value
 
 let int_of_id_t = function
@@ -28,17 +25,12 @@ let int_of_id_t = function
         match int_of_id_t' 'u' id with Some v -> v | None -> raise Error ) )
 
 let value_of = function Red n | Green n | LightGreen n -> n
-
 let is_red = function Red _ -> true | _ -> false
-
 let is_green = function Green _ -> true | _ -> false
-
 let is_light_green = function LightGreen _ -> true | _ -> false
 
 let string_of_id_or_imm = function V id_t -> id_t | C n -> string_of_int n
-
 let string_of_id_l = function Id.L x -> x
-
 let string_of_value = function
   | Green n -> Printf.sprintf "Green (%d)" n
   | LightGreen n -> Printf.sprintf "LightGreen (%d)" n
@@ -59,6 +51,10 @@ let find_fundef prog target =
 
 let find_fundef' (Prog (tbl, fundefs, main)) name =
   fundefs |> List.find (fun {name= Id.L x} -> contains x name)
+
+let find_id ~prog ~name =
+  let Prog (_, fundefs, _) = prog in
+  fundefs |> List.find (fun {name = Id.L x} -> contains x name) |> fun {name = Id.L (x)} -> x
 
 let name_of id = try List.hd (String.split_on_char '.' id) with _ -> id
 

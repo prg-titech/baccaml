@@ -7,7 +7,7 @@
 
 typedef int (*fun_arg3)(int*, int, int*);
 
-typedef int (*fun_arg2)(int*, int);
+typedef int (*fun_arg2)(intptr_t, int);
 
 typedef int (*fun_arg1)(int);
 
@@ -48,7 +48,7 @@ CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1, value
     return -1;
   }
 
-  int *stk = Hp_val(arg1);
+  intptr_t stk = Hp_val(arg1);
   int sp = Int_val(arg2);
 
   return Val_int(sym(stk, sp));

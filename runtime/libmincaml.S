@@ -290,12 +290,6 @@ min_caml_jit_merge_point:
     movl    %ebp, %esp
     popl    %ebp
     ret
-    .globl min_caml_trace_entry
-min_caml_trace_entry:
-    ret
-.globl min_caml_jit_dispatch
-min_caml_jit_dispatch:
-    ret
 .globl min_caml_loop_start
 min_caml_loop_start:
     ret
@@ -311,6 +305,19 @@ min_caml_mj_call:
     pushl   %ebx
     pushl   %eax
     call    call_caml_mj_call
+    movl    %ebp, %esp
+    popl    %ebp
+    ret
+.globl min_caml_func
+min_caml_func:
+    pushl   %ebp
+    movl    %esp, %ebp
+    pushl   %esi
+    pushl   %edx
+    pushl   %ebx
+    pushl   %ebx
+    pushl   %eax
+    jmp     %esi
     movl    %ebp, %esp
     popl    %ebp
     ret
