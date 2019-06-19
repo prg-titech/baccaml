@@ -72,19 +72,39 @@ let rec string_of_exp exp =
     let t1 = string_of_t e1 in
     let t2 = string_of_t e2 in
     Printf.sprintf "IfEq (\"%s\", %s, %s, %s)" x' (string_of_id_or_imm y') t1 t2
+  | SIfEq (x', y', e1, e2) ->
+    let t1 = string_of_t e1 in
+    let t2 = string_of_t e2 in
+    Printf.sprintf "SIfEq (\"%s\", %s, %s, %s)" x' (string_of_id_or_imm y') t1 t2
   | IfLE (x', y', e1, e2) ->
     let t1 = string_of_t e1 in
     let t2 = string_of_t e2 in
     Printf.sprintf "IfLE (\"%s\", %s, %s, %s)" x' (string_of_id_or_imm y') t1 t2
+  | SIfLE (x', y', e1, e2) ->
+    let t1 = string_of_t e1 in
+    let t2 = string_of_t e2 in
+    Printf.sprintf "SIfLE (\"%s\", %s, %s, %s)" x' (string_of_id_or_imm y') t1 t2
   | IfGE (x', y', e1, e2) ->
     let t1 = string_of_t e1 in
     let t2 = string_of_t e2 in
     Printf.sprintf "IfGE (\"%s\", %s, %s, %s)" x' (string_of_id_or_imm y') t1 t2
+  | SIfGE (x', y', e1, e2) ->
+    let t1 = string_of_t e1 in
+    let t2 = string_of_t e2 in
+    Printf.sprintf "SIfGE (\"%s\", %s, %s, %s)" x' (string_of_id_or_imm y') t1 t2
   | IfFEq (x1, x2, e1, e2) ->
+    let t1 = string_of_t e1 in
+    let t2 = string_of_t e2 in
+    Printf.sprintf "SIfFEq (\"%s\", %s, %s, %s)" x1 x2 t1 t2
+  | SIfFEq (x1, x2, e1, e2) ->
     let t1 = string_of_t e1 in
     let t2 = string_of_t e2 in
     Printf.sprintf "IfFEq (\"%s\", %s, %s, %s)" x1 x2 t1 t2
   | IfFLE (x1, x2, e1, e2) ->
+    let t1 = string_of_t e1 in
+    let t2 = string_of_t e2 in
+    Printf.sprintf "IfFLE (\"%s\", %s, %s, %s)" x1 x2 t1 t2
+  | SIfFLE (x1, x2, e1, e2) ->
     let t1 = string_of_t e1 in
     let t2 = string_of_t e2 in
     Printf.sprintf "IfFLE (\"%s\", %s, %s, %s)" x1 x2 t1 t2
