@@ -27,11 +27,12 @@
 *.exe
 *.top
 *.byte
+*.so
 
 test/**/*.s
 
 # dune
-_build
+_build/
 *.install
 
 *.dSYM/
