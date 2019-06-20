@@ -90,7 +90,10 @@ let rec g env = function (* K正規化ルーチン本体 (caml2html: knormal_g) 
           (fun y -> FDiv(x, y), Type.Float))
   | Syntax.Eq _ | Syntax.LE _ as cmp ->
     g env (Syntax.If(cmp, Syntax.Bool(true), Syntax.Bool(false)))
-  | Syntax.If(Syntax.Not(e1), e2, e3) -> g env (Syntax.If(e1, e3, e2)) (* notによる分岐を変換 (caml2html: knormal_not) *)
+  | Syntax.If(Syntax.Not(e1), e2, e3) ->
+     g env (Syntax.If(e1, e3, e2))
+  | Syntax.SIf(Syntax.Not(e1), e2, e3) ->
+     g env (Syntax.SIf(e1, e3, e2)) (* notによる分岐を変換 (caml2html: knormal_not) *)
   | Syntax.If(Syntax.Eq(e1, e2), e3, e4) ->
     insert_let (g env e1)
       (fun x -> insert_let (g env e2)

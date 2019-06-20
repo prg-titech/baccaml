@@ -1,7 +1,7 @@
 %{
-(* parserが利用する変数、関数、型などの定義 *)
-open Syntax
-let addtyp x = (x, Type.gentyp ())
+    (* parserが利用する変数、関数、型などの定義 *)
+    open Syntax
+    let addtyp x = (x, Type.gentyp ())
 %}
 
 /* (* 字句を表すデータ型の定義 (caml2html: parser_token) *) */
@@ -21,6 +21,7 @@ let addtyp x = (x, Type.gentyp ())
 %token GREATER_EQUAL
 %token LESS
 %token GREATER
+%token ATIF
 %token IF
 %token THEN
 %token ELSE
@@ -84,8 +85,7 @@ exp:
     %prec prec_unary_minus
     { match $2 with
       | Float(f) -> Float(-.f)
-      | e -> Neg(e)
-    }
+      | e -> Neg(e) }
 | exp PLUS exp
     { Add($1, $3) }
 | exp MINUS exp
@@ -103,8 +103,11 @@ exp:
 | exp GREATER_EQUAL exp
     { LE($3, $1) }
 | IF exp THEN exp ELSE exp
-    %prec prec_if
-    { If($2, $4, $6) }
+  %prec prec_if
+     { If($2, $4, $6) }
+| ATIF exp THEN exp ELSE exp
+  %prec prec_if
+     { SIf($2, $4, $6) }
 | MINUS_DOT exp
     %prec prec_unary_minus
     { FNeg($2) }

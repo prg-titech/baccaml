@@ -153,6 +153,11 @@ and g' dest cont regenv = function (* 各命令のレジスタ割り当て (caml
   | IfGE(x, y', e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfGE(find x Type.Int regenv, find' y' regenv, e1', e2')) e1 e2
   | IfFEq(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFEq(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2
   | IfFLE(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFLE(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2
+  | SIfEq(x, y', e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> SIfEq(find x Type.Int regenv, find' y' regenv, e1', e2')) e1 e2
+  | SIfLE(x, y', e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> SIfLE(find x Type.Int regenv, find' y' regenv, e1', e2')) e1 e2
+  | SIfGE(x, y', e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> SIfGE(find x Type.Int regenv, find' y' regenv, e1', e2')) e1 e2
+  | SIfFEq(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> SIfFEq(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2
+  | SIfFLE(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> SIfFLE(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2
   | CallCls(x, ys, zs) as exp ->
     if List.length ys > Array.length regs - 1 || List.length zs > Array.length fregs then
       failwith (Format.sprintf "cannot allocate registers for arugments to %s" x)

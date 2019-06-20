@@ -87,15 +87,15 @@ module Guard = struct
     in
     let rec restore cont = function
       | [] -> cont
-      | hd :: tl when not (ignored hd ws) -> (
-        match reg.(int_of_id_t hd) with
+      | hd :: tl when not (ignored hd ws) ->
+        begin match reg.(int_of_id_t hd) with
         | Green n when (String.contains hd "bytecode") ->
-          (* let { bytecode_ptr } = tj_env in
-           * Let ((hd, Type.Int), Set bytecode_ptr, restore cont tl) *)
-          Let ((hd, Type.Int),
-               CallDir (Id.L ("restore_min_caml_bp"), [], []), restore cont tl)
-        | Green n -> Let ((hd, Type.Int), Set n, restore cont tl)
-        | _ -> restore cont tl )
+           Let ((hd, Type.Int),
+                CallDir (Id.L ("restore_min_caml_bp"), [], []), restore cont tl)
+        | Green n ->
+           Let ((hd, Type.Int), Set n, restore cont tl)
+        | _ -> restore cont tl
+        end
       | hd :: tl -> restore cont tl
     in
     restore cont free_vars
@@ -139,7 +139,10 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
     match exp with
     | IfEq (id_t, id_or_imm, t1, t2)
     | IfLE (id_t, id_or_imm, t1, t2)
-    | IfGE (id_t, id_or_imm, t1, t2) ->
+    | IfGE (id_t, id_or_imm, t1, t2)
+    | SIfEq (id_t, id_or_imm, t1, t2)
+    | SIfLE (id_t, id_or_imm, t1, t2)
+    | SIfGE (id_t, id_or_imm, t1, t2)->
         connect (dest, typ) (tj_if p reg mem tj_env exp) (tj p reg mem tj_env body)
     | Ld (id_t, id_or_imm, x) -> (
         let r1 = int_of_id_t id_t |> Array.get reg in
@@ -195,41 +198,45 @@ and optimize_exp p reg mem tj_env (dest, typ) body exp =
 and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
   function
   | CallDir (id_l, args, fargs) ->
-      Log.debug (Printf.sprintf "CallDir (%s)" (string_of_id_l id_l)) ;
-      let fundef = find_fundef id_l p in
-      let pc = args |> find_pc tj_env |> Array.get reg in
-      let reds = args |> List.filter (fun a -> is_red reg.(int_of_id_t a)) in
-      let {merge_pc; trace_name} = tj_env in
-      if
-        value_of pc = merge_pc
-        &&
-        let (Id.L x) = id_l in
-        contains x "interp"
-      then Ans (CallDir (Id.L trace_name, reds, []))
-      else Inlining.inline_fundef reg args fundef |> tj p reg mem tj_env
-  | IfEq (_, _, Ans (CallDir (id_l, _, _)), t2)
+     Log.debug (Printf.sprintf "CallDir (%s)" (string_of_id_l id_l)) ;
+     let fundef = find_fundef id_l p in
+     let pc = args |> find_pc tj_env |> Array.get reg in
+     let reds = args |> List.filter (fun a -> is_red reg.(int_of_id_t a)) in
+     let {merge_pc; trace_name} = tj_env in
+     if
+       value_of pc = merge_pc
+       &&
+         let (Id.L x) = id_l in
+         contains x "interp"
+     then Ans (CallDir (Id.L trace_name, reds, []))
+     else Inlining.inline_fundef reg args fundef |> tj p reg mem tj_env
+  | IfEq (_, _, Ans (CallDir (id_l, _, _)), t2) | SIfEq (_, _, Ans (CallDir (id_l, _, _)), t2)
     when let (Id.L x) = id_l in
          contains x "trace" ->
       tj p reg mem tj_env t2
-  | ( IfEq (id_t, id_or_imm, t1, t2)
-    | IfLE (id_t, id_or_imm, t1, t2)
-    | IfGE (id_t, id_or_imm, t1, t2) ) as exp ->
-      tj_if p reg mem tj_env exp
-  | exp -> (
-    match Jit_optimizer.run p exp reg mem with
-    | Specialized v -> Ans (Set (value_of v))
-    | Not_specialized (e, v) -> Ans e )
+  | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ as exp ->
+     tj_if p reg mem tj_env exp
+  | exp ->
+     match Jit_optimizer.run p exp reg mem with
+     | Specialized v -> Ans (Set (value_of v))
+     | Not_specialized (e, v) -> Ans e
 
 and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) = function
-  | ( IfEq (id_t, id_or_imm, t1, t2)
-    | IfLE (id_t, id_or_imm, t1, t2)
-    | IfGE (id_t, id_or_imm, t1, t2) ) as exp -> (
+  | IfEq (id_t, id_or_imm, t1, t2)
+  | IfLE (id_t, id_or_imm, t1, t2)
+  | IfGE (id_t, id_or_imm, t1, t2)
+  | SIfEq (id_t, id_or_imm, t1, t2)
+  | SIfLE (id_t, id_or_imm, t1, t2)
+  | SIfGE (id_t, id_or_imm, t1, t2) as exp -> (
       Log.debug
         (let if_rep =
            match exp with
            | IfEq _ -> "IfEq"
            | IfLE _ -> "IfLE"
            | IfGE _ -> "IfGE"
+           | SIfEq _ -> "SIfEq"
+           | SIfLE _ -> "SIfLE"
+           | SIfGE _ -> "SIfGE"
            | _ -> failwith "If expression should be come here."
          in
          Printf.sprintf "%s (%s, %s)" if_rep id_t (string_of_id_or_imm id_or_imm)) ;
@@ -240,9 +247,11 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
        |LightGreen n1, Green n2
        |Green n1, LightGreen n2
        |LightGreen n1, LightGreen n2 ->
-          if exp |*| (n1, n2) then tj p reg mem tj_env t1 else tj p reg mem tj_env t2
+         if exp |*| (n1, n2)
+         then tj p reg mem tj_env t1
+         else tj p reg mem tj_env t2
       | Red n1, Green n2 | Red n1, LightGreen n2 ->
-          if exp |*| (n1, n2) then
+         if exp |*| (n1, n2) then
             Ans
               ( exp
               |%| ( id_t
