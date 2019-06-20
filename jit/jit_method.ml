@@ -76,9 +76,9 @@ let rec mj p reg mem fenv name = function
   | Let ((dest, typ), exp, body) -> (
     match exp with
     | IfEq _ | IfGE _ | IfLE _ ->
-        let t' = mj_if p reg mem fenv name exp in
-        let k = mj p reg mem fenv name body in
-        (connect dest (fst t') (fst k), snd k)
+       let t' = mj_if p reg mem fenv name exp in
+       let k = mj p reg mem fenv name body in
+       (connect dest (fst t') (fst k), snd k)
     | St (id_t1, id_t2, id_or_imm, x) -> (
         let srcv = reg.(int_of_id_t id_t1) in
         let destv = reg.(int_of_id_t id_t2) in
@@ -126,7 +126,8 @@ and mj_exp p reg mem fenv name = function
       let fundef = find_fundef p id_l in
       let t = Inlining.inline_fundef reg args fundef in
       mj p reg mem fenv name t
-  | (IfEq _ | IfGE _ | IfLE _) as exp -> mj_if p reg mem fenv name exp
+  | (IfEq _ | IfGE _ | IfLE _ | SIfEq _ | SIfLE _ | SIfGE _) as exp ->
+     mj_if p reg mem fenv name exp
   | exp -> (
     match Jit_optimizer.run p exp reg mem with
     | Specialized v ->
@@ -135,11 +136,10 @@ and mj_exp p reg mem fenv name = function
     | Not_specialized (e, v) -> (Ans e, M.empty) )
 
 and mj_if p reg mem fenv name = function
-  | ( IfGE (id_t, id_or_imm, t1, t2)
-    | IfEq (id_t, id_or_imm, t1, t2)
-    | IfLE (id_t, id_or_imm, t1, t2) ) as exp
-    when is_opcode id_t ->
-      Log.debug
+  | ( SIfGE (id_t, id_or_imm, t1, t2)
+    | SIfEq (id_t, id_or_imm, t1, t2)
+    | SIfLE (id_t, id_or_imm, t1, t2) ) as exp ->
+     Log.debug
         (Printf.sprintf "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm)) ;
       let r1 = value_of reg.(int_of_id_t id_t) in
       let r2 = match id_or_imm with V id -> value_of reg.(int_of_id_t id) | C n -> n in

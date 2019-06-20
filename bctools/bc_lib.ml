@@ -37,10 +37,12 @@ let annot is_mj (Prog (table, fundefs, main) as p) =
   let rec annot' is_mj = function
     | Ans e -> (
       match e with
-      | IfEq (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfLE (x, y, t1, t2) ->
-          Ans (e |%| (x, y, annot' is_mj t1, annot' is_mj t2))
-      | IfFLE (x, y, t1, t2) | IfFEq (x, y, t1, t2) ->
-          Ans (e |%| (x, V y, annot' is_mj t1, annot' is_mj t2))
+      | IfEq (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfLE (x, y, t1, t2)
+      | SIfEq (x, y, t1, t2) | SIfGE (x, y, t1, t2) | SIfLE (x, y, t1, t2) ->
+         Ans (e |%| (x, y, annot' is_mj t1, annot' is_mj t2))
+      | IfFLE (x, y, t1, t2) | IfFEq (x, y, t1, t2)
+      | SIfFLE (x, y, t1, t2) | SIfFEq (x, y, t1, t2)->
+         Ans (e |%| (x, V y, annot' is_mj t1, annot' is_mj t2))
       | _ -> Ans e )
     | Let (x, CallDir (id_l, args, fargs), t) when id_l = Id.L "min_caml_is_mj"
     -> (

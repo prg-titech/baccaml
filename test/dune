@@ -20,8 +20,3 @@
          -short-paths
          -keep-locs))
  (libraries str oUnit utils base jit interp_util))
-
-(test
- (name test_sif)
- (modules test_sif)
- (libraries str oUnit base))

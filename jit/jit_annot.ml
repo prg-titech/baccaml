@@ -8,11 +8,13 @@ exception Error
 let rec annotate_t is_mj t = match t with
   | Ans (e) ->
     begin match e with
-      | IfEq (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfLE (x, y, t1, t2) ->
+    | IfEq (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfLE (x, y, t1, t2)
+    | SIfEq (x, y, t1, t2) | SIfGE (x, y, t1, t2) | SIfLE (x, y, t1, t2) ->
         Ans (e |%| (x, y, annotate_t is_mj t1, annotate_t is_mj t2))
-      | IfFLE (x, y, t1, t2) | IfFEq (x, y, t1, t2) ->
-        Ans (e |%| (x, V (y), annotate_t is_mj t1, annotate_t is_mj t2))
-      | _ -> Ans (e)
+    | IfFLE (x, y, t1, t2) | IfFEq (x, y, t1, t2)
+    | SIfFLE (x, y, t1, t2) | SIfFEq (x, y, t1, t2) ->
+       Ans (e |%| (x, V (y), annotate_t is_mj t1, annotate_t is_mj t2))
+    | _ -> Ans (e)
     end
   | Let (x, CallDir (id_l, args, fargs), t) when id_l = (Id.L ("min_caml_is_mj"))->
     begin match t with

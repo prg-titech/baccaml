@@ -189,6 +189,7 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
            Asm.{name; args; fargs; body = t; ret})
   in
   List.iter (fun t -> Log.debug (Emit_virtual.string_of_fundef t)) traces';
+  flush_all ();
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
     emit_dyn oc `Meta_method traces'; close_out oc;
