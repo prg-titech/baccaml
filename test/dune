@@ -9,9 +9,9 @@
          -short-paths
          -keep-locs)))
 
-(tests
- (names interp_tlbc)
- (modules (:standard \ interp_util))
+(test
+ (name interp_tlbc)
+ (modules interp_tlbc)
  (flags (-w -4-33-40-41-42-43-34-44
          -g
          -short-paths

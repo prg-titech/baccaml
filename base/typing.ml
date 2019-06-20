@@ -35,6 +35,7 @@ let rec deref_term = function
   | FMul(e1, e2) -> FMul(deref_term e1, deref_term e2)
   | FDiv(e1, e2) -> FDiv(deref_term e1, deref_term e2)
   | If(e1, e2, e3) -> If(deref_term e1, deref_term e2, deref_term e3)
+  | SIf(e1, e2, e3) -> SIf(deref_term e1, deref_term e2, deref_term e3)
   | Let(xt, e1, e2) -> Let(deref_id_typ xt, deref_term e1, deref_term e2)
   | LetRec({ name = xt; args = yts; body = e1 }, e2) ->
     LetRec({ name = deref_id_typ xt;
@@ -107,7 +108,7 @@ let rec g env e = (* 型推論ルーチン (caml2html: typing_g) *)
     | Eq(e1, e2) | LE(e1, e2) ->
       unify (g env e1) (g env e2);
       Type.Bool
-    | If(e1, e2, e3) ->
+    | If(e1, e2, e3) | SIf(e1, e2, e3) ->
       unify (g env e1) Type.Bool;
       let t2 = g env e2 in
       let t3 = g env e3 in

@@ -1,6 +1,6 @@
 {
-exception UnknownToken of string
-open Parser
+  exception UnknownToken of string
+  open Parser
 }
 
 let space = [' ' '\t' '\n' '\r']
@@ -54,6 +54,8 @@ rule token = parse
     { GREATER }
 | "if"
     { IF }
+| "@if"
+    { ATIF }
 | "then"
     { THEN }
 | "else"
@@ -96,3 +98,7 @@ and comment = parse
     { Format.eprintf "warning: unterminated comment@." }
 | _
     { comment lexbuf }
+
+{
+
+}

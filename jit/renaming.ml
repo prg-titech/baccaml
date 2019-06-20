@@ -26,9 +26,18 @@ let rec rename_exp rename = function
   | Sub (id_t, id_or_imm) -> Sub (rename id_t, rename_id_or_imm rename id_or_imm)
   | Ld (id_t, id_or_imm, x) -> Ld (rename id_t, rename_id_or_imm rename id_or_imm, x)
   | St (src, dest, id_or_imm, x) -> St (rename src, rename dest, rename_id_or_imm rename id_or_imm, x)
-  | IfEq (id_t1, id_t2, t1, t2) -> IfEq (rename id_t1, rename_id_or_imm rename id_t2, rename_t rename t1, rename_t rename t2)
-  | IfLE (id_t1, id_t2, t1, t2) -> IfLE (rename id_t1, rename_id_or_imm rename id_t2, rename_t rename t1, rename_t rename t2)
-  | IfGE (id_t1, id_t2, t1, t2) -> IfGE (rename id_t1, rename_id_or_imm rename id_t2, rename_t rename t1, rename_t rename t2)
+  | IfEq (id_t1, id_t2, t1, t2) ->
+     IfEq (rename id_t1, rename_id_or_imm rename id_t2, rename_t rename t1, rename_t rename t2)
+  | SIfEq (id_t1, id_t2, t1, t2) ->
+     SIfEq (rename id_t1, rename_id_or_imm rename id_t2, rename_t rename t1, rename_t rename t2)
+  | IfLE (id_t1, id_t2, t1, t2) ->
+     IfLE (rename id_t1, rename_id_or_imm rename id_t2, rename_t rename t1, rename_t rename t2)
+  | SIfLE (id_t1, id_t2, t1, t2) ->
+     SIfLE (rename id_t1, rename_id_or_imm rename id_t2, rename_t rename t1, rename_t rename t2)
+  | IfGE (id_t1, id_t2, t1, t2) ->
+     IfGE (rename id_t1, rename_id_or_imm rename id_t2, rename_t rename t1, rename_t rename t2)
+  | SIfGE (id_t1, id_t2, t1, t2) ->
+     SIfGE (rename id_t1, rename_id_or_imm rename id_t2, rename_t rename t1, rename_t rename t2)
   | CallDir (id_l, args, fargs) -> CallDir (id_l, List.map rename args, List.map rename fargs)
   | exp -> exp
 

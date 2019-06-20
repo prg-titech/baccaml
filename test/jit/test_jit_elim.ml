@@ -28,7 +28,6 @@ let test_2 _ =
                      Asm.Ans (Asm.Mov ("z.6")))) in
   assert_equal ~printer:(Emit_virtual.string_of_t) expected result
 
-
 let suite =
   "jit_elim_test_suites" >:::
   ["test_1" >:: test_1;

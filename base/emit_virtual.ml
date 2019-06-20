@@ -83,11 +83,19 @@ let rec string_of_exp exp =
   | IfFEq (x1, x2, e1, e2) ->
     let t1 = string_of_t e1 in
     let t2 = string_of_t e2 in
-    Printf.sprintf "IfFEq (\"%s\", %s, %s, %s)" x1 x2 t1 t2
+    Printf.sprintf "SIfFEq (\"%s\", %s, %s, %s)" x1 x2 t1 t2
+  | SIfFEq (x1, x2, e1, e2) ->
+    let t1 = string_of_t e1 in
+    let t2 = string_of_t e2 in
+    Printf.sprintf "SIfFEq (\"%s\", %s, %s, %s)" x1 x2 t1 t2
   | IfFLE (x1, x2, e1, e2) ->
     let t1 = string_of_t e1 in
     let t2 = string_of_t e2 in
     Printf.sprintf "IfFLE (\"%s\", %s, %s, %s)" x1 x2 t1 t2
+  | SIfFLE (x1, x2, e1, e2) ->
+    let t1 = string_of_t e1 in
+    let t2 = string_of_t e2 in
+    Printf.sprintf "SIfFLE (\"%s\", %s, %s, %s)" x1 x2 t1 t2
   | CallCls (x', ids1, ids2) ->
     Printf.sprintf "CallCls (\"%s\", %s, %s)" x' (string_of_ids ids1) (string_of_ids ids2)
   | CallDir (l', ids1, ids2) ->

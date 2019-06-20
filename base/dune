@@ -1,8 +1,6 @@
 (ocamllex (modules lexer))
 (ocamlyacc (modules parser))
 
-; (menhir ((modules (parser))))
-
 (library
  (name           base)
  (public_name    baccaml.base)
