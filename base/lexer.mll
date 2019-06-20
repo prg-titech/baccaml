@@ -52,8 +52,6 @@ rule token = parse
     { LESS }
 | '>'
     { GREATER }
-| '@'
-    { AT }
 | "if"
     { IF }
 | "then"

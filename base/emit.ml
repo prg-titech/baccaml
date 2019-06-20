@@ -156,34 +156,34 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprim
      | [i; j] when i + 1 = j -> g' oc (NonTail(fregs.(0)), exp)
      | _ -> assert false);
     Printf.fprintf oc "\tret\n";
-  | Tail, IfEq(x, y', e1, e2) | Tail, SIfEq(x, y', e1, e2) ->
+  | Tail, IfEq(x, y', e1, e2) ->
     Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
     g'_tail_if oc e1 e2 "je" "jne"
-  | Tail, IfLE(x, y', e1, e2) | Tail, SIfLE(x, y', e1, e2) ->
+  | Tail, IfLE(x, y', e1, e2) ->
     Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
     g'_tail_if oc e1 e2 "jle" "jg"
-  | Tail, IfGE(x, y', e1, e2) | Tail, SIfGE(x, y', e1, e2) ->
+  | Tail, IfGE(x, y', e1, e2) ->
     Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
     g'_tail_if oc e1 e2 "jge" "jl"
-  | Tail, IfFEq(x, y, e1, e2) | Tail, SIfFEq(x, y, e1, e2) ->
+  | Tail, IfFEq(x, y, e1, e2) ->
     Printf.fprintf oc "\tcomisd\t%s, %s\n" y x;
     g'_tail_if oc e1 e2 "je" "jne"
-  | Tail, IfFLE(x, y, e1, e2) | Tail, SIfFLE(x, y, e1, e2) ->
+  | Tail, IfFLE(x, y, e1, e2) ->
     Printf.fprintf oc "\tcomisd\t%s, %s\n" y x;
     g'_tail_if oc e1 e2 "jbe" "ja"
-  | NonTail(z), IfEq(x, y', e1, e2) | NonTail(z), SIfEq(x, y', e1, e2) ->
+  | NonTail(z), IfEq(x, y', e1, e2) ->
     Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
     g'_non_tail_if oc (NonTail(z)) e1 e2 "je" "jne"
-  | NonTail(z), IfLE(x, y', e1, e2) | NonTail(z), SIfLE(x, y', e1, e2) ->
+  | NonTail(z), IfLE(x, y', e1, e2) ->
     Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
     g'_non_tail_if oc (NonTail(z)) e1 e2 "jle" "jg"
-  | NonTail(z), IfGE(x, y', e1, e2) | NonTail(z), SIfGE(x, y', e1, e2) ->
+  | NonTail(z), IfGE(x, y', e1, e2) ->
     Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
     g'_non_tail_if oc (NonTail(z)) e1 e2 "jge" "jl"
-  | NonTail(z), IfFEq(x, y, e1, e2) | NonTail(z), SIfFEq(x, y, e1, e2) ->
+  | NonTail(z), IfFEq(x, y, e1, e2) ->
     Printf.fprintf oc "\tcomisd\t%s, %s\n" y x;
     g'_non_tail_if oc (NonTail(z)) e1 e2 "je" "jne"
-  | NonTail(z), IfFLE(x, y, e1, e2) | NonTail(z), SIfFLE(x, y, e1, e2) ->
+  | NonTail(z), IfFLE(x, y, e1, e2) ->
     Printf.fprintf oc "\tcomisd\t%s, %s\n" y x;
     g'_non_tail_if oc (NonTail(z)) e1 e2 "jbe" "ja"
   (* 関数呼び出しの仮想命令の実装 (caml2html: emit_call) *)

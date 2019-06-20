@@ -8,7 +8,6 @@ let addtyp x = (x, Type.gentyp ())
 %token <bool> BOOL
 %token <int> INT
 %token <float> FLOAT
-%token AT
 %token NOT
 %token MINUS
 %token PLUS
@@ -25,7 +24,6 @@ let addtyp x = (x, Type.gentyp ())
 %token IF
 %token THEN
 %token ELSE
-%token SIF
 %token <Id.t> IDENT
 %token LET
 %token IN
@@ -105,11 +103,8 @@ exp:
 | exp GREATER_EQUAL exp
     { LE($3, $1) }
 | IF exp THEN exp ELSE exp
-  %prec prec_if
-     { If($2, $4, $6) }
-| AT IF exp THEN exp ELSE exp
-  %prec prec_if
-     { SIf($3, $5, $7) }
+    %prec prec_if
+    { If($2, $4, $6) }
 | MINUS_DOT exp
     %prec prec_unary_minus
     { FNeg($2) }
