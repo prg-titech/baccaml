@@ -43,8 +43,7 @@ let rec string_of_ids ids =
     "[" ^ (String.concat "; " ids') ^ "]"
 
 (* Asm.exp to string *)
-let rec string_of_exp exp =
-  match exp with
+let rec string_of_exp = function
   | Nop -> "Nop"
   | Set (i) -> Printf.sprintf "Set (%d)" i
   | SetL (l) -> Printf.sprintf "SetL (Id.L (\"%s\"))" (string_of_idl l)
