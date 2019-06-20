@@ -69,7 +69,7 @@ and print_exp = function
   | Sub (x, y) -> print_string "Sub ("; print_string x; print_semi_colon ();
                   print_id_or_imm y; print_string ")"
   | Ld (x, y, n) -> print_string "Ld ("; print_string x; print_semi_colon ();
-                    print_id_or_imm y; print_string ",";
+                    print_id_or_imm y; print_semi_colon ();
                     print_int n; print_string ")"
   | St (x, y, z, n) -> print_string "St (";print_string x; print_semi_colon ();
                        print_string y; print_semi_colon ();
