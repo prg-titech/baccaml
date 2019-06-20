@@ -23,7 +23,7 @@ let run_dump f =
   let inchan = open_in f in
   try
     Lexing.from_channel inchan |> Util.virtualize |> Trim.f |> Simm.f |> annot
-    |> Emit_virtual.string_of_prog |> print_endline ;
+    |> Asm.print_prog;
     close_in inchan
   with e -> close_in inchan ; raise e
 

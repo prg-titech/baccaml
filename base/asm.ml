@@ -1,6 +1,10 @@
 (* 2オペランドではなく3オペランドのx86アセンブリもどき *)
 type id_or_imm = V of Id.t | C of int
 
+let rec print_id_or_imm = function
+  | V id_t -> print_string "V ("; print_string id_t; print_string ")"
+  | C n -> print_string "C "; print_int n; print_string " "
+
 type t = (* 命令の列 (caml2html: sparcasm_t) *)
   | Ans of exp
   | Let of (Id.t * Type.t) * exp * t
@@ -41,10 +45,117 @@ and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *
   | Save of Id.t * Id.t (* レジスタ変数の値をスタック変数へ保存 (caml2html: sparcasm_save) *)
   | Restore of Id.t (* スタック変数から値を復元 (caml2html: sparcasm_restore) *)
 
+let print_tab () = print_string "  "
+
+let print_semi_colon () = print_string ", "
+
+let rec print_t = function
+  | Ans exp -> print_string "Ans ("; print_exp exp; print_string ")"
+  | Let ((id, typ), exp, t) ->
+     print_string "Let (";
+     print_string "("; print_string id; print_string ", "; Type.print_type typ; print_string ")";
+     print_string ", "; print_exp exp; print_string ", ";
+     print_newline (); print_tab ();
+     print_t t; print_string ")"
+
+and print_exp = function
+  | Nop -> print_string "Nop"
+  | Set n -> print_string "Set ("; print_int n; print_string ")"
+  | SetL id_l -> print_string "SetL ("; Id.print_id_l id_l; print_string ")"
+  | Mov id -> print_string "Mov ("; print_string id; print_string ")"
+  | Neg id -> print_string "Neg ("; print_string id; print_string ")"
+  | Add (x, y) -> print_string "Add ("; print_string x; print_semi_colon ();
+                  print_id_or_imm y; print_string ")"
+  | Sub (x, y) -> print_string "Sub ("; print_string x; print_semi_colon ();
+                  print_id_or_imm y; print_string ")"
+  | Ld (x, y, n) -> print_string "Ld ("; print_string x; print_semi_colon ();
+                    print_id_or_imm y; print_string ",";
+                    print_int n; print_string ")"
+  | St (x, y, z, n) -> print_string "St (";print_string x; print_semi_colon ();
+                       print_string y; print_semi_colon ();
+                       print_id_or_imm z; print_semi_colon ();
+                       print_int n; print_string ")"
+  | IfEq (x, y, t1, t2) -> print_string "IfEq (";
+                           print_string x; print_semi_colon ();
+                           print_id_or_imm y; print_semi_colon ();
+                           print_newline ();
+                           print_tab (); print_t t1;
+                           print_newline ();
+                           print_tab (); print_t t2; print_string ")"
+  | IfLE (x, y, t1, t2) -> print_string "IfLE ("; print_string x; print_semi_colon ();
+                           print_id_or_imm y; print_semi_colon ();
+                           print_newline ();
+                           print_tab (); print_t t1;
+                           print_newline ();
+                           print_tab (); print_t t2; print_string ")"
+  | IfGE (x, y, t1, t2) -> print_string "IfGE ("; print_string x; print_semi_colon ();
+                           print_id_or_imm y; print_semi_colon ();
+                           print_newline ();
+                           print_tab (); print_t t1;
+                           print_newline ();
+                           print_tab (); print_t t2; print_string ")"
+  | SIfEq (x, y, t1, t2) -> print_string "SIfEq ("; print_string x; print_semi_colon ();
+                            print_id_or_imm y; print_semi_colon ();
+                            print_newline ();
+                            print_tab (); print_t t1;
+                            print_newline ();
+                            print_tab (); print_t t2; print_string ")"
+  | SIfLE (x, y, t1, t2) -> print_string "SIfLE ("; print_string x; print_semi_colon ();
+                            print_id_or_imm y; print_semi_colon ();
+                            print_newline ();
+                            print_tab (); print_t t1;
+                            print_newline ();
+                            print_tab (); print_t t2; print_string ")"
+  | SIfGE (x, y, t1, t2) -> print_string "SIfGE ("; print_string x; print_semi_colon ();
+                            print_id_or_imm y; print_semi_colon ();
+                            print_newline ();
+                            print_tab (); print_t t1;
+                            print_newline ();
+                            print_tab (); print_t t2; print_string ")"
+  | CallCls (x, ys, zs) -> print_string "CallCls ("; print_string x; print_semi_colon ();
+                           print_string "[";
+                           ys |> List.iter (fun y -> print_string y; print_string "; ");
+                           print_string "]"; print_string ",";
+                           print_string "[";
+                           zs |> List.iter (fun z -> print_string z; print_string "; ");
+                           print_string "]"; print_string ")";
+  | CallDir (x, ys, zs) -> print_string "CallDir ("; Id.print_id_l x; print_semi_colon ();
+                           print_string "[";
+                           ys |> List.iter (fun y -> print_string y; print_string "; ");
+                           print_string "]"; print_semi_colon ();
+                           print_string "[";
+                           zs |> List.iter (fun z -> print_string z; print_string "; ");
+                           print_string "]"; print_string ")";
+  | _ -> ()
+
 type fundef = { name : Id.l; args : Id.t list; fargs : Id.t list; body : t; ret : Type.t }
+
+let print_fundef { name; args; fargs; body; ret } =
+  print_string "{ ";
+  print_string "name= "; Id.print_id_l name; print_string "; ";
+  print_string "args= ";
+  print_string "["; args |> List.iter (fun arg -> print_string arg; print_string "; ");
+  print_string "]"; print_string "; ";
+  print_string "fargs= ";
+  print_string "["; fargs |> List.iter (fun farg -> print_string farg; print_string "; ");
+  print_string "]"; print_string "; ";
+  print_string "body= ";
+  print_newline (); print_tab ();
+  print_t body;
+  print_newline (); print_tab ();
+  print_string "ret= "; Type.print_type ret; print_newline ();
+  print_string "}"
 
 (* プログラム全体 = 浮動小数点数テーブル + トップレベル関数 + メインの式 (caml2html: sparcasm_prog) *)
 type prog = Prog of (Id.l * float) list * fundef list * t
+
+let print_prog (Prog (tbl, fundefs, t)) =
+  print_string "Prog (";
+  print_string "["; print_string "]"; print_semi_colon ();
+  fundefs
+  |> List.iter (fun fundef -> print_fundef fundef; print_semi_colon (); print_newline ());
+  print_string "main=\n";
+  print_tab (); print_t t
 
 let fletd(x, e1, e2) = Let((x, Type.Float), e1, e2)
 let seq(e1, e2) = Let((Id.gentmp Type.Unit, Type.Unit), e1, e2)
