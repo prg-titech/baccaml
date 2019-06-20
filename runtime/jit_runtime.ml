@@ -43,11 +43,21 @@ module Internal_conf = struct
   let st_tmp_addr = 100
 end
 
-let print_arr ?notation:(nt = None) f arr =
-  let str = Array.string_of_array f arr in
-  match nt with
-  | Some s -> Log.debug (Printf.sprintf "%s %s" s str)
-  | None -> Log.debug (Printf.sprintf "%s" str)
+module Debug = struct
+  open Utils
+  let print_trace trace =
+    if !Log.log_level = `Debug then
+      Asm.print_fundef trace
+    else ()
+
+  let print_arr ?notation:(nt = None) f arr =
+    if !Log.log_level = `Debug then
+      let str = Array.string_of_array f arr in
+      match nt with
+      | Some s -> Printf.printf "%s %s" s str
+      | None -> Printf.printf "%s" str
+    else ()
+end
 
 let file_open () =
   match !Config.file_name with
@@ -188,7 +198,7 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
            let t = tname_of_mj_call trace_name body in
            Asm.{name; args; fargs; body = t; ret})
   in
-  List.iter (fun t -> Log.debug (Emit_virtual.string_of_fundef t)) traces';
+  List.iter Debug.print_trace traces';
   flush_all ();
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
@@ -223,7 +233,7 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
     ; JT.stack_ptr = st_ptr }
   in
   let trace = JT.run prog reg mem env in
-  Log.debug (Emit_virtual.string_of_fundef trace);
+  Debug.print_trace trace;
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
     emit_dyn oc `Meta_tracing [trace];
@@ -266,7 +276,7 @@ let jit_exec_method pc st_ptr sp =
     ()
 
 let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
-  print_arr string_of_int stack ~notation:(Some "stack") ;
+  Debug.print_arr string_of_int stack ~notation:(Some "stack") ;
   if !Config.jit_flag = `Off then ()
   else if Trace_prof.over_threshold pc then
     begin
