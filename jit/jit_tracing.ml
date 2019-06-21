@@ -127,14 +127,12 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
         Ans (CallDir (Id.L trace_name, reds, []))
       else tj p reg mem tj_env body
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
-      let rec f lst acc =
-        match lst with
-        | [] -> acc
-        | (l, r) :: tl -> f tl (Let ((l, Type.Int), Mov r, acc))
-      in
-      let fundef = find_fundef id_l p in
-      let t = Inlining.inline_fundef reg args fundef |> tj p reg mem tj_env in
-      connect (dest, typ) (tj p reg mem tj_env body) (f (zip fundef.args args) t)
+     let callee =
+       find_fundef id_l p
+       |> Inlining.inline_fundef reg args
+       |> tj p reg mem tj_env
+     in
+     Asm.concat callee (dest, typ) (tj p reg mem tj_env body)
   | Let ((dest, typ), exp, body) -> (
     match exp with
     | IfEq (id_t, id_or_imm, t1, t2)
@@ -142,48 +140,48 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
     | IfGE (id_t, id_or_imm, t1, t2)
     | SIfEq (id_t, id_or_imm, t1, t2)
     | SIfLE (id_t, id_or_imm, t1, t2)
-    | SIfGE (id_t, id_or_imm, t1, t2)->
-        connect (dest, typ) (tj_if p reg mem tj_env exp) (tj p reg mem tj_env body)
+    | SIfGE (id_t, id_or_imm, t1, t2) ->
+       Asm.concat (tj_if p reg mem tj_env exp) (dest, typ) (tj p reg mem tj_env body)
     | Ld (id_t, id_or_imm, x) -> (
-        let r1 = int_of_id_t id_t |> Array.get reg in
-        let r2 =
-          match id_or_imm with
-          | V id -> int_of_id_t id_t |> Array.get reg
-          | C n -> Green n
-        in
-        match (r1, r2) with
-        | Green n1, Red n2 | LightGreen n1, Red n2 ->
-            let n = mem.(n1 + (n2 * x)) in
-            reg.(int_of_id_t id_t) <- n ;
-            Let ((dest, typ), Ld (id_t, id_or_imm, x), tj p reg mem tj_env body)
-        | _ -> optimize_exp p reg mem tj_env (dest, typ) body exp )
+      let r1 = int_of_id_t id_t |> Array.get reg in
+      let r2 =
+        match id_or_imm with
+        | V id -> int_of_id_t id_t |> Array.get reg
+        | C n -> Green n
+      in
+      match (r1, r2) with
+      | Green n1, Red n2 | LightGreen n1, Red n2 ->
+         let n = mem.(n1 + (n2 * x)) in
+         reg.(int_of_id_t id_t) <- n ;
+         Let ((dest, typ), Ld (id_t, id_or_imm, x), tj p reg mem tj_env body)
+      | _ -> optimize_exp p reg mem tj_env (dest, typ) body exp )
     | St (id_t1, id_t2, id_or_imm, x) -> (
-        let srcv = reg.(int_of_id_t id_t1) in
-        let destv = reg.(int_of_id_t id_t2) in
-        let offsetv =
-          match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n
-        in
-        let body' = tj p reg mem tj_env body in
-        match (srcv, destv) with
-        | Green n1, Red n2 | LightGreen n1, Red n2 -> (
-            reg.(int_of_id_t dest) <- Green 0 ;
-            mem.(n1 + (n2 * x)) <- Green (int_of_id_t id_t1 |> Array.get reg |> value_of) ;
-            match offsetv with
-            | Green n | LightGreen n ->
-                let id' = Id.gentmp Type.Int in
-                Let
-                  ( (id_t1, Type.Int)
-                  , Set n1
-                  , Let
-                      ( (id', Type.Int)
-                      , Set n
-                      , Let ((dest, typ), St (id_t1, id_t2, C n, x), body') ) )
-            | Red n ->
-                Let
-                  ( (id_t1, Type.Int)
-                  , Set n1
-                  , Let ((dest, typ), St (id_t1, id_t2, id_or_imm, x), body') ) )
-        | _ -> optimize_exp p reg mem tj_env (dest, typ) body exp )
+      let srcv = reg.(int_of_id_t id_t1) in
+      let destv = reg.(int_of_id_t id_t2) in
+      let offsetv =
+        match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n
+      in
+      let body' = tj p reg mem tj_env body in
+      match (srcv, destv) with
+      | Green n1, Red n2 | LightGreen n1, Red n2 -> (
+        reg.(int_of_id_t dest) <- Green 0 ;
+        mem.(n1 + (n2 * x)) <- Green (int_of_id_t id_t1 |> Array.get reg |> value_of) ;
+        match offsetv with
+        | Green n | LightGreen n ->
+           let id' = Id.gentmp Type.Int in
+           Let
+             ( (id_t1, Type.Int)
+             , Set n1
+             , Let
+                 ( (id', Type.Int)
+                 , Set n
+                 , Let ((dest, typ), St (id_t1, id_t2, C n, x), body') ) )
+        | Red n ->
+           Let
+             ( (id_t1, Type.Int)
+             , Set n1
+             , Let ((dest, typ), St (id_t1, id_t2, id_or_imm, x), body') ) )
+      | _ -> optimize_exp p reg mem tj_env (dest, typ) body exp )
     | _ -> optimize_exp p reg mem tj_env (dest, typ) body exp )
 
 and optimize_exp p reg mem tj_env (dest, typ) body exp =
@@ -203,17 +201,13 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
      let pc = args |> find_pc tj_env |> Array.get reg in
      let reds = args |> List.filter (fun a -> is_red reg.(int_of_id_t a)) in
      let {merge_pc; trace_name} = tj_env in
-     if
-       value_of pc = merge_pc
-       &&
-         let (Id.L x) = id_l in
-         contains x "interp"
+     if value_of pc = merge_pc && let (Id.L x) = id_l in contains x "interp"
      then Ans (CallDir (Id.L trace_name, reds, []))
      else Inlining.inline_fundef reg args fundef |> tj p reg mem tj_env
-  | IfEq (_, _, Ans (CallDir (id_l, _, _)), t2) | SIfEq (_, _, Ans (CallDir (id_l, _, _)), t2)
-    when let (Id.L x) = id_l in
-         contains x "trace" ->
-      tj p reg mem tj_env t2
+  | IfEq (_, _, Ans (CallDir (id_l, _, _)), t2)
+  | SIfEq (_, _, Ans (CallDir (id_l, _, _)), t2)
+       when let (Id.L x) = id_l in contains x "trace" ->
+     tj p reg mem tj_env t2
   | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ as exp ->
      tj_if p reg mem tj_env exp
   | exp ->
@@ -244,9 +238,9 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
       let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
       match (r1, r2) with
       | Green n1, Green n2
-       |LightGreen n1, Green n2
-       |Green n1, LightGreen n2
-       |LightGreen n1, LightGreen n2 ->
+      | LightGreen n1, Green n2
+      | Green n1, LightGreen n2
+      | LightGreen n1, LightGreen n2 ->
          if exp |*| (n1, n2)
          then tj p reg mem tj_env t1
          else tj p reg mem tj_env t2
