@@ -93,8 +93,9 @@ let rec mj p reg mem env = function
                      , filter ~reds:(get_names env.red_args) args, fargs)
             , mj p reg mem env body))
      else
+       let interp = find_fundef' p "interp" |> fun { name } -> name in
        (Let ( (dest, typ)
-            , CallDir (Id.L "min_caml_mj_call", args, fargs)
+            , CallDir (interp, args, fargs)
             , mj p reg mem env body)) |> restore_and_concat args reg
   | Let ((dest, typ), CallDir (Id.L ("min_caml_can_enter_jit"), args, fargs), body) ->
      mj p reg mem env body
