@@ -109,7 +109,7 @@ let rec mj p reg mem env = function
      Asm.concat callee (dest, typ) succ
   | Let ((dest, typ), exp, body) ->
     match exp with
-    | IfEq _ | IfGE _ | IfLE _ ->
+    | (IfEq _ | IfGE _ | IfLE _ | SIfEq _ | SIfLE _ | SIfGE _) ->
        let t' = mj_if p reg mem env exp in
        let k = mj p reg mem env body in
        Asm.concat t' (dest, typ) k
@@ -168,9 +168,9 @@ and mj_exp p reg mem env = function
     end
 
 and mj_if p reg mem env = function
-  | SIfGE (id_t, id_or_imm, t1, t2)
-  | SIfEq (id_t, id_or_imm, t1, t2)
-  | SIfLE (id_t, id_or_imm, t1, t2) as exp ->
+  | IfGE (id_t, id_or_imm, t1, t2)
+  | IfEq (id_t, id_or_imm, t1, t2)
+  | IfLE (id_t, id_or_imm, t1, t2) as exp ->
      Log.debug
        (Printf.sprintf "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm)) ;
      let r1 = value_of reg.(int_of_id_t id_t) in
@@ -178,31 +178,30 @@ and mj_if p reg mem env = function
      if exp |*| (r1, r2)
      then mj p reg mem env t1
      else mj p reg mem env t2
-  | IfEq (id_t, id_or_imm, t1, t2)
-  | IfLE (id_t, id_or_imm, t1, t2)
-  | IfGE (id_t, id_or_imm, t1, t2) as exp ->
-    Log.debug
-      (Printf.sprintf "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm)) ;
-    let r1 = reg.(int_of_id_t id_t) in
-    let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
-    let regt1, regt2 = (Array.copy reg, Array.copy reg) in
-    let memt1, memt2 = (Array.copy mem, Array.copy mem) in
-    let t1' = mj p regt1 memt1 env t1 in
-    let t2' = mj p regt2 memt2 env t2 in
-    begin match (r1, r2) with
-    | Green n1, Green n2
-    | LightGreen n1, LightGreen n2
-    | Green n1, LightGreen n2
-    | LightGreen n1, Green n2 -> if exp |*| (n1, n2) then t1' else t2'
-    | Red n1, Green n2 | Red n1, LightGreen n2 -> Ans (exp |%| (id_t, C n2, t1', t2'))
-    | Green n1, Red n2 | LightGreen n1, Red n2 ->
-       let id_t2 = match id_or_imm with
-         | V id -> id
-         | C n -> failwith "id_or_imm should be string"
-       in
-       Ans (exp |%| (id_t2, C n1, t2', t1'))
-    | Red n1, Red n2 -> Ans (exp |%| (id_t, id_or_imm, t1', t2'))
-    end
+  | SIfEq (id_t, id_or_imm, t1, t2)
+  | SIfLE (id_t, id_or_imm, t1, t2)
+  | SIfGE (id_t, id_or_imm, t1, t2) as exp ->
+     Log.debug (Printf.sprintf "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
+     let r1 = reg.(int_of_id_t id_t) in
+     let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
+     let regt1, regt2 = (Array.copy reg, Array.copy reg) in
+     let memt1, memt2 = (Array.copy mem, Array.copy mem) in
+     let t1' = mj p regt1 memt1 env t1 in
+     let t2' = mj p regt2 memt2 env t2 in
+     begin match (r1, r2) with
+     | Green n1, Green n2
+     | LightGreen n1, LightGreen n2
+     | Green n1, LightGreen n2
+     | LightGreen n1, Green n2 -> if exp |*| (n1, n2) then t1' else t2'
+     | Red n1, Green n2 | Red n1, LightGreen n2 -> Ans (exp |%| (id_t, C n2, t1', t2'))
+     | Green n1, Red n2 | LightGreen n1, Red n2 ->
+        let id_t2 = match id_or_imm with
+          | V id -> id
+          | C n -> failwith "id_or_imm should be string"
+        in
+        Ans (exp |%| (id_t2, C n1, t2', t1'))
+     | Red n1, Red n2 -> Ans (exp |%| (id_t, id_or_imm, t1', t2'))
+     end
   | _ -> failwith "method_jit_if should accept conditional branches."
 
 let run_while (Prog (_, fundefs, main) as p) reg mem env =

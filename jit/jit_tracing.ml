@@ -105,6 +105,12 @@ let pc_header = ref 0
 
 let is_re_merge_point = ref false
 
+let (|%|) e (x, y, t1, t2) = match e with
+  | IfEq _ | SIfEq _ -> IfEq (x, y, t1, t2)
+  | IfGE _ | SIfGE _ -> IfGE (x, y, t1, t2)
+  | IfLE _ | SIfLE _ -> IfLE (x, y, t1, t2)
+  | _ -> assert false
+
 let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
   function
   | Ans exp -> tj_exp p reg mem tj_env exp
@@ -204,10 +210,6 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
      if value_of pc = merge_pc && let (Id.L x) = id_l in contains x "interp"
      then Ans (CallDir (Id.L trace_name, reds, []))
      else Inlining.inline_fundef reg args fundef |> tj p reg mem tj_env
-  | IfEq (_, _, Ans (CallDir (id_l, _, _)), t2)
-  | SIfEq (_, _, Ans (CallDir (id_l, _, _)), t2)
-       when let (Id.L x) = id_l in contains x "trace" ->
-     tj p reg mem tj_env t2
   | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ as exp ->
      tj_if p reg mem tj_env exp
   | exp ->
@@ -248,7 +250,7 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
          if exp |*| (n1, n2) then
             Ans
               ( exp
-              |%| ( id_t
+                |%| ( id_t
                   , C n2
                   , tj p reg mem tj_env t1
                   , Guard.create_guard reg tj_env t2
@@ -270,7 +272,7 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
           if exp |*| (n1, n2) then
             Ans
               ( exp
-              |%| ( id_r2
+                |%| ( id_r2
                   , C n1
                   , tj p reg mem tj_env t1
                   , Guard.create_guard reg tj_env t2
@@ -278,7 +280,7 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
           else
             Ans
               ( exp
-              |%| ( id_r2
+                |%| ( id_r2
                   , C n1
                   , Guard.create_guard reg tj_env t1
                     |> tj_guard_over p reg mem `False tj_env
@@ -287,7 +289,7 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
           if exp |*| (n1, n2) then
             Ans
               ( exp
-              |%| ( id_t
+                |%| ( id_t
                   , id_or_imm
                   , tj p reg mem tj_env t1
                   , Guard.create_guard reg tj_env t2
@@ -295,7 +297,7 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
           else
             Ans
               ( exp
-              |%| ( id_t
+                |%| ( id_t
                   , id_or_imm
                   , Guard.create_guard reg tj_env t1
                     |> tj_guard_over p reg mem `False tj_env

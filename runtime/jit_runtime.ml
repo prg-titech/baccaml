@@ -33,7 +33,7 @@ end = struct
 end
 
 module Internal_conf = struct
-  let size = 1000000
+  let size = 2000000
 
   (* TODO: specify extenally *)
   let greens = ["pc"; "bytecode"]
