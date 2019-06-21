@@ -192,14 +192,11 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
     ; JM.merge_pc = pc_method_entry }
   in
   let trace = JM.run prog reg mem env in
-  let Asm.{name; args; fargs; body; ret} = trace in
-  let t = tname_of_mj_call trace_name body in
-  let trace' = Asm.{name; args; fargs; body = t; ret} in
-  Debug.print_trace trace';
+  Debug.print_trace trace;
   flush_all ();
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
-    emit_dyn oc `Meta_method [trace']; close_out oc;
+    emit_dyn oc `Meta_method [trace]; close_out oc;
     compile_dyn (Trace_name.value trace_name)
   with e ->
     close_out oc; raise e

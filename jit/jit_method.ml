@@ -86,10 +86,16 @@ let rec mj p reg mem env = function
      Log.debug (Printf.sprintf "jit_merge_point pc: %d" pc);
      mj p reg mem env body
   | Let ((dest, typ), CallDir (Id.L ("min_caml_mj_call"), args, fargs), body) ->
-     (Let ( (dest, typ)
-          , CallDir (Id.L "min_caml_mj_call", args, fargs)
-          , mj p reg mem env body))
-     |> restore_and_concat args reg
+     let pc = List.nth args env.index_pc |> int_of_id_t |> Array.get reg |> value_of in
+     if pc = env.merge_pc then
+       (Let ( (dest, typ)
+            , CallDir (Id.L env.trace_name
+                     , filter ~reds:(get_names env.red_args) args, fargs)
+            , mj p reg mem env body))
+     else
+       (Let ( (dest, typ)
+            , CallDir (Id.L "min_caml_mj_call", args, fargs)
+            , mj p reg mem env body)) |> restore_and_concat args reg
   | Let ((dest, typ), CallDir (Id.L ("min_caml_can_enter_jit"), args, fargs), body) ->
      mj p reg mem env body
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
