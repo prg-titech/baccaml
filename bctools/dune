@@ -14,12 +14,10 @@
 
 (executable
  (name        baccaml)
- (public_name baccaml)
  (modules     baccaml)
  (libraries str base jit bc_lib))
 
 (executable
  (name        baccaml_builder)
- (public_name baccaml_builder)
  (modules     baccaml_builder)
  (libraries   base jit bc_lib))
