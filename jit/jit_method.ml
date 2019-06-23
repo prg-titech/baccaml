@@ -64,7 +64,7 @@ let rec restore_and_concat args reg cont =
      else restore_and_concat tl reg cont
 
 let get_names ids =
-  ids |> List.map (fun id -> id |> String.split_on_char '.' |> List.hd)
+  ids |> List.map (fun id -> String.index id '.' |> Str.string_before id)
 
 let filter ~reds =
   List.filter
@@ -74,6 +74,8 @@ let filter ~reds =
 
 let rec mj p reg mem env = function
   | Ans exp -> mj_exp p reg mem env exp
+  | Let ((dest, typ), CallDir (Id.L "min_caml_tracing_fail", args, fargs), body) ->
+     failwith "tracing failed."
   | Let ((dest, typ), CallDir (Id.L "min_caml_loop_start", args, fargs), body) ->
      failwith "loop_start is not supported."
   | Let ((dest, typ), CallDir (Id.L "min_caml_loop_end", args, fargs), body) ->

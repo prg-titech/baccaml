@@ -8,6 +8,7 @@ clean:
 
 test:
 	dune runtest -f
+	$(RM) *.so *.s
 
 doc:
 	dune build @doc
