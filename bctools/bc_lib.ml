@@ -27,12 +27,6 @@ type var = {redtbl: (string, int) Hashtbl.t; greentbl: (string, int) Hashtbl.t}
 
 type tenv = {fundefs: fundef list; ibody: Asm.t}
 
-exception Error of string
-
-
-let get_name x = String.split_on_char '.' x |> List.hd
-
-
 let annot is_mj (Prog (table, fundefs, main) as p) =
   let rec annot' is_mj = function
     | Ans e -> (
@@ -69,9 +63,12 @@ let annot is_mj (Prog (table, fundefs, main) as p) =
 let prepare_reds trace_args (Prog (_, fundefs, _) as p) =
   let {args} = find_fundef p (Id.L "interp") in
   args
-  |> List.filter (fun arg ->
-         trace_args |> List.exists (fun trace_arg -> trace_arg = get_name arg)
-       )
+  |> List.filter
+       (fun arg ->
+         trace_args
+         |> List.exists
+              (fun trace_arg ->
+                trace_arg = Str.string_before trace_arg (String.index trace_arg '.')))
 
 
 let prepare_var red_lst green_lst =
@@ -113,14 +110,14 @@ let prepare_tenv ~prog:p ~name:n ~red_args:reds =
           List.map
             (fun fundef ->
               let (Id.L x) = fundef.name in
-              match get_name x with
+              match Str.string_before x (String.index x '.') with
               | name' when name' = "interp" ->
                   let {name; args; fargs; ret} = fundef in
                   {name; args; fargs; body= interp_body; ret}
               | _ -> fundef )
             fundefs
       ; ibody= interp_body }
-  | _ -> raise (Error "Missing hint function: jit_dispatch")
+  | _ -> failwith ("Missing hint function: jit_dispatch")
 
 
 let prepare_env jit_type
