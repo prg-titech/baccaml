@@ -66,18 +66,18 @@ let rec interp stack sp bytecode pc =
       interp stack sp bytecode (pc + 2))
     else (
       stack.(sp) <- pc + 2;
-      interp stack (sp + 1) bytecode addr)
+      stack.(sp + 1) <- 200;
+      interp stack (sp + 2) bytecode addr)
   else if instr = 7 then        (* RET *)
-    let v = stack.(sp - 1) in
-    let mode = stack.(sp - 2) in
+    let v = stack.(sp - 1) in    (* sp: sp - 1 *)
+    let mode = stack.(sp - 2) in (* sp: sp - 2 *)
     if mode = 100 then
       v
     else (
       let n = bytecode.(pc + 1) in
-      let v = stack.(sp - 1) in   (* sp: sp - 1 *)
-      let pc2 = stack.(sp - 2) in (* sp: sp - 2 *)
-      stack.(sp - n - 2) <- v;    (* sp: sp - 2 - n + 1 = sp - 1 - n *)
-      interp stack (sp - n - 1) bytecode pc2)
+      let pc2 = stack.(sp - 3) in (* sp: sp - 3 *)
+      stack.(sp - n - 3) <- v;    (* sp: sp - 3 - n + 1 = sp - 2 - n *)
+      interp stack (sp - n - 2) bytecode pc2)
   else if instr = 8 then        (* DUP *)
     let n = bytecode.(pc + 1) in
     let v = stack.(sp - n - 1) in
