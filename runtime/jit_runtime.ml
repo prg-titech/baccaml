@@ -175,7 +175,6 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let env =
     E.create_env
       ~trace_name:(Trace_name.value trace_name)
-      ~red_args:(filter `Red args)
       ~red_names:(!Config.reds)
       ~index_pc:(List.index (get_id "pc" args) args)
       ~merge_pc:pc_method_entry in
@@ -213,7 +212,6 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
         List.index pc_id args)
       ~merge_pc:pc
       ~trace_name:(Trace_name.value trace_name)
-      ~red_args:(filter `Red args)
       ~red_names:(!Config.reds)
   in
   let trace = JT.run prog reg mem env in
