@@ -5,6 +5,7 @@ build:
 
 clean:
 	dune clean
+	$(RM) *.so *.s
 
 test:
 	dune runtest -f
