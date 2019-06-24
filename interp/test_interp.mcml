@@ -50,28 +50,28 @@ let rec interp stack sp bytecode pc =
     @if v = 0 then (
       @if addr < pc then (
         can_enter_jit stack sp2 bytecode addr;
-        interp stack (sp - 1) bytecode addr)
+        interp stack sp2 bytecode addr)
       else (
-        interp stack (sp - 1) bytecode addr))
+        interp stack sp2 bytecode addr))
     else (
-      interp stack (sp - 1) bytecode (pc + 2))
+      interp stack sp2 bytecode (pc + 2))
   else if instr = 6 then        (* CALL *)
     let addr = bytecode.(pc + 1) in
-    if is_mj () then
+    if is_mj () then (
       stack.(sp) <- 100;
-      let r = mj_call stack (sp + 1) bytecode addr in
+      let sp2 = sp + 1 in
+      let r = mj_call stack sp2 bytecode addr in
       stack.(sp - 1) <- r;
       interp stack sp bytecode (pc + 2)
-    else (
+    ) else (
       stack.(sp) <- pc + 2;
       stack.(sp + 1) <- 200;
-      interp stack (sp + 12) bytecode addr)
+      interp stack (sp + 2) bytecode addr)
   else if instr = 7 then        (* RET *)
     let v = stack.(sp - 1) in
     let mode = stack.(sp - 2) in
     if mode = 100 then v
     else (
-      tracing_fail ();
       let n = bytecode.(pc + 1) in
       let pc2 = stack.(sp - 3) in (* sp: sp - 2 *)
       stack.(sp - n - 3) <- v;    (* sp: sp - 2 - n + 1 = sp - 1 - n *)
@@ -109,7 +109,7 @@ let rec interp stack sp bytecode pc =
       can_enter_jit stack sp bytecode addr;
       interp stack sp bytecode addr)
     else (
-      interp stack (sp - 1) bytecode addr)
+      interp stack sp bytecode addr)
   else if instr = 15 then
     (method_entry ();
      interp stack sp bytecode (pc + 1))
@@ -139,17 +139,39 @@ code.(21) <- 4; code.(22) <- 2;
 code.(23) <- 2;
 code.(24) <- 6; code.(25) <- 1;
 code.(26) <- 1;
-code.(27) <- 7; code.(28) <- 1;
-code.(29) <- 4; code.(30) <- 11;
-code.(31) <- 6;
-code.(32) <- 1;
-code.(33) <- 9;
+code.(27) <- 7;
+code.(28) <- 4; code.(29) <- 11;
+code.(30) <- 6;
+code.(31) <- 1;
+code.(32) <- 9;
 let st = Array.make 50 (0) in
 let s = get_current_millis () in
-let res = (interp st 0 code 29) in
+let res = (interp st 0 code 28) in
 let e = get_current_millis () in
 print_int (e - s); print_newline ();
 print_int res; print_newline ();
+
+(* sum *)
+let code = Array.make 50 0 in
+code.(0) <- 15;
+code.(1) <- 8; code.(2) <- 1;
+code.(3) <- 4; code.(4) <- 2;
+code.(5) <- 3;
+code.(6) <- 5; code.(7) <- 12;
+code.(8) <- 4; code.(9) <- 1;
+code.(10) <- 14; code.(11) <- 22;
+code.(12) <- 8; code.(13) <- 1;
+code.(14) <- 8; code.(15) <- 2;
+code.(16) <- 4; code.(17) <- 1;
+code.(18) <- 2;
+code.(19) <- 6; code.(20) <- 1;
+code.(21) <- 1;
+code.(22) <- 7; code.(23) <- 1;
+code.(24) <- 4; code.(25) <- 10;
+code.(26) <- 6; code.(27) <- 1;
+code.(28) <- 9;
+let st = Array.make 100 0 in
+(* let res = (interp st 0 code 24) in print_int res; *)
 
 (* loop *)
 let code = Array.make 20 0 in
@@ -166,6 +188,6 @@ code.(15) <- 9;
 let st = Array.make 20 0 in
 st.(0) <- 200000;
 let s = get_current_millis () in
-let res = (interp st 1 code 3) in
+(* let res = (interp st 1 code 3) in *)
 let e = get_current_millis () in
 print_int (e - s); print_newline ()

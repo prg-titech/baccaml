@@ -1,4 +1,5 @@
 open Utils
+open Std
 open Base
 open Asm
 open Inlining
@@ -47,7 +48,11 @@ let rec restore_and_concat args reg cont =
      else restore_and_concat tl reg cont
 
 let get_names ids =
-  ids |> List.map (fun id -> String.index id '.' |> Str.string_before id)
+  ids |> List.map
+           (fun id ->
+             try
+               String.index id '.' |> Str.string_before id
+             with e -> id)
 
 let filter ~reds =
   List.filter
@@ -68,16 +73,16 @@ let rec mj p reg mem env = function
      mj p reg mem env body
   | Let ((dest, typ), CallDir (Id.L ("min_caml_jit_merge_point"), args, fargs), body) ->
      let pc = List.hd args |> int_of_id_t |> Array.get reg |> value_of in
-     Log.debug (Printf.sprintf "jit_merge_point pc: %d" pc);
+     Log.debug ("jit_merge_point pc: " ^ string_of_int pc);
      mj p reg mem env body
   | Let ((dest, typ), CallDir (Id.L ("min_caml_mj_call"), args, fargs), body) ->
      let pc = List.nth args env.index_pc |> int_of_id_t |> Array.get reg |> value_of in
-     if pc = env.merge_pc then
+     if pc = env.merge_pc then (
        (Let ( (dest, typ)
             , CallDir (Id.L env.trace_name
-                     , filter ~reds:(get_names env.red_args) args, fargs)
+                     , filter ~reds:(get_names (env.red_args @ ["sp2"])) args, fargs)
             , mj p reg mem env body))
-     else
+     ) else
        let interp = find_fundef' p "interp" |> fun { name } -> name in
        (Let ( (dest, typ)
             , CallDir (interp, args, fargs)
@@ -153,6 +158,14 @@ and mj_exp p reg mem env = function
     end
 
 and mj_if p reg mem env = function
+  | IfGE (id_t, id_or_imm, t1, t2)
+  | IfEq (id_t, id_or_imm, t1, t2)
+  | IfLE (id_t, id_or_imm, t1, t2) as exp when let name = String.get_name id_t in name = "mode" ->
+     Log.debug (Printf.sprintf "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
+     Log.debug (Printf.sprintf "mode: %d" (int_of_id_or_imm id_or_imm |> Array.get reg |> value_of));
+     Ans (exp |%%| (
+           mj p reg mem env t1
+         , Jit_guard.create reg env t2))
   | IfGE (id_t, id_or_imm, t1, t2)
   | IfEq (id_t, id_or_imm, t1, t2)
   | IfLE (id_t, id_or_imm, t1, t2) as exp ->

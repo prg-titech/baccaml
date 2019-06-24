@@ -21,10 +21,10 @@ let rec push stack sp v = stack.(sp) <- v in
 let rec interp stack sp bytecode pc =
   jit_merge_point pc stack sp;
   let instr = bytecode.(pc) in
-  print_string "pc: "; print_int pc; print_string " ";
+  (* print_string "pc: "; print_int pc; print_string " ";
   print_string "instr: "; print_int instr; print_string " ";
   print_string "sp: "; print_int sp; print_string " ";
-  print_array print_int stack; print_newline ();
+  print_array print_int stack; print_newline (); *)
   if instr = 1 then             (* ADD *)
     let v2 = pop stack sp in  (* sp: sp - 1 *)
     let v1 = pop stack (sp - 1) in  (* sp: sp - 2 *)
@@ -141,7 +141,7 @@ code.(23) <- 4; code.(24) <- 10;
 code.(25) <- 6; code.(26) <- 0;
 code.(27) <- 9;
 let stk = Array.make 40 0 in
-(* print_int (interp stk 0 code 23) *)
+print_int (interp stk 0 code 23);
 
 (* fib *)
 let code = Array.make 50 0 in
@@ -169,7 +169,8 @@ code.(32) <- 1;
 code.(33) <- 9;
 let st = Array.make 50 0 in
 let res = (interp st 0 code 29) in
-print_int res; print_newline ()
+()
+(* print_int res; print_newline () *)
 
 (* loop *)
 (* let code = Array.make 20 0 in

@@ -2,6 +2,7 @@ open Utils
 open Std
 open Base
 open Jit
+open Jit_env
 open Internal
 
 exception Jit_compilation_failed
@@ -40,7 +41,7 @@ module Internal_conf = struct
 
   let bc_tmp_addr = 0
 
-  let st_tmp_addr = 100
+  let st_tmp_addr = 1000
 end
 
 module Debug = struct
@@ -54,8 +55,8 @@ module Debug = struct
     if !Log.log_level = `Debug then
       let str = Array.string_of_array f arr in
       match nt with
-      | Some s -> Printf.printf "%s %s" s str
-      | None -> Printf.printf "%s" str
+      | Some s -> Printf.printf "%s %s\n" s str
+      | None -> Printf.printf "%s\n" str
     else ()
 end
 
@@ -134,7 +135,7 @@ let emit_dyn : out_channel -> [`Meta_method | `Meta_tracing] -> Asm.fundef list 
             |> Emit.Interop.h oc typ)
    with e -> close_out oc; raise e)
 
-type env_jit =
+type runtime_env =
   { bytecode: int array
   ; stack: int array
   ; pc: int
@@ -170,6 +171,7 @@ let rec tname_of_mj_call tname t =
        | _ -> Ans (e))
 
 let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
+  Debug.print_arr string_of_int bytecode;
   let prog = Jit_annot.annotate `Meta_method prog in
   let Asm.{args; body} = Jit_util.find_fundef' prog "interp" in
   let reg = make_reg prog args sp in
