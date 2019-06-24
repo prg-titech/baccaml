@@ -83,21 +83,23 @@ let get_so_name : string -> string =
       raise Exit
 
 let make_reg prog args sp =
-  let reg = Array.make Internal_conf.size (Jit_util.Red 0) in
-  let Asm.{args; body= t} = Jit_util.find_fundef' prog "interp" in
-  Asm.fv t @ args
-  |> List.iteri (fun i a ->
-      if List.mem (String.get_name a) Internal_conf.greens then reg.(i) <- Green 0
-      else reg.(i) <- Red 0 ) ;
-  reg
+  Jit_env.(
+    let reg = Array.make Internal_conf.size (Red 0) in
+    let Asm.{args; body= t} = Jit_util.find_fundef' prog "interp" in
+    Asm.fv t @ args
+    |> List.iteri (fun i a ->
+           if List.mem (String.get_name a) Internal_conf.greens then reg.(i) <- Green 0
+           else reg.(i) <- Red 0 ) ;
+    reg)
 
 let make_mem ~bc_addr ~st_addr bytecode stack =
-  let mem = Array.make Internal_conf.size (Jit_util.Green 0) in
-  bytecode
-  |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Jit_util.Green a) ;
-  stack
-  |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Jit_util.Red a) ;
-  mem
+  Jit_env.(
+    let mem = Array.make Internal_conf.size (Green 0) in
+    bytecode
+    |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Jit_env.Green a) ;
+    stack
+    |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Jit_env.Red a) ;
+    mem)
 
 let compile_dyn trace_name =
   let asm_name = trace_name ^ ".s" in
@@ -179,17 +181,18 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let sp_ir_addr = get_ir_addr args "sp" in
   let bc_ir_addr = get_ir_addr args "bytecode" in
   let st_ir_addr = get_ir_addr args "stack" in
-  reg.(pc_ir_addr) <- Green pc_method_entry ;
-  reg.(sp_ir_addr) <- Red sp ;
-  reg.(bc_ir_addr) <- Green Internal_conf.bc_tmp_addr ;
-  reg.(st_ir_addr) <- Red Internal_conf.st_tmp_addr ;
+  let module E = Jit_env in
+  reg.(pc_ir_addr) <- E.Green pc_method_entry ;
+  reg.(sp_ir_addr) <- E.Red sp ;
+  reg.(bc_ir_addr) <- E.Green Internal_conf.bc_tmp_addr ;
+  reg.(st_ir_addr) <- E.Red Internal_conf.st_tmp_addr ;
   let module JM = Jit_method in
   let trace_name = Trace_name.gen `Meta_method in
   let env =
-    { JM.trace_name = Trace_name.value trace_name
-    ; JM.red_args = filter `Red args
-    ; JM.index_pc = 3
-    ; JM.merge_pc = pc_method_entry }
+    E.{ trace_name = Trace_name.value trace_name
+      ; red_args = filter `Red args
+      ; index_pc = 3
+      ; merge_pc = pc_method_entry }
   in
   let trace = JM.run prog reg mem env in
   Debug.print_trace trace;
@@ -219,12 +222,10 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let module JT = Jit_tracing in
   let trace_name = Trace_name.gen `Meta_tracing in
   let env =
-    { JT.index_pc = 3
-    ; JT.merge_pc = pc
-    ; JT.trace_name = Trace_name.value trace_name
-    ; JT.red_args = filter `Red args
-    ; JT.bytecode_ptr= bc_ptr
-    ; JT.stack_ptr = st_ptr }
+    Jit_env.{ index_pc = 3
+    ; merge_pc = pc
+    ; trace_name = Trace_name.value trace_name
+    ; red_args = filter `Red args }
   in
   let trace = JT.run prog reg mem env in
   Debug.print_trace trace;

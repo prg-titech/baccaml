@@ -3,35 +3,18 @@ open Base
 open Asm
 open Inlining
 open Renaming
+open Jit_env
 open Jit_util
 open Operands
 
 (* function_name -> (arguments, following expressions) *)
 module M = Map.Make (String)
 
-type mj_env = {
-    trace_name : string;
-    red_args : string list;
-    index_pc : int;
-    merge_pc : int
-  }
-
 let index_pc = ref 0
 
 let merge_pc = ref 0
 
 let red_names = ref [""]
-
-let print_list f lst =
-  print_string "[";
-  List.map f lst |> String.concat "; " |> print_string;
-  print_string "]"
-
-let empty_fenv () = M.empty
-
-let extend_fenv name args func fenv = M.add name (args, func) fenv
-
-let gen_fname id = Id.genid id
 
 let find_pc args =
   match List.nth_opt args !index_pc with

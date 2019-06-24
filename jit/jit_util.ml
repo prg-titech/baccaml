@@ -1,14 +1,12 @@
 open Base
 open Asm
+open Utils
+open Std
+open Jit_env
 
 exception Error
 
 let zero = "zero.0"
-
-type value = Red of int | Green of int | LightGreen of int
-type reg = value array
-type mem = value array
-type jit_result = Specialized of value | Not_specialized of exp * value
 
 let int_of_id_t = function
   | "min_caml_hp" -> failwith "min_caml_hp is not supported."
