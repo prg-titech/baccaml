@@ -6,23 +6,7 @@ open Inlining
 open Renaming
 open Operands
 open Jit_util
-
-type tj_env =
-  { trace_name: string
-  ; red_args: string list
-  ; index_pc: int
-  ; merge_pc: int
-  ; bytecode_ptr: int
-  ; stack_ptr: int }
-
-let rec unique list =
-  let rec go l s =
-    match l with
-    | [] -> s
-    | first :: rest ->
-        if List.exists (fun e -> e = first) s then go rest s else go rest (s @ [first])
-  in
-  go list []
+open Jit_env
 
 let find_pc {index_pc} args =
   match List.nth_opt args index_pc with
@@ -62,7 +46,20 @@ let rec zip x y =
   | h1 :: t1, h2 :: t2 -> (h1, h2) :: zip t1 t2
   | _ -> failwith "the lengths of x and y are not equeal"
 
-module Guard = struct
+module Guard : sig
+  val create_guard : value array -> Jit_env.env -> ?wlist:string list -> t -> t
+end = struct
+
+  let rec unique list =
+    let rec go l s =
+      match l with
+      | [] -> s
+      | first :: rest ->
+         if List.exists (fun e -> e = first) s
+         then go rest s
+         else go rest (s @ [first])
+    in go list []
+
   let rec add_guard_label reg path tj_env = function
     | Ans (CallDir (Id.L x, args, fargs)) -> (
         let {index_pc; merge_pc; trace_name} = tj_env in
@@ -111,7 +108,7 @@ let (|%|) e (x, y, t1, t2) = match e with
   | IfLE _ | SIfLE _ -> IfLE (x, y, t1, t2)
   | _ -> assert false
 
-let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
+let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : Jit_env.env) =
   function
   | Ans exp -> tj_exp p reg mem tj_env exp
   | Let ((dest, typ), CallDir (Id.L "min_caml_can_enter_jit", args, fargs), body) ->
@@ -199,7 +196,7 @@ and optimize_exp p reg mem tj_env (dest, typ) body exp =
     reg.(int_of_id_t dest) <- v ;
     Let ((dest, typ), e, tj p reg mem tj_env body)
 
-and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
+and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : Jit_env.env) =
   function
   | CallDir (id_l, args, fargs) ->
      Log.debug (Printf.sprintf "CallDir (%s)" (string_of_id_l id_l)) ;
@@ -217,7 +214,7 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
      | Specialized v -> Ans (Set (value_of v))
      | Not_specialized (e, v) -> Ans e
 
-and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) = function
+and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : Jit_env.env) = function
   | IfEq (id_t, id_or_imm, t1, t2)
   | IfLE (id_t, id_or_imm, t1, t2)
   | IfGE (id_t, id_or_imm, t1, t2)
@@ -326,7 +323,7 @@ and tj_guard_over p reg mem path tj_env = function
 
 (* mem name reds index_pc merge_pc *)
 let run_while p reg mem
-    ({trace_name; red_args; index_pc; merge_pc; bytecode_ptr; stack_ptr} as env) =
+    ({trace_name; red_args; index_pc; merge_pc;} as env) =
   let (Prog (tbl, fundefs, m)) = p in
   let {body= ibody} = find_fundef' p "interp" in
   let trace = ibody |> tj p reg mem env in

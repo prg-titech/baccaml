@@ -267,6 +267,9 @@ min_caml_is_mj:
 .globl min_caml_method_entry
 min_caml_method_entry:
     ret
+.globl min_caml_tracing_fail
+min_caml_tracing_fail:
+    ret
 .globl min_caml_can_enter_jit
 min_caml_can_enter_jit:
     pushl   %ebp

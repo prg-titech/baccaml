@@ -1,37 +1,21 @@
 open Utils
+open Std
 open Base
 open Asm
 open Inlining
 open Renaming
+open Jit_env
 open Jit_util
 open Operands
 
 (* function_name -> (arguments, following expressions) *)
 module M = Map.Make (String)
 
-type mj_env = {
-    trace_name : string;
-    red_args : string list;
-    index_pc : int;
-    merge_pc : int
-  }
-
 let index_pc = ref 0
 
 let merge_pc = ref 0
 
 let red_names = ref [""]
-
-let print_list f lst =
-  print_string "[";
-  List.map f lst |> String.concat "; " |> print_string;
-  print_string "]"
-
-let empty_fenv () = M.empty
-
-let extend_fenv name args func fenv = M.add name (args, func) fenv
-
-let gen_fname id = Id.genid id
 
 let find_pc args =
   match List.nth_opt args !index_pc with
@@ -64,7 +48,11 @@ let rec restore_and_concat args reg cont =
      else restore_and_concat tl reg cont
 
 let get_names ids =
-  ids |> List.map (fun id -> id |> String.split_on_char '.' |> List.hd)
+  ids |> List.map
+           (fun id ->
+             try
+               String.index id '.' |> Str.string_before id
+             with e -> id)
 
 let filter ~reds =
   List.filter
@@ -74,6 +62,8 @@ let filter ~reds =
 
 let rec mj p reg mem env = function
   | Ans exp -> mj_exp p reg mem env exp
+  | Let ((dest, typ), CallDir (Id.L "min_caml_tracing_fail", args, fargs), body) ->
+     failwith "tracing failed."
   | Let ((dest, typ), CallDir (Id.L "min_caml_loop_start", args, fargs), body) ->
      failwith "loop_start is not supported."
   | Let ((dest, typ), CallDir (Id.L "min_caml_loop_end", args, fargs), body) ->
@@ -83,16 +73,16 @@ let rec mj p reg mem env = function
      mj p reg mem env body
   | Let ((dest, typ), CallDir (Id.L ("min_caml_jit_merge_point"), args, fargs), body) ->
      let pc = List.hd args |> int_of_id_t |> Array.get reg |> value_of in
-     Log.debug (Printf.sprintf "jit_merge_point pc: %d" pc);
+     Log.debug ("jit_merge_point pc: " ^ string_of_int pc);
      mj p reg mem env body
   | Let ((dest, typ), CallDir (Id.L ("min_caml_mj_call"), args, fargs), body) ->
      let pc = List.nth args env.index_pc |> int_of_id_t |> Array.get reg |> value_of in
-     if pc = env.merge_pc then
+     if pc = env.merge_pc then (
        (Let ( (dest, typ)
             , CallDir (Id.L env.trace_name
-                     , filter ~reds:(get_names env.red_args) args, fargs)
+                     , filter ~reds:(get_names (env.red_args @ ["sp2"])) args, fargs)
             , mj p reg mem env body))
-     else
+     ) else
        let interp = find_fundef' p "interp" |> fun { name } -> name in
        (Let ( (dest, typ)
             , CallDir (interp, args, fargs)
@@ -168,6 +158,14 @@ and mj_exp p reg mem env = function
     end
 
 and mj_if p reg mem env = function
+  | IfGE (id_t, id_or_imm, t1, t2)
+  | IfEq (id_t, id_or_imm, t1, t2)
+  | IfLE (id_t, id_or_imm, t1, t2) as exp when let name = String.get_name id_t in name = "mode" ->
+     Log.debug (Printf.sprintf "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
+     Log.debug (Printf.sprintf "mode: %d" (int_of_id_or_imm id_or_imm |> Array.get reg |> value_of));
+     Ans (exp |%%| (
+           mj p reg mem env t1
+         , Jit_guard.create reg env t2))
   | IfGE (id_t, id_or_imm, t1, t2)
   | IfEq (id_t, id_or_imm, t1, t2)
   | IfLE (id_t, id_or_imm, t1, t2) as exp ->

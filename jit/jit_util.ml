@@ -1,14 +1,12 @@
 open Base
 open Asm
+open Utils
+open Std
+open Jit_env
 
 exception Error
 
 let zero = "zero.0"
-
-type value = Red of int | Green of int | LightGreen of int
-type reg = value array
-type mem = value array
-type jit_result = Specialized of value | Not_specialized of exp * value
 
 let int_of_id_t = function
   | "min_caml_hp" -> failwith "min_caml_hp is not supported."
@@ -24,7 +22,12 @@ let int_of_id_t = function
       | None -> (
         match int_of_id_t' 'u' id with Some v -> v | None -> raise Error ) )
 
+let int_of_id_or_imm = function
+  | V (id) -> int_of_id_t id
+  | C (n) -> n
+
 let value_of = function Red n | Green n | LightGreen n -> n
+
 let is_red = function Red _ -> true | _ -> false
 let is_green = function Green _ -> true | _ -> false
 let is_light_green = function LightGreen _ -> true | _ -> false
