@@ -146,28 +146,29 @@ let stk = Array.make 40 0 in
 (* fib *)
 let code = Array.make 50 0 in
 save_bp ();
-code.(0) <- 8; code.(1) <- 1;
-code.(2) <- 4; code.(3) <- 2;
-code.(4) <- 3;
-code.(5) <- 5; code.(6) <- 11;
-code.(7) <- 8; code.(8) <- 1;
-code.(9) <- 14; code.(10) <- 26;
-code.(11) <- 8; code.(12) <- 1;
-code.(13) <- 4; code.(14) <- 1;
-code.(15) <- 2;
-code.(16) <- 6; code.(17) <- 0;
-code.(18) <- 8; code.(19) <- 2;
-code.(20) <- 4; code.(21) <- 2;
-code.(22) <- 2;
-code.(23) <- 6; code.(24) <- 0;
-code.(25) <- 1;
-code.(26) <- 7; code.(27) <- 1;
-code.(28) <- 4; code.(29) <- 11;
-code.(30) <- 6;
-code.(31) <- 0;
-code.(32) <- 9;
+code.(0) <- 15;
+code.(1) <- 8; code.(2) <- 1;
+code.(3) <- 4; code.(4) <- 2;
+code.(5) <- 3;
+code.(6) <- 5; code.(7) <- 12;
+code.(8) <- 8; code.(9) <- 1;
+code.(10) <- 14; code.(11) <- 27;
+code.(12) <- 8; code.(13) <- 1;
+code.(14) <- 4; code.(15) <- 1;
+code.(16) <- 2;
+code.(17) <- 6; code.(18) <- 1;
+code.(19) <- 8; code.(20) <- 2;
+code.(21) <- 4; code.(22) <- 2;
+code.(23) <- 2;
+code.(24) <- 6; code.(25) <- 1;
+code.(26) <- 1;
+code.(27) <- 7; code.(28) <- 1;
+code.(29) <- 4; code.(30) <- 11;
+code.(31) <- 6;
+code.(32) <- 1;
+code.(33) <- 9;
 let st = Array.make 50 0 in
-let res = (interp st 0 code 28) in
+let res = (interp st 0 code 29) in
 print_int res; print_newline ()
 
 (* loop *)
