@@ -46,57 +46,7 @@ let rec zip x y =
   | h1 :: t1, h2 :: t2 -> (h1, h2) :: zip t1 t2
   | _ -> failwith "the lengths of x and y are not equeal"
 
-module Guard : sig
-  val create_guard : value array -> Jit_env.env -> ?wlist:string list -> t -> t
-end = struct
-
-  let rec unique list =
-    let rec go l s =
-      match l with
-      | [] -> s
-      | first :: rest ->
-         if List.exists (fun e -> e = first) s
-         then go rest s
-         else go rest (s @ [first])
-    in go list []
-
-  let rec add_guard_label reg path tj_env = function
-    | Ans (CallDir (Id.L x, args, fargs)) -> (
-        let {index_pc; merge_pc; trace_name} = tj_env in
-        let pc =
-          match List.nth_opt args index_pc with
-          | Some id -> reg.(int_of_id_t id) |> value_of
-          | None ->
-              failwith (Printf.sprintf "specified index_pc is invalid: %d" index_pc)
-        in
-        match path with
-        | `True when pc = merge_pc -> Ans (CallDir (Id.L trace_name, args, fargs))
-        | `True -> Ans (CallDir (Id.L (x), args, fargs))
-        | `False -> Ans (CallDir (Id.L "min_caml_mid_layer", args, fargs)) )
-    | Ans exp -> Ans exp
-    | Let ((id, typ), exp, body) ->
-      Let ((id, typ), exp, add_guard_label reg path tj_env body)
-
-  let create_guard reg tj_env ?wlist:(ws = []) cont =
-    let free_vars = unique (fv cont) in
-    let ignored x ys =
-      ys |> List.exists (fun y -> String.split_on_char '.' x |> List.hd = y)
-    in
-    let rec restore cont = function
-      | [] -> cont
-      | hd :: tl when not (ignored hd ws) ->
-        begin match reg.(int_of_id_t hd) with
-        | Green n when (String.contains hd "bytecode") ->
-           Let ((hd, Type.Int),
-                CallDir (Id.L ("restore_min_caml_bp"), [], []), restore cont tl)
-        | Green n ->
-           Let ((hd, Type.Int), Set n, restore cont tl)
-        | _ -> restore cont tl
-        end
-      | hd :: tl -> restore cont tl
-    in
-    restore cont free_vars
-end
+module Guard = Jit_guard
 
 let pc_header = ref 0
 
@@ -120,7 +70,7 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : Jit_env.
   | Let ((dest, typ), CallDir (Id.L "min_caml_jit_merge_point", args, fargs), body) ->
       let {index_pc; merge_pc; trace_name} = tj_env in
       let pc = List.hd args |> int_of_id_t |> Array.get reg |> value_of in
-      let reds = List.tl args in
+      let reds = args |> List.filter (fun arg -> List.mem (String.get_name arg) tj_env.red_names)in
       Log.debug (Printf.sprintf "jit_merge_point: pc %d" pc) ;
       if not !is_re_merge_point then (
         pc_header := pc ;
@@ -221,112 +171,78 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : Jit_env.e
   | SIfEq (id_t, id_or_imm, t1, t2)
   | SIfLE (id_t, id_or_imm, t1, t2)
   | SIfGE (id_t, id_or_imm, t1, t2) as exp -> (
-      Log.debug
-        (let if_rep =
-           match exp with
-           | IfEq _ -> "IfEq"
-           | IfLE _ -> "IfLE"
-           | IfGE _ -> "IfGE"
-           | SIfEq _ -> "SIfEq"
-           | SIfLE _ -> "SIfLE"
-           | SIfGE _ -> "SIfGE"
-           | _ -> failwith "If expression should be come here."
-         in
-         Printf.sprintf "%s (%s, %s)" if_rep id_t (string_of_id_or_imm id_or_imm)) ;
-      let r1 = reg.(int_of_id_t id_t) in
-      let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
-      match (r1, r2) with
-      | Green n1, Green n2
-      | LightGreen n1, Green n2
-      | Green n1, LightGreen n2
-      | LightGreen n1, LightGreen n2 ->
-         if exp |*| (n1, n2)
-         then tj p reg mem tj_env t1
-         else tj p reg mem tj_env t2
-      | Red n1, Green n2 | Red n1, LightGreen n2 ->
-         if exp |*| (n1, n2) then
-            Ans
-              ( exp
-                |%| ( id_t
-                  , C n2
-                  , tj p reg mem tj_env t1
-                  , Guard.create_guard reg tj_env t2
-                    |> tj_guard_over p reg mem `False tj_env ) )
-          else
-            Ans
-              ( exp
-              |%| ( id_t
-                  , C n2
-                  , Guard.create_guard reg tj_env t1
-                    |> tj_guard_over p reg mem `False tj_env
-                  , tj p reg mem tj_env t2 ) )
-      | Green n1, Red n2 | LightGreen n1, Red n2 ->
-          let id_r2 =
-            match id_or_imm with
-            | V id -> id
-            | C n -> failwith "id_or_imm should be string"
-          in
-          if exp |*| (n1, n2) then
-            Ans
-              ( exp
-                |%| ( id_r2
-                  , C n1
-                  , tj p reg mem tj_env t1
-                  , Guard.create_guard reg tj_env t2
-                    |> tj_guard_over p reg mem `False tj_env ) )
-          else
-            Ans
-              ( exp
-                |%| ( id_r2
-                  , C n1
-                  , Guard.create_guard reg tj_env t1
-                    |> tj_guard_over p reg mem `False tj_env
-                  , tj p reg mem tj_env t2 ) )
-      | Red n1, Red n2 ->
-          if exp |*| (n1, n2) then
-            Ans
-              ( exp
-                |%| ( id_t
-                  , id_or_imm
-                  , tj p reg mem tj_env t1
-                  , Guard.create_guard reg tj_env t2
-                    |> tj_guard_over p reg mem `False tj_env ) )
-          else
-            Ans
-              ( exp
-                |%| ( id_t
-                  , id_or_imm
-                  , Guard.create_guard reg tj_env t1
-                    |> tj_guard_over p reg mem `False tj_env
-                  , tj p reg mem tj_env t2 ) ) )
+    Log.debug (Printf.sprintf "If (%s, %s)" id_t (string_of_id_or_imm id_or_imm)) ;
+    let r1 = reg.(int_of_id_t id_t) in
+    let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
+    match (r1, r2) with
+    | Green n1, Green n2
+    | LightGreen n1, Green n2
+    | Green n1, LightGreen n2
+    | LightGreen n1, LightGreen n2 ->
+       if exp |*| (n1, n2)
+       then tj p reg mem tj_env t1
+       else tj p reg mem tj_env t2
+    | Red n1, Green n2 | Red n1, LightGreen n2 ->
+       if exp |*| (n1, n2) then
+         Ans
+           ( exp
+             |%| ( id_t
+                 , C n2
+                 , tj p reg mem tj_env t1
+                 , Guard.create reg tj_env t2) )
+       else
+         Ans
+           ( exp
+             |%| ( id_t
+                 , C n2
+                 , Guard.create reg tj_env t1
+                 , tj p reg mem tj_env t2 ) )
+    | Green n1, Red n2 | LightGreen n1, Red n2 ->
+       let id_r2 =
+         match id_or_imm with
+         | V id -> id
+         | C n -> failwith "id_or_imm should be string"
+       in
+       if exp |*| (n1, n2) then
+         Ans
+           ( exp
+             |%| ( id_r2
+                 , C n1
+                 , tj p reg mem tj_env t1
+                 , Guard.create reg tj_env t2) )
+       else
+         Ans
+           ( exp
+             |%| ( id_r2
+                 , C n1
+                 , Guard.create reg tj_env t1
+                 , tj p reg mem tj_env t2 ) )
+    | Red n1, Red n2 ->
+       if exp |*| (n1, n2) then
+         Ans
+           ( exp
+             |%| ( id_t
+                 , id_or_imm
+                 , tj p reg mem tj_env t1
+                 , Guard.create reg tj_env t2) )
+       else
+         Ans
+           ( exp
+             |%| ( id_t
+                 , id_or_imm
+                 , Guard.create reg tj_env t1
+                 , tj p reg mem tj_env t2 ) ) )
   | e -> (
     match Jit_optimizer.run p e reg mem with
     | Specialized v -> Ans (Set (value_of v))
     | Not_specialized (e, v) -> Ans e )
 
-and tj_guard_over p reg mem path tj_env = function
-  | Ans (CallDir (Id.L x, args, fargs)) -> (
-      let fundef = find_fundef (Id.L x) p in
-      let {index_pc; merge_pc; trace_name} = tj_env in
-      let pc =
-        match List.nth_opt args index_pc with
-        | Some id -> reg.(int_of_id_t id) |> value_of
-        | None -> failwith (Printf.sprintf "specified index_pc is invalid: %d" index_pc)
-      in
-      match path with
-      | `True when pc = merge_pc -> Ans (CallDir (Id.L trace_name, args, fargs))
-      | `True -> Inlining.inline_fundef reg args fundef |> tj p reg mem tj_env
-      | `False -> Ans (CallDir (Id.L (x), args, fargs)) )
-  | Ans exp -> Ans exp
-  | Let ((id, typ), exp, body) ->
-      Let ((id, typ), exp, tj_guard_over p reg mem path tj_env body)
-
-(* mem name reds index_pc merge_pc *)
-let run_while p reg mem
-    ({trace_name; red_args; index_pc; merge_pc;} as env) =
+let run p reg mem ({trace_name; red_names; index_pc; merge_pc;} as env) =
   let (Prog (tbl, fundefs, m)) = p in
-  let {body= ibody} = find_fundef' p "interp" in
+  let {body= ibody; args= iargs} = find_fundef' p "interp" in
   let trace = ibody |> tj p reg mem env in
-  {name= Id.L trace_name; args= red_args; fargs= []; body= trace; ret= Type.Int}
-
-let run p reg mem tj_env = run_while p reg mem tj_env
+  {name= Id.L trace_name
+  ; args= iargs |> List.filter (fun arg -> List.mem (String.get_name arg) red_names)
+  ; fargs= []
+  ; body= trace
+  ; ret= Type.Int}

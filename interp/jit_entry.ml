@@ -1,11 +1,12 @@
 open Runtime
-open Jit_runtime
+open Config
 
 let () =
   Arg.parse
-    [("--no-jit", Arg.Unit (fun _ -> Config.jit_flag := `Off), "disable jit compilation");
-     ("--debug", Arg.Unit (fun _ -> Config.set_log_level `Debug), "enable debug mode")]
+    [("--no-jit", Arg.Unit (fun _ -> set jit_flag `Off), "disable jit compilation");
+     ("--debug", Arg.Unit (fun _ -> set log_level `Debug), "enable debug mode")]
     (fun file -> ())
     ("Usage: " ^ Sys.argv.(0) ^ " [--options] [your interp]");
-  Config.file_name := Some (Filename.dirname Sys.argv.(0) ^ "/test_interp.mcml");
-  callbacks ()
+  set file_name (Some (Filename.dirname Sys.argv.(0) ^ "/test_interp.mcml"));
+  set reds (["stack"; "sp"; "sp2"]);
+  Jit_runtime.callbacks ()

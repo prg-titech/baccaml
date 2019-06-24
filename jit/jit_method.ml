@@ -80,7 +80,7 @@ let rec mj p reg mem env = function
      if pc = env.merge_pc then (
        (Let ( (dest, typ)
             , CallDir (Id.L env.trace_name
-                     , filter ~reds:(get_names (env.red_args @ ["sp2"])) args, fargs)
+                     , filter ~reds:(get_names (env.red_names)) args, fargs)
             , mj p reg mem env body))
      ) else
        let interp = find_fundef' p "interp" |> fun { name } -> name in
@@ -202,14 +202,12 @@ and mj_if p reg mem env = function
      end
   | _ -> failwith "method_jit_if should accept conditional branches."
 
-let run_while (Prog (_, fundefs, main) as p) reg mem env =
-  let body' =
-    find_fundef' p "interp"
-    |> fun { body } -> mj p reg mem env body
-  in Asm.{ name= Id.L env.trace_name; args= env.red_args; fargs= []; body= body'; ret= Type.Int }
 
-let run prog reg mem ({trace_name; red_args; index_pc= x; merge_pc= y} as env) =
-  index_pc := x ;
-  merge_pc := y ;
-  red_names := red_args |> List.map (fun arg -> String.split_on_char '.' arg |> List.hd);
-  run_while prog reg mem env
+let run prog reg mem ({trace_name; red_args; red_names; index_pc= x; merge_pc= y} as env) =
+  let { args; body } = find_fundef' prog "interp" in
+  let trace = mj prog reg mem env body in
+  { name= Id.L env.trace_name
+  ; args= args |> List.filter (fun arg -> List.mem (String.get_name arg) red_names)
+  ; fargs= []
+  ; body= trace
+  ; ret= Type.Int }

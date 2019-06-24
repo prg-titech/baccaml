@@ -1,7 +1,15 @@
+open Utils
+
 let file_name = ref None
 
 let pc_method_annot_inst = 15
 
 let jit_flag = ref `On
 
-let set_log_level lvl = Utils.Log.log_level := lvl
+let reds = ref [""]
+
+let log_level = Log.log_level
+
+let set field value = field := value
+
+let () = Log.log_level := !log_level

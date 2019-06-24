@@ -37,6 +37,25 @@ module List = struct
     | [] -> raise Bad_access
     | [x] -> x
     | hd :: tl -> last tl
+
+  let index elem lst =
+    let rec go elem lst i =
+      match lst with
+      | [] -> raise Not_found
+      | hd :: tl ->
+         if hd = elem then i
+         else go elem tl (i + 1)
+    in go elem lst 0
+
+  let index_opt elem lst =
+    let rec go elem lst i =
+      match lst with
+      | [] -> None
+      | hd :: tl ->
+         if hd = elem then Some (i)
+         else go elem tl (i + 1)
+    in go elem lst 0
+
 end
 
 module Try = struct

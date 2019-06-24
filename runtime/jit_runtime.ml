@@ -143,32 +143,14 @@ type runtime_env =
   ; bc_ptr: int
   ; st_ptr: int }
 
+let get_id elem =
+  List.find (fun arg -> String.get_name arg = elem)
+
 let filter typ = match typ with
     `Red ->
-     List.filter (fun a -> not (List.mem (String.get_name a) Internal_conf.greens))
+     List.filter (fun a -> (List.mem (String.get_name a) !Config.reds))
   | `Green ->
      List.filter (fun a -> List.mem (String.get_name a) Internal_conf.greens)
-
-let rec tname_of_mj_call tname t =
-  Asm.(
-    let f = tname_of_mj_call tname in
-    match t with
-    | Let (x, e, t) ->
-       begin match e with
-       | CallDir (id_l, args, fargs) when id_l = Id.L ("min_caml_mj_call") ->
-          Let (x, CallDir (Id.L (Trace_name.value tname), args, fargs), f t)
-       | _ ->
-          Let (x, e, f t)
-       end
-    | Ans (e) ->
-       match e with
-       | IfEq (x, y, t1, t2) ->
-          Ans (IfEq (x, y, f t1, f t2))
-       | IfLE (x, y, t1, t2) ->
-          Ans (IfLE (x, y, f t1, f t2))
-       | IfGE (x, y, t1, t2) ->
-          Ans (IfGE (x, y, f t1, f t2))
-       | _ -> Ans (e))
 
 let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   Debug.print_arr string_of_int bytecode;
@@ -191,12 +173,13 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let module JM = Jit_method in
   let trace_name = Trace_name.gen `Meta_method in
   let env =
-    E.{ trace_name = Trace_name.value trace_name
-      ; red_args = filter `Red args
-      ; index_pc = 3
-      ; merge_pc = pc_method_entry }
-  in
-  let trace = JM.run prog reg mem env in
+    E.create_env
+      ~trace_name:(Trace_name.value trace_name)
+      ~red_args:(filter `Red args)
+      ~red_names:(!Config.reds)
+      ~index_pc:(List.index (get_id "pc" args) args)
+      ~merge_pc:pc_method_entry in
+  let trace = JM.run prog reg mem env |> Jit_elim.elim_fundef ~i:1 in
   Debug.print_trace trace;
   flush_all ();
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
@@ -224,10 +207,14 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let module JT = Jit_tracing in
   let trace_name = Trace_name.gen `Meta_tracing in
   let env =
-    Jit_env.{ index_pc = 3
-    ; merge_pc = pc
-    ; trace_name = Trace_name.value trace_name
-    ; red_args = filter `Red args }
+    Jit_env.create_env
+      ~index_pc:(
+        let pc_id = List.find (fun arg -> String.get_name arg = "pc") args in
+        List.index pc_id args)
+      ~merge_pc:pc
+      ~trace_name:(Trace_name.value trace_name)
+      ~red_args:(filter `Red args)
+      ~red_names:(!Config.reds)
   in
   let trace = JT.run prog reg mem env in
   Debug.print_trace trace;

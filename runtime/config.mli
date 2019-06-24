@@ -1,4 +1,7 @@
+open Utils
 val file_name : string option ref
 val pc_method_annot_inst: int
+val reds : string list ref
 val jit_flag : [`On | `Off] ref
-val set_log_level : Utils.Log.level -> unit
+val log_level : Log.level ref
+val set : 'a ref -> 'a -> unit
