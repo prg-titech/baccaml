@@ -1,6 +1,10 @@
 (* 2オペランドではなく3オペランドのx86アセンブリもどき *)
 type id_or_imm = V of Id.t | C of int
 
+let string_of_id_or_imm = function
+  | V (id) -> "V " ^ id
+  | C (n) -> "C " ^ string_of_int n
+
 let rec print_id_or_imm = function
   | V id_t -> print_string "V ("; print_string id_t; print_string ")"
   | C n -> print_string "C "; print_int n; print_string " "

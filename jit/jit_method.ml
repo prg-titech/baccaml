@@ -11,26 +11,9 @@ open Operands
 (* function_name -> (arguments, following expressions) *)
 module M = Map.Make (String)
 
-let index_pc = ref 0
-
 let merge_pc = ref 0
 
 let red_names = ref [""]
-
-let find_pc args =
-  match List.nth_opt args !index_pc with
-  | Some v -> int_of_id_t v
-  | None ->
-     let arg_strings = "[|" ^ (args |> String.concat "; ") ^ "|]" in
-     failwith (Printf.sprintf "find_pc is failed. index_pc: %d, args: %s" !index_pc arg_strings)
-
-let find_fundef name prog =
-  let (Prog (_, fundefs, _)) = prog in
-  match fundefs |> List.find_opt (fun fundef -> fundef.name = name) with
-  | Some body -> body
-  | None ->
-      let (Id.L x) = name in
-      failwith @@ Printf.sprintf "find_fundef is failed: %s" x
 
 let rec restore_and_concat args reg cont =
   match args with
@@ -47,12 +30,11 @@ let rec restore_and_concat args reg cont =
            , restore_and_concat tl reg cont)
      else restore_and_concat tl reg cont
 
-let get_names ids =
-  ids |> List.map
-           (fun id ->
-             try
-               String.index id '.' |> Str.string_before id
-             with e -> id)
+let get_names =
+  List.map
+    (fun id ->
+      try String.index id '.' |> Str.string_before id
+      with e -> id)
 
 let filter ~reds =
   List.filter
@@ -83,7 +65,7 @@ let rec mj p reg mem env = function
                      , filter ~reds:(get_names (env.red_names)) args, fargs)
             , mj p reg mem env body))
      ) else
-       let interp = find_fundef' p "interp" |> fun { name } -> name in
+       let interp = Fundef.find_fuzzy p "interp" |> fun { name } -> name in
        (Let ( (dest, typ)
             , CallDir (interp, args, fargs)
             , mj p reg mem env body)) |> restore_and_concat args reg
@@ -91,7 +73,7 @@ let rec mj p reg mem env = function
      mj p reg mem env body
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
      let callee =
-       find_fundef id_l p
+       Fundef.find p id_l
        |> Inlining.inline_fundef reg args
        |> mj p reg mem env
      in
@@ -143,8 +125,8 @@ and optimize_exp p exp reg mem (dest, typ) env body =
 
 and mj_exp p reg mem env = function
   | CallDir (id_l, args, fargs) ->
-     Log.debug (Printf.sprintf "CallDir (%s)" (string_of_id_l id_l)) ;
-     let fundef = find_fundef id_l p in
+     Log.debug (Printf.sprintf "CallDir (%s)" (Id.string_of_id_l id_l)) ;
+     let fundef = Fundef.find p id_l in
      let t = Inlining.inline_fundef reg args fundef in
      mj p reg mem env t
   | (IfEq _ | IfGE _ | IfLE _ | SIfEq _ | SIfLE _ | SIfGE _) as exp ->
@@ -204,7 +186,7 @@ and mj_if p reg mem env = function
 
 
 let run prog reg mem ({trace_name; red_args; red_names; index_pc= x; merge_pc= y} as env) =
-  let { args; body } = find_fundef' prog "interp" in
+  let { args; body } = Fundef.find_fuzzy prog "interp" in
   let trace = mj prog reg mem env body in
   { name= Id.L env.trace_name
   ; args= args |> List.filter (fun arg -> List.mem (String.get_name arg) red_names)

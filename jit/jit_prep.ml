@@ -50,6 +50,6 @@ let prep' p t =
 
 let prep ~prog:p ~name:n ~red_args:reds ~jit_type:jtyp =
   let (Prog (table, fundefs, main)) = p |> Jit_annot.annotate jtyp in
-  let {body} = find_fundef' p "interp" in
+  let {body} = Fundef.find_fuzzy p "interp" in
   let fundefs', interp_body = prep' p body in
   Env (fundefs', interp_body, create_reds reds p)

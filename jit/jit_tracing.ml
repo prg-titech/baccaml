@@ -13,14 +13,6 @@ let find_pc {index_pc} args =
   | Some s -> int_of_id_t s
   | None -> failwith "find_pc is failed"
 
-let find_fundef name prog =
-  let (Prog (_, fundefs, _)) = prog in
-  match fundefs |> List.find_opt (fun fundef -> fundef.name = name) with
-  | Some body -> body
-  | None ->
-      let (Id.L x) = name in
-      failwith @@ Printf.sprintf "find_fundef is failed: %s" x
-
 let find_value reg id =
   match
     reg |> Array.to_list
@@ -81,7 +73,7 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : Jit_env.
       else tj p reg mem tj_env body
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
      let callee =
-       find_fundef id_l p
+       Fundef.find p id_l
        |> Inlining.inline_fundef reg args
        |> tj p reg mem tj_env
      in
@@ -149,12 +141,12 @@ and optimize_exp p reg mem tj_env (dest, typ) body exp =
 and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : Jit_env.env) =
   function
   | CallDir (id_l, args, fargs) ->
-     Log.debug (Printf.sprintf "CallDir (%s)" (string_of_id_l id_l)) ;
-     let fundef = find_fundef id_l p in
+     Log.debug (Printf.sprintf "CallDir (%s)" (Id.string_of_id_l id_l)) ;
+     let fundef = Fundef.find p id_l in
      let pc = args |> find_pc tj_env |> Array.get reg in
      let reds = args |> List.filter (fun a -> is_red reg.(int_of_id_t a)) in
      let {merge_pc; trace_name} = tj_env in
-     if value_of pc = merge_pc && let (Id.L x) = id_l in contains x "interp"
+     if value_of pc = merge_pc && let (Id.L x) = id_l in String.contains x "interp"
      then Ans (CallDir (Id.L trace_name, reds, []))
      else Inlining.inline_fundef reg args fundef |> tj p reg mem tj_env
   | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ as exp ->
@@ -239,7 +231,7 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : Jit_env.e
 
 let run p reg mem ({trace_name; red_names; index_pc; merge_pc;} as env) =
   let (Prog (tbl, fundefs, m)) = p in
-  let {body= ibody; args= iargs} = find_fundef' p "interp" in
+  let {body= ibody; args= iargs} = Fundef.find_fuzzy p "interp" in
   let trace = ibody |> tj p reg mem env in
   {name= Id.L trace_name
   ; args= iargs |> List.filter (fun arg -> List.mem (String.get_name arg) red_names)

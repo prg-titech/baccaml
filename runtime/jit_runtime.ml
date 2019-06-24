@@ -86,7 +86,7 @@ let get_so_name : string -> string =
 let make_reg prog args sp =
   Jit_env.(
     let reg = Array.make Internal_conf.size (Red 0) in
-    let Asm.{args; body= t} = Jit_util.find_fundef' prog "interp" in
+    let Asm.{args; body= t} = Fundef.find_fuzzy prog "interp" in
     Asm.fv t @ args
     |> List.iteri (fun i a ->
            if List.mem (String.get_name a) Internal_conf.greens then reg.(i) <- Green 0
@@ -155,7 +155,7 @@ let filter typ = match typ with
 let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   Debug.print_arr string_of_int bytecode;
   let prog = Jit_annot.annotate `Meta_method prog in
-  let Asm.{args; body} = Jit_util.find_fundef' prog "interp" in
+  let Asm.{args; body} = Fundef.find_fuzzy prog "interp" in
   let reg = make_reg prog args sp in
   let mem =
     Internal_conf.(make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack)
@@ -191,7 +191,7 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
 
 let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   let prog = Jit_annot.annotate `Meta_tracing prog in
-  let Asm.{args; body} = Jit_util.find_fundef' prog "interp" in
+  let Asm.{args; body} = Fundef.find_fuzzy prog "interp" in
   let reg = make_reg prog args sp in
   let mem =
     Internal_conf.(make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack)
@@ -256,7 +256,7 @@ let jit_exec_method pc st_ptr sp =
   else
     let ic = file_open () in
     let prog = Lexing.from_channel ic |> Util.virtualize |> Jit_annot.annotate `Meta_method in
-    let intep = Jit_util.find_fundef' prog "interp" in
+    let intep = Fundef.find_fuzzy prog "interp" in
     ()
 
 let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =

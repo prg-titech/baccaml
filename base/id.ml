@@ -2,6 +2,9 @@ type t = string (* 変数の名前 (caml2html: id_t) *)
 
 type l = L of string (* トップレベル関数やグローバル配列のラベル (caml2html: id_l) *)
 
+let string_of_id_l = function
+    L id -> "L " ^ id
+
 let print_id_l = function
     L name -> print_string "L "; print_string name; print_string ""
 
