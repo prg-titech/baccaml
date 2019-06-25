@@ -230,6 +230,7 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : Jit_env.e
     | Not_specialized (e, v) -> Ans e )
 
 let run p reg mem ({trace_name; red_names; index_pc; merge_pc;} as env) =
+  Id.counter := 0; Renaming.counter := 0;
   let (Prog (tbl, fundefs, m)) = p in
   let {body= ibody; args= iargs} = Fundef.find_fuzzy p "interp" in
   let trace = ibody |> tj p reg mem env in

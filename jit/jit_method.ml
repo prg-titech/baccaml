@@ -186,6 +186,7 @@ and mj_if p reg mem env = function
 
 
 let run prog reg mem ({trace_name; red_names; index_pc= x; merge_pc= y} as env) =
+  Id.counter := 0; Renaming.counter := 0;
   let { args; body } = Fundef.find_fuzzy prog "interp" in
   let trace = mj prog reg mem env body in
   { name= Id.L env.trace_name
