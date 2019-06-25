@@ -8,6 +8,8 @@ let jit_flag = ref `On
 
 let reds = ref [""]
 
+let greens = ref [""]
+
 let log_level = Log.log_level
 
 let set field value = field := value

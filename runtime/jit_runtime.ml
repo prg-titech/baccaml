@@ -34,10 +34,9 @@ end = struct
 end
 
 module Internal_conf = struct
-  let size = 2000000
+  let size = 1000000
 
-  (* TODO: specify extenally *)
-  let greens = ["pc"; "bytecode"]
+  let greens = !Config.greens
 
   let bc_tmp_addr = 0
 
@@ -178,9 +177,8 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
       ~red_names:(!Config.reds)
       ~index_pc:(List.index (get_id "pc" args) args)
       ~merge_pc:pc_method_entry in
-  let trace = JM.run prog reg mem env |> Jit_elim.elim_fundef ~i:1 in
+  let trace = JM.run prog reg mem env |> Jit_elim.elim_fundef ~i:2 in
   Debug.print_trace trace;
-  flush_all ();
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
     emit_dyn oc `Meta_method [trace]; close_out oc;
@@ -214,7 +212,7 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
       ~trace_name:(Trace_name.value trace_name)
       ~red_names:(!Config.reds)
   in
-  let trace = JT.run prog reg mem env in
+  let trace = JT.run prog reg mem env |> Jit_elim.elim_fundef ~i:5 in
   Debug.print_trace trace;
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
