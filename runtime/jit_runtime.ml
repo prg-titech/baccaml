@@ -236,9 +236,13 @@ let exec_dyn_arg3 ~name ~arg1 ~arg2 ~arg3 =
     ~func:(String.split_on_char '.' name |> List.hd)
     ~arg1:arg1 ~arg2:arg2 ~arg3:arg3
 
+let with_jit_flg ~on:f ~off:g =
+  match !Config.jit_flag with
+  | `On -> f ()
+  | `Off -> g ()
+
 let jit_exec pc st_ptr sp =
-  if !Config.jit_flag = `Off then ()
-  else
+  with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
     match Trace_prof.find_opt pc with
     | Some (tname) ->
        Printf.printf "[tj] executing %s at pc: %d ...\n" tname pc;
@@ -248,21 +252,21 @@ let jit_exec pc st_ptr sp =
        Printf.printf "[tj] ellapsed time: %f ms\n" ((e -. s) *. 1000.0);
        flush stdout
     | None -> ()
+    end
 
 let jit_exec_method pc st_ptr sp =
-  if !Config.jit_flag = `Off then ()
-  else
+  with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
     let ic = file_open () in
     let prog = Lexing.from_channel ic |> Util.virtualize |> Jit_annot.annotate `Meta_method in
     let intep = Fundef.find_fuzzy prog "interp" in
     ()
+    end
 
 let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
-  Debug.print_arr string_of_int stack ~notation:(Some "stack") ;
-  if !Config.jit_flag = `Off then ()
-  else if Trace_prof.over_threshold pc then
-    begin
-      match Trace_prof.find_opt pc with
+  Debug.print_arr string_of_int stack ~notation:(Some "stack");
+  with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
+    if Trace_prof.over_threshold pc then
+      begin match Trace_prof.find_opt pc with
       | Some _ -> ()
       | None ->
          let ic = file_open () in
@@ -277,11 +281,13 @@ let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
            | Ok name -> Trace_prof.register (pc, name);
            | Error e -> raise e
          with e -> close_in ic; raise e
+      end
+    else
+      Trace_prof.count_up pc
     end
-  else Trace_prof.count_up pc
 
 let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
-    match Method_prof.find_opt pc with
+  match Method_prof.find_opt pc with
   | Some name ->
      let s = Unix.gettimeofday () in
      let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
