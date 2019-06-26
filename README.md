@@ -19,7 +19,7 @@ This project is forked from <a href="https://github.com/esumii/min-caml">MinCaml
 
 ## Prerequiements
 
-You need the OCaml 4.07.0+ configured with 32bit mode.
+You need the OCaml 4.07.0+ configured with 32bit mode. This is run only on Linux.
 
 ## Usage
 
