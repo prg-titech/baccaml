@@ -33,6 +33,12 @@ module List = struct
 
   exception Bad_access
 
+  let rec filter_map cond f = function
+    | [] -> []
+    | hd :: tl when cond hd ->
+       (f hd) :: (filter_map cond f tl)
+    | hd :: tl -> filter_map cond f tl
+
   let rec last = function
     | [] -> raise Bad_access
     | [x] -> x
@@ -58,27 +64,27 @@ module List = struct
 
 end
 
-module Try = struct
-  type 'a t = Success of 'a | Failure of exn
+module Option = struct
+  exception Bad_access of string
 
-  let create : ('a -> 'b) = fun f ->
-    try Success (f)
-    with e -> Failure (e)
+  let get = function
+    | Some v -> v
+    | None -> raise (Bad_access ("Option.value None is not allowed."))
 
-  let map : ('a -> 'b) -> 'a t -> 'b t = fun f tr ->
-    match tr with
-    | Success (a) -> Success (f a)
-    | Failure (exn) -> Failure (exn)
+  let get_or_else ~cmp = function
+    | Some v -> v
+    | None -> cmp
 
-  let value : 'a t -> 'a = function
-    | Success (a) -> a
-    | Failure (exn) -> raise exn
+  let or_else ~cmp = function
+    | Some v -> Some v
+    | None -> cmp
 
-  let is_success : 'a t -> bool = function
-    | Success _ -> true
-    | Failure _ -> false
+  let map f = function
+    | Some v -> Some (f v)
+    | None -> None
 
-  let is_failure : 'a t -> bool = function
-    | Success _ -> false
-    | Failure _ -> true
+  let (>==) f opt =
+    match opt with
+    | Some (v) -> f v
+    | None -> None
 end
