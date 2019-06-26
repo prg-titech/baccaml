@@ -45,10 +45,12 @@ end
 
 module Debug = struct
   open Utils
+
   let print_trace trace =
-    if !Log.log_level = `Debug then
-      Asm.print_fundef trace
-    else ()
+    match !Log.log_level with
+    | `Info ->
+       print_string "[trace]\n"; Asm.print_fundef trace; print_newline ()
+    | _ -> ()
 
   let print_arr ?notation:(nt = None) f arr =
     if !Log.log_level = `Debug then

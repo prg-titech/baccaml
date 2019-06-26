@@ -1,8 +1,9 @@
 type level = [
-  | `Error
-  | `Debug
-  | `Warn
   | `App
+  | `Warn
+  | `Info
+  | `Debug
+  | `Error
   ]
 
 let log_level : level ref = ref `Error
@@ -17,6 +18,12 @@ let debug s =
   match !log_level with
   | `Debug ->
      Printf.fprintf stdout "[debug] %s\n" s; flush stdout
+  | _ -> ()
+
+let info s =
+  match !log_level with
+  | `Debug | `Info ->
+     Printf.fprintf stdout "[info] %s\n" s; flush stdout
   | _ -> ()
 
 let warn s =
