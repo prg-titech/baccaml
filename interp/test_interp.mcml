@@ -186,7 +186,7 @@ code.(11) <- 5; code.(12) <- 15;
 code.(13) <- 14; code.(14) <- 3;
 code.(15) <- 9;
 let st = Array.make 20 0 in
-st.(0) <- 200000;
+st.(0) <- 2000000;
 let s = get_current_millis () in
 let res = (interp st 1 code 3) in
 let e = get_current_millis () in
