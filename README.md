@@ -29,19 +29,3 @@ To run the interpreter already defined, execute following commands.
 $ dune build interp/test_interp.exe
 $ dune exec interp/test_interp.exe
 ```
-
-## Debugging
-
-This function is used for ahead-of-time compilation and debugging generated traces.
-
-```bash
-$ dune exec baccaml -- -file [interpreter].ml [file.arg]
-$ dune exec src/bin/baccaml_builder.exe -- [interpreter].ml \
-	-type (tjit|mjit) -trace [name of trace] -o [output] -build
-
-# example
-$ dune exec baccaml -- -file benchmark/baccaml/test_interp_tj.ml \
-    benchmark/armin/fib.am benchmark/armin/fib_26.am benchmark/armin/fib_18.am
-$ dune exec src/bin/baccaml_builder.exe -- benchmark/baccaml/test_interp_tj.ml \
-    -type tjit -trace fib -trace fib_26 -o test_fib_tj -build
-```
