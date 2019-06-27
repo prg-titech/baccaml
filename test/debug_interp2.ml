@@ -21,10 +21,10 @@ let rec push stack sp v = stack.(sp) <- v in
 let rec interp stack sp bytecode pc =
   jit_merge_point pc stack sp;
   let instr = bytecode.(pc) in
-  (* print_string "pc: "; print_int pc; print_string " ";
+  print_string "pc: "; print_int pc; print_string " ";
   print_string "instr: "; print_int instr; print_string " ";
   print_string "sp: "; print_int sp; print_string " ";
-  print_array print_int stack; print_newline (); *)
+  print_array print_int stack; print_newline ();
   if instr = 1 then             (* ADD *)
     let v2 = pop stack sp in  (* sp: sp - 1 *)
     let v1 = pop stack (sp - 1) in  (* sp: sp - 2 *)
@@ -119,6 +119,9 @@ let rec interp stack sp bytecode pc =
     let v = stack.(sp - 1) in
     stack.(sp) <- v;
     interp stack (sp + 1) bytecode (pc + 1)
+  else if instr = 17 then       (* POP0 *)
+    let _ = stack.(sp - 1) <- 0 in
+    interp stack (sp - 1) bytecode (pc + 1)
   else
     -1000 in
 
@@ -141,7 +144,7 @@ code.(23) <- 4; code.(24) <- 10;
 code.(25) <- 6; code.(26) <- 0;
 code.(27) <- 9;
 let stk = Array.make 40 0 in
-print_int (interp stk 0 code 23);
+(* let res = interp stk 0 code 23 in print_int res; print_newline (); *)
 
 (* fib *)
 let code = Array.make 50 0 in
@@ -168,9 +171,47 @@ code.(31) <- 6;
 code.(32) <- 1;
 code.(33) <- 9;
 let st = Array.make 50 0 in
-let res = (interp st 0 code 29) in
+(* let res = (interp st 0 code 29) in print_int res; print_newline (); *)
+
+(* fun call + loop *)
+let code = Array.make 50 0 in
+code.(0) <- 15;
+
+code.(1) <- 8; code.(2) <- 1;
+code.(3) <- 4; code.(4) <- 1;
+code.(5) <- 3;
+code.(6) <- 5; code.(7) <- 12;
+code.(8) <- 4; code.(9) <- 1;
+code.(10) <- 14; code.(11) <- 34;
+code.(12) <- 8; code.(13) <- 1;
+code.(14) <- 8; code.(15) <- 0;
+
+(* loop *)
+code.(16) <- 4; code.(17) <- 1;
+code.(18) <- 2;
+code.(19) <- 4; code.(20) <- 1;
+code.(21) <- 8; code.(22) <- 1;
+code.(23) <- 3;
+code.(24) <- 5; code.(25) <- 28;
+code.(26) <- 14; code.(27) <- 16;
+
+code.(28) <- 17;
+code.(29) <- 4; code.(30) <- 1;
+code.(31) <- 2;
+code.(32) <- 6; code.(33) <- 1;
+code.(34) <- 7;
+
+(* main *)
+code.(36) <- 6; code.(37) <- 1;
+code.(38) <- 9;
+
+let stk = Array.make 50 0 in
+stk.(0) <- 10;
+let res = interp stk 1 code 36 in
+print_int res; print_newline ();
 ()
-(* print_int res; print_newline () *)
+
+  (* print_int res; print_newline () *)
 
 (* loop *)
 (* let code = Array.make 20 0 in
