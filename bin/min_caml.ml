@@ -45,6 +45,17 @@ let run_compile f =
     close_out outchan
   with e -> close_in inchan ; close_out outchan ; raise e
 
+let print_ast f =
+  let ic = open_in f in
+  Id.counter := 0;
+  Typing.extenv := M.empty;
+  try
+    Lexing.from_channel ic
+    |> Parser.exp Lexer.token
+    |> Syntax.show |> print_endline;
+    close_in ic
+  with e -> close_in ic; raise e
+
 let spec_list =
   [ ("-o", Arg.String (fun out -> output_file := Some out), "output file")
   ; ( "-inline"
@@ -64,6 +75,7 @@ let spec_list =
   ; ("-err", Arg.Unit (fun _ -> Log.log_level := `Error), "Specify loglevel as error")
   ; ("-debug", Arg.Unit (fun _ -> Log.log_level := `Debug), "Specify loglevel as debug")
   ; ("-dump", Arg.Unit (fun _ -> run_typ := `Dump), "emit virtual machine code")
+  ; ("-ast", Arg.Unit (fun _ -> run_typ := `Ast), "emit ast")
   ; ("-interp", Arg.Unit (fun _ -> run_typ := `Interp), "run as interpreter") ]
 
 let usage =
@@ -76,7 +88,8 @@ let () =
   Arg.parse spec_list (fun f -> files := !files @ [f]) usage ;
   !files
   |> List.iter
-       ( match !run_typ with
-       | `Dump -> run_dump
-       | `Interp -> run_interp
-       | `Emit -> run_compile )
+       (match !run_typ with
+        | `Ast -> print_ast
+        | `Dump -> run_dump
+        | `Interp -> run_interp
+        | `Emit -> run_compile)

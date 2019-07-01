@@ -7,4 +7,5 @@
  (modules        (:standard \ anchor))
  (flags          (-annot -w -4-33-40-41))
  (libraries      utils)
- (c_names        float))
+ (c_names        float)
+ (preprocess     (pps ppx_deriving.show)))

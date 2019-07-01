@@ -29,9 +29,11 @@
 %token LET
 %token IN
 %token REC
+%token FUN
 %token COMMA
 %token ARRAY_CREATE
 %token DOT
+%token MINUS_GREATER
 %token LESS_MINUS
 %token SEMICOLON
 %token LPAREN
@@ -82,6 +84,8 @@ simple_exp:
     { Var($1) }
 | simple_exp DOT LPAREN exp RPAREN
     { Get($1, $4) }
+| LPAREN FUN IDENT MINUS_GREATER exp RPAREN
+    { $5 } /* For compiling can_enter_jit */
 
 exp:
 | simple_exp
@@ -133,6 +137,14 @@ exp:
 | LET REC fundef IN exp
     %prec prec_let
     { LetRec($3, $5) }
+| LPAREN FUN formal_args MINUS_GREATER exp RPAREN actual_args
+    { let id = Id.genid "anon" in
+      let anon_fun =
+        { name = addtyp id
+        ; args = $3
+        ; body = $5 } in
+      LetRec(anon_fun, App(Var(id), $7))
+    }
 | simple_exp actual_args
     %prec prec_app
     { App($1, $2) }

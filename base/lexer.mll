@@ -74,6 +74,8 @@ rule token = parse
     { IN }
 | "rec"
     { REC }
+| "fun"
+    { FUN }
 | ','
     { COMMA }
 | '_'
@@ -82,6 +84,8 @@ rule token = parse
     { ARRAY_CREATE }
 | '.'
     { DOT }
+| "->"
+    { MINUS_GREATER }
 | "<-"
     { LESS_MINUS }
 | ';'
