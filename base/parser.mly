@@ -36,6 +36,10 @@
 %token SEMICOLON
 %token LPAREN
 %token RPAREN
+%token LBRACE
+%token RBRACE
+%token BEGIN
+%token END
 %token EOF
 
 /* (* 優先順位とassociativityの定義（低い方から高い方へ） (caml2html: parser_prior) *) */
@@ -62,7 +66,11 @@
 simple_exp:
 | LPAREN exp RPAREN
     { $2 }
+| BEGIN exp END
+    { $2 }
 | LPAREN RPAREN
+    { Unit }
+| BEGIN END
     { Unit }
 | BOOL
     { Bool($1) }

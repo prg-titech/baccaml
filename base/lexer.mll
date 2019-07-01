@@ -52,6 +52,14 @@ rule token = parse
     { LESS }
 | '>'
     { GREATER }
+| "begin"
+    { BEGIN }
+| "end"
+    { END }
+| '{'
+    { LBRACE }
+| '}'
+    { RBRACE }
 | "if"
     { IF }
 | "@if"
