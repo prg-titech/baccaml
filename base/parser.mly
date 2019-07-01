@@ -1,3 +1,4 @@
+/* mode: tuareg-menhir */
 %{
     (* parserが利用する変数、関数、型などの定義 *)
     open Syntax
@@ -66,78 +67,75 @@
 %%
 
 simple_exp:
-| LPAREN exp RPAREN
+  | LPAREN exp RPAREN
     { $2 }
-| BEGIN exp END
+  | BEGIN exp END
     { $2 }
-| LPAREN RPAREN
+  | LPAREN RPAREN
     { Unit }
-| BEGIN END
+  | BEGIN END
     { Unit }
-| BOOL
+  | BOOL
     { Bool($1) }
-| INT
+  | INT
     { Int($1) }
-| FLOAT
+  | FLOAT
     { Float($1) }
-| IDENT
+  | IDENT
     { Var($1) }
-| simple_exp DOT LPAREN exp RPAREN
+  | simple_exp DOT LPAREN exp RPAREN
     { Get($1, $4) }
-| LPAREN FUN IDENT MINUS_GREATER exp RPAREN
-    { $5 } /* For compiling can_enter_jit */
 
 exp:
-| simple_exp
-    { $1 }
-| NOT exp
-    %prec prec_app
+  | simple_exp { $1 }
+  | NOT exp
+%prec prec_app
     { Not($2) }
-| MINUS exp
-    %prec prec_unary_minus
+  | MINUS exp
+%prec prec_unary_minus
     { match $2 with
       | Float(f) -> Float(-.f)
       | e -> Neg(e) }
-| exp PLUS exp
+  | exp PLUS exp
     { Add($1, $3) }
-| exp MINUS exp
+  | exp MINUS exp
     { Sub($1, $3) }
-| exp EQUAL exp
+  | exp EQUAL exp
     { Eq($1, $3) }
-| exp LESS_GREATER exp
+  | exp LESS_GREATER exp
     { Not(Eq($1, $3)) }
-| exp LESS exp
+  | exp LESS exp
     { Not(LE($3, $1)) }
-| exp GREATER exp
+  | exp GREATER exp
     { Not(LE($1, $3)) }
-| exp LESS_EQUAL exp
+  | exp LESS_EQUAL exp
     { LE($1, $3) }
-| exp GREATER_EQUAL exp
+  | exp GREATER_EQUAL exp
     { LE($3, $1) }
-| IF exp THEN exp ELSE exp
-  %prec prec_if
-     { If($2, $4, $6) }
-| ATIF exp THEN exp ELSE exp
-  %prec prec_if
-     { SIf($2, $4, $6) }
-| MINUS_DOT exp
-    %prec prec_unary_minus
+  | IF exp THEN exp ELSE exp
+%prec prec_if
+    { If($2, $4, $6) }
+  | ATIF exp THEN exp ELSE exp
+%prec prec_if
+    { SIf($2, $4, $6) }
+  | MINUS_DOT exp
+%prec prec_unary_minus
     { FNeg($2) }
-| exp PLUS_DOT exp
+  | exp PLUS_DOT exp
     { FAdd($1, $3) }
-| exp MINUS_DOT exp
+  | exp MINUS_DOT exp
     { FSub($1, $3) }
-| exp AST_DOT exp
+  | exp AST_DOT exp
     { FMul($1, $3) }
-| exp SLASH_DOT exp
+  | exp SLASH_DOT exp
     { FDiv($1, $3) }
-| LET IDENT EQUAL exp IN exp
-    %prec prec_let
+  | LET IDENT EQUAL exp IN exp
+%prec prec_let
     { Let(addtyp $2, $4, $6) }
-| LET REC fundef IN exp
-    %prec prec_let
+  | LET REC fundef IN exp
+%prec prec_let
     { LetRec($3, $5) }
-| LPAREN FUN formal_args MINUS_GREATER exp RPAREN actual_args
+  | LPAREN FUN formal_args MINUS_GREATER exp RPAREN actual_args
     { let id = Id.genid "anon" in
       let anon_fun =
         { name = addtyp id
@@ -145,53 +143,53 @@ exp:
         ; body = $5 } in
       LetRec(anon_fun, App(Var(id), $7))
     }
-| simple_exp actual_args
-    %prec prec_app
+  | simple_exp actual_args
+%prec prec_app
     { App($1, $2) }
-| elems
-    %prec prec_tuple
+  | elems
+%prec prec_tuple
     { Tuple($1) }
-| LET LPAREN pat RPAREN EQUAL exp IN exp
+  | LET LPAREN pat RPAREN EQUAL exp IN exp
     { LetTuple($3, $6, $8) }
-| simple_exp DOT LPAREN exp RPAREN LESS_MINUS exp
+  | simple_exp DOT LPAREN exp RPAREN LESS_MINUS exp
     { Put($1, $4, $7) }
-| exp SEMICOLON exp
+  | exp SEMICOLON exp
     { Let((Id.gentmp Type.Unit, Type.Unit), $1, $3) }
-| ARRAY_CREATE simple_exp simple_exp
-    %prec prec_app
+  | ARRAY_CREATE simple_exp simple_exp
+%prec prec_app
     { Array($2, $3) }
-| error
+  | error
     { failwith
         (Printf.sprintf "parse error near characters %d-%d"
-           (Parsing.symbol_start ())
-           (Parsing.symbol_end ())) }
+                        (Parsing.symbol_start ())
+                        (Parsing.symbol_end ())) }
 
 fundef:
-| IDENT formal_args EQUAL exp
+  | IDENT formal_args EQUAL exp
     { { name = addtyp $1; args = $2; body = $4 } }
 
 formal_args:
-| IDENT formal_args
+  | IDENT formal_args
     { addtyp $1 :: $2 }
-| IDENT
+  | IDENT
     { [addtyp $1] }
 
 actual_args:
-| actual_args simple_exp
-    %prec prec_app
+  | actual_args simple_exp
+%prec prec_app
     { $1 @ [$2] }
-| simple_exp
-    %prec prec_app
+  | simple_exp
+%prec prec_app
     { [$1] }
 
 elems:
-| elems COMMA exp
+  | elems COMMA exp
     { $1 @ [$3] }
-| exp COMMA exp
+  | exp COMMA exp
     { [$1; $3] }
 
 pat:
-| pat COMMA IDENT
+  | pat COMMA IDENT
     { $1 @ [addtyp $3] }
-| IDENT COMMA IDENT
+  | IDENT COMMA IDENT
     { [addtyp $1; addtyp $3] }
