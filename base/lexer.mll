@@ -76,6 +76,8 @@ rule token = parse
     { REC }
 | "fun"
     { FUN }
+| ";;"
+    { SEMISEMI }
 | ','
     { COMMA }
 | '_'

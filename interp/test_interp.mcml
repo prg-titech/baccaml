@@ -16,9 +16,11 @@ let rec frame_reset stack old_base new_base ret n i =
   if n = i then (stack.(old_base + n) <- ret; old_base + n + 1)
   else (stack.(old_base + i) <- stack.(new_base + i);
         frame_reset stack old_base new_base ret n (i + 1))
-in
-let rec pop stack sp = stack.(sp - 1) in
-let rec push stack sp v = stack.(sp) <- v in
+;;
+let rec pop stack sp = stack.(sp - 1)
+;;
+let rec push stack sp v = stack.(sp) <- v
+;;
 let rec interp stack sp bytecode pc =
   jit_merge_point pc stack sp;
   (* print_array print_int stack; print_newline (); *)
@@ -124,7 +126,8 @@ let rec interp stack sp bytecode pc =
     stack.(sp) <- v;
     interp stack (sp + 1) bytecode (pc + 1)
   else
-    -1000 in
+    -1000
+;;
 
 (* fib *)
 let code = Array.make 50 0 in

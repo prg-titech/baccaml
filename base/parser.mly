@@ -37,6 +37,7 @@
 %token MINUS_GREATER
 %token LESS_MINUS
 %token SEMICOLON
+%token SEMISEMI
 %token LPAREN
 %token RPAREN
 %token LBRACE
@@ -132,6 +133,9 @@ exp:
   | LET IDENT EQUAL exp IN exp
 %prec prec_let
     { Let(addtyp $2, $4, $6) }
+  | LET REC fundef SEMISEMI exp
+%prec prec_let
+    { LetRec($3, $5) }
   | LET REC fundef IN exp
 %prec prec_let
     { LetRec($3, $5) }
