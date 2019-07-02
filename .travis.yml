@@ -17,6 +17,6 @@ before_install:
   - export OPAMVERBOSE=1
 install:
   - opam update --upgrade
-  - opam install -y dune oUnit
+  - opam install -y dune oUnit ppx_deriving
 script:
   - make
