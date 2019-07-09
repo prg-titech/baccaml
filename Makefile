@@ -1,3 +1,5 @@
+PACKS = merlin tuareg utop dune oUnit ppx_deriving
+
 all: build
 
 build:
@@ -17,4 +19,8 @@ doc:
 benchmark:
 	$(MAKE) -C benchmark
 
-.PHONY: build test clean doc benchmark example
+setup:
+	opam update
+	opam install -y ${PACKS}
+
+.PHONY: build test clean doc benchmark setup
