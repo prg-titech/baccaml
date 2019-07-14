@@ -71,8 +71,7 @@ let rec interp stack sp bytecode pc =
   else if instr = 7 then        (* RET *)
     let v = stack.(sp - 1) in    (* sp: sp - 1 *)
     let mode = stack.(sp - 2) in (* sp: sp - 2 *)
-    if mode = 100 then
-      v
+    if mode = 100 then v
     else (
       let n = bytecode.(pc + 1) in
       let pc2 = stack.(sp - 3) in (* sp: sp - 3 *)

@@ -1,4 +1,4 @@
-open Utils
+
 val file_name : string option ref
 val pc_method_annot_inst: int
 val reds : string list ref

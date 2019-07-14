@@ -1,0 +1,4 @@
+(library
+ (name std)
+ (public_name baccaml.stdlib)
+ (libraries str))

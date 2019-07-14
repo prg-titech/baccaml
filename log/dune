@@ -1,0 +1,4 @@
+(library
+ (name log)
+ (public_name baccaml.log)
+ (libraries str))

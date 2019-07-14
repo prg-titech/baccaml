@@ -1,4 +1,4 @@
-open Utils
+
 open Std
 open Base
 open Jit
@@ -44,7 +44,7 @@ module Internal_conf = struct
 end
 
 module Debug = struct
-  open Utils
+  
 
   let print_trace trace =
     match !Log.log_level with

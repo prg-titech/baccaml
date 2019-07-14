@@ -1,6 +1,5 @@
 open Base
 open Asm
-open Utils
 open Std
 open Jit_env
 

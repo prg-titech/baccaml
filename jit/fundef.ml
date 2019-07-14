@@ -1,5 +1,5 @@
 open Base
-open Utils
+
 open Std
 
 type t = Asm.fundef

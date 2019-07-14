@@ -6,6 +6,6 @@
  (public_name    baccaml.base)
  (modules        (:standard \ anchor))
  (flags          (-annot -w -4-33-40-41))
- (libraries      utils)
+ (libraries      std log)
  (c_names        float)
  (preprocess     (pps ppx_deriving.show)))
