@@ -25,13 +25,20 @@ module String = struct
       ignore (Str.search_forward re s1 0);
       true
     with Not_found -> false
-
 end
 
 module List = struct
   include List
 
-  exception Bad_access
+  let rec unique list =
+    let rec go l s =
+      match l with
+      | [] -> s
+      | first :: rest ->
+         if List.exists (fun e -> e = first) s
+         then go rest s
+         else go rest (s @ [first])
+    in go list []
 
   let rec filter_map cond f = function
     | [] -> []
@@ -40,7 +47,7 @@ module List = struct
     | hd :: tl -> filter_map cond f tl
 
   let rec last = function
-    | [] -> raise Bad_access
+    | [] -> failwith "last"
     | [x] -> x
     | hd :: tl -> last tl
 
@@ -61,15 +68,13 @@ module List = struct
          if hd = elem then Some (i)
          else go elem tl (i + 1)
     in go elem lst 0
-
 end
 
 module Option = struct
-  exception Bad_access of string
 
   let get = function
     | Some v -> v
-    | None -> raise (Bad_access ("Option.value None is not allowed."))
+    | None -> failwith "Option#value None"
 
   let get_or_else ~cmp = function
     | Some v -> v

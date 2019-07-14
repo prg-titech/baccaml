@@ -5,19 +5,8 @@ open Asm
 open Jit_env
 open Jit_util
 
-
-let rec unique list =
-  let rec go l s =
-    match l with
-    | [] -> s
-    | first :: rest ->
-       if List.exists (fun e -> e = first) s
-       then go rest s
-       else go rest (s @ [first])
-  in go list []
-
 let create reg tj_env ?wlist:(ws = []) cont =
-  let free_vars = unique (fv cont) in
+  let free_vars = List.unique (fv cont) in
   let ignored x ys = ys |> List.exists (fun y -> String.get_name x = y) in
   let rec restore cont = function
     | [] -> cont
