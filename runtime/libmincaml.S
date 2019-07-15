@@ -258,56 +258,56 @@ min_caml_fnegd:
 	.long	0
 .globl min_caml_hp
 min_caml_hp:
-    .long	0x0
+	.long	0x0
 .globl min_caml_bp
 min_caml_bp:
-    .long   0x0
+	.long	0x0
 min_caml_is_mj:
-    ret
+	ret
 .globl min_caml_method_entry
 min_caml_method_entry:
-    ret
+	ret
 .globl min_caml_tracing_fail
 min_caml_tracing_fail:
-    ret
+	ret
 .globl min_caml_can_enter_jit
 min_caml_can_enter_jit:
-    pushl   %ebp
-    movl    %esp, %ebp
-    pushl   %edx
-    pushl   %ecx
-    pushl   %ebx
-    pushl   %eax
-    call    call_caml_jit_entry
-    movl    %ebp, %esp
-    popl    %ebp
-    ret
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	%edx
+	pushl	%ecx
+	pushl	%ebx
+	pushl	%eax
+	call	call_caml_jit_entry
+	movl	%ebp, %esp
+	popl	%ebp
+	ret
 .globl min_caml_jit_merge_point
 min_caml_jit_merge_point:
-    pushl   %ebp
-    movl    %esp, %ebp
-    pushl   %ecx
-    pushl   %ebx
-    pushl   %eax
-    call    call_caml_jit_exec
-    movl    %ebp, %esp
-    popl    %ebp
-    ret
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	%ecx
+	pushl	%ebx
+	pushl	%eax
+	call	call_caml_jit_exec
+	movl	%ebp, %esp
+	popl	%ebp
+	ret
 .globl min_caml_loop_start
 min_caml_loop_start:
-    ret
+	ret
 .globl min_caml_loop_end
 min_caml_loop_end:
-    ret
+	ret
 .globl min_caml_mj_call
 min_caml_mj_call:
-    pushl   %ebp
-    movl    %esp, %ebp
-    pushl   %edx
-    pushl   %ecx
-    pushl   %ebx
-    pushl   %eax
-    call    call_caml_mj_call
-    movl    %ebp, %esp
-    popl    %ebp
-    ret
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	%edx
+	pushl	%ecx
+	pushl	%ebx
+	pushl	%eax
+	call	call_caml_mj_call
+	movl	%ebp, %esp
+	popl	%ebp
+	ret
