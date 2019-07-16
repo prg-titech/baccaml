@@ -1,4 +1,3 @@
-
 open Std
 open Base
 open Jit
@@ -38,13 +37,14 @@ module Internal_conf = struct
 
   let greens = !Config.greens
 
+  let reds = !Config.reds
+
   let bc_tmp_addr = 0
 
   let st_tmp_addr = 1000
 end
 
 module Debug = struct
-  
 
   let print_trace trace =
     match !Log.log_level with
@@ -67,10 +67,9 @@ let file_open () =
   | None -> failwith "argument is not specified."
 
 let get_ir_addr args name =
-  args
-  |> List.find (fun a -> String.get_name a = name)
-  |> String.get_extension |> int_of_string
-
+  List.find (fun a -> String.get_name a = name) args
+  |> String.get_extension
+  |> int_of_string
 
 let get_so_name : string -> string =
   fun name ->
@@ -89,7 +88,8 @@ let make_reg prog args sp =
     let reg = Array.make Internal_conf.size (Red 0) in
     let Asm.{args; body= t} = Fundef.find_fuzzy prog "interp" in
     Asm.fv t @ args
-    |> List.iteri (fun i a ->
+    |> List.iteri
+         (fun i a ->
            if List.mem (String.get_name a) Internal_conf.greens then reg.(i) <- Green 0
            else reg.(i) <- Red 0 ) ;
     reg)
