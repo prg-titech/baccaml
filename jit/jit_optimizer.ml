@@ -225,6 +225,5 @@ let run p e reg mem = match e with
         end
      end
   | _ ->
-     failwith (
-         Printf.sprintf "%s is not supported in optimization."
-           (Emit_virtual.string_of_exp e))
+     Asm.print_exp e;
+     failwith ("un supported instruction")
