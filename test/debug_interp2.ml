@@ -1,7 +1,7 @@
 (* -*- mode: tuareg -*- *)
 let jit_merge_point _ _ _ = () in
 let can_enter_jit _ _ _ _ = () in
-let is_mj _ = true in
+let is_mj _ = false in
 let loop_start () = () in
 let loop_end () = () in
 let method_entry () = () in
@@ -125,15 +125,34 @@ let rec interp stack sp bytecode pc =
     -1000 in
 
 (* sum *)
+(* method jit *)
 let code = Array.make 50 0 in
-code.(0) <- 8; code.(1) <- 1;
+(* code.(0) <- 8; code.(1) <- 1;
+ * code.(2) <- 4; code.(3) <- 2;
+ * code.(4) <- 3;
+ * code.(5) <- 5; code.(6) <- 11;
+ * code.(7) <- 4; code.(8) <- 1;
+ * code.(9) <- 14; code.(10) <- 21;
+ * code.(11) <- 8; code.(12) <- 1;
+ * code.(13) <- 8; code.(14) <- 2;
+ * code.(15) <- 4; code.(16) <- 1;
+ * code.(17) <- 2;
+ * code.(18) <- 6; code.(19) <- 0;
+ * code.(20) <- 1;
+ * code.(21) <- 7; code.(22) <- 1;
+ * code.(23) <- 4; code.(24) <- 10;
+ * code.(25) <- 6; code.(26) <- 0;
+ * code.(27) <- 9; *)
+
+(* tracing jit *)
+code.(0) <- 8; code.(1) <- 2;
 code.(2) <- 4; code.(3) <- 2;
 code.(4) <- 3;
 code.(5) <- 5; code.(6) <- 11;
 code.(7) <- 4; code.(8) <- 1;
 code.(9) <- 14; code.(10) <- 21;
-code.(11) <- 8; code.(12) <- 1;
-code.(13) <- 8; code.(14) <- 2;
+code.(11) <- 8; code.(12) <- 2;
+code.(13) <- 8; code.(14) <- 3;
 code.(15) <- 4; code.(16) <- 1;
 code.(17) <- 2;
 code.(18) <- 6; code.(19) <- 0;
@@ -142,35 +161,58 @@ code.(21) <- 7; code.(22) <- 1;
 code.(23) <- 4; code.(24) <- 10;
 code.(25) <- 6; code.(26) <- 0;
 code.(27) <- 9;
-let stk = Array.make 40 0 in
-(* let res = interp stk 0 code 23 in print_int res; print_newline (); *)
+let stk = Array.make 50 0 in
+let res = interp stk 0 code 23 in
+print_int res; print_newline ();
 
 (* fib *)
 let code = Array.make 50 0 in
 save_bp ();
+(* method jit *)
+(* code.(0) <- 15;
+ * code.(1) <- 8; code.(2) <- 1;
+ * code.(3) <- 4; code.(4) <- 2;
+ * code.(5) <- 3;
+ * code.(6) <- 5; code.(7) <- 12;
+ * code.(8) <- 8; code.(9) <- 1;
+ * code.(10) <- 14; code.(11) <- 27;
+ * code.(12) <- 8; code.(13) <- 1;
+ * code.(14) <- 4; code.(15) <- 1;
+ * code.(16) <- 2;
+ * code.(17) <- 6; code.(18) <- 1;
+ * code.(19) <- 8; code.(20) <- 2;
+ * code.(21) <- 4; code.(22) <- 2;
+ * code.(23) <- 2;
+ * code.(24) <- 6; code.(25) <- 1;
+ * code.(26) <- 1;
+ * code.(27) <- 7; code.(28) <- 1;
+ * code.(29) <- 4; code.(30) <- 3;
+ * code.(31) <- 6; code.(32) <- 1;
+ * code.(33) <- 9; *)
+(* tracing jit *)
 code.(0) <- 15;
-code.(1) <- 8; code.(2) <- 1;
+code.(1) <- 8; code.(2) <- 2;
 code.(3) <- 4; code.(4) <- 2;
 code.(5) <- 3;
 code.(6) <- 5; code.(7) <- 12;
-code.(8) <- 8; code.(9) <- 1;
+code.(8) <- 8; code.(9) <- 2;
 code.(10) <- 14; code.(11) <- 27;
-code.(12) <- 8; code.(13) <- 1;
+code.(12) <- 8; code.(13) <- 2;
 code.(14) <- 4; code.(15) <- 1;
 code.(16) <- 2;
 code.(17) <- 6; code.(18) <- 1;
-code.(19) <- 8; code.(20) <- 2;
+code.(19) <- 8; code.(20) <- 3;
 code.(21) <- 4; code.(22) <- 2;
 code.(23) <- 2;
 code.(24) <- 6; code.(25) <- 1;
 code.(26) <- 1;
 code.(27) <- 7; code.(28) <- 1;
-code.(29) <- 4; code.(30) <- 11;
-code.(31) <- 6;
-code.(32) <- 1;
+code.(29) <- 4; code.(30) <- 3;
+code.(31) <- 6; code.(32) <- 1;
 code.(33) <- 9;
-let st = Array.make 50 0 in
-(* let res = (interp st 0 code 29) in print_int res; print_newline (); *)
+let st = Array.make 30 0 in
+let res = (interp st 0 code 29) in
+print_int res; print_newline ();
 
 (* fun call + loop *)
 let code = Array.make 50 0 in
@@ -206,11 +248,11 @@ code.(38) <- 9;
 
 let stk = Array.make 50 0 in
 stk.(0) <- 10;
-let res = interp stk 1 code 36 in
-print_int res; print_newline ();
+(* let res = interp stk 1 code 36 in
+ * print_int res; print_newline (); *)
 ()
 
-  (* print_int res; print_newline () *)
+(* print_int res; print_newline () *)
 
 (* loop *)
 (* let code = Array.make 20 0 in
