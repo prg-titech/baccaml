@@ -41,7 +41,7 @@ module Internal_conf = struct
 
   let bc_tmp_addr = 0
 
-  let st_tmp_addr = 100
+  let st_tmp_addr = 2000
 end
 
 module Debug = struct
@@ -266,7 +266,7 @@ let jit_exec_method pc st_ptr sp =
     end
 
 let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
-  (* Debug.print_arr string_of_int stack ~notation:(Some "stack"); *)
+  Debug.print_arr string_of_int stack ~notation:(Some "stack");
   with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
     if Trace_prof.over_threshold pc then
       begin match Trace_prof.find_opt pc with
