@@ -41,7 +41,7 @@ module Internal_conf = struct
 
   let bc_tmp_addr = 0
 
-  let st_tmp_addr = 2000
+  let st_tmp_addr = 1000
 end
 
 module Debug = struct
@@ -257,14 +257,6 @@ let jit_exec pc st_ptr sp =
     | None -> ()
     end
 
-let jit_exec_method pc st_ptr sp =
-  with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
-    let ic = file_open () in
-    let prog = Lexing.from_channel ic |> Util.virtualize |> Jit_annot.annotate `Meta_method in
-    let intep = Fundef.find_fuzzy prog "interp" in
-    ()
-    end
-
 let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
   Debug.print_arr string_of_int stack ~notation:(Some "stack");
   with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
@@ -283,7 +275,7 @@ let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
            match prog |> jit_tracing env with
            | Ok name -> Trace_prof.register (pc, name);
            | Error e -> raise e
-         with e -> close_in ic; raise e
+         with e -> close_in ic; ()
       end
     else
       Trace_prof.count_up pc
