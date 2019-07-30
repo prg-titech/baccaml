@@ -27,7 +27,6 @@
 *.exe
 *.top
 *.byte
-*.so
 
 test/**/*.s
 
