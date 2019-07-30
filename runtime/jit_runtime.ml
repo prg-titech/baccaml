@@ -33,7 +33,7 @@ end = struct
 end
 
 module Internal_conf = struct
-  let size = 1000000
+  let size = Sys.max_array_length
 
   let greens = !Config.greens
 
@@ -41,7 +41,7 @@ module Internal_conf = struct
 
   let bc_tmp_addr = 0
 
-  let st_tmp_addr = 1000
+  let st_tmp_addr = 100
 end
 
 module Debug = struct
@@ -188,6 +188,7 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
     close_out oc; raise e
 
 let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
+  Renaming.counter := 0;
   let prog = Jit_annot.annotate `Meta_tracing prog in
   let Asm.{args; body} = Fundef.find_fuzzy prog "interp" in
   let reg = make_reg prog args sp in
@@ -244,12 +245,15 @@ let jit_exec pc st_ptr sp =
   with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
     match Trace_prof.find_opt pc with
     | Some (tname) ->
-       Printf.printf "[tj] executing %s at pc: %d ...\n" tname pc;
-       let s = Unix.gettimeofday () in
-       exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
-       let e = Unix.gettimeofday () in
-       Printf.printf "[tj] ellapsed time: %f ms\n" ((e -. s) *. 1000.0);
-       flush stdout
+       begin
+         try
+           print_endline ("[tj] executing at " ^ (string_of_int pc) ^ "...");
+           let s = Unix.gettimeofday () in
+           exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
+           let e = Unix.gettimeofday () in
+           print_endline ("[tj] execution time: " ^ (string_of_float (e -. s)));
+         with e -> ()
+       end
     | None -> ()
     end
 
@@ -262,7 +266,7 @@ let jit_exec_method pc st_ptr sp =
     end
 
 let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
-  Debug.print_arr string_of_int stack ~notation:(Some "stack");
+  (* Debug.print_arr string_of_int stack ~notation:(Some "stack"); *)
   with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
     if Trace_prof.over_threshold pc then
       begin match Trace_prof.find_opt pc with
