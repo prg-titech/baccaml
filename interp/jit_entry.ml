@@ -9,6 +9,6 @@ let () =
     (fun file -> ())
     ("Usage: " ^ Sys.argv.(0) ^ " [--options] [your interp]");
   set file_name (Some (Filename.dirname Sys.argv.(0) ^ "/test_interp.mcml"));
-  set reds (["stack"; "sp"; "sp2"]);
+  set reds (["stack"; "sp"; "sp2"; "mode"]);
   set greens (["pc"; "bytecode"]);
   Jit_runtime.callbacks ()

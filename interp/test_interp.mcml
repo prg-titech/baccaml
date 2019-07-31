@@ -60,36 +60,37 @@ let rec interp stack sp bytecode pc =
        interp stack sp2 bytecode (pc + 2)
   else if instr = 6 then        (* CALL *)
     let addr = bytecode.(pc + 1) in
-    if is_mj () then (
+    if is_mj () then begin
       stack.(sp) <- 100;
       let sp2 = sp + 1 in
       let r = mj_call stack sp2 bytecode addr in
       stack.(sp - 1) <- r;
       interp stack sp bytecode (pc + 2)
-    ) else (
+    end else begin
       stack.(sp) <- pc + 2;
       stack.(sp + 1) <- 200;
       let sp2 = sp + 2 in
-      @if addr < pc then (
-         can_enter_jit stack sp2 bytecode addr;
-         interp stack sp2 bytecode addr
-    ) else (
-      interp stack sp2 bytecode addr
-    ))
+      if addr < pc then begin
+        can_enter_jit stack sp2 bytecode addr;
+        interp stack sp2 bytecode addr
+      end else
+        interp stack sp2 bytecode addr
+    end
   else if instr = 7 then        (* RET *)
     let v = stack.(sp - 1) in
     let mode = stack.(sp - 2) in
-    if mode = 100 then v
-    else (
+    if mode = 200 then
       let n = bytecode.(pc + 1) in
       let pc2 = stack.(sp - 3) in (* sp: sp - 2 *)
       stack.(sp - n - 3) <- v;    (* sp: sp - 2 - n + 1 = sp - 1 - n *)
       let sp2 = sp - n - 2 in
-      @if pc2 < pc then (
-         can_enter_jit stack sp2 bytecode pc2;
-         interp stack sp2 bytecode pc2
-       ) else (
-         interp stack sp2 bytecode pc2))
+      if pc2 < pc then begin
+        can_enter_jit stack sp2 bytecode pc2;
+        interp stack sp2 bytecode pc2
+      end else begin
+        interp stack sp2 bytecode pc2
+      end
+    else v
   else if instr = 8 then        (* DUP *)
     let n = bytecode.(pc + 1) in
     let v = stack.(sp - n - 1) in
@@ -226,7 +227,7 @@ code.(18) <- 2;
 code.(19) <- 6; code.(20) <- 1;
 code.(21) <- 1;
 code.(22) <- 7; code.(23) <- 1;
-code.(24) <- 4; code.(25) <- 200;
+code.(24) <- 4; code.(25) <- 20;
 code.(26) <- 6; code.(27) <- 1;
 code.(28) <- 9;
 let st = Array.make 100 0 in
