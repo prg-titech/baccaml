@@ -8,7 +8,7 @@ exception Jit_compilation_failed
 
 module Method_prof = Make_prof(struct let threshold = 100 end)
 
-module Trace_prof = Make_prof(struct let threshold = 100 end)
+module Trace_prof = Make_prof(struct let threshold = 5 end)
 
 module Trace_name : sig
   type t = Trace_name of string
@@ -214,8 +214,8 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
       ~trace_name:(Trace_name.value trace_name)
       ~red_names:(!Config.reds)
   in
-  let trace = JT.run prog reg mem env |> Jit_elim.elim_fundef ~i:5 in
-  Debug.print_trace trace;
+  let trace = JT.run prog reg mem env in
+  print_endline @@ Emit_virtual.string_of_fundef trace;
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
     emit_dyn oc `Meta_tracing [trace];
