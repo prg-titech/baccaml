@@ -54,23 +54,20 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : Jit_env.
   function
   | Ans exp -> tj_exp p reg mem tj_env exp
   | Let ((dest, typ), CallDir (Id.L "min_caml_can_enter_jit", args, fargs), body) ->
-     let pc = List.last args |> int_of_id_t |> Array.get reg |> value_of in
-     let reds = List.nth args 0 :: List.nth args 1 :: [] in
-     Log.debug ("can_enter_jit: pc " ^ string_of_int pc) ;
-     let {index_pc; merge_pc; trace_name} = tj_env in
-     Ans (CallDir (Id.L trace_name, reds, []))
-  | Let ((dest, typ), CallDir (Id.L "min_caml_jit_merge_point", args, fargs), body) ->
+    let { merge_pc } = tj_env in
+    let pc = List.last args |> int_of_id_t |> Array.get reg |> value_of in
+    Log.debug @@ Printf.sprintf "merge_pc: %d, pc: %d" merge_pc pc;
+    if pc = merge_pc then
+      let reds = List.nth args 0 :: List.nth args 1 :: [] in
+      Log.debug ("can_enter_jit: pc " ^ string_of_int pc) ;
       let {index_pc; merge_pc; trace_name} = tj_env in
-      let pc = List.hd args |> int_of_id_t |> Array.get reg |> value_of in
-      let reds = args |> List.filter (fun arg -> List.mem (String.get_name arg) tj_env.red_names)in
-      Log.debug (Printf.sprintf "jit_merge_point: pc %d" pc) ;
-      if not !is_re_merge_point then (
-        pc_header := pc ;
-        is_re_merge_point := true ;
-        tj p reg mem tj_env body )
-      else if !is_re_merge_point && !pc_header = pc then
-        Ans (CallDir (Id.L trace_name, reds, []))
-      else tj p reg mem tj_env body
+      Ans (CallDir (Id.L trace_name, reds, []))
+    else
+      tj p reg mem tj_env body
+  | Let ((dest, typ), CallDir (Id.L "min_caml_jit_merge_point", args, fargs), body) ->
+    let pc = List.hd args |> int_of_id_t |> Array.get reg |> value_of in
+    Log.debug (Printf.sprintf "jit_merge_point: pc %d" pc) ;
+    tj p reg mem tj_env body
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
      let callee =
        Fundef.find p id_l
@@ -247,7 +244,7 @@ let run p reg mem ({trace_name; red_names; index_pc; merge_pc;} as env) =
   let (Prog (tbl, fundefs, m)) = p in
   let {body= ibody; args= iargs} = Fundef.find_fuzzy p "interp" in
   let trace = ibody |> tj p reg mem env in
-  {name= Id.L trace_name
+  { name= Id.L trace_name
   ; args= iargs |> List.filter (fun arg -> List.mem (String.get_name arg) red_names)
   ; fargs= []
   ; body= trace
