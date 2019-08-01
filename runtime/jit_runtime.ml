@@ -246,16 +246,14 @@ let jit_exec pc st_ptr sp =
     match Trace_prof.find_opt pc with
     | Some (tname) ->
        begin
-         try
-           print_endline ("[tj] executing at " ^ (string_of_int pc) ^ "...");
-           let s = Unix.gettimeofday () in
-           exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
-           let e = Unix.gettimeofday () in
-           print_endline ("[tj] execution time: " ^ (string_of_float (e -. s)));
-         with e -> ()
+         print_endline @@ "[tj] executing at " ^ (string_of_int pc) ^ "...";
+         let s = Unix.gettimeofday () in
+         exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
+         let e = Unix.gettimeofday () in
+         print_endline @@ "[tj] execution time: " ^ (string_of_float (e -. s));
        end
     | None -> ()
-    end
+  end
 
 let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
   Debug.print_arr string_of_int stack ~notation:(Some "stack");
