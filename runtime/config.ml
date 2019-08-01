@@ -1,5 +1,3 @@
-
-
 let file_name = ref None
 
 let pc_method_annot_inst = 15
@@ -11,6 +9,8 @@ let reds = ref [""]
 let greens = ref [""]
 
 let log_level = Log.log_level
+
+let only_compile_flag = ref `On
 
 let set field value = field := value
 

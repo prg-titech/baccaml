@@ -241,16 +241,24 @@ let with_jit_flg ~on:f ~off:g =
   | `On -> f ()
   | `Off -> g ()
 
+let with_compile_flag ~on:f ~off:g =
+  match !Config.only_compile_flag with
+  | `On -> f ()
+  | `Off -> g ()
+
 let jit_exec pc st_ptr sp =
   with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
     match Trace_prof.find_opt pc with
     | Some (tname) ->
-       begin
-         print_endline @@ "[tj] executing at " ^ (string_of_int pc) ^ "...";
-         let s = Unix.gettimeofday () in
-         exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
-         let e = Unix.gettimeofday () in
-         print_endline @@ "[tj] execution time: " ^ (string_of_float (e -. s));
+       begin with_compile_flag ~on:begin fun _ ->
+          try
+            print_endline @@ "[tj] executing at " ^ (string_of_int pc) ^ "...";
+            let s = Unix.gettimeofday () in
+            exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
+            let e = Unix.gettimeofday () in
+            print_endline ("[tj] execution time: " ^ (string_of_float (e -. s)));
+          with _ -> ()
+        end ~off:(fun _ -> ())
        end
     | None -> ()
   end
@@ -262,18 +270,18 @@ let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
       begin match Trace_prof.find_opt pc with
       | Some _ -> ()
       | None ->
-         let ic = file_open () in
-         try
-           let prog =
-             ic |> Lexing.from_channel |> Util.virtualize
-             |> Jit_annot.annotate `Meta_tracing
-           in
-           close_in ic;
-           let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-           match prog |> jit_tracing env with
-           | Ok name -> Trace_prof.register (pc, name);
-           | Error e -> raise e
-         with e -> close_in ic; ()
+        let ic = file_open () in
+        try
+          let prog =
+            ic |> Lexing.from_channel |> Util.virtualize
+            |> Jit_annot.annotate `Meta_tracing
+          in
+          close_in ic;
+          let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+          match prog |> jit_tracing env with
+          | Ok name -> Trace_prof.register (pc, name);
+          | Error e -> raise e
+        with e -> close_in ic; ()
       end
     else
       Trace_prof.count_up pc
