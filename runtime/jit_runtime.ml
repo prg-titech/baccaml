@@ -8,7 +8,7 @@ exception Jit_compilation_failed
 
 module Method_prof = Make_prof(struct let threshold = 100 end)
 
-module Trace_prof = Make_prof(struct let threshold = 5 end)
+module Trace_prof = Make_prof(struct let threshold = 40 end)
 
 module Trace_name : sig
   type t = Trace_name of string
@@ -126,13 +126,11 @@ let compile_dyn trace_name =
   else
     Error (Jit_compilation_failed)
 
-let emit_dyn : out_channel -> [`Meta_method | `Meta_tracing] -> Asm.fundef list -> unit =
-  fun oc typ traces ->
+let emit_dyn oc p typ tname trace =
+  let tname = Trace_name.value tname in
   try
-    traces
-    |> List.iter (fun trace ->
-           trace |> Simm.h |> RegAlloc.h
-           |> Emit.Interop.h oc typ)
+    trace |> Simm.h |> RegAlloc.h |> Jit_emit.emit_tj oc;
+    Jit_emit.restore oc p tname
   with e -> close_out oc; raise e
 
 type runtime_env =
@@ -178,11 +176,12 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
       ~red_names:(!Config.reds)
       ~index_pc:(List.index (get_id "pc" args) args)
       ~merge_pc:pc_method_entry in
-  let trace = JM.run prog reg mem env |> Jit_elim.elim_fundef ~i:2 in
+  let trace = JM.run prog reg mem env in
   Debug.print_trace trace;
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
-    emit_dyn oc `Meta_method [trace]; close_out oc;
+    emit_dyn oc prog `Meta_method trace_name trace;
+    close_out oc;
     compile_dyn (Trace_name.value trace_name)
   with e ->
     close_out oc; raise e
@@ -218,7 +217,7 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   print_endline @@ Emit_virtual.string_of_fundef trace;
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
-    emit_dyn oc `Meta_tracing [trace];
+    emit_dyn oc prog `Meta_tracing trace_name trace;
     close_out oc;
     compile_dyn (Trace_name.value trace_name)
   with e ->
@@ -249,14 +248,14 @@ let with_compile_flag ~on:f ~off:g =
 let jit_exec pc st_ptr sp =
   with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
     match Trace_prof.find_opt pc with
-    | Some (tname) ->
-       begin with_compile_flag ~on:begin fun _ ->
+    | Some (tname) -> begin
+        with_compile_flag ~on:begin fun _ ->
           try
             print_endline @@ "[tj] executing at " ^ (string_of_int pc) ^ "...";
             let s = Unix.gettimeofday () in
             exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
             let e = Unix.gettimeofday () in
-            print_endline ("[tj] execution time: " ^ (string_of_float (e -. s)));
+            print_endline @@ "[tj] execution time: " ^ (string_of_float (e -. s));
           with _ -> ()
         end ~off:(fun _ -> ())
        end

@@ -14,6 +14,7 @@ typedef int (*fun_arg1)(int);
 CAMLprim value call_dlfun_arg1(value filename, value funcname, value arg1) {
   fun_arg1 sym = NULL;
   void *handle = NULL;
+  int res = 0;
 
   handle = dlopen(String_val(filename), RTLD_LAZY);
   if (handle == NULL) {
@@ -26,13 +27,15 @@ CAMLprim value call_dlfun_arg1(value filename, value funcname, value arg1) {
     failwith("error: dlsym\n");
     return -1;
   }
-
-  return Val_int(sym(Int_val(arg1)));
+  res = sym(arg1);
+  dlclose(handle);
+  return Val_int(res);
 }
 
 CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1, value arg2) {
   fun_arg2 sym = NULL;
   void *handle = NULL;
+  int res = 0;
 
   handle = dlopen(String_val(filename), RTLD_LAZY);
   if (handle == NULL) {
@@ -51,7 +54,10 @@ CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1, value
   intptr_t stk = Hp_val(arg1);
   int sp = Int_val(arg2);
 
-  return Val_int(sym(stk, sp));
+  res = sym(stk, sp);
+  dlclose(handle);
+
+  return Val_int(res);
 }
 
 CAMLprim value call_dlfun_arg3(value filename, value funcname,

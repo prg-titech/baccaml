@@ -264,12 +264,6 @@ min_caml_bp:
 	.long	0x0
 min_caml_is_mj:
 	ret
-.globl min_caml_method_entry
-min_caml_method_entry:
-	ret
-.globl min_caml_tracing_fail
-min_caml_tracing_fail:
-	ret
 .globl min_caml_can_enter_jit
 min_caml_can_enter_jit:
 	pushl	%ebp
@@ -293,12 +287,6 @@ min_caml_jit_merge_point:
 	movl	%ebp, %esp
 	popl	%ebp
 	ret
-.globl min_caml_loop_start
-min_caml_loop_start:
-	ret
-.globl min_caml_loop_end
-min_caml_loop_end:
-	ret
 .globl min_caml_mj_call
 min_caml_mj_call:
 	pushl	%ebp
@@ -310,4 +298,13 @@ min_caml_mj_call:
 	call	call_caml_mj_call
 	movl	%ebp, %esp
 	popl	%ebp
+	ret
+.globl min_caml_loop_start
+min_caml_loop_start:
+	ret
+.globl min_caml_loop_end
+min_caml_loop_end:
+	ret
+.globl min_caml_method_entry
+min_caml_method_entry:
 	ret
