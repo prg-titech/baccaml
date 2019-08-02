@@ -17,8 +17,12 @@ let rec pp_list = function
 
 let counter = ref 0
 let genid s =
-  incr counter;
-  Printf.sprintf "%s.%d" s !counter
+  if s = "interp" then
+    s
+  else begin
+    incr counter;
+    Printf.sprintf "%s.%d" s !counter
+  end
 
 let id_of_typ = function
   | Type.Unit -> "u"

@@ -2,7 +2,7 @@ open Base
 open Asm
 open Printf
 
-let emit_mj oc typ ({name= Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
+let emit oc typ ({name= Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   let cname = Filename.chop_extension x in
   Printf.fprintf oc ".code32\n";
   Printf.fprintf oc ".data\n";

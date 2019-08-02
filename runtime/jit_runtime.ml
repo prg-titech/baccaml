@@ -84,24 +84,24 @@ let get_so_name : string -> string =
       raise Exit
 
 let make_reg prog args sp =
-  Jit_env.(
-    let reg = Array.make Internal_conf.size (Red 0) in
-    let Asm.{args; body= t} = Fundef.find_fuzzy prog "interp" in
-    Asm.fv t @ args
-    |> List.iteri
-         (fun i a ->
-           if List.mem (String.get_name a) Internal_conf.greens then reg.(i) <- Green 0
-           else reg.(i) <- Red 0 ) ;
-    reg)
+  let open Jit_env in
+  let reg = Array.make Internal_conf.size (Red 0) in
+  let Asm.{args; body= t} = Fundef.find_fuzzy prog "interp" in
+  Asm.fv t @ args
+  |> List.iteri
+    (fun i a ->
+       if List.mem (String.get_name a) Internal_conf.greens then reg.(i) <- Green 0
+       else reg.(i) <- Red 0 ) ;
+  reg
 
 let make_mem ~bc_addr ~st_addr bytecode stack =
-  Jit_env.(
-    let mem = Array.make Internal_conf.size (Green 0) in
-    bytecode
-    |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Jit_env.Green a) ;
-    stack
-    |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Jit_env.Red a) ;
-    mem)
+  let open Jit_env in
+  let mem = Array.make Internal_conf.size (Green 0) in
+  bytecode
+  |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Jit_env.Green a) ;
+  stack
+  |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Jit_env.Red a) ;
+  mem
 
 let compile_dyn trace_name =
   let asm_name = trace_name ^ ".s" in
@@ -129,8 +129,7 @@ let compile_dyn trace_name =
 let emit_dyn oc p typ tname trace =
   let tname = Trace_name.value tname in
   try
-    trace |> Simm.h |> RegAlloc.h |> Jit_emit.emit_tj oc;
-    Jit_emit.restore oc p tname
+    trace |> Simm.h |> RegAlloc.h |> Jit_emit.emit oc typ;
   with e -> close_out oc; raise e
 
 type runtime_env =
@@ -258,7 +257,7 @@ let jit_exec pc st_ptr sp =
             print_endline @@ "[tj] execution time: " ^ (string_of_float (e -. s));
           with _ -> ()
         end ~off:(fun _ -> ())
-       end
+      end
     | None -> ()
   end
 
