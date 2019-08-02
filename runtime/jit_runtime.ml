@@ -8,7 +8,7 @@ exception Jit_compilation_failed
 
 module Method_prof = Make_prof(struct let threshold = 100 end)
 
-module Trace_prof = Make_prof(struct let threshold = 40 end)
+module Trace_prof = Make_prof(struct let threshold = 100 end)
 
 module Trace_name : sig
   type t = Trace_name of string
@@ -129,7 +129,7 @@ let compile_dyn trace_name =
 let emit_dyn oc p typ tname trace =
   let tname = Trace_name.value tname in
   try
-    trace |> Simm.h |> RegAlloc.h |> Jit_emit.emit oc typ;
+    trace |> Simm.h |> RegAlloc.h |> Jit_emit.emit_tj oc p;
   with e -> close_out oc; raise e
 
 type runtime_env =
@@ -213,7 +213,7 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
       ~red_names:(!Config.reds)
   in
   let trace = JT.run prog reg mem env in
-  print_endline @@ Emit_virtual.string_of_fundef trace;
+  (* print_endline @@ Emit_virtual.string_of_fundef trace; *)
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
     emit_dyn oc prog `Meta_tracing trace_name trace;
@@ -244,17 +244,22 @@ let with_compile_flag ~on:f ~off:g =
   | `On -> f ()
   | `Off -> g ()
 
+let with_ellapsed_time f =
+  let s = Unix.gettimeofday () in
+  let r = f () in
+  let e = Unix.gettimeofday () in
+  print_endline @@ "ellapsed time: " ^ (string_of_float (e -. s));
+  r
+
 let jit_exec pc st_ptr sp =
   with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
     match Trace_prof.find_opt pc with
     | Some (tname) -> begin
         with_compile_flag ~on:begin fun _ ->
           try
-            print_endline @@ "[tj] executing at " ^ (string_of_int pc) ^ "...";
-            let s = Unix.gettimeofday () in
-            exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
-            let e = Unix.gettimeofday () in
-            print_endline @@ "[tj] execution time: " ^ (string_of_float (e -. s));
+            print_endline @@ "[tj] exec at " ^ (string_of_int pc);
+            with_ellapsed_time (fun _ ->
+              exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp) |> ignore;
           with _ -> ()
         end ~off:(fun _ -> ())
       end

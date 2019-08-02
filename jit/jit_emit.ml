@@ -45,19 +45,15 @@ let emit oc typ ({name= Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   Printf.fprintf oc "\tret\n";
   Emit.h oc fundef
 
-let emit_tj oc ({ name = Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
+let emit_tj oc p ({ name = Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   let tname = Filename.chop_extension x in
+  let { args = pargs } = Fundef.find_fuzzy p "interp" in
   fprintf oc ".code32\n";
   fprintf oc ".data\n";
-  fprintf oc "tj_arg1:\n";
-  fprintf oc "\t.long\t0x0\n";
-  fprintf oc "tj_arg2:\n";
-  fprintf oc "\t.long\t0x0\n";
-  fprintf oc ".balign\t8\n";
-  fprintf oc "tj_arg3:\n";
-  fprintf oc "\t.long\t0x0\n";
-  fprintf oc "tj_arg4:\n";
-  fprintf oc "\t.long\t0x0\n";
+  pargs |> List.iteri (fun i _ ->
+      fprintf oc "tj_arg%d:\n" i;
+      fprintf oc "\t.long\t0x0\n";
+    );
   fprintf oc ".balign\t8\n";
   fprintf oc ".text\n";
   fprintf oc ".globl %s\n" tname;
@@ -72,24 +68,22 @@ let emit_tj oc ({ name = Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   fprintf oc "\tmovl\t32(%%esp),%s\n" regs.(0);
   fprintf oc "\tmovl\t36(%%esp),%s\n" regs.(1);
   fprintf oc "\tjmp\t%s\n" x;
-  Emit.h oc fundef
-
-let restore oc p tname =
-  let { name = Id.L x; } = Fundef.find_fuzzy p "interp" in
-  fprintf oc "guard_%s:\n" tname;
-  fprintf oc "\tmovl\t%%eax,tj_arg1\n";
-  fprintf oc "\tmovl\t%%ebx,tj_arg2\n";
-  fprintf oc "\tmovl\t%%ecx,tj_arg3\n";
-  fprintf oc "\tmovl\t%%edx,tj_arg4\n";
-  fprintf oc "\tpopl\t%%ebp\n";
-  fprintf oc "\tpopl\t%%edi\n";
-  fprintf oc "\tpopl\t%%esi\n";
-  fprintf oc "\tpopl\t%%edx\n";
-  fprintf oc "\tpopl\t%%ecx\n";
-  fprintf oc "\tpopl\t%%ebx\n";
-  fprintf oc "\tpopl\t%%eax\n";
-  fprintf oc "\tmovl\ttj_arg4,%%edx\n";
-  fprintf oc "\tmovl\ttj_arg3,%%ecx\n";
-  fprintf oc "\tmovl\ttj_arg2,%%ebx\n";
-  fprintf oc "\tmovl\ttj_arg1,%%eax\n";
-  fprintf oc "\tjmp\t%s\n" x
+  Emit.h oc fundef;
+  fprintf oc "guard_%s:\n" x;
+  pargs |> List.iteri (fun i _ ->
+      fprintf oc "\tmovl\t%s,tj_arg%d\n" regs.(i) i;
+    );
+  (* fprintf oc "\tpopl\t%%ebp\n";
+   * fprintf oc "\tpopl\t%%edi\n";
+   * fprintf oc "\tpopl\t%%esi\n";
+   * fprintf oc "\tpopl\t%%edx\n";
+   * fprintf oc "\tpopl\t%%ecx\n";
+   * fprintf oc "\tpopl\t%%ebx\n";
+   * fprintf oc "\tpopl\t%%eax\n"; *)
+  pargs |> List.iteri (fun i _ ->
+      fprintf oc "\tmovl\ttj_arg%d,%s\n" i regs.(i);
+    );
+  (* pargs |> List.iteri (fun i _ ->
+   *     fprintf oc "\tpushl\t%s\n" regs.(List.length pargs - i - 1);
+   *   ); *)
+  fprintf oc "\tjmp\tinterp\n"

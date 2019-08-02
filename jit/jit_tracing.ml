@@ -138,7 +138,7 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : Jit_env.
 
 and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : Jit_env.env) =
   let trace = tj p reg mem tj_env in
-  let guard = Guard.create reg tj_env in
+  let guard = Guard.create_tj reg tj_env in
   function
   | IfLE (id_t, id_or_imm, t1, t2) ->
     let r1 = reg.(int_of_id_t id_t) in
