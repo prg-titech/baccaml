@@ -70,8 +70,6 @@ let rec interp stack sp bytecode pc =
       stack.(sp - 1) <- r;
       interp stack sp bytecode (pc + 2)
     ) else (
-      let _ = can_enter_jit_v2 pc stack sp (
-        interp stack sp bytecode pc) in
       stack.(sp) <- pc + 2;
       stack.(sp + 1) <- 200;
       interp stack (sp + 2) bytecode addr)
@@ -149,7 +147,7 @@ code.(23) <- 2;
 code.(24) <- 6; code.(25) <- 1;
 code.(26) <- 1;
 code.(27) <- 7;
-code.(28) <- 4; code.(29) <- 11;
+code.(28) <- 4; code.(29) <- 40;
 code.(30) <- 6;
 code.(31) <- 1;
 code.(32) <- 9;
@@ -158,10 +156,11 @@ let s = get_current_millis () in
 let res = (interp st 0 code 28) in
 let e = get_current_millis () in
 print_int (e - s); print_newline ();
-print_int res; print_newline ();
+(* print_int res; print_newline (); *)
 
 (* sum *)
 let code = Array.make 50 0 in
+save_bp ();
 code.(0) <- 15;
 code.(1) <- 8; code.(2) <- 1;
 code.(3) <- 4; code.(4) <- 2;
@@ -176,11 +175,15 @@ code.(18) <- 2;
 code.(19) <- 6; code.(20) <- 1;
 code.(21) <- 1;
 code.(22) <- 7; code.(23) <- 1;
-code.(24) <- 4; code.(25) <- 10;
+code.(24) <- 4; code.(25) <- 40000;
 code.(26) <- 6; code.(27) <- 1;
 code.(28) <- 9;
-let st = Array.make 100 0 in
-(* let res = (interp st 0 code 24) in print_int res; *)
+(* let st = Array.make 10000 0 in
+ * let s = get_current_millis () in
+ * let res = (interp st 0 code 24) in
+ * let e = get_current_millis () in
+ * print_int (e - s); print_newline ();
+ * print_int res; print_newline (); *)
 
 (* loop *)
 let code = Array.make 20 0 in
@@ -194,9 +197,10 @@ code.(10) <- 3;
 code.(11) <- 5; code.(12) <- 15;
 code.(13) <- 14; code.(14) <- 3;
 code.(15) <- 9;
-let st = Array.make 20 0 in
-st.(0) <- 2000000;
-let s = get_current_millis () in
-let res = (interp st 1 code 3) in
-let e = get_current_millis () in
-print_int (e - s); print_newline ()
+(* let st = Array.make 20 0 in
+ * st.(0) <- 2000000;
+ * let s = get_current_millis () in
+ * let res = (interp st 1 code 3) in
+ * let e = get_current_millis () in
+ * print_int (e - s); print_newline (); *)
+()
