@@ -50,10 +50,6 @@ let emit_tj oc p ({ name = Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   let { args = pargs } = Fundef.find_fuzzy p "interp" in
   fprintf oc ".code32\n";
   fprintf oc ".data\n";
-  pargs |> List.iteri (fun i _ ->
-      fprintf oc "tj_arg%d:\n" i;
-      fprintf oc "\t.long\t0x0\n";
-    );
   fprintf oc ".balign\t8\n";
   fprintf oc ".text\n";
   fprintf oc ".globl %s\n" tname;
@@ -70,20 +66,16 @@ let emit_tj oc p ({ name = Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   fprintf oc "\tjmp\t%s\n" x;
   Emit.h oc fundef;
   fprintf oc "guard_%s:\n" x;
-  pargs |> List.iteri (fun i _ ->
-      fprintf oc "\tmovl\t%s,tj_arg%d\n" regs.(i) i;
-    );
-  (* fprintf oc "\tpopl\t%%ebp\n";
-   * fprintf oc "\tpopl\t%%edi\n";
-   * fprintf oc "\tpopl\t%%esi\n";
-   * fprintf oc "\tpopl\t%%edx\n";
-   * fprintf oc "\tpopl\t%%ecx\n";
-   * fprintf oc "\tpopl\t%%ebx\n";
-   * fprintf oc "\tpopl\t%%eax\n"; *)
-  pargs |> List.iteri (fun i _ ->
-      fprintf oc "\tmovl\ttj_arg%d,%s\n" i regs.(i);
-    );
-  (* pargs |> List.iteri (fun i _ ->
-   *     fprintf oc "\tpushl\t%s\n" regs.(List.length pargs - i - 1);
-   *   ); *)
-  fprintf oc "\tjmp\tinterp\n"
+  (* use esp for caliculating an offset *)
+  fprintf oc "\tpushl\t%%eax\n";
+  fprintf oc "\tpushl\t%%ebx\n";
+  fprintf oc "\tpushl\t%%ecx\n";
+  fprintf oc "\tpushl\t%%edx\n";
+  fprintf oc "\tmovl\t12(%%esp),%%ebp\n";
+  fprintf oc "\tmovl\t16(%%esp),%%edi\n";
+  fprintf oc "\tmovl\t20(%%esp),%%esi\n";
+  fprintf oc "\tmovl\t24(%%esp),%%edx\n";
+  fprintf oc "\tmovl\t28(%%esp),%%ecx\n";
+  fprintf oc "\tmovl\t32(%%esp),%%ebx\n";
+  fprintf oc "\tmovl\t36(%%esp),%%eax\n";
+  fprintf oc "\tjmp\tmin_caml_guard_failure\n"

@@ -229,7 +229,7 @@ code.(18) <- 2;
 code.(19) <- 6; code.(20) <- 1;
 code.(21) <- 1;
 code.(22) <- 7; code.(23) <- 1;
-code.(24) <- 4; code.(25) <- 1000;
+code.(24) <- 4; code.(25) <- 10;
 code.(26) <- 6; code.(27) <- 1;
 code.(28) <- 9;
 let st = Array.make 100 0 in

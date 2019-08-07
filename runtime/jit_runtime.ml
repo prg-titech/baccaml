@@ -8,7 +8,7 @@ exception Jit_compilation_failed
 
 module Method_prof = Make_prof(struct let threshold = 100 end)
 
-module Trace_prof = Make_prof(struct let threshold = 100 end)
+module Trace_prof = Make_prof(struct let threshold = 1 end)
 
 module Trace_name : sig
   type t = Trace_name of string
@@ -145,7 +145,7 @@ let get_id elem =
 
 let filter typ = match typ with
     `Red ->
-     List.filter (fun a -> (List.mem (String.get_name a) !Config.reds))
+     List.filter (fun a -> (List.mem (String.get_name a) Internal_conf.reds))
   | `Green ->
      List.filter (fun a -> List.mem (String.get_name a) Internal_conf.greens)
 

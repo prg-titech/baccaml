@@ -287,6 +287,15 @@ min_caml_jit_merge_point:
 	movl	%ebp, %esp
 	popl	%ebp
 	ret
+.globl min_caml_guard_failure
+min_caml_guard_failure:
+    popl    %edx
+    popl    %ecx
+    popl    %ebx
+    popl    %eax
+    movl    %ebp, %esp
+    popl    %ebp
+    ret
 .globl min_caml_mj_call
 min_caml_mj_call:
 	pushl	%ebp
