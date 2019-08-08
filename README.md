@@ -7,13 +7,11 @@ RPython and Truffle/Graal, two most successfully implemented frameworks employ d
 RPython's strategy is based on a tracing, on the other hand Truffle's strategy is based on a method invocation.
 The important thing is that those strategies have their own pros and cons.
 
-We propose a _meta-hybrid JIT compilation framework_, and its' experimental implementation called BacCaml.
+We propose a _meta-hybrid JIT compilation framework_, and its experimental implementation called BacCaml.
 The three main features of BacCaml are:
 
 - applying both method- and tracing-based compilation for different program parts
 - realiizing a hybrid JIT compiler with a single interpreter definition
-- sharing many parts of implementation between method-based and tracing-based compilation
-
 
 This project is forked from <a href="https://github.com/esumii/min-caml">MinCaml</a>.
 
