@@ -19,6 +19,10 @@ This project is forked from <a href="https://github.com/esumii/min-caml">MinCaml
 
 You need the OCaml 4.07.0+ configured with 32bit mode. This is run only on Linux.
 
+## Papers
+
+- MoveVMs'19 workshop: Yusuke Izawa, Hidehiko Masuhara, Tomoyuki Aotani, "Extending a Meta-tracing Compiler to Mix Method and Tracing Compilation". [[url]](https://3tty0n.github.io/baccaml-programming-morevms-2019.pdf)
+
 ## Usage
 
 To run the interpreter already defined, execute following commands.
