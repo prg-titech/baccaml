@@ -104,8 +104,8 @@ let prepare_env jit_type { file; ex_name; code; annot; reds; greens; merge_pc; t
     |> Simm.f
     |> Jit_annot.annotate jit_type
   in
-  let reg = Array.make 10000000 (Red (0)) in
-  let mem = Array.make 10000000 (Red (0)) in
+  let reg = Array.make 1000000 (Red (0)) in
+  let mem = Array.make 1000000 (Red (0)) in
   let red_args = List.map fst reds in
   let tenv =
     prepare_tenv
