@@ -68,12 +68,12 @@ let build_object_file file =
   let from = cwd ^ "/" ^ file ^ ".s" in
   let to' = cwd ^ "/" ^ file ^ ".o" in
   validate_file from;
-  Printf.sprintf "gcc -c -m32 %s -o %s" from to'
+  Printf.sprintf "gcc -c -m32 %s -lm -o %s" from to'
   |> Sys.command_exn
 
 let build_executable interp trace =
   let cmd =
-    Printf.sprintf "gcc -g -m32 %s %s %s %s -o %s"
+    Printf.sprintf "gcc -g -m32 %s %s %s %s -lm -o %s"
       ("stub/stub.c")
       ("stub/libmincaml.S")
       (interp ^ ".o")
@@ -89,7 +89,7 @@ let build_executables interp traces out =
   in
 
   let cmd =
-    Printf.sprintf "gcc -g -m32 %s %s %s %s -o %s"
+    Printf.sprintf "gcc -lm -m32 %s %s %s %s -lm -o %s"
       ("stub/stub.c")
       ("stub/libbaccaml.S")
       (interp ^ ".o")
