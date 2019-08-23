@@ -152,11 +152,11 @@ code.(28) <- 4; code.(29) <- 40;
 code.(30) <- 6;
 code.(31) <- 1;
 code.(32) <- 9;
-let st = Array.make 50 (0) in
+(* let st = Array.make 50 (0) in
 let s = get_current_millis () in
 let res = (interp st 0 code 28) in
 let e = get_current_millis () in
-print_int (e - s); print_newline ();
+print_int (e - s); print_newline (); *)
 
 (* sum *)
 let code = Array.make 50 0 in
@@ -178,11 +178,11 @@ code.(22) <- 7; code.(23) <- 1;
 code.(24) <- 4; code.(25) <- 30000;
 code.(26) <- 6; code.(27) <- 1;
 code.(28) <- 9;
-(* let st = Array.make 100 0 in
- * let s = get_current_millis () in
- * let res = (interp st 0 code 24) in
- * let e = get_current_millis () in
- * print_int (e - s); print_newline (); *)
+let st = Array.make 100 0 in
+let s = get_current_millis () in
+let res = (interp st 0 code 24) in
+let e = get_current_millis () in
+print_int (e - s); print_newline ();
 
 (* loop *)
 let code = Array.make 20 0 in
