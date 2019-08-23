@@ -88,11 +88,11 @@ code.(19) <- 0;
 code.(20) <- 0;
 code.(21) <- 7;
 code.(22) <- 4;
-code.(23) <- read_int ();
+code.(23) <- 30000;
 code.(24) <- 6;
 code.(25) <- 0;
 code.(26) <- 9;
-let n = read_int () in
+let n = 100 in
 let rec loop x =
   let r = interp stack 0 code 22 in
   if x = 1 then r

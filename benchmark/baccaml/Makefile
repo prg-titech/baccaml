@@ -1,15 +1,15 @@
 APPS = test_fib_mj test_fib_tj test_interp_naive test_interp_sum test_sum_mj test_sum_tj
-TARGET := fib
+APP := fib
 JIT := mj
 
 BACCAML := dune exec baccaml
 BUILDER := dune exec baccaml_builder
 MINCAML := dune exec min-caml
 
-ifeq ($(TARGET), fib)
+ifeq ($(APP), fib)
 $(APP): test_fib_tj test_fib_mj test_interp_naive
 else
-ifeq ($(TARGET), sum)
+ifeq ($(APP), sum)
 $(APP): test_sum_tj test_sum_mj test_interp_sum
 endif
 endif
