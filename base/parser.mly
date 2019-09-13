@@ -42,6 +42,9 @@
 %token RPAREN
 %token LBRACE
 %token RBRACE
+%token LBRAC
+%token RBRAC
+%token VBAR
 %token BEGIN
 %token END
 %token EOF
@@ -162,6 +165,25 @@ exp:
   | ARRAY_CREATE simple_exp simple_exp
 %prec prec_app
     { Array($2, $3) }
+  | LET IDENT EQUAL arr IN exp
+%prec prec_app
+    {
+      match $4 with
+      | SArray (x) ->
+         let create_array lst =
+           let rec loop i = function
+             | [] -> $6
+             | hd :: tl ->
+                Let ( (Id.gentmp Type.Unit, Type.Unit)
+                    , Put (Var $2, Int i, hd)
+                    , loop (i + 1) tl)
+           in loop 0 lst
+         in
+         Let (addtyp $2
+             , Array (Int (List.length x), Int (0))
+             , create_array x)
+      | _ -> failwith "list should be come here."
+    }
   | error
     { failwith
         (Printf.sprintf "parse error near characters %d-%d"
@@ -197,3 +219,11 @@ pat:
     { $1 @ [addtyp $3] }
   | IDENT COMMA IDENT
     { [addtyp $1; addtyp $3] }
+
+arrcont:
+| { [] }
+| simple_exp { [$1] }
+| simple_exp SEMICOLON arrcont { $1 :: $3 }
+
+arr:
+| LBRAC VBAR arrcont VBAR RBRAC { SArray $3 }

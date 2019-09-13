@@ -78,6 +78,12 @@ rule token = parse
     { FUN }
 | ";;"
     { SEMISEMI }
+| '['
+    { LBRAC }
+| ']'
+    { RBRAC }
+| '|'
+    { VBAR }
 | ','
     { COMMA }
 | '_'
