@@ -213,7 +213,7 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
       ~red_names:(!Config.reds)
   in
   let trace = JT.run prog reg mem env in
-  (* print_endline @@ Emit_virtual.string_of_fundef trace; *)
+  Asm.print_fundef trace;
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
     emit_dyn oc prog `Meta_tracing trace_name trace;
