@@ -64,8 +64,8 @@ let emit_tj oc p ({ name = Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   fprintf oc "\tmovl\t32(%%esp),%s\n" regs.(0);
   fprintf oc "\tmovl\t36(%%esp),%s\n" regs.(1);
   fprintf oc "\tcall\t%s\n" x;
-  fprintf oc ".globl label_%s\n" x;
-  fprintf oc "label_%s:\n" x;
+  fprintf oc ".globl debug_%s\n" x;
+  fprintf oc "debug_%s:\n" x;
   fprintf oc "\tpopl\t%%ebp\n";
   fprintf oc "\tpopl\t%%edi\n";
   fprintf oc "\tpopl\t%%esi\n";
@@ -77,19 +77,8 @@ let emit_tj oc p ({ name = Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   Emit.h oc fundef;
   fprintf oc "guard_%s:\n" x;
   (* use esp for caliculating an offset *)
-  (* fprintf oc "\tpushl\t%%eax\n";
-   * fprintf oc "\tpushl\t%%ebx\n";
-   * fprintf oc "\tpushl\t%%ecx\n";
-   * fprintf oc "\tpushl\t%%edx\n";
-   * fprintf oc "\tmovl\t12(%%esp),%%ebp\n";
-   * fprintf oc "\tmovl\t16(%%esp),%%edi\n";
-   * fprintf oc "\tmovl\t20(%%esp),%%esi\n";
-   * fprintf oc "\tmovl\t24(%%esp),%%edx\n";
-   * fprintf oc "\tmovl\t28(%%esp),%%ecx\n";
-   * fprintf oc "\tmovl\t32(%%esp),%%ebx\n";
-   * fprintf oc "\tmovl\t36(%%esp),%%eax\n";
-   * fprintf oc "\tpopl\t%%edx\n";
-   * fprintf oc "\tpopl\t%%ecx\n";
-   * fprintf oc "\tpopl\t%%ebx\n";
-   * fprintf oc "\tpopl\t%%eax\n"; *)
-  fprintf oc "\tret\n"
+  fprintf oc "\tmovl\t%%eax, min_caml_guard_stack\n";
+  fprintf oc "\tmovl\t%%ebx, min_caml_guard_sp\n";
+  fprintf oc "\tmovl\t%%ecx, min_caml_guard_bytecode\n";
+  fprintf oc "\tmovl\t%%edx, min_caml_guard_pc\n";
+  fprintf oc "\tret\n";

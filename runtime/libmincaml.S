@@ -237,31 +237,6 @@ min_caml_atan:
 	movl	%ebp, %esp
 	popl	%ebp
 	ret
-.data
-format_int:
-	.asciz	"%d"
-format_float:
-	.asciz	"%lf"
-.balign 8
-float_0:
-	.long	0x0
-	.long	0x0
-float_1:
-	.long	0x0
-	.long	0x3ff00000
-.balign 16
-.globl min_caml_fnegd
-min_caml_fnegd:
-	.long	0
-	.long	0x80000000
-	.long	0
-	.long	0
-.globl min_caml_hp
-min_caml_hp:
-	.long	0x0
-.globl min_caml_bp
-min_caml_bp:
-	.long	0x0
 min_caml_is_mj:
 	ret
 .globl min_caml_can_enter_jit
@@ -287,15 +262,6 @@ min_caml_jit_merge_point:
 	movl	%ebp, %esp
 	popl	%ebp
 	ret
-.globl min_caml_guard_failure
-min_caml_guard_failure:
-    popl    %edx
-    popl    %ecx
-    popl    %ebx
-    popl    %eax
-    movl    %ebp, %esp
-    popl    %ebp
-    ret
 .globl min_caml_mj_call
 min_caml_mj_call:
 	pushl	%ebp
@@ -317,3 +283,41 @@ min_caml_loop_end:
 .globl min_caml_method_entry
 min_caml_method_entry:
 	ret
+.data
+format_int:
+	.asciz	"%d"
+format_float:
+	.asciz	"%lf"
+.balign 8
+float_0:
+	.long	0x0
+	.long	0x0
+float_1:
+	.long	0x0
+	.long	0x3ff00000
+.balign 16
+.globl min_caml_fnegd
+min_caml_fnegd:
+	.long	0
+	.long	0x80000000
+	.long	0
+	.long	0
+.globl min_caml_hp
+min_caml_hp:
+	.long	0x0
+.globl min_caml_bp
+min_caml_bp:
+	.long	0x0
+.data
+.globl min_caml_guard_stack
+min_caml_guard_stack:
+	.long 0
+.globl min_caml_guard_sp
+min_caml_guard_sp:
+	.long 0
+.globl min_caml_guard_bytecode
+min_caml_guard_bytecode:
+	.long 0
+.globl min_caml_guard_pc
+min_caml_guard_pc:
+	.long 0
