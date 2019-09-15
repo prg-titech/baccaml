@@ -180,8 +180,10 @@ exp:
            in loop 0 lst
          in
          Let (addtyp $2
-             , Array (Int (List.length x), Int (0))
-             , create_array x)
+            , Array (Int (List.length x), Int (0))
+            , Let ( (Id.gentmp Type.Unit, Type.Unit)
+                  , App (Var "save_bp", [Unit])
+                  , create_array x))
       | _ -> failwith "list should be come here."
     }
   | error
