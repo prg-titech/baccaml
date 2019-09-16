@@ -59,6 +59,12 @@ module Debug = struct
       | Some s -> Printf.printf "%s %s\n" s str
       | None -> Printf.printf "%s\n" str
     else ()
+
+  let with_debug = fun f ->
+    match !Config.log_level with
+    | `Debug -> f ()
+    | _ -> ()
+
 end
 
 let file_open () =
@@ -213,7 +219,7 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
       ~red_names:(!Config.reds)
   in
   let trace = JT.run prog reg mem env in
-  Asm.print_fundef trace;
+  Debug.with_debug (fun _ -> Asm.print_fundef trace);
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
     emit_dyn oc prog `Meta_tracing trace_name trace;
@@ -258,8 +264,9 @@ let jit_exec pc st_ptr sp =
         with_compile_flag ~on:begin fun _ ->
           try
             print_endline @@ "[tj] exec at " ^ (string_of_int pc);
-            with_ellapsed_time (fun _ ->
-              exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp) |> ignore;
+            with_ellapsed_time begin fun _ ->
+              exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp
+            end |> ignore;
           with _ -> ()
         end ~off:(fun _ -> ())
       end
