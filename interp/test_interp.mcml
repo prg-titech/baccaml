@@ -183,10 +183,10 @@ let rec interp stack sp bytecode pc =
  * code.(24) <- 6; code.(25) <- 1;
  * code.(26) <- 1;
  * code.(27) <- 7; code.(28) <- 1;
- * code.(29) <- 4; code.(30) <- 10;
+ * code.(29) <- 4; code.(30) <- 20;
  * code.(31) <- 6; code.(32) <- 1;
  * code.(33) <- 9;
- * let st = Array.make 50 (0) in
+ * let st = Array.make 50 (-1) in
  * let s = get_current_millis () in
  * let res = (interp st 0 code 29) in
  * let e = get_current_millis () in
@@ -230,7 +230,7 @@ code.(18) <- 2;
 code.(19) <- 6; code.(20) <- 1;
 code.(21) <- 1;
 code.(22) <- 7; code.(23) <- 1;
-code.(24) <- 4; code.(25) <- 20000;
+code.(24) <- 4; code.(25) <- 10000;
 code.(26) <- 6; code.(27) <- 1;
 code.(28) <- 9;
 let st = Array.make 100 0 in
