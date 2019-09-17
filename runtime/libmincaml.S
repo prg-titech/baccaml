@@ -262,6 +262,13 @@ min_caml_jit_merge_point:
 	movl	%ebp, %esp
 	popl	%ebp
 	ret
+.globl	min_caml_guard_restore
+min_caml_guard_restore:
+	movl	min_caml_guard_stack, %eax
+	movl	min_caml_guard_sp, %ebx
+	movl	min_caml_guard_bytecode, %ecx
+	movl	min_caml_guard_pc, %edx
+	jmp	min_caml_jit_merge_point_cont
 .globl min_caml_mj_call
 min_caml_mj_call:
 	pushl	%ebp
