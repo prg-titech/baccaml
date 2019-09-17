@@ -8,7 +8,7 @@ RPython's strategy is based on a tracing, on the other hand Truffle's strategy i
 The important thing is that those strategies have their own pros and cons.
 
 We propose a _meta-hybrid JIT compilation framework_, and its experimental implementation called BacCaml.
-The three main features of BacCaml are:
+The main features of BacCaml are:
 
 - applying both method- and tracing-based compilation for different program parts
 - realiizing a hybrid JIT compiler with a single interpreter definition
