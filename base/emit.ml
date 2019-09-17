@@ -204,11 +204,19 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprim
     else if List.mem a allfregs && a <> fregs.(0) then
       Printf.fprintf oc "\tmovsd\t%s, %s\n" fregs.(0) a
   | NonTail(a), CallDir(Id.L(x), ys, zs) when x = "restore_min_caml_bp" ->
+    g'_args oc [] ys zs;
     Printf.fprintf oc "\tmovl\tmin_caml_bp,%s\n" a
   | NonTail(a), CallDir(Id.L(x), ys, zs) when x = "min_caml_save_bp" ->
+    g'_args oc [] ys zs;
     Printf.fprintf oc "\tmovl\t%%eax,min_caml_bp\n"
   | NonTail(a), CallDir(Id.L(x), ys, zs) when x = "min_caml_save_sp" ->
+    g'_args oc [] ys zs;
     Printf.fprintf oc "\tmovl\t%%eax,min_caml_sp\n"
+  | NonTail(a), CallDir(Id.L(x), ys, zs) when x = "min_caml_jit_merge_point" ->
+    g'_args oc [] ys zs;
+    Printf.fprintf oc "\tjmp\tmin_caml_jit_merge_point\n";
+    Printf.fprintf oc ".globl min_caml_jit_merge_point_cont\n";
+    Printf.fprintf oc "min_caml_jit_merge_point_cont:\n";
   | NonTail(a), CallDir(Id.L(x), ys, zs) ->
     g'_args oc [] ys zs;
     let ss = stacksize () in

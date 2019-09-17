@@ -261,14 +261,19 @@ min_caml_jit_merge_point:
 	call	call_caml_jit_exec
 	movl	%ebp, %esp
 	popl	%ebp
-	ret
-.globl	min_caml_guard_restore
-min_caml_guard_restore:
+	movl	min_caml_guard_fail_flg, %eax
+	cmpl	$0, %eax
+	jg	.L3
+	jmp	.L2
+.L2:
+	jmp	min_caml_jit_merge_point_cont
+.L3:
 	movl	min_caml_guard_stack, %eax
 	movl	min_caml_guard_sp, %ebx
 	movl	min_caml_guard_bytecode, %ecx
 	movl	min_caml_guard_pc, %edx
-	jmp	min_caml_jit_merge_point_cont
+	movl	$0, min_caml_guard_fail_flg
+	jmp	interp
 .globl min_caml_mj_call
 min_caml_mj_call:
 	pushl	%ebp
@@ -315,7 +320,6 @@ min_caml_hp:
 .globl min_caml_bp
 min_caml_bp:
 	.long	0x0
-.data
 .globl min_caml_guard_stack
 min_caml_guard_stack:
 	.long 0
@@ -327,4 +331,7 @@ min_caml_guard_bytecode:
 	.long 0
 .globl min_caml_guard_pc
 min_caml_guard_pc:
+	.long 0
+.globl	min_caml_guard_fail_flg
+min_caml_guard_fail_flg:
 	.long 0

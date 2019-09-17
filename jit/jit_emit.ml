@@ -81,4 +81,5 @@ let emit_tj oc p ({ name = Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   fprintf oc "\tmovl\t%%ebx, min_caml_guard_sp\n";
   fprintf oc "\tmovl\t%%ecx, min_caml_guard_bytecode\n";
   fprintf oc "\tmovl\t%%edx, min_caml_guard_pc\n";
+  fprintf oc "\tmovl\t$1, min_caml_guard_fail_flg\n";
   fprintf oc "\tret\n";

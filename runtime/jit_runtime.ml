@@ -8,7 +8,7 @@ exception Jit_compilation_failed
 
 module Method_prof = Make_prof(struct let threshold = 100 end)
 
-module Trace_prof = Make_prof(struct let threshold = 0 end)
+module Trace_prof = Make_prof(struct let threshold = 100 end)
 
 module Trace_name : sig
   type t = Trace_name of string
@@ -249,11 +249,6 @@ let with_jit_flg ~on:f ~off:g =
   | `On -> f ()
   | `Off -> g ()
 
-let with_compile_flag ~on:f ~off:g =
-  match !Config.only_compile_flag with
-  | `On -> f ()
-  | `Off -> g ()
-
 let jit_exec pc st_ptr sp =
   with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
     match Trace_prof.find_opt pc with
@@ -268,7 +263,6 @@ let jit_exec pc st_ptr sp =
   end
 
 let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
-  Debug.print_stack stack;
   with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
     if Trace_prof.over_threshold pc then
       begin match Trace_prof.find_opt pc with
