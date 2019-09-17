@@ -12,4 +12,4 @@ let () =
   set file_name (Some (Filename.dirname Sys.argv.(0) ^ "/test_interp.mcml"));
   set reds (["stack"; "sp"; "sp2"; "mode"]);
   set greens (["pc"; "bytecode"]);
-  Jit_runtime.callbacks ()
+  Runtime_entry.callbacks ()
