@@ -8,7 +8,7 @@ exception Jit_compilation_failed
 
 module Method_prof = Make_prof(struct let threshold = 100 end)
 
-module Trace_prof = Make_prof(struct let threshold = 1 end)
+module Trace_prof = Make_prof(struct let threshold = 0 end)
 
 module Trace_name : sig
   type t = Trace_name of string
@@ -59,6 +59,10 @@ module Debug = struct
       | Some s -> Printf.printf "%s %s\n" s str
       | None -> Printf.printf "%s\n" str
     else ()
+
+  let print_stack stk =
+    let str = Array.string_of_array string_of_int stk in
+    print_string "[stack]"; print_endline str
 
   let with_debug = fun f ->
     match !Config.log_level with
@@ -250,31 +254,21 @@ let with_compile_flag ~on:f ~off:g =
   | `On -> f ()
   | `Off -> g ()
 
-let with_ellapsed_time f =
-  let s = Unix.gettimeofday () in
-  let r = f () in
-  let e = Unix.gettimeofday () in
-  print_endline @@ "ellapsed time: " ^ (string_of_float (e -. s));
-  r
-
 let jit_exec pc st_ptr sp =
   with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
     match Trace_prof.find_opt pc with
-    | Some (tname) -> begin
-        with_compile_flag ~on:begin fun _ ->
-          try
-            print_endline @@ "[tj] exec at " ^ (string_of_int pc);
-            with_ellapsed_time begin fun _ ->
-              exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp
-            end |> ignore;
-          with _ -> ()
-        end ~off:(fun _ -> ())
-      end
+    | Some (tname) ->
+      Printf.printf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc sp;
+      let s = Unix.gettimeofday () in
+      exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
+      let e = Unix.gettimeofday () in
+      Printf.printf "[tj] ellapsed time: %f ms\n" ((e -. s) *. 1000.0);
+      flush stdout
     | None -> ()
   end
 
 let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
-  Debug.print_arr string_of_int stack ~notation:(Some "stack");
+  Debug.print_stack stack;
   with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
     if Trace_prof.over_threshold pc then
       begin match Trace_prof.find_opt pc with
