@@ -8,7 +8,7 @@ exception Jit_compilation_failed
 
 module Method_prof = Make_prof(struct let threshold = 100 end)
 
-module Trace_prof = Make_prof(struct let threshold = 100 end)
+module Trace_prof = Make_prof(struct let threshold = 1000 end)
 
 module Trace_name : sig
   type t = Trace_name of string

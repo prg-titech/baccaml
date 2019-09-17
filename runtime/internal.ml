@@ -7,8 +7,8 @@ module Make_prof (M_prof : Prof) = struct
 
   type pc = int
   type name = string
-  let count_tbl = Hashtbl.create 100
-  let compiled_tbl = Hashtbl.create 100
+  let count_tbl = Hashtbl.create 10000
+  let compiled_tbl = Hashtbl.create 10000
 
   let register : pc * name -> unit = fun (pc, name) ->
     match Hashtbl.find_opt compiled_tbl pc with
