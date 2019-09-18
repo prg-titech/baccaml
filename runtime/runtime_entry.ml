@@ -118,7 +118,7 @@ let jit_exec pc st_ptr sp =
       let s = Unix.gettimeofday () in
       exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
       let e = Unix.gettimeofday () in
-      Printf.printf "[tj] ellapsed time: %f ms\n" ((e -. s) *. 1000.0);
+      Printf.printf "[tj] ellapsed time: %f μ s\n" ((e -. s) *. 100000.0);
       flush stdout
     | None -> ()
   end
