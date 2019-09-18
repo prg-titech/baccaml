@@ -1,17 +1,24 @@
 APP = fib
+APPS = fib sum
+
+STUB = ../../stub/stub.c
+LIBMINCAML = ../../stub/libmincaml.S
+
+CC = gcc
+CFLAGS = -m32 -lm
+
+MINCAML = min-caml
 
 default: $(APP)
 
-$(APP): $(APP).ml
-	min-caml $(basename $<); \
-	gcc -m32 ../../stub/stub.c ../../stub/libmincaml.S $(basename $<).s -o $(basename $<)
+$(APP): $(APP).s $(STUB) $(LIBMINCAML)
+	$(CC) $(CFLAGS) -I`ocamlc -where` $^ -o $@
 
-test: test_time.ml
-	min-caml $(basename $<); \
-	gcc -m32 ../../stub/stub.c ../../stub/libmincaml.S $(basename $<).s -o $(basename $<)
+%.s: %.ml
+	$(MINCAML) $(basename $<)
 
 clean:
-	rm -f *.o *.cm*
+	rm -f *.o *.cm* $(APPS)
 
 clean-all: clean
 	rm -f *.s

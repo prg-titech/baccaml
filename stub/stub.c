@@ -13,6 +13,12 @@ extern void min_caml_start(char *, char *);
 /*    Shaw for reporting the problem and proposing this solution. */
 FILE *min_caml_stderr;
 
+int min_caml_get_current_micros (){
+  struct timeval current_time;
+  gettimeofday(&current_time, NULL);
+  return current_time.tv_sec * (int)1e6 + current_time.tv_usec;
+}
+
 int main(int argc, char *argv[]) {
   char *hp, *sp;
 
