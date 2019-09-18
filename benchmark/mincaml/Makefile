@@ -5,7 +5,7 @@ STUB = ../../stub/stub.c
 LIBMINCAML = ../../stub/libmincaml.S
 
 CC = gcc
-CFLAGS = -m32 -lm
+CFLAGS = -m32 -O2 -lm
 
 MINCAML = min-caml
 

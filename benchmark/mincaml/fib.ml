@@ -9,7 +9,7 @@ in
 let m = 30 in
 let n = 1 in
 let start = get_current_micros () in
-loop_fib n m;
+let _ = fib 30 in
 let stop = get_current_micros () in
 print_int (stop - start);
 print_newline ()
