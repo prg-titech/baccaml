@@ -15,34 +15,30 @@
 let rec frame_reset stack old_base new_base ret n i =
   if n = i then (stack.(old_base + n) <- ret; old_base + n + 1)
   else (stack.(old_base + i) <- stack.(new_base + i);
-        frame_reset stack old_base new_base ret n (i + 1))
-;;
-let rec pop stack sp =
-  stack.(sp - 1)
-;;
-let rec push stack sp v =
-  stack.(sp) <- v
-;;
+        frame_reset stack old_base new_base ret n (i + 1));;
+
+let rec pop stack sp = stack.(sp - 1) ;;
+let rec push stack sp v = stack.(sp) <- v ;;
 
 let rec interp stack sp bytecode pc =
   jit_merge_point pc stack sp;
   (* print_array print_int stack; print_newline (); *)
   let instr = bytecode.(pc) in
   if instr = 1 then             (* ADD *)
-    let v2 = pop stack sp in  (* sp: sp - 1 *)
+    let v2 = pop stack sp in        (* sp: sp - 1 *)
     let v1 = pop stack (sp - 1) in  (* sp: sp - 2 *)
-    stack.(sp - 2) <- v1 + v2;  (* sp: sp - 1 *)
+    push stack (sp - 2) (v1 + v2);  (* sp: sp - 1 *)
     interp stack (sp - 1) bytecode (pc + 1)
   else if instr = 2 then        (* SUB *)
-    let v2 = stack.(sp - 1) in
-    let v1 = stack.(sp - 2) in
-    stack.(sp - 2) <- v1 - v2;
+    let v2 = pop stack sp in
+    let v1 = pop stack (sp - 1) in
+    push stack (sp - 2) (v1 - v2);
     interp stack (sp - 1) bytecode (pc + 1)
   else if instr = 3 then        (* LT *)
     let v2 = stack.(sp - 1) in
     let v1 = stack.(sp - 2) in
     let n = (@if v1 < v2 then 1 else 0) in
-    let _ = push stack (sp - 2) n in
+    push stack (sp - 2) n;
     interp stack (sp - 1) bytecode (pc + 1)
   else if instr = 4 then        (* CONST *)
     let c = bytecode.(pc + 1) in
@@ -52,13 +48,14 @@ let rec interp stack sp bytecode pc =
     let addr = bytecode.(pc + 1) in
     let v = stack.(sp - 1) in
     let sp2 = sp - 1 in
-    @if v = 0 then begin
-      @if addr < pc then begin
-          can_enter_jit stack sp2 bytecode addr;
-          interp stack sp2 bytecode addr
-      end else interp stack sp2 bytecode addr
-     end else
-       interp stack sp2 bytecode (pc + 2)
+    @if v = 0 then (
+      @if addr < pc then (
+        can_enter_jit stack sp2 bytecode addr;
+        interp stack sp2 bytecode addr
+      ) else interp stack sp2 bytecode addr
+    ) else
+      interp stack sp2 bytecode (pc + 2)
+
   else if instr = 6 then        (* CALL *)
     let addr = bytecode.(pc + 1) in
     if is_mj () then begin
@@ -164,34 +161,34 @@ let rec interp stack sp bytecode pc =
  * code.(32) <- 9; *)
 
 (* tracing jit *)
-(* let code = Array.make 50 0 in
- * save_bp ();
- * code.(0) <- 15;
- * code.(1) <- 8; code.(2) <- 2;
- * code.(3) <- 4; code.(4) <- 2;
- * code.(5) <- 3;
- * code.(6) <- 5; code.(7) <- 12;
- * code.(8) <- 8; code.(9) <- 2;
- * code.(10) <- 14; code.(11) <- 27;
- * code.(12) <- 8; code.(13) <- 2;
- * code.(14) <- 4; code.(15) <- 1;
- * code.(16) <- 2;
- * code.(17) <- 6; code.(18) <- 1;
- * code.(19) <- 8; code.(20) <- 3;
- * code.(21) <- 4; code.(22) <- 2;
- * code.(23) <- 2;
- * code.(24) <- 6; code.(25) <- 1;
- * code.(26) <- 1;
- * code.(27) <- 7; code.(28) <- 1;
- * code.(29) <- 4; code.(30) <- 20;
- * code.(31) <- 6; code.(32) <- 1;
- * code.(33) <- 9;
- * let st = Array.make 50 (-1) in
- * let s = get_current_millis () in
- * let res = (interp st 0 code 29) in
- * let e = get_current_millis () in
- * print_int (e - s); print_newline ();
- * print_int res; print_newline (); *)
+let code = Array.make 50 0 in
+save_bp ();
+code.(0) <- 15;
+code.(1) <- 8; code.(2) <- 2;
+code.(3) <- 4; code.(4) <- 2;
+code.(5) <- 3;
+code.(6) <- 5; code.(7) <- 12;
+code.(8) <- 8; code.(9) <- 2;
+code.(10) <- 14; code.(11) <- 27;
+code.(12) <- 8; code.(13) <- 2;
+code.(14) <- 4; code.(15) <- 1;
+code.(16) <- 2;
+code.(17) <- 6; code.(18) <- 1;
+code.(19) <- 8; code.(20) <- 3;
+code.(21) <- 4; code.(22) <- 2;
+code.(23) <- 2;
+code.(24) <- 6; code.(25) <- 1;
+code.(26) <- 1;
+code.(27) <- 7; code.(28) <- 1;
+code.(29) <- 4; code.(30) <- 20;
+code.(31) <- 6; code.(32) <- 1;
+code.(33) <- 9;
+let st = Array.make 50 (-1) in
+let s = get_current_millis () in
+let res = (interp st 0 code 29) in
+let e = get_current_millis () in
+print_int (e - s); print_newline ();
+print_int res; print_newline ();
 
 (* sum *)
 (* method jit *)
@@ -214,31 +211,31 @@ let rec interp stack sp bytecode pc =
  * code.(28) <- 9; *)
 
 (* tracing jit *)
-let code = Array.make 50 0 in
-save_bp ();
-code.(0) <- 15;
-code.(1) <- 8; code.(2) <- 2;
-code.(3) <- 4; code.(4) <- 2;
-code.(5) <- 3;
-code.(6) <- 5; code.(7) <- 12;
-code.(8) <- 4; code.(9) <- 1;
-code.(10) <- 14; code.(11) <- 22;
-code.(12) <- 8; code.(13) <- 2;
-code.(14) <- 8; code.(15) <- 3;
-code.(16) <- 4; code.(17) <- 1;
-code.(18) <- 2;
-code.(19) <- 6; code.(20) <- 1;
-code.(21) <- 1;
-code.(22) <- 7; code.(23) <- 1;
-code.(24) <- 4; code.(25) <- 10000;
-code.(26) <- 6; code.(27) <- 1;
-code.(28) <- 9;
-let st = Array.make 100 0 in
-let s = get_current_millis () in
-let res = (interp st 0 code 24) in
-let e = get_current_millis () in
-print_int res; print_newline ();
-print_int (e - s); print_newline ();
+(* let code = Array.make 50 0 in
+ * save_bp ();
+ * code.(0) <- 15;
+ * code.(1) <- 8; code.(2) <- 2;
+ * code.(3) <- 4; code.(4) <- 2;
+ * code.(5) <- 3;
+ * code.(6) <- 5; code.(7) <- 12;
+ * code.(8) <- 4; code.(9) <- 1;
+ * code.(10) <- 14; code.(11) <- 22;
+ * code.(12) <- 8; code.(13) <- 2;
+ * code.(14) <- 8; code.(15) <- 3;
+ * code.(16) <- 4; code.(17) <- 1;
+ * code.(18) <- 2;
+ * code.(19) <- 6; code.(20) <- 1;
+ * code.(21) <- 1;
+ * code.(22) <- 7; code.(23) <- 1;
+ * code.(24) <- 4; code.(25) <- 10000;
+ * code.(26) <- 6; code.(27) <- 1;
+ * code.(28) <- 9;
+ * let st = Array.make 100 0 in
+ * let s = get_current_millis () in
+ * let res = (interp st 0 code 24) in
+ * let e = get_current_millis () in
+ * print_int res; print_newline ();
+ * print_int (e - s); print_newline (); *)
 
 (* loop *)
 (* let code =
