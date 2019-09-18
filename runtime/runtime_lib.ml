@@ -107,17 +107,9 @@ let get_ir_addr args name =
   |> String.get_extension
   |> int_of_string
 
+(* [warn] work only in Linux *)
 let get_so_name : string -> string =
-  fun name ->
-    let ic = Unix.open_process_in "uname" in
-    let uname = input_line ic in
-    let () = close_in ic in
-    if uname = "Linux" then
-      "lib" ^ name ^ ".so"
-    else if uname = "Darwin" then
-      "lib" ^ name ^ ".dylib"
-    else
-      raise Exit
+  fun name -> "lib" ^ name ^ ".so"
 
 let make_reg prog args sp =
   let open Jit_env in
@@ -139,28 +131,17 @@ let make_mem ~bc_addr ~st_addr bytecode stack =
   |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Jit_env.Red a) ;
   mem
 
+(* [warn] work only in Linux *)
 let compile_dyn trace_name =
   let asm_name = trace_name ^ ".s" in
   let so = get_so_name trace_name in
-  let ic = Unix.open_process_in "uname" in
-  let uname = input_line ic in
-  let () = close_in ic in
-  if uname = "Linux" then
-    Printf.sprintf
-      "gcc -m32 -g -DRUNTIME -o %s %s -shared -fPIC -ldl"
-      so asm_name
-    |> Unix.system
-    |> function
-        Unix.WEXITED (i) when i = 0 -> Ok trace_name
-      | _ -> Error (Jit_compilation_failed)
-  else if uname = "Darwin" then
-    Printf.sprintf "gcc -m32 -g -o %s -dynamiclib %s" so asm_name
-    |> Unix.system
-    |> function
-        Unix.WEXITED (i) when i = 0 -> Ok trace_name
-      | _ -> Error (Jit_compilation_failed)
-  else
-    Error (Jit_compilation_failed)
+  Printf.sprintf
+    "gcc -m32 -g -DRUNTIME -o %s %s -shared -fPIC -ldl"
+    so asm_name
+  |> Unix.system
+  |> function
+  | Unix.WEXITED (i) when i = 0 -> Ok trace_name
+  | _ -> Error (Jit_compilation_failed)
 
 let emit_dyn oc p typ tname trace =
   try
