@@ -10,7 +10,7 @@ let greens = ref [""]
 
 let log_level = Log.log_level
 
-let only_compile_flag = ref `On
+let comp_only_flag = ref `On
 
 let set field value = field := value
 

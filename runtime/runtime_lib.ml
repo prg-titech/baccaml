@@ -163,12 +163,16 @@ let compile_dyn trace_name =
     Error (Jit_compilation_failed)
 
 let emit_dyn oc p typ tname trace =
-  let tname = Trace_name.value tname in
   try
     trace |> Simm.h |> RegAlloc.h |> Jit_emit.emit_tj oc p;
   with e -> close_out oc; raise e
 
 let with_jit_flg ~on:f ~off:g =
   match !Config.jit_flag with
+  | `On -> f ()
+  | `Off -> g ()
+
+let with_comp_flg ~on:f ~off:g =
+  match !Config.comp_only_flag with
   | `On -> f ()
   | `Off -> g ()
