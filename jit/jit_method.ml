@@ -145,9 +145,13 @@ and mj_if p reg mem env = function
   | IfLE (id_t, id_or_imm, t1, t2) as exp when let name = String.get_name id_t in name = "mode" ->
      Log.debug (Printf.sprintf "If (%s, %s, t1, t2)" id_t (string_of_id_or_imm id_or_imm));
      Log.debug (Printf.sprintf "mode: %d" (int_of_id_or_imm id_or_imm |> Array.get reg |> value_of));
-     Ans (exp |%%| (
-           mj p reg mem env t1
-         , Jit_guard.create reg env t2))
+     let mode = value_of reg.(int_of_id_t id_t) in (* mj: 100, tj: 200 *)
+     let r2 = match id_or_imm with V id -> value_of reg.(int_of_id_t id) | C n -> n in
+     (* [XXX] improve guard failure *)
+     if mode = 100 then
+       Ans (exp |%%| (Ans (Nop), mj p reg mem env t2))
+     else
+       Ans (exp |%%| (mj p reg mem env t1, Ans (Nop)))
   | IfGE (id_t, id_or_imm, t1, t2)
   | IfEq (id_t, id_or_imm, t1, t2)
   | IfLE (id_t, id_or_imm, t1, t2) as exp ->
