@@ -2,15 +2,12 @@ open Base
 open Asm
 open Printf
 
-let emit oc typ ({name= Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
+let emit_mj oc ({name= Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   let cname = Filename.chop_extension x in
   Printf.fprintf oc ".code32\n";
   Printf.fprintf oc ".data\n";
-  (match typ with
-   | `Meta_method ->
-     Printf.fprintf oc "mj_result:\n";
-     Printf.fprintf oc "\t.long\t0x0\n";
-   | `Meta_tracing -> ());
+  Printf.fprintf oc "mj_result:\n";
+  Printf.fprintf oc "\t.long\t0x0\n";
   Printf.fprintf oc ".balign\t8\n";
   Printf.fprintf oc ".text\n";
   Printf.fprintf oc ".globl %s\n" cname;
@@ -25,11 +22,7 @@ let emit oc typ ({name= Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   Printf.fprintf oc "\tmovl\t32(%%esp),%s\n" regs.(0);
   Printf.fprintf oc "\tmovl\t36(%%esp),%s\n" regs.(1);
   Printf.fprintf oc "\tcall\t%s\n" x;
-  (match typ with
-   | `Meta_method ->
-     Printf.fprintf oc "\tmovl\t%%eax, mj_result\n"
-   | `Meta_tracing ->
-     ());
+  Printf.fprintf oc "\tmovl\t%%eax, mj_result\n";
   Printf.fprintf oc "\tpopl\t%%ebp\n";
   Printf.fprintf oc "\tpopl\t%%edi\n";
   Printf.fprintf oc "\tpopl\t%%esi\n";
@@ -37,17 +30,12 @@ let emit oc typ ({name= Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   Printf.fprintf oc "\tpopl\t%%ecx\n";
   Printf.fprintf oc "\tpopl\t%%ebx\n";
   Printf.fprintf oc "\tpopl\t%%eax\n";
-  (match typ with
-   | `Meta_method ->
-     Printf.fprintf oc "\tmovl\tmj_result, %%eax\n";
-   | `Meta_tracing ->
-     ());
+  Printf.fprintf oc "\tmovl\tmj_result, %%eax\n";
   Printf.fprintf oc "\tret\n";
   Emit.h oc fundef
 
-let emit_tj oc p ({ name = Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
+let emit_tj oc ({ name = Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   let tname = Filename.chop_extension x in
-  let { args = pargs } = Fundef.find_fuzzy p "interp" in
   fprintf oc ".code32\n";
   fprintf oc ".data\n";
   fprintf oc ".balign\t8\n";

@@ -145,7 +145,11 @@ let compile_dyn trace_name =
 
 let emit_dyn oc p typ tname trace =
   try
-    trace |> Simm.h |> RegAlloc.h |> Jit_emit.emit_tj oc p;
+    match typ with
+    | `Meta_tracing ->
+      trace |> Simm.h |> RegAlloc.h |> Jit_emit.emit_tj oc
+    | `Meta_method ->
+      trace |> Simm.h |> RegAlloc.h |> Jit_emit.emit_mj oc
   with e -> close_out oc; raise e
 
 let with_jit_flg ~on:f ~off:g =
