@@ -5,7 +5,7 @@ open Jit_env
 
 open Runtime_lib
 
-module Method_prof = Make_prof(struct let threshold = 100 end)
+module Method_prof = Make_prof(struct let threshold = 0 end)
 
 module Trace_prof = Make_prof(struct let threshold = 1000 end)
 
@@ -52,7 +52,7 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
       ~index_pc:(List.index (get_id "pc" args) args)
       ~merge_pc:pc_method_entry in
   let trace = JM.run prog reg mem env in
-  Debug.print_trace trace;
+  Debug.with_debug (fun _ -> Asm.print_fundef trace);
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
     emit_dyn oc prog `Meta_method trace_name trace;
