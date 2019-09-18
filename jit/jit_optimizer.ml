@@ -1,4 +1,3 @@
-
 open Base
 open Asm
 open Jit_env
@@ -186,7 +185,7 @@ let run p e reg mem = match e with
            Not_specialized (St (src, zero, C ((n1 + n2)), x), Red (n))
         end
      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
-        failwith "St (_, green, red) in't supported."
+        failwith "St (_, green, red) isn't supported."
      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
         begin match src' with
         | Green (n) | LightGreen (n) ->
