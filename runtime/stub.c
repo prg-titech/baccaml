@@ -9,11 +9,19 @@ extern void min_caml_start(char *, char *);
 
 extern int get_current_millis(void) asm ("min_caml_get_current_millis");
 
+extern int get_current_micros(void) asm ("min_caml_get_current_micros");
+
 int get_current_millis() {
   struct timeval tv;
   gettimeofday(&tv, NULL);
   int time_in_mill = (tv.tv_sec) * 1000 + (tv.tv_usec) / 1000;
   return time_in_mill;
+}
+
+int get_current_micros (){
+  struct timeval current_time;
+  gettimeofday(&current_time, NULL);
+  return current_time.tv_sec * (int)1e6 + current_time.tv_usec;
 }
 
 /* "stderr" is a macro and cannot be referred to in libmincaml.S, so */
