@@ -20,15 +20,14 @@ and fundef = {name:var; args:var list; body: exp}
 
 let rec find_fundefs ?(name = None) exp = match exp with
   | Unit | Int _ | Var _ -> []
-  | Add (e1, e2) | Mul (e1, e2) | LT (e1, e2) -> (find_fundefs e1) @ (find_fundefs e2)
+  | Add (e1, e2) | Sub (e1, e2) | Mul (e1, e2) | LT (e1, e2) -> (find_fundefs e1) @ (find_fundefs e2)
   | If (e1, e2, e3) -> (find_fundefs e1) @ (find_fundefs e2) @ (find_fundefs e3)
   | Let (_, e1, e2) -> find_fundefs e1 @ find_fundefs e2
   | Call (_, exps) -> exps |> List.map find_fundefs |> List.flatten
   | LetRec (fundef, e) ->
     begin match name with
       | Some v ->
-        let { name = fname'; } = fundef in
-        if fname' = v then [fundef] else find_fundefs e
+        if fundef.name = v then [fundef] else find_fundefs e
       | None ->
         fundef :: (find_fundefs e)
     end
