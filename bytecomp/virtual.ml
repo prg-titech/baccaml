@@ -68,11 +68,26 @@ end = struct
     | Ldef of string
   [@@deriving show]
 
-  let max_stack_depth = 1024
+  let max_stack_depth = 100000
 
   (* the next array determines the opcode *)
-  let insts = [| UNIT; ADD; MUL; SUB; LT; CONST; JUMP_IF_ZERO; (* LOAD; STORE; *) CALL; RET;
-                 DUP; HALT; FRAME_RESET; POP1; JUMP; METHOD_ENTRY |]
+  let insts = [|
+    UNIT;
+    ADD;
+    MUL;
+    SUB;
+    LT;
+    CONST;
+    JUMP_IF_ZERO; (* LOAD; STORE; *)
+    CALL;
+    RET;
+    DUP;
+    HALT;
+    FRAME_RESET;
+    POP1;
+    JUMP;
+    METHOD_ENTRY;
+    |]
 
   let index_of element array =
     fst(List.find (fun (_,v) -> v=element)
@@ -153,12 +168,15 @@ end = struct
   let rec interp  code pc stack =
     checkpoint ();
     (* Printf.printf "%s %s\n"
-     *               (code_at_pc code pc) (dump_stack stack); *)
+                  (code_at_pc code pc) (dump_stack stack); *)
 
     if pc<0 then fst(pop stack) else
       let i,pc = fetch code pc in
       match insts.(i) with
-      | ADD -> let v2,stack = pop stack in
+      | UNIT ->
+        interp code (pc + 1) stack
+      | ADD ->
+        let v2,stack = pop stack in
         let v1,stack = pop stack in
         let    stack = push stack (v1+v2) in
         interp  code pc stack
@@ -223,7 +241,8 @@ end = struct
       | JUMP (* addr *)->
         let n,_ = fetch code pc in
         interp code n stack
-      | _ -> failwith "unmatched pattern"
+      | METHOD_ENTRY ->
+        interp code pc stack
 
   (* run the given program by calling the function id 0 *)
   type fundef_bin_t = int array
@@ -353,8 +372,7 @@ module Compiler = struct
           (compile_exp fenv cond env)
           @ [JUMP_IF_ZERO; Lref l1]
           @ (compile_exp fenv then_exp env)
-          @ [CONST; Literal 0;         (* unconditional jump *)
-             JUMP_IF_ZERO; Lref l2;
+          @ [JUMP; Lref l2; (* unconditional jump *)
              Ldef l1]
           @ (compile_exp fenv else_exp env)
           @ [Ldef l2]
@@ -382,7 +400,7 @@ module Compiler = struct
                        ([], env) rands))))
           @ [FRAME_RESET;
              Literal old_arity; Literal local_size; Literal new_arity;
-             CONST; Literal 0; JUMP_IF_ZERO; Lref fname]
+             JUMP; Lref fname]
         | Let(var,exp,body) ->
           let ex_env = extend_env env var in
           (compile_exp fenv exp env)            (* in old env *)
@@ -431,7 +449,10 @@ module Compiler = struct
   let compile_fun_body fenv name arity exp env =
     VM.METHOD_ENTRY ::
     (VM.Ldef name)::
-    (compile_exp fenv exp env) @ [VM.RET; VM.Literal arity]
+    (compile_exp fenv exp env) @ (
+      if name = "main" then [VM.HALT]
+      else [VM.RET; VM.Literal arity])
+
 
   let compile_fun fenv {name; args; body} =
     compile_fun_body fenv name (List.length args)
@@ -447,12 +468,10 @@ module Compiler = struct
                        (List.map (compile_fun fenv) fundefs)))
 
   let compile_from_exp (exp : Syntax.exp) : VM.inst array =
-    let fundefs =
-      find_fundefs exp
-      |> List.filter (fun { name } -> name <> "main")
-    in
-    let main = find_fundefs ~name:(Some "main") exp in
-    (compile_funs (fundefs @ main))
+    let fundefs = find_fundefs exp in
+    let main = fundefs |> List.find (fun { name } -> name = "main") in
+    let others = fundefs |> List.filter (fun { name } -> name <> "main") in
+    (compile_funs (main :: others))
 
 
   (* for testing *)
