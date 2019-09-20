@@ -5,7 +5,7 @@ type var = string
 type exp =
   | Int of int
   | Var of var
-  | Add of exp * exp 
+  | Add of exp * exp
   | Mul of exp * exp
   | LT of exp * exp             (* less than *)
   | If of exp * exp * exp
@@ -66,8 +66,8 @@ let _ =
 module VM : sig
   (* instruction set: a stack machine *)
   type inst =
-    | ADD                       (* n2::n1::s -> (n1+n2)::s *)
     | MUL                       (* n2::n1::s -> (n1*n2)::s *)
+    | ADD                       (* n2::n1::s -> (n1+n2)::s *)
     | LT                        (* n2::n1::s -> (n1<n2)::s *)
     | CONST (* n *)             (* s         -> n::s *)
     | JUMP_IF_ZERO (* addr *)   (* n::s      -> s *)
@@ -80,7 +80,7 @@ module VM : sig
        the parameter to this frame, (2) the return address from this
        frame, (3) l values as the local variables in this frame, and
        (4) n values as the new parameter, and deletes (1) and (3),
-       moves (2) to the top of the stack.   
+       moves (2) to the top of the stack.
 
        before:
        (stack top) [n new args][l local vars][ret][o old args]...(bottom)
@@ -90,6 +90,8 @@ module VM : sig
 
     | FRAME_RESET (* o l n *)
     | POP1                      (* n2::n1::s ->  n2::s *)
+    | JUMP
+    | METHOD_ENTRY
     (* the following constructors do not represent instructions but
        are defined for expressing operands of some instructions as
        well as label declarations and references *)
@@ -99,23 +101,25 @@ module VM : sig
 
   val string_of : inst -> string (* for debugging *)
 
-  type fundef_bin_t = int array 
-  type fundef_asm_t = inst array 
+  type fundef_bin_t = int array
+  type fundef_asm_t = inst array
   val run_bin : fundef_bin_t -> int
   val run_asm : fundef_asm_t -> int
 end = struct
   type inst =
-    | ADD
     | MUL
+    | ADD
     | LT
     | CONST
     | JUMP_IF_ZERO (* addr *)
     | CALL (* fun-id *)
     | RET
-    | DUP (* n *)   
+    | DUP (* n *)
     | HALT
     | FRAME_RESET (* o l n *)
     | POP1
+    | JUMP
+    | METHOD_ENTRY
     | Literal of int
     | Lref of string
     | Ldef of string
@@ -123,8 +127,8 @@ end = struct
   let max_stack_depth = 1024
 
   (* the next array determines the opcode *)
-  let insts = [| ADD; MUL; LT; CONST; JUMP_IF_ZERO; (* LOAD; STORE; *) CALL; RET;
-                 DUP; HALT; FRAME_RESET; POP1 |]
+  let insts = [| MUL; ADD; LT; CONST; JUMP_IF_ZERO; (* LOAD; STORE; *) CALL; RET;
+                 DUP; HALT; FRAME_RESET; POP1; JUMP; METHOD_ENTRY |]
 
   let index_of element array =
     fst(List.find (fun (_,v) -> v=element)
@@ -136,7 +140,7 @@ end = struct
   let string_of = function
     | Literal n -> Printf.sprintf "Literal %d" n
     | Ldef n    -> Printf.sprintf "Ldef %s" n
-    | Lref n    -> Printf.sprintf "Lref %s" n 
+    | Lref n    -> Printf.sprintf "Lref %s" n
     | i         -> string_of_int(int_of_inst i)
 
   (* operand stack
@@ -209,7 +213,7 @@ end = struct
 
     if pc<0 then fst(pop stack) else
       let i,pc = fetch code pc in
-      match insts.(i) with 
+      match insts.(i) with
       | ADD -> let v2,stack = pop stack in
         let v1,stack = pop stack in
         let    stack = push stack (v1+v2) in
@@ -227,7 +231,7 @@ end = struct
         interp  code pc stack
       | JUMP_IF_ZERO (* addr *) ->
         let addr,pc = fetch code pc in
-        let v,stack = pop stack in 
+        let v,stack = pop stack in
         (* interp  code (if v=0 then addr else pc) stack *)
         if v=0
         then interp code addr stack
@@ -268,14 +272,18 @@ end = struct
         let _,stack = pop stack in
         let stack = push stack v in
         interp  code pc stack
+      | JUMP (* addr *)->
+        let n,_ = fetch code pc in
+        interp code n stack
+
   (* run the given program by calling the function id 0 *)
-  type fundef_bin_t = int array 
+  type fundef_bin_t = int array
   let run_bin : fundef_bin_t -> int = fun fundefs ->
     let stack = (push (make_stack ()) (-987)) in
-    interp fundefs 0 stack 
+    interp fundefs 0 stack
 
   (* convert the given program into binary, and then run *)
-  type fundef_asm_t = inst array 
+  type fundef_asm_t = inst array
   let run_asm : fundef_asm_t -> int = fun fundefs ->
     run_bin (Array.map int_of_inst fundefs)
 
@@ -323,7 +331,7 @@ end = struct
        MUL;                       (* TOP        24 1 BOTTOM *)
        ADD;                       (* TOP          25 BOTTOM *)
        HALT] [ 1;2;3;4;5;6 ] [] 25
-  let _ = test "POP1" 
+  let _ = test "POP1"
       [POP1; ADD; HALT] [ 1;2;3 ] [] 4
 
   let _ = test_ex 0 2 "CALL simple"
@@ -338,7 +346,7 @@ end = struct
        RET; Literal 2;    (* stack =         [9] *)
        (* stack =       [5;4] *)
        CALL; Literal 1;   (* stack =         [9] *)
-       HALT]              
+       HALT]
       [ 4;5 ] [] 9
   let _ = test_ex 2 8 "CALL mul add"
       [DUP; Literal 2; (* 1;2 *)
@@ -359,7 +367,7 @@ let list_init n f =
 
 (* a simple compiler *)
 module Compiler : sig
-  val compile_funs : fundef list -> VM.inst array 
+  val compile_funs : fundef list -> VM.inst array
 
   (* for tracing *)
   val compile_fun : (var -> int) -> fundef -> VM.inst list
@@ -395,20 +403,20 @@ end = struct
     VM.(match exp with
         | Int n -> [CONST; Literal n]
         | Var v -> [DUP; Literal(lookup env v)]
-        | Add(e1,e2) -> (compile_exp fenv e1 env) @ 
+        | Add(e1,e2) -> (compile_exp fenv e1 env) @
                         (compile_exp fenv e2 (shift_env env)) @ [ADD]
-        | Mul(e1,e2) -> (compile_exp fenv e1 env) @ 
+        | Mul(e1,e2) -> (compile_exp fenv e1 env) @
                         (compile_exp fenv e2 (shift_env env)) @ [MUL]
-        | LT(e1,e2) -> (compile_exp fenv e1 env) @ 
+        | LT(e1,e2) -> (compile_exp fenv e1 env) @
                        (compile_exp fenv e2 (shift_env env)) @ [LT]
         | If(cond,then_exp,else_exp) ->
           let l2,l1 = gen_label(),gen_label() in
-          (compile_exp fenv cond env) 
+          (compile_exp fenv cond env)
           @ [JUMP_IF_ZERO; Lref l1]
           @ (compile_exp fenv then_exp env)
           @ [CONST; Literal 0;         (* unconditional jump *)
              JUMP_IF_ZERO; Lref l2;
-             Ldef l1] 
+             Ldef l1]
           @ (compile_exp fenv else_exp env)
           @ [Ldef l2]
         | Call(fname, rands) ->
@@ -460,7 +468,7 @@ end = struct
     | Not_found  -> elm
 
   (* [...;Ldef a;...] -> [...;a,i;...] where i is the index of the
-     next instruction of Ldef a in the list all Ldefs are removed 
+     next instruction of Ldef a in the list all Ldefs are removed
      e.g., [_;Ldef 8;_;Ldef 7;_] ==> [8,1; 7,2]
   *)
   let make_label_env instrs =
@@ -471,7 +479,7 @@ end = struct
 
   (* remove all Ldefs and replace Lrefs with Literals *)
   let resolve_labels instrs =
-    List.filter (function VM.Ldef _ -> false | _ -> true) 
+    List.filter (function VM.Ldef _ -> false | _ -> true)
       (List.map (assoc_if (make_label_env instrs)) instrs)
 
   let compile_fun_body fenv name arity exp env =
@@ -519,16 +527,16 @@ end = struct
        Ldef "$0";
        CONST; Literal 789; Ldef "$1"]
   let _ = test "Call" (Call("f",[Var "x";Var "x"]))
-      [DUP; Literal 3; 
+      [DUP; Literal 3;
        DUP; Literal 4; CALL; Lref "f"]
   let _ = test "Let" (Let("z",Int 123,Add(Var "z",Var "y")))
-      [CONST; Literal 123; 
+      [CONST; Literal 123;
        DUP; Literal 0;
        DUP; Literal 4;
        ADD;
        POP1]
   let _ = test "TCall" (TCall("f",[Int 123;Int 456;Int 789]))
-      [CONST; Literal 123; 
+      [CONST; Literal 123;
        CONST; Literal 456;
        CONST; Literal 789;
        FRAME_RESET; Literal 2; Literal 1; Literal 3;
@@ -555,9 +563,9 @@ end = struct
 
   let callf,tcallf = Call("f", []), TCall("f", [])
   let callg a = Call("g", a)
-  let _ = elim_test "top"  callf tcallf  
+  let _ = elim_test "top"  callf tcallf
   let _ = elim_test "other" (callg []) (callg [])
-  let _ = elim_test "not top" (callg [callf]) (callg [callf]) 
+  let _ = elim_test "not top" (callg [callf]) (callg [callf])
   let _ = elim_test "if" (If(callf,callf,callf)) (If(callf,tcallf,tcallf))
   let _ = elim_test "let" (Let("v",callf,callf)) (Let("v",callf,tcallf))
 
@@ -608,12 +616,12 @@ let gcd = {name="gcd"; args=["a"; "b"];
                       Call("gcd",[Var "a"; Call("sub", [Var "b"; Var "a"])]),
                       Call("gcd",[Call("sub", [Var "a"; Var "b"]); Var "b"])))}
 
-(* compliation of gcd yields the following bytecode (local variable 
+(* compliation of gcd yields the following bytecode (local variable
    indices, function indices are replaced with variable names like a, b, and sub
    for readability.   But the key points are, the tail calls are eliminated
    into jump-to-the-beginning instructions (i.e., CONST 0; JUMP_IF_ZERO 1).
 
-   [|Literal 2; 
+   [|Literal 2;
    1:LOAD a;
     LOAD b;
     CALL eq;
@@ -640,7 +648,7 @@ let gcd = {name="gcd"; args=["a"; "b"];
     STORE a;
     CONST 0; JUMP_IF_ZERO 1;
    58:RET|]
-*)            
+*)
 
 (* let _ = assert (21 = ccexe [eq;sub;gcd] "gcd" [252;105]) *)
 
