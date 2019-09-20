@@ -14,17 +14,50 @@ let test ~name s =
   |> Array.to_list
   |> String.concat "\n" |> print_endline
 
+
 let _ =
   let test1 = "
 let rec f x = x + 1 in
-let () = f 1" in
+let () = f 1"
+  in
+
   let test2 = "
 let rec f x = x + 1 in
 let rec g y = y + 100 in
 let () = f (g (10))
 " in
+
+  let sub = "
+let rec f x y = x - y in
+let () = f 1 2
+" in
+
+  let if' = "
+let rec f x y =
+  if x < y then x else y
+in
+let () = f 10 12
+" in
+
+  let gcd = "
+let rec eq x y =
+  if x < y then 0
+  else if y < x then 0
+  else 1
+in
+let rec gcd a b =
+  if (eq a b) then a
+  else if a < b then gcd a (b - a)
+  else gcd (a - b) b
+in
+let () = gcd 10 18
+" in
+
   test ~name:"test1" test1;
-  test ~name:"test2" test2
+  test ~name:"test2" test2;
+  test ~name:"sub" sub;
+  test ~name:"if" if';
+  test ~name:"gcd" gcd
 
 let _ =
   if Array.length Sys.argv < 2 then

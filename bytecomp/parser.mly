@@ -17,6 +17,8 @@
 %token EOF
 %left PLUS MINUS
 %left TIMES DIV
+%nonassoc UMINUS        /* highest precedence */
+
 
 %type <Syntax.exp> exp
 %start exp
@@ -24,14 +26,15 @@
 %%
 
 simple_exp:
-    | LPAREN RPAREN         { Unit }
-    | LPAREN exp RPAREN     { $2 }
-    | INT                   { Int ($1) }
-    | VAR                   { Var ($1) }
+    | LPAREN RPAREN          { Unit }
+    | LPAREN exp RPAREN      { $2 }
+    | INT                    { Int ($1) }
+    | VAR                    { Var ($1) }
 
 exp:
     | simple_exp               { $1 }
     | exp PLUS exp             { Add ($1, $3) }
+    | exp MINUS exp            { Sub ($1, $3) }
     | exp TIMES exp            { Mul ($1, $3) }
     | exp LESS exp             { LT ($1, $3) }
     | IF exp THEN exp ELSE exp { If ($2, $4, $6) }

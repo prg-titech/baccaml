@@ -22,6 +22,9 @@ rule token = parse
   | "let"     { LET }
   | "rec"     { REC }
   | "in"      { IN }
+  | "if"      { IF }
+  | "then"    { THEN }
+  | "else"    { ELSE }
   | eof       { EOF }
   | lower (digit|lower|upper|'_')* { VAR(Lexing.lexeme lexbuf) }
   | _

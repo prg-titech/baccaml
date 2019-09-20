@@ -3,8 +3,10 @@ open Syntax
 module VM : sig
   (* instruction set: a stack machine *)
   type inst =
-    | MUL                       (* n2::n1::s -> (n1*n2)::s *)
+    | UNIT
     | ADD                       (* n2::n1::s -> (n1+n2)::s *)
+    | SUB                       (* n2::n1::s -> (n1-n2)::s *)
+    | MUL                       (* n2::n1::s -> (n1*n2)::s *)
     | LT                        (* n2::n1::s -> (n1<n2)::s *)
     | CONST (* n *)             (* s         -> n::s *)
     | JUMP_IF_ZERO (* addr *)   (* n::s      -> s *)
@@ -46,8 +48,10 @@ module VM : sig
   val run_asm : fundef_asm_t -> int
 end = struct
   type inst =
-    | MUL
+    | UNIT
     | ADD
+    | SUB
+    | MUL
     | LT
     | CONST
     | JUMP_IF_ZERO (* addr *)
@@ -67,7 +71,7 @@ end = struct
   let max_stack_depth = 1024
 
   (* the next array determines the opcode *)
-  let insts = [| MUL; ADD; LT; CONST; JUMP_IF_ZERO; (* LOAD; STORE; *) CALL; RET;
+  let insts = [| UNIT; ADD; MUL; SUB; LT; CONST; JUMP_IF_ZERO; (* LOAD; STORE; *) CALL; RET;
                  DUP; HALT; FRAME_RESET; POP1; JUMP; METHOD_ENTRY |]
 
   let index_of element array =
@@ -157,6 +161,10 @@ end = struct
       | ADD -> let v2,stack = pop stack in
         let v1,stack = pop stack in
         let    stack = push stack (v1+v2) in
+        interp  code pc stack
+      | SUB -> let v2,stack = pop stack in
+        let v1,stack = pop stack in
+        let    stack = push stack (v1-v2) in
         interp  code pc stack
       | MUL -> let v2,stack = pop stack in
         let v1,stack = pop stack in
@@ -334,6 +342,8 @@ module Compiler = struct
         | Var v -> [DUP; Literal(lookup env v)]
         | Add(e1,e2) -> (compile_exp fenv e1 env) @
                         (compile_exp fenv e2 (shift_env env)) @ [ADD]
+        | Sub(e1, e2) -> (compile_exp fenv e1 env) @
+                         (compile_exp fenv e2 (shift_env env)) @ [SUB]
         | Mul(e1,e2) -> (compile_exp fenv e1 env) @
                         (compile_exp fenv e2 (shift_env env)) @ [MUL]
         | LT(e1,e2) -> (compile_exp fenv e1 env) @
@@ -419,7 +429,9 @@ module Compiler = struct
     |> fst
 
   let compile_fun_body fenv name arity exp env =
-    (VM.Ldef name)::(compile_exp fenv exp env) @ [VM.RET; VM.Literal arity]
+    VM.METHOD_ENTRY ::
+    (VM.Ldef name)::
+    (compile_exp fenv exp env) @ [VM.RET; VM.Literal arity]
 
   let compile_fun fenv {name; args; body} =
     compile_fun_body fenv name (List.length args)
@@ -440,8 +452,7 @@ module Compiler = struct
       |> List.filter (fun { name } -> name <> "main")
     in
     let main = find_fundefs ~name:(Some "main") exp in
-    Array.append
-      [|VM.METHOD_ENTRY|] (compile_funs (fundefs @ main))
+    (compile_funs (fundefs @ main))
 
 
   (* for testing *)

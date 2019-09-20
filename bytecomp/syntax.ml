@@ -6,6 +6,7 @@ type exp =
   | Int of int
   | Var of var
   | Add of exp * exp
+  | Sub of exp * exp
   | Mul of exp * exp
   | LT of exp * exp             (* less than *)
   | If of exp * exp * exp
