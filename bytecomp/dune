@@ -1,0 +1,20 @@
+(ocamllex (modules lexer))
+(ocamlyacc (modules parser))
+
+(executable
+ (name main)
+ (public_name baccaml.bytecomp)
+ (modules main)
+ (libraries str ppx_deriving shoelib)
+ (preprocess (pps ppx_deriving.show)))
+
+(library
+ (name shoelib)
+ (modules :standard \ main shoebill)
+ (preprocess (pps ppx_deriving.show)))
+
+(executable
+ (name shoebill)
+ (modules shoebill)
+ (libraries shoelib)
+ (preprocess (pps ppx_deriving.show)))
