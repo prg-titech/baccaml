@@ -10,7 +10,7 @@
 
 (library
  (name shoelib)
- (modules :standard \ main shoebill)
+ (modules :standard \ main shoebill shoebill_test)
  (preprocess (pps ppx_deriving.show)))
 
 (executable
@@ -18,3 +18,8 @@
  (modules shoebill)
  (libraries shoelib)
  (preprocess (pps ppx_deriving.show)))
+
+(tests
+ (names shoebill_test)
+ (modules shoebill_test)
+ (libraries shoelib oUnit))
