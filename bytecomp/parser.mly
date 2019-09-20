@@ -24,6 +24,7 @@
 %%
 
 simple_exp:
+    | LPAREN RPAREN         { Unit }
     | LPAREN exp RPAREN     { $2 }
     | INT                   { Int ($1) }
     | VAR                   { Var ($1) }
@@ -36,7 +37,7 @@ exp:
     | IF exp THEN exp ELSE exp { If ($2, $4, $6) }
     | LET VAR EQ exp IN exp    { Let ($2, $4, $6) }
     | LET REC fundef IN exp    { LetRec ($3, $5) }
-    | LET LPAREN RPAREN EQ exp { Main ($5) }
+    | LET LPAREN RPAREN EQ exp { LetRec ({name="main"; args=[]; body=$5}, Unit) }
     | VAR actual_args          { Call ($1, $2) }
 
 fundef:
