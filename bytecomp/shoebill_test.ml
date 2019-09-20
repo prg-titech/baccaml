@@ -67,6 +67,14 @@ in
 let () = fib 10" in
   assert_equal 55 (test fib)
 
+let test_sum _ =
+  let sum = "
+let rec sum n =
+  if n < 2 then 1
+  else n + sum (n - 1)
+in let () = sum 1000" in
+  assert_equal 500500 (test sum)
+
 let test_ack _ =
   let ack = "
 let rec ack x y =
@@ -84,6 +92,7 @@ let suite =
     "test_if" >:: test_if;
     "test_gcd" >:: test_gcd;
     "test_fib" >:: test_fib;
+    "test_sum" >:: test_sum;
     "test_ack" >:: test_ack
   ]
 
