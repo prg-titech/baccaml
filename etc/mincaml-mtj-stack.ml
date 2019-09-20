@@ -90,7 +90,7 @@ module VM : sig
 
     | FRAME_RESET (* o l n *)
     | POP1                      (* n2::n1::s ->  n2::s *)
-    | JUMP
+    | JUMP (* addr *)
     | METHOD_ENTRY
     (* the following constructors do not represent instructions but
        are defined for expressing operands of some instructions as
