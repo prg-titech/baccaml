@@ -38,6 +38,7 @@ module VM : sig
     | Lref of string
     | Ldef of string
 
+  val int_of_inst : inst -> int
   val string_of : inst -> string (* for debugging *)
 
   val show_inst : inst -> string (* for debugging *)
@@ -74,8 +75,8 @@ end = struct
   let insts = [|
     UNIT;
     ADD;
-    MUL;
     SUB;
+    MUL;
     LT;
     CONST;
     JUMP_IF_ZERO; (* LOAD; STORE; *)
@@ -471,7 +472,7 @@ module Compiler = struct
     let fundefs = find_fundefs exp in
     let main = fundefs |> List.find (fun { name } -> name = "main") in
     let others = fundefs |> List.filter (fun { name } -> name <> "main") in
-    (compile_funs (main :: others))
+    (compile_funs (others @ [main]))
 
 
   (* for testing *)
