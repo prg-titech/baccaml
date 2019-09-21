@@ -1,4 +1,4 @@
-open Shoelib
+open Bytegen_lib
 open Virtual
 
 let print_code code =

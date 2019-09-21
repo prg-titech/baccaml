@@ -1,25 +1,18 @@
 (ocamllex (modules lexer))
 (ocamlyacc (modules parser))
 
-(executable
- (name main)
- (public_name baccaml.bytecomp)
- (modules main)
- (libraries str ppx_deriving shoelib)
- (preprocess (pps ppx_deriving.show)))
-
 (library
- (name shoelib)
- (modules :standard \ main shoebill shoebill_test)
+ (name bytegen_lib)
+ (modules :standard \ bytegen bytegen_test)
  (preprocess (pps ppx_deriving.show)))
 
 (executable
- (name shoebill)
- (modules shoebill)
- (libraries shoelib)
+ (name bytegen)
+ (modules bytegen)
+ (libraries bytegen_lib)
  (preprocess (pps ppx_deriving.show)))
 
 (tests
- (names shoebill_test)
- (modules shoebill_test)
- (libraries shoelib oUnit))
+ (names bytegen_test)
+ (modules bytegen_test)
+ (libraries bytegen_lib oUnit))
