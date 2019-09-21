@@ -26,7 +26,6 @@ type t = (* MinCamlの構文を表現するデータ型 (caml2html: syntax_t) *)
   | Array of t * t
   | Get of t * t
   | Put of t * t * t
-  | SArray of t list
 [@@deriving show]
 
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }

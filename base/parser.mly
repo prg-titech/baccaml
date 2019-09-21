@@ -3,6 +3,8 @@
     (* parserが利用する変数、関数、型などの定義 *)
     open Syntax
     let addtyp x = (x, Type.gentyp ())
+
+    type sarray = SArray of t list
 %}
 
 /* (* 字句を表すデータ型の定義 (caml2html: parser_token) *) */
