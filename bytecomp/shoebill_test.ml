@@ -13,7 +13,7 @@ let test s =
   Lexing.from_string s
   |> Parser.exp Lexer.token
   (* |> tap (fun ast -> Syntax.show_exp ast |> print_endline) *)
-  |> Compiler.compile_from_exp
+  |> Compiler.Test.compile_from_exp
   (* |> tap show_insts *)
   |> VM.run_asm
 

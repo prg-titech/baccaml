@@ -328,7 +328,19 @@ end = struct
       [ 1; 2; 3 ] [] 7
 end
 
-module Compiler = struct
+module Compiler : sig
+  val compile_funs : fundef list -> VM.inst array
+
+  (* for tracing *)
+  val compile_fun : (var -> int) -> fundef -> VM.inst list
+
+  val compile_from_exp : Syntax.exp -> VM.inst array
+
+  module Test : sig
+    val print_insts : VM.inst list -> unit
+    val compile_from_exp : Syntax.exp -> VM.inst array
+  end
+end = struct
 
   (* generate a unique label id *)
   let gen_label, reset =
@@ -498,5 +510,11 @@ module Compiler = struct
       else failwith (Printf.sprintf "%s: NG\n%s"
                        name (print_code_pair expected actual))
     let test = test_ex compile_exp
+
+    let compile_from_exp (exp : Syntax.exp) : VM.inst array =
+      let fundefs = find_fundefs exp in
+      let main = fundefs |> List.find (fun { name } -> name = "main") in
+      let others = fundefs |> List.filter (fun { name } -> name <> "main") in
+      (compile_funs (main :: others))
   end
 end
