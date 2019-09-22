@@ -7,7 +7,7 @@ open Runtime_lib
 
 module Method_prof = Make_prof(struct let threshold = 0 end)
 
-module Trace_prof = Make_prof(struct let threshold = 1000 end)
+module Trace_prof = Make_prof(struct let threshold = 100 end)
 
 type runtime_env =
   { bytecode: int array
@@ -110,10 +110,11 @@ let exec_dyn_arg3 ~name ~arg1 ~arg2 ~arg3 =
     ~func:(String.split_on_char '.' name |> List.hd)
     ~arg1:arg1 ~arg2:arg2 ~arg3:arg3
 
-let jit_exec pc st_ptr sp =
+let jit_exec pc st_ptr sp stack =
   with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
     match Trace_prof.find_opt pc with
     | Some (tname) ->
+      (* Debug.print_stack stack; Printf.printf "[sp] %d\n" sp; *)
       Printf.printf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc sp;
       let s = Unix.gettimeofday () in
       exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;

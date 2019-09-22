@@ -15,6 +15,11 @@ value init_f(int n) {
   return Val_int(n);
 }
 
+value init_g(int n) {
+  if (n == 0) { return Val_int(-100); }
+  else { return Val_int(n); }
+}
+
 void call_caml_jit_entry(int *st, int sp, int *bc, int pc) {
   static value * jit_tracing_entry_closure = NULL;
   value ml_args[6];
@@ -33,10 +38,15 @@ void call_caml_jit_entry(int *st, int sp, int *bc, int pc) {
 
 void call_caml_jit_exec(int pc, int *st_ptr, int sp) {
   static value * jit_exec_closure = NULL;
+  value ml_args[4];
   if (jit_exec_closure == NULL) {
     jit_exec_closure = caml_named_value("jit_exec");
   }
-  caml_callback3(*jit_exec_closure, Val_int(pc), Val_hp(st_ptr), Val_int(sp));
+  ml_args[0] = Val_int(pc);
+  ml_args[1] = Val_hp(st_ptr);
+  ml_args[2] = Val_int(sp);
+  ml_args[3] = caml_alloc_array(init_g, st_ptr);
+  caml_callbackN(*jit_exec_closure, 4, ml_args);
   return;
 }
 
