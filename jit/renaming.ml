@@ -30,7 +30,7 @@ let rec rename_exp rename = function
   | Neg (id_t) -> Neg (rename id_t)
   | Add (id_t, id_or_imm) -> Add (rename id_t, rename_id_or_imm rename id_or_imm)
   | Sub (id_t, id_or_imm) -> Sub (rename id_t, rename_id_or_imm rename id_or_imm)
-  | Ld (id_t, id_or_imm, x) -> Ld (rename id_t, rename_id_or_imm rename id_or_imm, x)
+  | Mul (id_t, id_or_imm) -> Mul (rename id_t, rename_id_or_imm rename id_or_imm)                      | Ld (id_t, id_or_imm, x) -> Ld (rename id_t, rename_id_or_imm rename id_or_imm, x)
   | St (src, dest, id_or_imm, x) -> St (rename src, rename dest, rename_id_or_imm rename id_or_imm, x)
   | IfEq (id_t1, id_t2, t1, t2) -> IfEq (rename id_t1, rename_id_or_imm rename id_t2, rename_t rename t1, rename_t rename t2)
   | SIfEq (id_t1, id_t2, t1, t2) -> SIfEq (rename id_t1, rename_id_or_imm rename id_t2, rename_t rename t1, rename_t rename t2)
