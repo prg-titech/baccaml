@@ -99,12 +99,39 @@ let run p e reg mem = match e with
              V (id) -> id
            | C (n) -> failwith "Sub (green, red)"
          in
-         Not_specialized (Add (id_t', C (n1)), Red (n1 - n2))
+         Not_specialized (Sub (id_t', C (n1)), Red (n1 - n2))
       | Red (n1), Red (n2) ->
          Log.debug (Printf.sprintf
                       "Sub (%s, %s), %d, %d ==> %d: Red, Red ==> Red"
                       id_t1 (string_of_id_or_imm id_or_imm) n1 n2 (n1 - n2));
          Not_specialized (exp, Red (n1 - n2)))
+  | Mul (id_t1, id_or_imm) as exp ->
+     let r1 =
+       id_t1
+       |> String.split_on_char '.'
+       |> List.rev
+       |> List.hd
+       |> int_of_string
+       |> Array.get reg
+     in
+     let r2 = match id_or_imm with
+       | V (id_t) -> reg.(int_of_id_t id_t)
+       | C (n) -> Green (n)
+     in
+     begin match r1, r2 with
+       | Green n1, Green n2 ->
+         Specialized (Green (n1 * n2))
+       | Red n1, Green n2 ->
+         Not_specialized (Mul (id_t1, C (n2)), Red (n1 * n2))
+       | Green n1, Red n2 ->
+         let id_t' = match id_or_imm with
+             V (id) -> id
+           | C (n) -> failwith "Sub (green, red)"
+         in
+         Not_specialized (Mul (id_t', C (n1)), Red (n1 * n2))
+       | Red n1, Red n2 ->
+         Not_specialized (exp, Red (n1 * n2))
+     end
   | Ld (id_t, id_or_imm, x) as exp ->
      let destld = reg.(int_of_id_t id_t) in
      let offsetld =
