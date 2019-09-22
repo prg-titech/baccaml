@@ -72,13 +72,14 @@ let rec mj p reg mem env = function
   | Let ((dest, typ), CallDir (Id.L ("min_caml_can_enter_jit"), args, fargs), body) ->
      mj p reg mem env body
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
-     let callee =
-       Fundef.find p id_l
-       |> Inlining.inline_fundef reg args
-       |> mj p reg mem env
-     in
-     let succ = mj p reg mem env body in
-     Asm.concat callee (dest, typ) succ
+     (* let callee =
+      *   Fundef.find p id_l
+      *   |> Inlining.inline_fundef reg args
+      *   |> mj p reg mem env
+      * in
+      * let succ = mj p reg mem env body in
+      * Asm.concat callee (dest, typ) succ *)
+     Let ((dest, typ), CallDir (id_l, args, fargs), body |> mj p reg mem env)
   | Let ((dest, typ), exp, body) ->
     match exp with
     | (IfEq _ | IfGE _ | IfLE _ | SIfEq _ | SIfLE _ | SIfGE _) ->
