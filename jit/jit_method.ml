@@ -72,14 +72,14 @@ let rec mj p reg mem env = function
   | Let ((dest, typ), CallDir (Id.L ("min_caml_can_enter_jit"), args, fargs), body) ->
      mj p reg mem env body
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
-     (* let callee =
-      *   Fundef.find p id_l
-      *   |> Inlining.inline_fundef reg args
-      *   |> mj p reg mem env
-      * in
-      * let succ = mj p reg mem env body in
-      * Asm.concat callee (dest, typ) succ *)
-     Let ((dest, typ), CallDir (id_l, args, fargs), body |> mj p reg mem env)
+     let callee =
+       Fundef.find p id_l
+       |> Inlining.inline_fundef reg args
+       |> mj p reg mem env
+     in
+     let succ = mj p reg mem env body in
+     Asm.concat callee (dest, typ) succ
+     (* Let ((dest, typ), CallDir (id_l, args, fargs), body |> mj p reg mem env) *)
   | Let ((dest, typ), exp, body) ->
     match exp with
     | (IfEq _ | IfGE _ | IfLE _ | SIfEq _ | SIfLE _ | SIfGE _) ->
@@ -149,10 +149,10 @@ and mj_if p reg mem env = function
      let mode = value_of reg.(int_of_id_t id_t) in (* mj: 100, tj: 200 *)
      let r2 = match id_or_imm with V id -> value_of reg.(int_of_id_t id) | C n -> n in
      (* [XXX] improve guard failure *)
-     if mode = 100 then
-       Ans (exp |%%| (Ans (Nop), mj p reg mem env t2))
-     else
+     if mode = r2 then
        Ans (exp |%%| (mj p reg mem env t1, Ans (Nop)))
+     else
+       Ans (exp |%%| (Ans (Nop), mj p reg mem env t2))
   | IfGE (id_t, id_or_imm, t1, t2)
   | IfEq (id_t, id_or_imm, t1, t2)
   | IfLE (id_t, id_or_imm, t1, t2) as exp ->
