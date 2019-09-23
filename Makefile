@@ -5,8 +5,10 @@ all: build
 build:
 	dune build
 
-clean:
+clean: comp-clean
 	dune clean
+
+comp-clean:
 	$(RM) *.so *.s
 
 test:
