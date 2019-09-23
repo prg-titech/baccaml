@@ -323,7 +323,7 @@ end = struct
              Ldef l1]
           @ (compile_exp fenv else_exp env)
           @ [Ldef l2]
-        | Call(fname, rands) ->
+        | Call(fname, rands) | TCall(fname, rands) ->
           (List.flatten
              (List.rev
                 (fst
