@@ -37,6 +37,7 @@ exp:
     | exp MINUS exp            { Sub ($1, $3) }
     | exp TIMES exp            { Mul ($1, $3) }
     | exp LESS exp             { LT ($1, $3) }
+    | exp EQ exp               { Eq ($1, $3) }
     | IF exp THEN exp ELSE exp { If ($2, $4, $6) }
     | LET VAR EQ exp IN exp    { Let ($2, $4, $6) }
     | LET REC fundef IN exp    { LetRec ($3, $5) }

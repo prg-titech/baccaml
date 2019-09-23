@@ -45,13 +45,8 @@ let () = f 10 12" in
 
 let test_gcd _ =
   let gcd = "
-let rec eq x y =
-  if x < y then 0
-  else if y < x then 0
-  else 1
-in
 let rec gcd a b =
-  if (eq a b) then a
+  if a = b then a
   else if a < b then gcd a (b - a)
   else gcd (a - b) b
 in

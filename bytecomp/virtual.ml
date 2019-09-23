@@ -31,6 +31,7 @@ module VM : sig
     | POP1                      (* n2::n1::s ->  n2::s *)
     | JUMP (* addr *)
     | METHOD_ENTRY
+    | EQ
     (* the following constructors do not represent instructions but
        are defined for expressing operands of some instructions as
        well as label declarations and references *)
@@ -69,6 +70,7 @@ end = struct
     | POP1
     | JUMP
     | METHOD_ENTRY
+    | EQ
     | Literal of int
     | Lref of string
     | Ldef of string
@@ -93,6 +95,7 @@ end = struct
     POP1;
     JUMP;
     METHOD_ENTRY;
+    EQ;
     |]
 
   let index_of element array =
@@ -249,6 +252,11 @@ end = struct
         interp code n stack
       | METHOD_ENTRY ->
         interp code pc stack
+      | EQ ->
+        let v2,stack = pop stack in
+        let v1,stack = pop stack in
+        let    stack = push stack (if v1 = v2 then 1 else 0) in
+        interp code pc stack
 
   (* run the given program by calling the function id 0 *)
   type fundef_bin_t = int array
@@ -306,14 +314,21 @@ end = struct
     VM.(match exp with
         | Int n -> [CONST; Literal n]
         | Var v -> [DUP; Literal(lookup env v)]
-        | Add(e1,e2) -> (compile_exp fenv e1 env) @
-                        (compile_exp fenv e2 (shift_env env)) @ [ADD]
-        | Sub(e1, e2) -> (compile_exp fenv e1 env) @
-                         (compile_exp fenv e2 (shift_env env)) @ [SUB]
-        | Mul(e1,e2) -> (compile_exp fenv e1 env) @
-                        (compile_exp fenv e2 (shift_env env)) @ [MUL]
-        | LT(e1,e2) -> (compile_exp fenv e1 env) @
-                       (compile_exp fenv e2 (shift_env env)) @ [LT]
+        | Add(e1,e2) ->
+          (compile_exp fenv e1 env) @
+          (compile_exp fenv e2 (shift_env env)) @ [ADD]
+        | Sub(e1, e2) ->
+          (compile_exp fenv e1 env) @
+          (compile_exp fenv e2 (shift_env env)) @ [SUB]
+        | Mul(e1,e2) ->
+          (compile_exp fenv e1 env) @
+          (compile_exp fenv e2 (shift_env env)) @ [MUL]
+        | LT(e1,e2) ->
+          (compile_exp fenv e1 env) @
+          (compile_exp fenv e2 (shift_env env)) @ [LT]
+        | Eq(e1, e2) ->
+          (compile_exp fenv e1 env) @
+          (compile_exp fenv e2 (shift_env env)) @ [EQ]
         | If(cond,then_exp,else_exp) ->
           let l2,l1 = gen_label(),gen_label() in
           (compile_exp fenv cond env)

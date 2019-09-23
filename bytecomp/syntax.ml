@@ -8,6 +8,7 @@ type exp =
   | Add of exp * exp
   | Sub of exp * exp
   | Mul of exp * exp
+  | Eq of exp * exp
   | LT of exp * exp             (* less than *)
   | If of exp * exp * exp
   | Call of var * exp list
@@ -20,10 +21,10 @@ and fundef = {name:var; args:var list; body: exp}
 
 let rec find_fundefs ?(name = None) exp = match exp with
   | Unit | Int _ | Var _ -> []
-  | Add (e1, e2) | Sub (e1, e2) | Mul (e1, e2) | LT (e1, e2) -> (find_fundefs e1) @ (find_fundefs e2)
+  | Add (e1, e2) | Sub (e1, e2) | Mul (e1, e2) | Eq (e1, e2) | LT (e1, e2) -> (find_fundefs e1) @ (find_fundefs e2)
   | If (e1, e2, e3) -> (find_fundefs e1) @ (find_fundefs e2) @ (find_fundefs e3)
   | Let (_, e1, e2) -> find_fundefs e1 @ find_fundefs e2
-  | Call (_, exps) -> exps |> List.map find_fundefs |> List.flatten
+  | Call (_, exps) | TCall(_, exps) -> exps |> List.map find_fundefs |> List.flatten
   | LetRec (fundef, e) ->
     begin match name with
       | Some v ->
@@ -31,4 +32,3 @@ let rec find_fundefs ?(name = None) exp = match exp with
       | None ->
         fundef :: (find_fundefs e)
     end
-  | _ -> []
