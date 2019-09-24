@@ -149,7 +149,7 @@ code.(24) <- 0;
 code.(25) <- 0;
 code.(26) <- 7;
 code.(27) <- 4;
-code.(28) <- read_int ();
+code.(28) <- 30;
 code.(29) <- 6;
 code.(30) <- 0;
 code.(31) <- 9;
@@ -159,8 +159,8 @@ let rec loop n =
   if n = 0 then res
   else     loop (n -1)
 in
-let r = read_int () in
+let r = 1 in
 let start = get_micro_time () in
-let res = loop r in
+let res = interp stack 0 code 27 in
 let stop = get_micro_time () in
 print_int (stop - start); print_newline ()

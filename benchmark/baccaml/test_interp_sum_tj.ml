@@ -92,7 +92,7 @@ code.(20) <- 0;
 code.(21) <- 7;
 code.(22) <- 1;
 code.(23) <- 4;
-code.(24) <- read_int ();
+code.(24) <- 20000;
 code.(25) <- 6;
 code.(26) <- 0;
 code.(27) <- 9;
@@ -101,7 +101,7 @@ let rec loop x =
   if x = 1 then res
   else loop (x - 1)
 in
-let n = read_int () in
+let n = 1 in
 let start = get_micro_time () in
 let _ = loop n in
 let stop = get_micro_time () in
