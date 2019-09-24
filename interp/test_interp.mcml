@@ -95,12 +95,13 @@ let rec interp stack sp bytecode pc =
       end
     else v
   else if instr = 9 then        (* DUP *)
-    let n = bytecode.(pc + 1) in
     if is_mj () then
+      let n = bytecode.(pc + 1) in
       let v = stack.(sp - n - 1) in
       stack.(sp) <- v;
       interp stack (sp + 1) bytecode (pc + 2)
     else
+      let n = bytecode.(pc + 1) in
       let n = n + 1 in
       let v = stack.(sp - n - 1) in
       stack.(sp) <- v;
@@ -217,12 +218,12 @@ code.(26) <- 100;
 code.(27) <- 7;
 code.(28) <- 1;
 code.(29) <- 10;
-(* let st = Array.make 100 0 in
- * let s = get_current_millis () in
- * let res = (interp st 0 code 25) in
- * let e = get_current_millis () in
- * print_int res; print_newline ();
- * print_int (e - s); print_newline (); *)
+let st = Array.make 100 0 in
+let s = get_current_millis () in
+let res = (interp st 0 code 25) in
+let e = get_current_millis () in
+print_int res; print_newline ();
+print_int (e - s); print_newline ();
 
 (* fact *)
 let code = Array.make 50 0 in
@@ -257,12 +258,12 @@ code.(26) <- 5;
 code.(27) <- 7;
 code.(28) <- 1;
 code.(29) <- 10;
-let st = Array.make 100 0 in
-let s = get_current_millis () in
-let res = (interp st 0 code 25) in
-let e = get_current_millis () in
-print_int res; print_newline ();
-print_int (e - s); print_newline ();
+(* let st = Array.make 100 0 in
+ * let s = get_current_millis () in
+ * let res = (interp st 0 code 25) in
+ * let e = get_current_millis () in
+ * print_int res; print_newline ();
+ * print_int (e - s); print_newline (); *)
 
 (* loop *)
 (* let code =
