@@ -43,12 +43,12 @@ test_sum_tj:
 test_interp_naive: test_interp_naive.ml
 	cd ../../ && \
 	$(MINCAML) -- -type mjit benchmark/baccaml/test_interp_naive.ml; \
-	gcc -m32 stub/stub.c stub/libmincaml.S benchmark/baccaml/test_interp_naive.s -o benchmark/baccaml/test_interp_naive
+	gcc -m32 stub/stub.c stub/libmincaml.S benchmark/baccaml/test_interp_naive.s -lm -o benchmark/baccaml/test_interp_naive
 
 test_interp_sum: test_interp_sum.ml
 	cd ../../ && \
 	$(MINCAML) -- -type mjit benchmark/baccaml/$<; \
-	gcc -m32 stub/stub.c stub/libmincaml.S benchmark/baccaml/$(basename $<).s -o benchmark/baccaml/$(basename $<)
+	gcc -m32 stub/stub.c stub/libmincaml.S benchmark/baccaml/$(basename $<).s -lm -o benchmark/baccaml/$(basename $<)
 
 clean:
 	$(RM) $(APPS)
