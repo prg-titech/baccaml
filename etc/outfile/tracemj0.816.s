@@ -44,12 +44,12 @@ tracemj0.816:
 	subl	$2, %edx
 	movl	(%eax,%edx,4), %edx
 	cmpl	%edx, %ecx
-	jg	jle_else.7
+	jg	jle_else.25
 	movl	$0, %ecx
-	jmp	jle_cont.8
-jle_else.7:
+	jmp	jle_cont.26
+jle_else.25:
 	movl	$1, %ecx
-jle_cont.8:
+jle_cont.26:
 	movl	%ebx, %edx
 	subl	$2, %edx
 	movl	%eax, %esi
@@ -60,7 +60,7 @@ jle_cont.8:
 	movl	(%eax,%ecx,4), %ecx
 	subl	$1, %ebx
 	cmpl	$0, %ecx
-	jne	je_else.9
+	jne	je_else.27
 	movl	%ebx, %ecx
 	subl	$1, %ecx
 	subl	$1, %ecx
@@ -124,14 +124,54 @@ jle_cont.8:
 	movl	%ebx, %eax
 	subl	$1, %eax
 	movl	(%edx,%eax,4), %eax
+	movl	%ebx, %ecx
+	subl	$2, %ecx
+	movl	(%edx,%ecx,4), %ecx
+	cmpl	$200, %ecx
+	jne	je_else.28
+	movl	$22, %ecx
+	movl	%eax, 8(%ebp)
+	movl	%edx, 12(%ebp)
+	movl	%ebx, 16(%ebp)
+	movl	%ecx, 20(%ebp)
+	movl	min_caml_bp,%ecx
+	movl	20(%ebp), %eax
+	addl	$1, %eax
+	movl	(%ecx,%eax,4), %eax
+	movl	16(%ebp), %ebx
+	movl	%ebx, %edx
+	subl	$3, %edx
+	movl	12(%ebp), %esi
+	movl	(%esi,%edx,4), %edx
+	movl	%ebx, %edi
+	subl	%eax, %edi
+	subl	$3, %edi
+	movl	%ecx, 24(%ebp)
+	movl	8(%ebp), %ecx
+	movl	%ecx, (%esi,%edi,4)
+	subl	%eax, %ebx
 	subl	$2, %ebx
-	movl	(%edx,%ebx,4), %ebx
-	cmpl	$200, %ebx
-	jne	je_else.10
+	cmpl	$22, %edx
+	jl	jge_else.29
+	movl	24(%ebp), %ecx
+	movl	%esi, %eax
+	jmp	guard_tracemj0.816
+jge_else.29:
+	movl	24(%ebp), %ecx
+	movl	%edx, 28(%ebp)
+	movl	%ebx, 32(%ebp)
+	movl	%esi, %eax
+	addl	$40, %ebp
+	call	min_caml_can_enter_jit
+	subl	$40, %ebp
+	movl	12(%ebp), %eax
+	movl	32(%ebp), %ebx
+	movl	24(%ebp), %ecx
+	movl	28(%ebp), %edx
+	jmp	guard_tracemj0.816
+je_else.28:
 	ret
-je_else.10:
-	ret
-je_else.9:
+je_else.27:
 	movl	%ebx, %ecx
 	subl	$1, %ecx
 	subl	$1, %ecx
@@ -141,11 +181,58 @@ je_else.9:
 	movl	%ebx, %ecx
 	subl	$1, %ecx
 	movl	(%eax,%ecx,4), %ecx
+	movl	%ebx, %edx
+	subl	$2, %edx
+	movl	(%eax,%edx,4), %edx
+	cmpl	$200, %edx
+	jne	je_else.30
+	movl	$22, %edx
+	movl	%ecx, 36(%ebp)
+	movl	%eax, 40(%ebp)
+	movl	%ebx, 44(%ebp)
+	movl	%edx, 48(%ebp)
+	movl	min_caml_bp,%ecx
+	movl	48(%ebp), %eax
+	addl	$1, %eax
+	movl	(%ecx,%eax,4), %eax
+	movl	44(%ebp), %ebx
+	movl	%ebx, %edx
+	subl	$3, %edx
+	movl	40(%ebp), %esi
+	movl	(%esi,%edx,4), %edx
+	movl	%ebx, %edi
+	subl	%eax, %edi
+	subl	$3, %edi
+	movl	%ecx, 52(%ebp)
+	movl	36(%ebp), %ecx
+	movl	%ecx, (%esi,%edi,4)
+	subl	%eax, %ebx
 	subl	$2, %ebx
-	movl	(%eax,%ebx,4), %eax
-	cmpl	$200, %eax
-	jne	je_else.12
-	ret
-je_else.12:
+	cmpl	$22, %edx
+	jl	jge_else.31
+	movl	52(%ebp), %ecx
+	movl	%esi, %eax
+	jmp	guard_tracemj0.816
+jge_else.31:
+	movl	52(%ebp), %ecx
+	movl	%edx, 56(%ebp)
+	movl	%ebx, 60(%ebp)
+	movl	%esi, %eax
+	addl	$64, %ebp
+	call	min_caml_can_enter_jit
+	subl	$64, %ebp
+	movl	40(%ebp), %eax
+	movl	60(%ebp), %ebx
+	movl	52(%ebp), %ecx
+	movl	56(%ebp), %edx
+	jmp	guard_tracemj0.816
+je_else.30:
 	movl	%ecx, %eax
+	ret
+guard_tracemj0.816:
+	movl	%eax, min_caml_guard_stack
+	movl	%ebx, min_caml_guard_sp
+	movl	%ecx, min_caml_guard_bytecode
+	movl	%edx, min_caml_guard_pc
+	movl	$1, min_caml_guard_fail_flg
 	ret
