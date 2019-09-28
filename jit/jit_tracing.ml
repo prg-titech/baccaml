@@ -1,4 +1,3 @@
-
 open Std
 open Base
 open Asm
@@ -183,25 +182,25 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : Jit_env.e
         else trace t2
       | Red n1, Green n2 ->
         if n1 <= n2 then
-          Ans (IfLE (id_t, C (n2), trace t1, guard t2))
+          Ans (IfLE (id_t, C (n2), trace t1, trace t2))
         else
-          Ans (IfLE (id_t, C (n2), guard t1, trace t2))
+          Ans (IfLE (id_t, C (n2), trace t1, trace t2))
       | Green n1, Red n2 ->
         let id_t2 = match id_or_imm with
             V (id) -> id
           | C _ -> failwith "un matched pattern."
         in
         if n1 <= n2 then
-          Ans (IfGE (id_t2, C (n1), trace t1, guard t2))
+          Ans (IfGE (id_t2, C (n1), trace t1, trace t2))
         else
-          Ans (IfGE (id_t2, C (n1), guard t1, trace t2))
+          Ans (IfGE (id_t2, C (n1), trace t1, trace t2))
       | Red n1, Red n2 ->
         if n1 <= n2 then
-          Ans (IfLE (id_t, id_or_imm, trace t1, guard t2))
+          Ans (IfLE (id_t, id_or_imm, trace t1, trace t2))
         else
-          Ans (IfLE (id_t, id_or_imm, guard t1, trace t2))
+          Ans (IfLE (id_t, id_or_imm, trace t1, trace t2))
     end
-  | IfEq (id_t, id_or_imm, t1, t2) | SIfEq (id_t, id_or_imm, t1, t2) ->
+  | IfEq (id_t, id_or_imm, t1, t2) ->
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
     Log.debug @@ Printf.sprintf "IfEq (%s, %s) ==> %d %d"
@@ -233,7 +232,39 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : Jit_env.e
         else
           Ans (IfEq (id_t, id_or_imm, guard t1, trace t2))
     end
-  | IfGE (id_t, id_or_imm, t1, t2) | SIfGE (id_t, id_or_imm, t1, t2) ->
+  | SIfEq (id_t, id_or_imm, t1, t2) ->
+    let r1 = reg.(int_of_id_t id_t) in
+    let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
+    Log.debug @@ Printf.sprintf "IfEq (%s, %s) ==> %d %d"
+      id_t (string_of_id_or_imm id_or_imm) (value_of r1) (value_of r2);
+    begin
+      match r1, r2 with
+      | Green n1, Green n2 ->
+        if n1 = n2 then
+          tj p reg mem tj_env t1
+        else
+          tj p reg mem tj_env t2
+      | Red n1, Green n2 ->
+        if n1 = n2 then
+          Ans (IfEq (id_t, C (n2), trace t1, trace t2))
+        else
+          Ans (IfEq (id_t, C (n2), trace t1, trace t2))
+      | Green n1, Red n2 ->
+        let id_t2 = match id_or_imm with
+            V (id) -> id
+          | C _ -> failwith "un matched pattern."
+        in
+        if n1 = n2 then
+          Ans (IfEq (id_t2, C (n1), trace t1, trace t2))
+        else
+          Ans (IfEq (id_t, C (n1), trace t1, trace t2))
+      | Red n1, Red n2 ->
+        if n1 = n2 then
+          Ans (IfEq (id_t, id_or_imm, trace t1, trace t2))
+        else
+          Ans (IfEq (id_t, id_or_imm, trace t1, trace t2))
+    end
+  | IfGE (id_t, id_or_imm, t1, t2) ->
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
     Log.debug @@ Printf.sprintf "IfEq (%s, %s) ==> %d %d"
@@ -264,6 +295,38 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : Jit_env.e
           Ans (IfGE (id_t, id_or_imm, trace t1, guard t2))
         else
           Ans (IfGE (id_t, id_or_imm, guard t1, trace t2))
+    end
+  | SIfGE (id_t, id_or_imm, t1, t2) ->
+    let r1 = reg.(int_of_id_t id_t) in
+    let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
+    Log.debug @@ Printf.sprintf "IfEq (%s, %s) ==> %d %d"
+      id_t (string_of_id_or_imm id_or_imm) (value_of r1) (value_of r2);
+    begin
+      match r1, r2 with
+      | Green n1, Green n2 ->
+        if n1 >= n2 then
+          tj p reg mem tj_env t1
+        else
+          tj p reg mem tj_env t2
+      | Red n1, Green n2 ->
+        if n1 >= n2 then
+          Ans (IfGE (id_t, C (n2), trace t1, trace t2))
+        else
+          Ans (IfGE (id_t, C (n2), trace t1, trace t2))
+      | Green n1, Red n2 ->
+        let id_t2 = match id_or_imm with
+            V (id) -> id
+          | C _ -> failwith "un matched pattern."
+        in
+        if n1 >= n2 then
+          Ans (IfLE (id_t2, C (n1), trace t1, trace t2))
+        else
+          Ans (IfLE (id_t2, C (n1), trace t1, trace t2))
+      | Red n1, Red n2 ->
+        if n1 >= n2 then
+          Ans (IfGE (id_t, id_or_imm, trace t1, trace t2))
+        else
+          Ans (IfGE (id_t, id_or_imm, trace t1, trace t2))
     end
   | e -> (
     match Jit_optimizer.run p e reg mem with

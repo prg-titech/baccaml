@@ -150,9 +150,9 @@ and mj_if p reg mem env = function
      let r2 = match id_or_imm with V id -> value_of reg.(int_of_id_t id) | C n -> n in
      (* [XXX] improve guard failure *)
      if mode = r2 then
-       Ans (exp |%%| (mj p reg mem env t1, Ans (Nop)))
+       Ans (exp |%%| (mj p reg mem env t1, Jit_guard.create_tj reg env t2))
      else
-       Ans (exp |%%| (Ans (Nop), mj p reg mem env t2))
+       Ans (exp |%%| (Jit_guard.create_tj reg env t1, mj p reg mem env t2))
   | IfGE (id_t, id_or_imm, t1, t2)
   | IfEq (id_t, id_or_imm, t1, t2)
   | IfLE (id_t, id_or_imm, t1, t2) as exp ->

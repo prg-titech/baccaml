@@ -32,7 +32,15 @@ let emit_mj oc ({name= Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   Printf.fprintf oc "\tpopl\t%%eax\n";
   Printf.fprintf oc "\tmovl\tmj_result, %%eax\n";
   Printf.fprintf oc "\tret\n";
-  Emit.h oc fundef
+  Emit.h oc fundef;
+  fprintf oc "guard_%s:\n" x;
+  (* use esp for caliculating an offset *)
+  fprintf oc "\tmovl\t%%eax, min_caml_guard_stack\n";
+  fprintf oc "\tmovl\t%%ebx, min_caml_guard_sp\n";
+  fprintf oc "\tmovl\t%%ecx, min_caml_guard_bytecode\n";
+  fprintf oc "\tmovl\t%%edx, min_caml_guard_pc\n";
+  fprintf oc "\tmovl\t$1, min_caml_guard_fail_flg\n";
+  fprintf oc "\tret\n"
 
 let emit_tj oc ({ name = Id.L x; args; fargs= _; body= e; ret= _} as fundef) =
   let tname = Filename.chop_extension x in
