@@ -7,7 +7,7 @@ open Runtime_lib
 
 module Method_prof = Make_prof(struct let threshold = 0 end)
 
-module Trace_prof = Make_prof(struct let threshold = 100 end)
+module Trace_prof = Make_prof(struct let threshold = 1000 end)
 
 type runtime_env =
   { bytecode: int array
@@ -89,7 +89,7 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
       ~red_names:(!Config.reds)
   in
   let trace = JT.run prog reg mem env in
-  Debug.with_debug (fun _ -> Asm.print_fundef trace);
+  (* Asm.print_fundef trace; *)
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
     emit_dyn oc prog `Meta_tracing trace_name trace;
@@ -119,7 +119,7 @@ let jit_exec pc st_ptr sp stack =
       let s = Unix.gettimeofday () in
       exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
       let e = Unix.gettimeofday () in
-      Printf.printf "[tj] ellapsed time: %f μ s\n" ((e -. s) *. 100000.0);
+      Printf.printf "[tj] ellapsed time: %f μ s\n" ((e -. s) *. 1e6);
       flush stdout
     | None -> ()
   end
@@ -153,7 +153,7 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
      let s = Unix.gettimeofday () in
      let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
      let e = Unix.gettimeofday () in
-     Printf.printf "[mj] elapced time: %fus\n" ((e -. s) *. 100000.); flush stdout;
+     Printf.printf "[mj] elapced time: %fus\n" ((e -. s) *. 1e6); flush stdout;
      r
   | None ->
      let ic = file_open () in
@@ -171,7 +171,7 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
           let s = Unix.gettimeofday () in
           let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
           let e = Unix.gettimeofday () in
-          Printf.printf "[mj] elapced time: %fus\n" ((e -. s) *. 100000.); flush stdout;
+          Printf.printf "[mj] elapced time: %fus\n" ((e -. s) *. 1e6); flush stdout;
           r
        | Error e -> raise e
      with e -> close_in ic; raise e
