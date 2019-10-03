@@ -5,115 +5,56 @@ open Jit_util
 
 let run p e reg mem = match e with
   | Nop -> Specialized (Green 0)
-  | Set n ->
-     Log.debug (Printf.sprintf "Set (%d)" n);
-     Specialized (Green n)
+  | Set n -> Specialized (Green n)
   | Mov id_t as exp ->
      let r = reg.(int_of_id_t id_t ) in
      (match r with
       | Green (n) ->
-         Log.debug (Printf.sprintf "Mov (%d): Green" n);
-         Specialized (Green (n))
-      | LightGreen (n) ->
-         Log.debug (Printf.sprintf "Mov (%d): LightGreen" n );
-         Specialized (LightGreen (n))
+        Specialized (Green (n))
       | Red (n) ->
-         Log.debug (Printf.sprintf "Mov (%d): Red" n);
-         Not_specialized (exp, Red (n)))
+        Not_specialized (exp, Red (n)))
   | Add (id_t1, id_or_imm) as exp ->
-     let r1 =
-       id_t1
-       |> String.split_on_char '.'
-       |> List.rev
-       |> List.hd
-       |> int_of_string
-       |> Array.get reg
-     in
+     let r1 = reg.(int_of_id_t id_t1) in
      let r2 = match id_or_imm with
        | V (id_t) -> reg.(int_of_id_t id_t)
        | C (n) -> Green (n)
      in
      let id_t2 = match id_or_imm with V (id) -> id | C (n) -> string_of_int n in
      (match r1, r2 with
-      | Green (n1), Green (n2)
-        | LightGreen (n1), LightGreen (n2)
-        | LightGreen (n1), Green (n2)
-        | Green (n1), LightGreen (n2) ->
-         Log.debug (Printf.sprintf
-                      "Add (%s, %s), %d %d ==> %d: Green, Green ==> Green"
-                      id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2));
-         Specialized (Green (n1 + n2))
-      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
-         Log.debug (Printf.sprintf
-                      "Add (%s, %s), %d %d ==> %d: Red, Green ==> Red"
-                      id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2));
-         Not_specialized (Add (id_t1, C (n2)), Red (n1 + n2))
+      | Green (n1), Green (n2) ->
+        Specialized (Green (n1 + n2))
+      | Red (n1), Green (n2) ->
+        Not_specialized (Add (id_t1, C (n2)), Red (n1 + n2))
       | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
-         Log.debug (Printf.sprintf
-                      "Add (%s, %s), %d %d ==> %d: Green, Red ==> Red"
-                      id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2));
-         let id_t' = match id_or_imm with
-             V (id) -> id
-           | C (n) -> failwith "Add (green, red)"
-         in
-         Not_specialized (Add (id_t', C (n1)), Red (n1 + n2))
+        let id_t' = match id_or_imm with
+            V (id) -> id
+          | C (n) -> failwith "Add (green, red)"
+        in
+        Not_specialized (Add (id_t', C (n1)), Red (n1 + n2))
       | Red (n1), Red (n2) ->
-         Log.debug (Printf.sprintf
-                      "Add (%s, %s), %d %d ==> %d: Red, Red ==> Red"
-                      id_t1 id_t2 (value_of r1) (value_of r2) (n1 + n2));
-         Not_specialized (exp, Red (n1 + n2)))
+        Not_specialized (exp, Red (n1 + n2)))
   | Sub (id_t1, id_or_imm) as exp ->
-     let r1 =
-       id_t1
-       |> String.split_on_char '.'
-       |> List.rev
-       |> List.hd
-       |> int_of_string
-       |> Array.get reg
-     in
+     let r1 = reg.(int_of_id_t id_t1) in
      let r2 = match id_or_imm with
        | V (id_t) -> reg.(int_of_id_t id_t)
        | C (n) -> Green (n)
      in
-     (match r1, r2 with
-      | Green (n1), Green (n2)
-        | LightGreen (n1), LightGreen (n2)
-        | LightGreen (n1), Green (n2)
-        | Green (n1), LightGreen (n2) ->
-         Log.debug (Printf.sprintf
-                      "Sub (%s, %s), %d %d ==> %d: Green, Green ==> Green"
-                      id_t1 (string_of_id_or_imm id_or_imm) n1 n2 (n1 - n2));
-         Specialized (Green (n1 - n2))
-      | Red (n1), Green (n2)
-        | Red (n1), LightGreen (n2) ->
-         Log.debug (Printf.sprintf
-                      "Sub (%s, %s), %d, %d ==> %d: Red, Green ==> Red"
-                      id_t1 (string_of_id_or_imm id_or_imm) n1 n2 (n1 - n2));
-         Not_specialized (Sub (id_t1, C (n2)), Red (n1 - n2))
-      | Green (n1), Red (n2)
-        | LightGreen (n1), Red (n2) ->
-         Log.debug (Printf.sprintf
-                      "Sub (%s, %s), %d, %d ==> %d: Green, Red ==> Red"
-                      id_t1 (string_of_id_or_imm id_or_imm) n1 n2 (n1 - n2));
-         let id_t' = match id_or_imm with
-             V (id) -> id
-           | C (n) -> failwith "Sub (green, red)"
-         in
-         Not_specialized (Sub (id_t', C (n1)), Red (n1 - n2))
+     begin match r1, r2 with
+      | Green (n1), Green (n2) ->
+        Specialized (Green (n1 - n2))
+      | Red (n1), Green (n2) ->
+        Not_specialized (Sub (id_t1, C (n2)), Red (n1 - n2))
+      | Green (n1), Red (n2) ->
+        let id_t' = match id_or_imm with
+            V (id) -> id
+          | C (n) -> failwith "Sub (green, red)"
+        in
+        Not_specialized (Sub (id_t', C (n1)), Red (n1 - n2))
       | Red (n1), Red (n2) ->
-         Log.debug (Printf.sprintf
-                      "Sub (%s, %s), %d, %d ==> %d: Red, Red ==> Red"
-                      id_t1 (string_of_id_or_imm id_or_imm) n1 n2 (n1 - n2));
-         Not_specialized (exp, Red (n1 - n2)))
+        Not_specialized (exp, Red (n1 - n2))
+     end
   | Mul (id_t1, id_or_imm) as exp ->
-     let r1 =
-       id_t1
-       |> String.split_on_char '.'
-       |> List.rev
-       |> List.hd
-       |> int_of_string
-       |> Array.get reg
-     in
+     let r1 = reg.(int_of_id_t id_t1) in
      let r2 = match id_or_imm with
        | V (id_t) -> reg.(int_of_id_t id_t)
        | C (n) -> Green (n)
@@ -148,42 +89,26 @@ let run p e reg mem = match e with
        | C (n) -> string_of_int n
      in
      (match destld, offsetld with
-      | Green (n1), Green (n2)
-        | LightGreen (n1), LightGreen (n2)
-        | LightGreen (n1), Green (n2)
-        | Green (n1), LightGreen (n2) ->
-         begin match mem.(n1 + n2) with
-         | Green n | LightGreen n as value ->
-            Log.debug (Printf.sprintf
-                         "Ld (%s, %s), %d %d => %d (Green): Green, Green"
-                         id_t id_t2 (value_of destld) (value_of offsetld) n);
+      | Green (n1), Green (n2) ->
+        begin match mem.(n1 + n2) with
+          | Green n | LightGreen n as value ->
             Specialized (value)
-         | Red n ->
-            Log.debug (Printf.sprintf
-                         "Ld (%s, %s), %d %d => %d (Red): Green, Green"
-                         id_t id_t2 (value_of destld) (value_of offsetld) n);
+          | Red n ->
             Not_specialized (Ld (zero, C (n1 + n2 / x) , x), Red n)
-         end
-      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
+        end
+      | Green (n1), Red (n2) ->
          let n = mem.(n1 + (n2 * x)) in
          reg.(int_of_id_t id_t) <- n;
          Not_specialized (Ld (id_t, id_or_imm, x), n)
-      | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
-         let n = mem.(n1 + n2) in
-         Log.debug (Printf.sprintf
-                      "Ld (%s, %s), %d %d => %d: Red, Green"
-                      id_t id_t2 (value_of destld) (value_of offsetld) (value_of n));
-         begin match mem.(n1 + n2) with
-         | Green (n) | LightGreen (n) ->
+      | Red (n1), Green (n2) ->
+        begin match mem.(n1 + n2) with
+          | Green (n) | LightGreen (n) ->
             Not_specialized (Ld (id_t, C (n1 + n2 / x), x), Red (n))
-         | Red (n) ->
+          | Red (n) ->
             Not_specialized (Ld (id_t, C (n1 + n2 / x), x), Red (n))
          end
       | Red (n1), Red (n2) ->
          let n = mem.(n1 + n2) in
-         Log.debug (Printf.sprintf
-                      "Ld (%s, %s), %d %d => %d: Red, Red"
-                      id_t id_t2 (value_of destld) (value_of offsetld) (value_of n));
          Not_specialized (exp, Red (value_of n)))
   | St (src, dest, offset, x) ->
      let src' = reg.(int_of_id_t src) in
@@ -196,60 +121,40 @@ let run p e reg mem = match e with
        | C (n) -> Green (n)
      in
      begin match dest', offset' with
-     | Green (n1), Green (n2)
-     | LightGreen (n1), LightGreen (n2)
-     | LightGreen (n1), Green (n2)
-     | Green (n1), LightGreen (n2) ->
+     | Green (n1), Green (n2) ->
         begin match src' with
         | Green (n) | LightGreen (n) ->
-           mem.(n1 + n2) <- src';
-           Log.debug (Printf.sprintf "St (%s, %s, %s, %d), %d %d %d: Green, Green, Green"
-                        src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
-           Specialized (Green (0))
+          mem.(n1 + n2) <- src';
+          Specialized (Green (0))
         | Red (n) ->
-           Log.debug (Printf.sprintf "St (%s, %s, %s, %d), %d %d %d: Green, Green, Red"
-                        src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
-           Not_specialized (St (src, zero, C ((n1 + n2)), x), Red (n))
+          Not_specialized (St (src, zero, C ((n1 + n2)), x), Red (n))
         end
      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
-        failwith "St (_, green, red) isn't supported."
-     | Red (n1), Green (n2) | Red (n1), LightGreen (n2) ->
-        begin match src' with
-        | Green (n) | LightGreen (n) ->
+       failwith "St (_, green, red) isn't supported."
+     | Red (n1), Green (n2) ->
+       begin match src' with
+         | Green (n) | LightGreen (n) ->
            mem.(n1 + n2) <- src';
-           Log.debug (
-               Printf.sprintf  "St (%s, %s, %s, %d), %d %d %d: Red, Green, Green"
-                 src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
-
            Not_specialized (St (src, dest, C ((n1 + n2)), x), Red (0))
         | Red (n) ->
            mem.(n1 + n2) <- src';
-           Log.debug (
-               Printf.sprintf "St (%s, %s, %s, %d), %d %d %d: Red, Green, Red"
-                 src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
            begin match offset' with
-           | Green (n) | LightGreen (n) ->
-              Not_specialized (St (src, dest, C (n), x), Red (0))
-           | Red (n) ->
-              Not_specialized (St (src, dest, offset, x), Red (0))
+             | Green (n) | LightGreen (n) ->
+               Not_specialized (St (src, dest, C (n), x), Red (0))
+             | Red (n) ->
+               Not_specialized (St (src, dest, offset, x), Red (0))
            end
-        end
+       end
      | Red (n1), Red (n2) ->
         begin match src' with
         | Green (n) | LightGreen (n) ->
            mem.(n1 + n2) <- Red (value_of src');
-           Log.debug (
-               Printf.sprintf "St (%s, %s, %s, %d), %d %d %d: Red, Red, Green"
-                 src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
            Not_specialized (St (src, dest, C (n1 + n2), x), Red (0))
         | Red (n) ->
            mem.(n1 + n2) <- src';
-           Log.debug (
-               Printf.sprintf  "St (%s, %s, %s, %d), %d %d %d: Red, Red, Red"
-                 src dest (string_of_id_or_imm offset) x (value_of src') (value_of dest') (value_of offset'));
            Not_specialized (St (src, dest, offset, x), Red (0))
         end
      end
   | _ ->
-     Asm.print_exp e;
-     failwith ("un supported instruction")
+    Printf.eprintf "un supported instruction: \n"; Asm.print_exp e;
+    raise Error
