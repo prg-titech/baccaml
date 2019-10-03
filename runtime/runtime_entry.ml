@@ -115,12 +115,12 @@ let jit_exec pc st_ptr sp stack =
     match Trace_prof.find_opt pc with
     | Some (tname) ->
       (* Debug.print_stack stack; Printf.printf "[sp] %d\n" sp; *)
-      Printf.printf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc sp;
+      Printf.printf "[tj] executing %s (sp: %d) ...\n" tname sp;
       let s = Unix.gettimeofday () in
-      exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp |> ignore;
+      let _ = exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp in
       let e = Unix.gettimeofday () in
       Printf.printf "[tj] ellapsed time: %f μ s\n" ((e -. s) *. 1e6);
-      flush stdout
+      ()
     | None -> ()
   end
 
