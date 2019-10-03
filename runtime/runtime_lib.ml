@@ -13,8 +13,8 @@ module Make_prof (M_prof : Prof) = struct
 
   type pc = int
   type name = string
-  let count_tbl = Hashtbl.create 10000
-  let compiled_tbl = Hashtbl.create 10000
+  let count_tbl = Hashtbl.create 1000
+  let compiled_tbl = Hashtbl.create 1000
 
   let register : pc * name -> unit = fun (pc, name) ->
     match Hashtbl.find_opt compiled_tbl pc with
@@ -23,7 +23,8 @@ module Make_prof (M_prof : Prof) = struct
 
   let count_up : pc -> unit = fun pc ->
     match Hashtbl.find_opt count_tbl pc with
-    | Some count -> Hashtbl.replace count_tbl pc (count + 1)
+    | Some count ->
+      Hashtbl.replace count_tbl pc (count + 1)
     | None -> Hashtbl.add count_tbl pc 1
 
   let find_opt : pc -> name option = fun pc ->
@@ -34,6 +35,18 @@ module Make_prof (M_prof : Prof) = struct
     | Some count -> count >= threshold
     | None -> false
 end
+
+module Make_prof_test = Make_prof(
+  struct
+    let threshold = 10
+  end)
+
+let _ =
+  Make_prof_test.register (1, "tracetj0");
+  for i = 1 to 20 do
+    Make_prof_test.count_up 1;
+  done;
+  assert (Make_prof_test.over_threshold 1 = true)
 
 
 module Trace_name : sig
