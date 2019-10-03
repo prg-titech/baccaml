@@ -158,13 +158,13 @@ code.(31) <- 25;
 code.(32) <- 7;
 code.(33) <- 1;
 code.(34) <- 10;
-let st = Array.make 2000 (0) in
-let s = get_current_millis () in
-let res = (interp st 0 code 29) in
-let e = get_current_millis () in
-print_newline ();
-print_int (e - s); print_newline ();
-print_int res; print_newline ();
+(* let st = Array.make 2000 (0) in
+ * let s = get_current_millis () in
+ * let res = (interp st 0 code 29) in
+ * let e = get_current_millis () in
+ * print_newline ();
+ * print_int (e - s); print_newline ();
+ * print_int res; print_newline (); *)
 
 (* sum *)
 let code = Array.make 50 0 in
@@ -195,16 +195,16 @@ code.(22) <- 8;
 code.(23) <- 1;
 code.(24) <- 14;
 code.(25) <- 5;
-code.(26) <- 2000;
+code.(26) <- 5000;
 code.(27) <- 7;
 code.(28) <- 1;
 code.(29) <- 10;
-(* let st = Array.make 100 0 in
- * let s = get_current_millis () in
- * let res = (interp st 0 code 25) in
- * let e = get_current_millis () in
- * print_int res; print_newline ();
- * print_int (e - s); print_newline (); *)
+let st = Array.make 100 0 in
+let s = get_current_millis () in
+let res = (interp st 0 code 25) in
+let e = get_current_millis () in
+print_int res; print_newline ();
+print_int (e - s); print_newline ();
 
 (* fact *)
 let code = Array.make 50 0 in
