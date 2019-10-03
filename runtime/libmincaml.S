@@ -261,8 +261,8 @@ min_caml_jit_merge_point:
 	call	call_caml_jit_exec
 	movl	%ebp, %esp
 	popl	%ebp
-	movl	min_caml_guard_fail_flg, %eax
-	cmpl	$0, %eax
+	movl	min_caml_guard_fail_flg, %esi
+	cmpl	$0, %esi
 	jg	.L3
 	jmp	.L2
 .L2:
