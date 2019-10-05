@@ -5,7 +5,9 @@ open Jit_util
 
 let run p e reg mem = match e with
   | Nop -> Specialized (Green 0)
-  | Set n -> Specialized (Green n)
+  | Set n ->
+    if n = -1000 then raise Error
+    else Specialized (Green n)
   | Mov id_t as exp ->
      let r = reg.(int_of_id_t id_t ) in
      (match r with
