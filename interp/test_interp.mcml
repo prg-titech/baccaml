@@ -41,7 +41,7 @@ let rec interp stack sp bytecode pc =
     let v = stack.(sp - 1) in
     let sp2 = sp - 1 in
     @if v = 0 then (
-      @if addr < pc then (
+      @if addr = (pc - 1) then (
         can_enter_jit stack sp2 bytecode addr;
         interp stack sp2 bytecode addr
       ) else interp stack sp2 bytecode addr
@@ -72,7 +72,11 @@ let rec interp stack sp bytecode pc =
       let addr = stack.(sp - 3) in (* sp: sp - 2 *)
       stack.(sp - n - 3) <- v;    (* sp: sp - 2 - n + 1 = sp - 1 - n *)
       let sp2 = sp - n - 2 in
-      interp stack sp2 bytecode addr
+      if addr = (pc - 1) then (
+        can_enter_jit stack sp2 bytecode addr;
+        interp stack sp2 bytecode addr
+      ) else (
+        interp stack sp2 bytecode addr)
     else v
   else if instr = 9 then        (* DUP *)
     if is_mj () then
@@ -154,7 +158,7 @@ code.(27) <- 8;
 code.(28) <- 1;
 code.(29) <- 14;
 code.(30) <- 5;
-code.(31) <- 25;
+code.(31) <- 17;
 code.(32) <- 7;
 code.(33) <- 1;
 code.(34) <- 10;
