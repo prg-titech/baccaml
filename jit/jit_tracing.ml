@@ -23,7 +23,7 @@ module Util = struct
     | None -> failwith "find_pc is failed"
 end
 
-module Guard = Jit_guard
+module Guard = Jit_guard.TJ
 
 let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) : t -> t =
   function
@@ -117,9 +117,9 @@ and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
 
 and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
   let trace = tj p reg mem tj_env in
-  let guard = Guard.create_tj reg tj_env.trace_name in
+  let guard = Guard.create reg tj_env.trace_name in
   function
-  | IfLE (id_t, id_or_imm, t1, t2) | SIfLE (id_t, id_or_imm, t1, t2) ->
+  | IfLE (id_t, id_or_imm, t1, t2) ->
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
     Log.debug @@ Printf.sprintf "IfLE (%s, %s) ==> %d %d"
@@ -142,6 +142,42 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
           Ans (IfGE (id_t2, C (n1), trace t2, guard t1))
         else
           Ans (IfGE (id_t2, C (n1), guard t2, trace t1))
+      | Red n1, Red n2 ->
+        if n1 <= n2 then
+          Ans (IfLE (id_t, id_or_imm, trace t1, guard t2))
+        else
+          Ans (IfLE (id_t, id_or_imm, guard t1, trace t2))
+    end
+  | SIfLE (id_t, id_or_imm, t1, t2) ->
+    let r1 = reg.(int_of_id_t id_t) in
+    let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
+    Log.debug @@ Printf.sprintf "IfLE (%s, %s) ==> %d %d"
+      id_t (string_of_id_or_imm id_or_imm) (value_of r1) (value_of r2);
+    begin match r1, r2 with
+      | Green n1, Green n2 ->
+        if n1 <= n2 then trace t1
+        else trace t2
+      | Red n1, Green n2 ->
+        if n1 <= n2 then
+          Ans (IfLE (id_t, C (n2), trace t1, guard t2))
+        else
+          Ans (IfLE (id_t, C (n2), guard t1, trace t2))
+      | Green n1, Red n2 ->
+        let id_t2 = match id_or_imm with
+            V (id) -> id
+          | C _ -> failwith "un matched pattern."
+        in
+        if n1 <= n2 then
+          (* Ans (
+           *   IfGE (id_t2, C (n1),
+           *         Ans (IfEq (id_t2, C (n2), trace t2, guard t1)),
+           *         guard t1)) *)
+          Ans (IfGE (id_t2, C (n1), trace t2, guard t1))
+        else
+          (* Ans (IfGE (id_t2, C (n1),
+           *            guard t2,
+           *            Ans (IfEq (id_t2, C (n2), trace t1, guard t2)))) *)
+          Ans (IfGE (id_t2, C (n2), guard t2, trace t1))
       | Red n1, Red n2 ->
         if n1 <= n2 then
           Ans (IfLE (id_t, id_or_imm, trace t1, guard t2))
@@ -236,6 +272,7 @@ let run : Asm.prog -> reg -> mem -> Jit_env.env -> Asm.fundef =
   let tj_env = { trace_name = trace_name; red_names = red_names;
                  index_pc= index_pc; merge_pc = merge_pc ; passed_pc = [] } in
   let trace = ibody |> tj p reg mem tj_env in
+  validate trace;
   { name= Id.L trace_name
   ; args= iargs |> List.filter (fun arg -> List.mem (String.get_name arg) red_names)
   ; fargs= []
