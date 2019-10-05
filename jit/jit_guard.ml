@@ -55,10 +55,14 @@ let rec jmp_to_guard tname = function
     end
   | Let (x, e, t) -> Let (x, e, jmp_to_guard tname t)
 
-let rec create_tj reg trace_name ?wlist:(ws = []) cont =
-  let free_vars = List.unique (fv cont) in
-  let t = restore reg cont free_vars in
-  jmp_to_guard trace_name t
+module TJ : sig
+  val create : reg -> string -> ?wlist:'a list -> t -> t
+end = struct
+  let create reg trace_name ?wlist:(ws = []) cont =
+    let free_vars = List.unique (fv cont) in
+    let t = restore reg cont free_vars in
+    jmp_to_guard trace_name t
+end
 
 let rec create reg tj_env ?wlist:(ws = []) cont =
   let free_vars = List.unique (fv cont) in
