@@ -89,7 +89,7 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
       ~red_names:(!Config.reds)
   in
   let trace = JT.run prog reg mem env in
-  (* Asm.print_fundef trace; *)
+  Asm.print_fundef trace;
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
     emit_dyn oc prog `Meta_tracing trace_name trace;
@@ -115,11 +115,12 @@ let jit_exec pc st_ptr sp stack =
     match Trace_prof.find_opt pc with
     | Some (tname) ->
       (* Debug.print_stack stack; Printf.printf "[sp] %d\n" sp; *)
-      Printf.printf "[tj] executing %s (sp: %d) ...\n" tname sp;
+      Printf.printf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc sp;
       let s = Unix.gettimeofday () in
       let _ = exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp in
       let e = Unix.gettimeofday () in
       Printf.printf "[tj] ellapsed time: %f μ s\n" ((e -. s) *. 1e6);
+      flush stdout;
       ()
     | None -> ()
   end
