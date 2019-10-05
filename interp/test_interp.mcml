@@ -124,6 +124,15 @@ let rec interp stack sp bytecode pc =
     -1000
 ;;
 
+let rec exec code pc =
+  let stk = Array.make 1000 0 in
+  let s = get_current_millis () in
+  let r = interp stk 0 code pc in
+  let e = get_current_millis () in
+  print_int (e - s); print_newline ();
+  print_int r; print_newline ()
+;;
+
 (* fib *)
 let code = Array.make 50 0 in
 save_bp ();
@@ -162,13 +171,7 @@ code.(31) <- 17;
 code.(32) <- 7;
 code.(33) <- 1;
 code.(34) <- 10;
-(* let st = Array.make 2000 (0) in
- * let s = get_current_millis () in
- * let res = (interp st 0 code 29) in
- * let e = get_current_millis () in
- * print_newline ();
- * print_int (e - s); print_newline ();
- * print_int res; print_newline (); *)
+(* exec code 29; *)
 
 (* sum *)
 let code = Array.make 50 0 in
@@ -203,12 +206,7 @@ code.(26) <- 5000;
 code.(27) <- 7;
 code.(28) <- 1;
 code.(29) <- 10;
-let st = Array.make 100 0 in
-let s = get_current_millis () in
-let res = (interp st 0 code 25) in
-let e = get_current_millis () in
-print_int res; print_newline ();
-print_int (e - s); print_newline ();
+(* exec code 25; *)
 
 (* fact *)
 let code = Array.make 50 0 in
@@ -243,12 +241,7 @@ code.(26) <- 5;
 code.(27) <- 7;
 code.(28) <- 1;
 code.(29) <- 10;
-(* let st = Array.make 100 0 in
- * let s = get_current_millis () in
- * let res = (interp st 0 code 25) in
- * let e = get_current_millis () in
- * print_int res; print_newline ();
- * print_int (e - s); print_newline (); *)
+exec code 25;
 
 (* loop *)
 (* let code =
