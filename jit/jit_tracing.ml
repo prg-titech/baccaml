@@ -160,9 +160,9 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : Jit_env.e
           | C _ -> failwith "un matched pattern."
         in
         if n1 <= n2 then
-          Ans (IfGE (id_t2, C (n1), trace t1, guard t2))
+          Ans (IfGE (id_t2, C (n1), trace t2, guard t1))
         else
-          Ans (IfGE (id_t2, C (n1), guard t1, trace t2))
+          Ans (IfGE (id_t2, C (n1), guard t2, trace t1))
       | Red n1, Red n2 ->
         if n1 <= n2 then
           Ans (IfLE (id_t, id_or_imm, trace t1, guard t2))
@@ -198,7 +198,7 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : Jit_env.e
         if n1 = n2 then
           Ans (IfEq (id_t2, C (n1), trace t1, guard t2))
         else
-          Ans (IfEq (id_t, C (n1), guard t1, trace t2))
+          Ans (IfEq (id_t2, C (n1), guard t1, trace t2))
       | Red n1, Red n2 ->
         if n1 = n2 then
           Ans (IfEq (id_t, id_or_imm, trace t1, guard t2))
