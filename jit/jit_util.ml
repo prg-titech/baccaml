@@ -3,12 +3,14 @@ open Asm
 open Std
 open Jit_env
 
-exception Error
-
 let zero = "zero.0"
 
 let int_of_id_t id =
-  try id |> String.split_on_char '.' |> List.last |> int_of_string
+  try
+    id
+    |> String.split_on_char '.'
+    |> List.last
+    |> int_of_string
   with e -> id |> String.split_on_char 'u' |> List.last |> int_of_string
 
 let int_of_id_or_imm = function

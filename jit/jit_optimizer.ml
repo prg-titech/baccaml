@@ -1,3 +1,4 @@
+open Std
 open Base
 open Asm
 open Jit_env
@@ -5,16 +6,15 @@ open Jit_util
 
 let run p e reg mem = match e with
   | Nop -> Specialized (Green 0)
-  | Set n ->
-    if n = -1000 then raise Error
-    else Specialized (Green n)
+  | Set n -> Specialized (Green n)
   | Mov id_t as exp ->
-     let r = reg.(int_of_id_t id_t ) in
-     (match r with
-      | Green (n) ->
-        Specialized (Green (n))
-      | Red (n) ->
-        Not_specialized (exp, Red (n)))
+    let r = reg.(int_of_id_t id_t) in
+     begin match r with
+       | Green (n) ->
+         Specialized (Green (n))
+       | Red (n) ->
+         Not_specialized (exp, Red (n))
+     end
   | Add (id_t1, id_or_imm) as exp ->
      let r1 = reg.(int_of_id_t id_t1) in
      let r2 = match id_or_imm with
@@ -158,5 +158,6 @@ let run p e reg mem = match e with
         end
      end
   | _ ->
-    Printf.eprintf "un supported instruction: \n"; Asm.print_exp e;
-    raise Error
+    let msg = "un suported instruction" in
+    Asm.print_exp e; print_newline ();
+    failwith msg
