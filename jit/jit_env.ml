@@ -12,7 +12,7 @@ type env = {
 let create_env ~trace_name ~red_names ~index_pc ~merge_pc ~bytecode =
   { trace_name; red_names; index_pc; merge_pc; bytecode }
 
-type value = Red of int | Green of int | LightGreen of int
+type value = Red of int | Green of int
 
 type reg = value array
 

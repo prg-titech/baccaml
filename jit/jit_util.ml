@@ -18,7 +18,7 @@ let int_of_id_or_imm = function
   | C (n) -> n
 
 let value_of = function
-    Red n | Green n | LightGreen n -> n
+    Red n | Green n -> n
 
 let is_red = function
     Red _ -> true
@@ -26,8 +26,4 @@ let is_red = function
 
 let is_green = function
     Green _ -> true
-  | _ -> false
-
-let is_light_green = function
-    LightGreen _ -> true
   | _ -> false

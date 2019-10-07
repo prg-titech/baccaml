@@ -65,11 +65,11 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
         let offsetv = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
         let body' = tj p reg mem tj_env body in
         begin match (srcv, destv) with
-          | Green n1, Red n2 | LightGreen n1, Red n2 -> (
+          | Green n1, Red n2 -> (
               reg.(int_of_id_t dest) <- Green 0 ;
               mem.(n1 + (n2 * x)) <- Green (int_of_id_t id_t1 |> Array.get reg |> value_of);
               match offsetv with
-              | Green n | LightGreen n ->
+              | Green n ->
                 let id' = Id.gentmp Type.Int in
                 Let
                   ( (id_t1, Type.Int)

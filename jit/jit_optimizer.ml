@@ -27,7 +27,7 @@ let run p e reg mem = match e with
         Specialized (Green (n1 + n2))
       | Red (n1), Green (n2) ->
         Not_specialized (Add (id_t1, C (n2)), Red (n1 + n2))
-      | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
+      | Green (n1), Red (n2) ->
         let id_t' = match id_or_imm with
             V (id) -> id
           | C (n) -> failwith "Add (green, red)"
@@ -81,7 +81,7 @@ let run p e reg mem = match e with
        (match id_or_imm with
         | V (id_t) ->
            (match reg.(int_of_id_t id_t) with
-            | Green (n1) | LightGreen (n1) -> Green (n1 * x)
+            | Green (n1) -> Green (n1 * x)
             | Red (n1) -> Red (n1 * x))
         | C (n) -> Green (n * x))
      in
@@ -93,7 +93,7 @@ let run p e reg mem = match e with
      (match destld, offsetld with
       | Green (n1), Green (n2) ->
         begin match mem.(n1 + n2) with
-          | Green n | LightGreen n as value ->
+          | Green n as value ->
             Specialized (value)
           | Red n ->
             Not_specialized (Ld (zero, C (n1 + n2 / x) , x), Red n)
@@ -104,7 +104,7 @@ let run p e reg mem = match e with
          Not_specialized (Ld (id_t, id_or_imm, x), n)
       | Red (n1), Green (n2) ->
         begin match mem.(n1 + n2) with
-          | Green (n) | LightGreen (n) ->
+          | Green (n) ->
             Not_specialized (Ld (id_t, C (n1 + n2 / x), x), Red (n))
           | Red (n) ->
             Not_specialized (Ld (id_t, C (n1 + n2 / x), x), Red (n))
@@ -118,30 +118,30 @@ let run p e reg mem = match e with
      let offset' = match offset with
        | V (id_t) ->
           (match reg.(int_of_id_t id_t) with
-           | Green (n) | LightGreen (n) -> Green (n)
+           | Green (n) -> Green (n)
            | Red (n) -> Red (n))
        | C (n) -> Green (n)
      in
      begin match dest', offset' with
      | Green (n1), Green (n2) ->
         begin match src' with
-        | Green (n) | LightGreen (n) ->
+        | Green (n) ->
           mem.(n1 + n2) <- src';
           Specialized (Green (0))
         | Red (n) ->
           Not_specialized (St (src, zero, C ((n1 + n2)), x), Red (n))
         end
-     | Green (n1), Red (n2) | LightGreen (n1), Red (n2) ->
+     | Green (n1), Red (n2) ->
        failwith "St (_, green, red) isn't supported."
      | Red (n1), Green (n2) ->
        begin match src' with
-         | Green (n) | LightGreen (n) ->
+         | Green (n) ->
            mem.(n1 + n2) <- src';
            Not_specialized (St (src, dest, C ((n1 + n2)), x), Red (0))
         | Red (n) ->
            mem.(n1 + n2) <- src';
            begin match offset' with
-             | Green (n) | LightGreen (n) ->
+             | Green (n) ->
                Not_specialized (St (src, dest, C (n), x), Red (0))
              | Red (n) ->
                Not_specialized (St (src, dest, offset, x), Red (0))
@@ -149,7 +149,7 @@ let run p e reg mem = match e with
        end
      | Red (n1), Red (n2) ->
         begin match src' with
-        | Green (n) | LightGreen (n) ->
+        | Green (n) ->
            mem.(n1 + n2) <- Red (value_of src');
            Not_specialized (St (src, dest, C (n1 + n2), x), Red (0))
         | Red (n) ->
