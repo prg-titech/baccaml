@@ -32,12 +32,16 @@ let rec annotate_t is_mj t = match t with
   | Let (r, x, t) -> Let (r, x, annotate_t is_mj t)
 
 let rec annotate is_mj (Prog (table, fundefs, main) as p) =
+  let rec loop is_mj n body =
+    if n = 0 then body
+    else
+      let t = annotate_t is_mj body in
+      if body = t then body
+      else loop is_mj (n-1) t
+  in
   let { name; args; fargs; body; ret } = Fundef.find_fuzzy p "interp" in
   let other_fundefs = List.filter (fun fundef -> fundef.name <> name ) fundefs in
   let new_fundefs =
-    { name = name;
-      args = args;
-      fargs = fargs;
-      ret = ret;
-      body = annotate_t is_mj body; } :: other_fundefs in
+    { name = name; args = args; fargs = fargs; ret = ret;
+      body = loop is_mj 100 body; } :: other_fundefs in
   Prog (table, new_fundefs, main)
