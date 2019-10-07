@@ -50,9 +50,11 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
       ~trace_name:(Trace_name.value trace_name)
       ~red_names:(!Config.reds)
       ~index_pc:(List.index (get_id "pc" args) args)
-      ~merge_pc:pc_method_entry in
-  let trace = JM.run prog reg mem env in
-  Debug.with_debug (fun _ -> Asm.print_fundef trace);
+      ~merge_pc:pc_method_entry
+      ~bytecode:bytecode
+  in
+  let trace = JM.run prog reg mem env |> Simm.h in
+  Asm.print_fundef trace; print_newline ();
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
     emit_dyn oc prog `Meta_method trace_name trace;
@@ -87,6 +89,7 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
       ~merge_pc:pc
       ~trace_name:(Trace_name.value trace_name)
       ~red_names:(!Config.reds)
+      ~bytecode:bytecode
   in
   let trace = JT.run prog reg mem env in
   Asm.print_fundef trace;
@@ -146,7 +149,21 @@ let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
       end
     else
       Trace_prof.count_up pc
-    end
+  end
+
+
+let jit_method_compile bytecode stack pc sp bc_ptr st_ptr =
+  Printf.printf "pc: %d, sp: %d, bc_ptr: %d, st_ptr: %d\n" pc sp bc_ptr st_ptr;
+  let ic = file_open () in
+  let p =
+    ic |> Lexing.from_channel |> Util.virtualize
+    |> Jit_annot.annotate `Meta_method
+  in
+  close_in ic;
+  let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+  match p |> jit_method env with
+  | Ok name -> Method_prof.register (pc, name)
+  | Error e -> raise e
 
 let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
   match Method_prof.find_opt pc with
@@ -181,3 +198,4 @@ let callbacks () =
   Callback.register "jit_tracing_entry" jit_tracing_entry;
   Callback.register "jit_exec" jit_exec;
   Callback.register "jit_method_call" jit_method_call;
+  Callback.register "jit_method_compile" jit_method_compile;
