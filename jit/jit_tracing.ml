@@ -255,7 +255,7 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
 
 let rec validate t =
   let rec validate' e = match e with
-    | Set (n) when n = -1000 -> raise Error
+    | Set (n) when n = -1000 -> failwith "reached an exception"
     | IfEq (_, _, t1, t2) | IfLE (_, _, t1, t2) | IfGE (_, _, t1, t2) ->
       validate t1; validate t2
     | _ -> ()
