@@ -45,6 +45,8 @@ let rec mj p reg mem ({trace_name; index_pc; merge_pc; red_names; bytecode} as e
     mj p reg mem env body
   | Let ((x, typ), CallDir (Id.L ("min_caml_mj_call"), args, fargs), body) ->
     Let ((x, typ), CallDir (Id.L (trace_name), Util.filter_by_names red_names args, fargs), mj p reg mem env body)
+  | Let ((x, typ), CallDir (id_l, args, fargs), body) ->
+    Let ((x, typ), CallDir (id_l, args, fargs), body |> mj p reg mem env)
   | Let ((x, typ), exp, body) ->
     match exp with
     | (IfEq _ | IfGE _ | IfLE _ | SIfEq _ | SIfLE _ | SIfGE _) ->
