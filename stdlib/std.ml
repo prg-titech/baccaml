@@ -43,12 +43,6 @@ module List = struct
          else go rest (s @ [first])
     in go list []
 
-  let rec filter_map cond f = function
-    | [] -> []
-    | hd :: tl when cond hd ->
-       (f hd) :: (filter_map cond f tl)
-    | hd :: tl -> filter_map cond f tl
-
   let rec last = function
     | [] -> failwith "last"
     | [x] -> x
@@ -71,28 +65,4 @@ module List = struct
          if hd = elem then Some (i)
          else go elem tl (i + 1)
     in go elem lst 0
-end
-
-module Option = struct
-
-  let get = function
-    | Some v -> v
-    | None -> failwith "Option#value None"
-
-  let get_or_else ~cmp = function
-    | Some v -> v
-    | None -> cmp
-
-  let or_else ~cmp = function
-    | Some v -> Some v
-    | None -> cmp
-
-  let map f = function
-    | Some v -> Some (f v)
-    | None -> None
-
-  let (>==) f opt =
-    match opt with
-    | Some (v) -> f v
-    | None -> None
 end
