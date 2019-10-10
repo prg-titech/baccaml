@@ -136,7 +136,7 @@ let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
         let ic = file_open () in
         try
           let prog =
-            ic |> Lexing.from_channel |> Util.virtualize
+            ic |> Lexing.from_channel |> Opt.virtualize
             |> Jit_annot.annotate `Meta_tracing
           in
           close_in ic;
