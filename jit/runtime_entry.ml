@@ -1,6 +1,5 @@
 open Std
 open Base
-open Jit
 open Jit_env
 
 open Runtime_lib

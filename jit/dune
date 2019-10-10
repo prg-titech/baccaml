@@ -1,4 +1,11 @@
 (library
- (name          jit)
- (public_name   baccaml.jit)
- (libraries     str log std base))
+ (name dynload_stub)
+ (public_name baccaml.dybload_stub)
+ (modules dynload_stub)
+ (c_names dynloader))
+
+(library
+ (name jit)
+ (public_name baccaml.jit)
+ (modules (:standard \ dynload_stub))
+ (libraries str unix dynload_stub base log std))

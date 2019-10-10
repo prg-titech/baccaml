@@ -1,6 +1,5 @@
 open Std
 open Base
-open Jit
 
 exception Jit_compilation_failed
 

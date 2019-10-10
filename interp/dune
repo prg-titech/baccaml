@@ -2,7 +2,7 @@
  (name jit_entry)
  (public_name baccaml.entry)
  (modules jit_entry)
- (libraries runtime)
+ (libraries jit)
  (modes
   (native exe)
   (native object)
@@ -10,17 +10,17 @@
 
 (rule
  (targets stub.c)
- (deps ../runtime/stub.c)
+ (deps ../jit/stub.c)
  (action (copy %{deps} %{targets})))
 
 (rule
  (targets interop.c)
- (deps ../runtime/interop.c)
+ (deps ../jit/interop.c)
  (action (copy %{deps} %{targets})))
 
 (rule
  (targets libmincaml.S)
- (deps ../runtime/libmincaml.S)
+ (deps ../jit/libmincaml.S)
  (action (copy %{deps} %{targets})))
 
 (rule
