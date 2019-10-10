@@ -8,13 +8,14 @@ open Jit_util
 open Jit_env
 
 
-type tj_env = {
-  trace_name : string;
-  red_names : string list;
-  index_pc : int;
-  merge_pc : int;
-  mutable passed_pc : int list
-}
+type tj_env =
+  { trace_name : string;
+    red_names : string list;
+    index_pc : int;
+    merge_pc : int;
+    bytecode : int array;
+    mutable passed_pc : int list
+  }
 
 module Util = struct
   let find_pc {index_pc} args =
@@ -88,6 +89,7 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
       | _ -> optimize_exp p reg mem tj_env (dest, typ) body exp
     end
 
+
 and optimize_exp p reg mem tj_env (dest, typ) body exp =
   match Jit_optimizer.run p exp reg mem with
   | Specialized v ->
@@ -97,29 +99,31 @@ and optimize_exp p reg mem tj_env (dest, typ) body exp =
     reg.(int_of_id_t dest) <- v ;
     Let ((dest, typ), e, tj p reg mem tj_env body)
 
+
 and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
   function
   | CallDir (id_l, args, fargs) ->
-     Log.debug (Printf.sprintf "CallDir (%s)" (Id.string_of_id_l id_l)) ;
-     let fundef = Fundef.find p id_l in
-     let pc = args |> Util.find_pc tj_env |> Array.get reg in
-     let reds = args |> List.filter (fun a -> is_red reg.(int_of_id_t a)) in
-     let {merge_pc; trace_name} = tj_env in
-     if value_of pc = merge_pc && let (Id.L x) = id_l in String.contains x "interp"
-     then Ans (CallDir (Id.L trace_name, reds, []))
-     else Inlining.inline_fundef reg args fundef |> tj p reg mem tj_env
+    Log.debug (Printf.sprintf "CallDir (%s)" (Id.string_of_id_l id_l)) ;
+    let fundef = Fundef.find p id_l in
+    let pc = args |> Util.find_pc tj_env |> Array.get reg in
+    let reds = args |> List.filter (fun a -> is_red reg.(int_of_id_t a)) in
+    let {merge_pc; trace_name} = tj_env in
+    if value_of pc = merge_pc && let (Id.L x) = id_l in String.contains x "interp"
+    then Ans (CallDir (Id.L trace_name, reds, []))
+    else Inlining.inline_fundef reg args fundef |> tj p reg mem tj_env
   | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ as exp ->
-     tj_if p reg mem tj_env exp
+    tj_if p reg mem tj_env exp
   | exp ->
-     match Jit_optimizer.run p exp reg mem with
-     | Specialized v -> Ans (Set (value_of v))
-     | Not_specialized (e, v) -> Ans e
+    match Jit_optimizer.run p exp reg mem with
+    | Specialized v -> Ans (Set (value_of v))
+    | Not_specialized (e, v) -> Ans e
+
 
 and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
   let trace = tj p reg mem tj_env in
   let guard = Guard.create reg tj_env.trace_name in
   function
-  | IfLE (id_t, id_or_imm, t1, t2) ->
+  | IfLE (id_t, id_or_imm, t1, t2) | SIfLE (id_t, id_or_imm, t1, t2)->
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
     Log.debug @@ Printf.sprintf "IfLE (%s, %s) ==> %d %d"
@@ -148,77 +152,40 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
         else
           Ans (IfLE (id_t, id_or_imm, guard t1, trace t2))
     end
-  | SIfLE (id_t, id_or_imm, t1, t2) ->
-    let r1 = reg.(int_of_id_t id_t) in
-    let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
-    Log.debug @@ Printf.sprintf "IfLE (%s, %s) ==> %d %d"
-      id_t (string_of_id_or_imm id_or_imm) (value_of r1) (value_of r2);
-    begin match r1, r2 with
-      | Green n1, Green n2 ->
-        if n1 <= n2 then trace t1
-        else trace t2
-      | Red n1, Green n2 ->
-        if n1 <= n2 then
-          Ans (IfLE (id_t, C (n2), trace t1, guard t2))
-        else
-          Ans (IfLE (id_t, C (n2), guard t1, trace t2))
-      | Green n1, Red n2 ->
-        let id_t2 = match id_or_imm with
-            V (id) -> id
-          | C _ -> failwith "un matched pattern."
-        in
-        if n1 <= n2 then
-          (* Ans (
-           *   IfGE (id_t2, C (n1),
-           *         Ans (IfEq (id_t2, C (n2), trace t2, guard t1)),
-           *         guard t1)) *)
-          Ans (IfGE (id_t2, C (n1), trace t2, guard t1))
-        else
-          (* Ans (IfGE (id_t2, C (n1),
-           *            guard t2,
-           *            Ans (IfEq (id_t2, C (n2), trace t1, guard t2)))) *)
-          Ans (IfGE (id_t2, C (n2), guard t2, trace t1))
-      | Red n1, Red n2 ->
-        if n1 <= n2 then
-          Ans (IfLE (id_t, id_or_imm, trace t1, guard t2))
-        else
-          Ans (IfLE (id_t, id_or_imm, guard t1, trace t2))
-    end
-  | IfEq (id_t, id_or_imm, t1, t2) | SIfEq (id_t, id_or_imm, t1, t2)
-    when String.get_name id_t = "mode" ->
-    let r1 = reg.(int_of_id_t id_t) in
-    let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
-    Log.debug @@ Printf.sprintf "IfEq mode checking (%s, %s) ==> %d %d"
-      id_t (string_of_id_or_imm id_or_imm) (value_of r1) (value_of r2);
-    Ans (IfEq (id_t, C (200), trace t1, guard t2))
   | IfEq (id_t, id_or_imm, t1, t2) | SIfEq (id_t, id_or_imm, t1, t2) ->
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
-    Log.debug @@ Printf.sprintf "IfEq (%s, %s) ==> %d %d"
-      id_t (string_of_id_or_imm id_or_imm) (value_of r1) (value_of r2);
-    begin match r1, r2 with
-      | Green n1, Green n2 ->
-        if n1 = n2
-        then tj p reg mem tj_env t1
-        else tj p reg mem tj_env t2
-      | Red n1, Green n2 ->
-        if n1 = n2
-        then Ans (IfEq (id_t, C (n2), trace t1, guard t2))
-        else Ans (IfEq (id_t, C (n2), guard t1, trace t2))
-      | Green n1, Red n2 ->
-        let id_t2 = match id_or_imm with
-            V (id) -> id
-          | C _ -> failwith "un matched pattern."
-        in
-        if n1 = n2 then
-          Ans (IfEq (id_t2, C (n1), trace t1, guard t2))
-        else
-          Ans (IfEq (id_t2, C (n1), guard t1, trace t2))
-      | Red n1, Red n2 ->
-        if n1 = n2 then
-          Ans (IfEq (id_t, id_or_imm, trace t1, guard t2))
-        else
-          Ans (IfEq (id_t, id_or_imm, guard t1, trace t2))
+    if String.get_name id_t = "mode" then begin
+      Log.debug @@ Printf.sprintf "IfEq mode checking (%s, %s) ==> %d %d"
+        id_t (string_of_id_or_imm id_or_imm) (value_of r1) (value_of r2);
+      Ans (IfEq (id_t, C (200), trace t1, guard t2))
+    end else  begin
+      Log.debug @@ Printf.sprintf "IfEq (%s, %s) ==> %d %d"
+        id_t (string_of_id_or_imm id_or_imm) (value_of r1) (value_of r2);
+      begin match r1, r2 with
+        | Green n1, Green n2 ->
+          if n1 = n2
+          then tj p reg mem tj_env t1
+          else tj p reg mem tj_env t2
+        | Red n1, Green n2 ->
+          if n1 = n2
+          then Ans (IfEq (id_t, C (n2), trace t1, guard t2))
+          else Ans (IfEq (id_t, C (n2), guard t1, trace t2))
+        | Green n1, Red n2 ->
+          let id_t2 = match id_or_imm with
+              V (id) -> id
+            | C _ -> failwith "un matched pattern."
+          in
+          if n1 = n2 then
+            Ans (IfEq (id_t2, C (n1), trace t1, guard t2))
+          else
+            Ans (IfEq (id_t2, C (n1), guard t1, trace t2))
+        | Red n1, Red n2 ->
+          if n1 = n2 then
+            Ans (IfEq (id_t, id_or_imm, trace t1, guard t2))
+          else
+            Ans (IfEq (id_t, id_or_imm, guard t1, trace t2))
+      end
     end
   | IfGE (id_t, id_or_imm, t1, t2) | SIfGE (id_t, id_or_imm, t1, t2) ->
     let r1 = reg.(int_of_id_t id_t) in
@@ -265,16 +232,13 @@ let rec validate t =
   | Ans (e) -> validate' e
 
 let run : Asm.prog -> reg -> mem -> Jit_env.env -> Asm.fundef =
-  fun p reg mem {trace_name; red_names; index_pc; merge_pc;} ->
+  fun p reg mem {trace_name; red_names; index_pc; merge_pc; bytecode} ->
   Renaming.counter := 0;
   let (Prog (tbl, fundefs, m)) = p in
   let {body= ibody; args= iargs} = Fundef.find_fuzzy p "interp" in
-  let tj_env = { trace_name = trace_name; red_names = red_names;
-                 index_pc= index_pc; merge_pc = merge_pc ; passed_pc = [] } in
+  let tj_env = { trace_name; red_names; bytecode;
+                 index_pc; merge_pc ; passed_pc = [] } in
   let trace = ibody |> tj p reg mem tj_env in
-  validate trace;
-  { name= Id.L trace_name
+  { name= Id.L trace_name ; fargs= []; body= trace; ret= Type.Int
   ; args= iargs |> List.filter (fun arg -> List.mem (String.get_name arg) red_names)
-  ; fargs= []
-  ; body= trace
-  ; ret= Type.Int}
+  }
