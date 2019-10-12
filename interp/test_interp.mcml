@@ -19,7 +19,9 @@ let rec frame_reset stack old_base new_base ret n i =
         frame_reset stack old_base new_base ret n (i + 1));;
 
 let rec pop stack sp = stack.(sp - 1) ;;
+let rec pop2 stack sp = (stack, (sp-1), stack.(sp-1));;
 let rec push stack sp v = stack.(sp) <- v ;;
+let rec push2 stack sp v = stack.(sp) <- v; (stack, (sp+1));;
 
 let rec interp stack sp bytecode pc =
   (* print_arr stack; print_newline (); *)
