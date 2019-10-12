@@ -23,7 +23,7 @@ let annot p =
 let run_dump f =
   let inchan = open_in f in
   try
-    Lexing.from_channel inchan |> Util.virtualize |> Simm.f |> annot
+    Lexing.from_channel inchan |> Opt.virtualize |> Simm.f |> annot
     |> Asm.print_prog;
     close_in inchan
   with e -> close_in inchan ; raise e
@@ -31,7 +31,7 @@ let run_dump f =
 let run_interp f =
   let ic = open_in f in
   try
-    Lexing.from_channel ic |> Util.virtualize |> Simm.f |> annot |> Interp.f
+    Lexing.from_channel ic |> Opt.virtualize |> Simm.f |> annot |> Interp.f
     |> string_of_int |> print_endline
   with e -> close_in ic ; raise e
 
@@ -39,7 +39,7 @@ let run_compile f =
   let inchan = open_in f in
   let outchan = open_out_file f in
   try
-    Lexing.from_channel inchan |> Util.virtualize |> Simm.f |> annot
+    Lexing.from_channel inchan |> Opt.virtualize |> Simm.f |> annot
     |> RegAlloc.f |> Emit.f outchan ;
     close_in inchan ;
     close_out outchan
@@ -62,7 +62,7 @@ let spec_list =
     , Arg.Int (fun i -> Inline.threshold := i)
     , "maximum size of functions inlined" )
   ; ( "-iter"
-    , Arg.Int (fun i -> Util.limit := i)
+    , Arg.Int (fun i -> Opt.limit := i)
     , "maximum number of optimizations iterated" )
   ; ( "-type"
     , Arg.String

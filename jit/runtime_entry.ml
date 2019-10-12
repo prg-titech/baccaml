@@ -155,7 +155,7 @@ let jit_method_compile bytecode stack pc sp bc_ptr st_ptr =
   Printf.printf "pc: %d, sp: %d, bc_ptr: %d, st_ptr: %d\n" pc sp bc_ptr st_ptr;
   let ic = file_open () in
   let p =
-    ic |> Lexing.from_channel |> Util.virtualize
+    ic |> Lexing.from_channel |> Opt.virtualize
     |> Jit_annot.annotate `Meta_method
   in
   close_in ic;
@@ -176,7 +176,7 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
      let ic = file_open () in
      try
        let p =
-         ic |> Lexing.from_channel |> Util.virtualize
+         ic |> Lexing.from_channel |> Opt.virtualize
          |> Jit_annot.annotate `Meta_method
        in
        close_in ic;
