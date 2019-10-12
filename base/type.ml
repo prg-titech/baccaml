@@ -3,6 +3,7 @@ type t = (* MinCamlの型を表現するデータ型 (caml2html: type_t) *)
   | Bool
   | Int
   | Float
+  | String
   | Fun of t list * t (* arguments are uncurried *)
   | Tuple of t list
   | Array of t
@@ -14,6 +15,7 @@ let rec print_type = function
   | Bool -> print_string "Bool"
   | Int -> print_string "Int"
   | Float -> print_string "Float"
+  | String -> print_string "String"
   | Fun (xs, x) ->
      print_string "Fun (";
      xs |> List.iter (fun t -> print_type t; print_string " -> ");

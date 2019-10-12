@@ -139,7 +139,7 @@ let rec string_of_floating_point_table lst =
 (* Asm.prog to string *)
 let string_of_prog p =
   match p with
-  | Prog (xs, fundefs, t') ->
+  | Prog (xs, _, fundefs, t') ->
     let xs' = string_of_floating_point_table xs in
     let fundefs' = "[" ^ String.concat "; " (List.map string_of_fundef fundefs) ^ "]" in
     let main_exp = string_of_t t' in

@@ -24,11 +24,17 @@ let genid s =
     Printf.sprintf "%s.%d" s !counter
   end
 
+let const_counter = ref 0
+let gen_const_id s =
+  incr const_counter;
+  Printf.sprintf "L__const.%d" !const_counter
+
 let id_of_typ = function
   | Type.Unit -> "u"
   | Type.Bool -> "b"
   | Type.Int -> "i"
   | Type.Float -> "d"
+  | Type.String -> "s"
   | Type.Fun _ -> "f"
   | Type.Tuple _ -> "t"
   | Type.Array _ -> "a"

@@ -30,6 +30,8 @@
 %token THEN
 %token ELSE
 %token <Id.t> IDENT
+%token <string> STRING
+%token DQUOTE
 %token LET
 %token IN
 %token REC
@@ -88,6 +90,8 @@ simple_exp:
     { Int($1) }
   | FLOAT
     { Float($1) }
+  | STRING
+    { String($1) }
   | IDENT
     { Var($1) }
   | simple_exp DOT LPAREN exp RPAREN

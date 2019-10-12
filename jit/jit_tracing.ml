@@ -234,11 +234,12 @@ let rec validate t =
 let run : Asm.prog -> reg -> mem -> Jit_env.env -> Asm.fundef =
   fun p reg mem {trace_name; red_names; index_pc; merge_pc; bytecode} ->
   Renaming.counter := 0;
-  let (Prog (tbl, fundefs, m)) = p in
+  let (Prog (tbl, _, fundefs, m)) = p in
   let {body= ibody; args= iargs} = Fundef.find_fuzzy p "interp" in
   let tj_env = { trace_name; red_names; bytecode;
                  index_pc; merge_pc ; passed_pc = [] } in
   let trace = ibody |> tj p reg mem tj_env in
+  validate trace;
   { name= Id.L trace_name ; fargs= []; body= trace; ret= Type.Int
   ; args= iargs |> List.filter (fun arg -> List.mem (String.get_name arg) red_names)
   }

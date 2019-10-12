@@ -18,6 +18,7 @@ and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *
   | Set of int
   | SetL of Id.l
   | Mov of Id.t
+  | SMov of string
   | Neg of Id.t
   | Add of Id.t * id_or_imm
   | Sub of Id.t * id_or_imm
@@ -68,6 +69,7 @@ and print_exp = function
   | Set n -> print_string "Set ("; print_int n; print_string ")"
   | SetL id_l -> print_string "SetL ("; Id.print_id_l id_l; print_string ")"
   | Mov id -> print_string "Mov ("; print_string id; print_string ")"
+  | SMov id -> print_string "SMov ("; print_string id; print_string ")"
   | Neg id -> print_string "Neg ("; print_string id; print_string ")"
   | Add (x, y) -> print_string "Add ("; print_string x; print_semi_colon ();
                   print_id_or_imm y; print_string ")"
@@ -151,12 +153,15 @@ let print_fundef { name; args; fargs; body; ret } =
   print_t body;
   print_newline (); print_tab ();
   print_string "ret= "; Type.print_type ret; print_newline ();
-  print_string "}"
+  print_string "}"; print_newline ()
 
 (* プログラム全体 = 浮動小数点数テーブル + トップレベル関数 + メインの式 (caml2html: sparcasm_prog) *)
-type prog = Prog of (Id.l * float) list * fundef list * t
+type prog = Prog of (Id.l * float) list * (string * Id.t) list * fundef list * t
 
-let print_prog (Prog (tbl, fundefs, t)) =
+let print_prog (Prog (tbl, const, fundefs, t)) =
+  print_string "const table:\n";
+  print_tab ();
+  print_string "["; List.iter (fun (x, y) -> Printf.printf "(%s, %s), " x y) const; print_string "]\n";
   print_string "Prog (";
   print_string "["; print_string "]"; print_semi_colon ();
   fundefs
@@ -191,7 +196,7 @@ let rec remove_and_uniq xs = function
 (* free variables in the order of use (for spilling) (caml2html: sparcasm_fv) *)
 let fv_id_or_imm = function V(x) -> [x] | _ -> []
 let rec fv_exp = function
-  | Nop | Set(_) | SetL(_) | Comment(_) | Restore(_) -> []
+  | Nop | Set(_) | SetL(_) | Comment(_) | Restore(_) | SMov(_) -> []
   | Mov(x) | Neg(x) | FMovD(x) | FNegD(x) | Save(x, _) -> [x]
   | Add(x, y') | Sub(x, y') | Mul(x, y') | Ld(x, y', _) | LdDF(x, y', _) -> x :: fv_id_or_imm y'
   | St(x, y, z', _) | StDF(x, y, z', _) -> x :: y :: fv_id_or_imm z'

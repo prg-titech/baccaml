@@ -9,6 +9,7 @@ and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *
   | Set of int
   | SetL of Id.l
   | Mov of Id.t
+  | SMov of string
   | Neg of Id.t
   | Add of Id.t * id_or_imm
   | Sub of Id.t * id_or_imm
@@ -43,7 +44,7 @@ and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *
 
 type fundef = { name : Id.l; args : Id.t list; fargs : Id.t list; body : t; ret : Type.t }
 
-type prog = Prog of (Id.l * float) list * fundef list * t
+type prog = Prog of (Id.l * float) list * (string * Id.t) list * fundef list * t
 
 val string_of_id_or_imm : id_or_imm -> string
 

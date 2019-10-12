@@ -47,5 +47,5 @@ let t t = g M.empty t
 let h { name = l; args = xs; fargs = ys; body = e; ret = t } = (* トップレベル関数の即値最適化 *)
   { name = l; args = xs; fargs = ys; body = g M.empty e; ret = t }
 
-let f (Prog(data, fundefs, e)) =
-  Prog (data, List.map h fundefs , g M.empty e)
+let f (Prog(data, const, fundefs, e)) =
+  Prog (data, const, List.map h fundefs , g M.empty e)

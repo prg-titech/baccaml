@@ -23,7 +23,7 @@ module Util = struct
       | [] -> []
       | fundef :: tl -> (fundef.name, i) :: create_labels tl (i + 1)
     in
-    let Prog (table, fundefs, exp) = prog in
+    let Prog (table, _, fundefs, exp) = prog in
     let labels = create_labels fundefs 0 in
     ProgWithLabel (table, fundefs, exp, labels)
 

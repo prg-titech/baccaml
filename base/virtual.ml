@@ -4,6 +4,8 @@ open Asm
 
 let data = ref [] (* 浮動小数点数の定数テーブル (caml2html: virtual_data) *)
 
+let const = ref M.empty
+
 let classify xts ini addf addi =
   List.fold_left
     (fun acc (x, t) ->
@@ -31,9 +33,20 @@ let expand xts ini addf addi =
     (fun (offset, acc) x t ->
        (offset + 4, addi x t offset acc))
 
-let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
+(* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
+let rec g env =
+  function
   | Closure.Unit -> Ans(Nop)
   | Closure.Int(i) -> Ans(Set(i))
+  | Closure.String(s) ->
+    let s = s ^ "\0" in
+    (try
+       let id = M.find s !const in
+       Ans(SMov(id))
+     with Not_found ->
+       let id = Id.gen_const_id s in
+       const := M.add s id !const;
+       Ans(SMov(id)))
   | Closure.Float(d) ->
     let l =
       try
@@ -159,7 +172,7 @@ let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts
 
 (* プログラム全体の仮想マシンコード生成 (caml2html: virtual_f) *)
 let f (Closure.Prog(fundefs, e)) =
-  data := [];
+  data := []; const := M.empty;
   let fundefs = List.map h fundefs in
   let e = g M.empty e in
-  Prog(!data, fundefs, e)
+  Prog(!data, M.to_list !const, fundefs, e)

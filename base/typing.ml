@@ -62,7 +62,7 @@ let rec occur r1 = function (* occur check (caml2html: typing_occur) *)
 
 let rec unify t1 t2 = (* 型が合うように、型変数への代入をする (caml2html: typing_unify) *)
   match t1, t2 with
-  | Type.Unit, Type.Unit | Type.Bool, Type.Bool | Type.Int, Type.Int | Type.Float, Type.Float -> ()
+  | Type.Unit, Type.Unit | Type.Bool, Type.Bool | Type.Int, Type.Int | Type.Float, Type.Float | Type.String, Type.String -> ()
   | Type.Fun(t1s, t1'), Type.Fun(t2s, t2') ->
     (try List.iter2 unify t1s t2s
      with Invalid_argument(_) -> raise (Unify(t1, t2)));
@@ -89,6 +89,7 @@ let rec g env e = (* 型推論ルーチン (caml2html: typing_g) *)
     | Bool(_) -> Type.Bool
     | Int(_) -> Type.Int
     | Float(_) -> Type.Float
+    | String(_) -> Type.String
     | Not(e) ->
       unify Type.Bool (g env e);
       Type.Bool

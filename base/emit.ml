@@ -7,6 +7,7 @@ external getlo : float -> int32 = "getlo"
 
 let stackset = ref S.empty (* すでにSaveされた変数の集合 (caml2html: emit_stackset) *)
 let stackmap = ref [] (* Saveされた変数の、スタックにおける位置 (caml2html: emit_stackmap) *)
+
 let save x =
   stackset := S.add x !stackset;
   if not (List.mem x !stackmap) then
@@ -63,6 +64,8 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprim
   | NonTail(x), SetL(Id.L(y)) -> Printf.fprintf oc "\tmovl\t$%s, %s\n" y x
   | NonTail(x), Mov(y) ->
     if x <> y then Printf.fprintf oc "\tmovl\t%s, %s\n" y x
+  | NonTail(x), SMov(y) ->
+    if x <> y then Printf.fprintf oc "\tmovl\t$%s, %s\n" y x;
   | NonTail(x), Neg(y) ->
     if x <> y then Printf.fprintf oc "\tmovl\t%s, %s\n" y x;
     Printf.fprintf oc "\tnegl\t%s\n" x
@@ -147,7 +150,7 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprim
   | Tail, (Nop | St _ | StDF _ | Comment _ | Save _ as exp) ->
     g' oc (NonTail(Id.gentmp Type.Unit), exp);
     Printf.fprintf oc "\tret\n";
-  | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Mul _ | Ld _ as exp) ->
+  | Tail, (Set _ | SetL _ | Mov _ | SMov _ | Neg _ | Add _ | Sub _ | Mul _ | Ld _ as exp) ->
     g' oc (NonTail(regs.(0)), exp);
     Printf.fprintf oc "\tret\n";
   | Tail, (FMovD _ | FNegD _ | FAddD _ | FSubD _ | FMulD _ | FDivD _ | LdDF _  as exp) ->
@@ -276,6 +279,12 @@ and g'_args oc x_reg_cl ys zs =
     (fun (z, fr) -> Printf.fprintf oc "\tmovsd\t%s, %s\n" z fr)
     (shuffle sw zfrs)
 
+let emit_const oc const =
+  const |> List.iter begin fun (x, y) -> (* x: contents, y: id *)
+    Printf.fprintf oc "%s:\n" y;
+    Printf.fprintf oc "\t.ascii \"%s\"\n" x;
+  end
+
 (* emit the assembly of fundef *)
 let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
   Printf.fprintf oc ".globl %s\n" x;
@@ -284,7 +293,7 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
   stackmap := [];
   g oc (Tail, e)
 
-let f oc (Prog(data, fundefs, e)) =
+let f oc (Prog(data, const, fundefs, e)) =
   (* Format.eprintf "generating assembly...@."; *)
   Printf.fprintf oc ".code32\n";
   Printf.fprintf oc ".data\n";
@@ -296,6 +305,7 @@ let f oc (Prog(data, fundefs, e)) =
        Printf.fprintf oc "\t.long\t0x%lx\n" (getlo d))
     data;
   Printf.fprintf oc ".text\n";
+  emit_const oc const;
   List.iter (fun fundef -> h oc fundef) fundefs;
   Printf.fprintf oc ".globl\tmin_caml_start\n";
   Printf.fprintf oc "min_caml_start:\n";

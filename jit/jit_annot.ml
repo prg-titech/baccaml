@@ -31,7 +31,7 @@ let rec annotate_t is_mj t = match t with
     end
   | Let (r, x, t) -> Let (r, x, annotate_t is_mj t)
 
-let rec annotate is_mj (Prog (table, fundefs, main) as p) =
+let rec annotate is_mj (Prog (table, const, fundefs, main) as p) =
   let rec loop is_mj n body =
     if n = 0 then body
     else
@@ -44,4 +44,4 @@ let rec annotate is_mj (Prog (table, fundefs, main) as p) =
   let new_fundefs =
     { name = name; args = args; fargs = fargs; ret = ret;
       body = loop is_mj 100 body; } :: other_fundefs in
-  Prog (table, new_fundefs, main)
+  Prog (table, const, new_fundefs, main)
