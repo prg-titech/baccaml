@@ -48,6 +48,14 @@ and rename_t env = function
     let env' = extend_env env dest in
     Let ((env' dest, typ), rename_exp env' exp, rename_t env' body)
 
+let rename (args, t) =
+  let (args, rename) =
+    List.fold_right
+      (fun id (ids, env) ->
+         let env' = extend_env env id in
+         ((env' id) :: ids, env')) args ([], empty_env)
+  in (args, rename_t rename t)
+
 let rename_fundef ({name = name; args = args'; fargs = fargs; body = body; ret = ret;}) =
   let (args, rename) =
     List.fold_right
