@@ -76,26 +76,15 @@
 %%
 
 simple_exp:
-  | LPAREN exp RPAREN
-    { $2 }
-  | BEGIN exp END
-    { $2 }
-  | LPAREN RPAREN
-    { Unit }
-  | BEGIN END
-    { Unit }
-  | BOOL
-    { Bool($1) }
-  | INT
-    { Int($1) }
-  | FLOAT
-    { Float($1) }
-  | STRING
-    { String($1) }
-  | IDENT
-    { Var($1) }
-  | simple_exp DOT LPAREN exp RPAREN
-    { Get($1, $4) }
+  | LPAREN exp RPAREN { $2 }
+  | BEGIN exp END     { $2 }
+  | LPAREN RPAREN     { Unit }
+  | BOOL              { Bool($1) }
+  | INT               { Int($1) }
+  | FLOAT             { Float($1) }
+  | STRING            { String($1) }
+  | IDENT             { Var($1) }
+  | simple_exp DOT LPAREN exp RPAREN { Get($1, $4) }
 
 exp:
   | simple_exp { $1 }
@@ -202,39 +191,28 @@ exp:
                         (Parsing.symbol_end ())) }
 
 fundef:
-  | IDENT formal_args EQUAL exp
-    { { name = addtyp $1; args = $2; body = $4 } }
+  | IDENT formal_args EQUAL exp { { name = addtyp $1; args = $2; body = $4 } }
 
 formal_args:
-  | IDENT formal_args
-    { addtyp $1 :: $2 }
-  | IDENT
-    { [addtyp $1] }
+  | IDENT formal_args { addtyp $1 :: $2 }
+  | IDENT { [addtyp $1] }
 
 actual_args:
-  | actual_args simple_exp
-%prec prec_app
-    { $1 @ [$2] }
-  | simple_exp
-%prec prec_app
-    { [$1] }
+  | actual_args simple_exp %prec prec_app { $1 @ [$2] }
+  | simple_exp %prec prec_app { [$1] }
 
 elems:
-  | elems COMMA exp
-    { $1 @ [$3] }
-  | exp COMMA exp
-    { [$1; $3] }
+  | elems COMMA exp { $1 @ [$3] }
+  | exp COMMA exp { [$1; $3] }
 
 pat:
-  | pat COMMA IDENT
-    { $1 @ [addtyp $3] }
-  | IDENT COMMA IDENT
-    { [addtyp $1; addtyp $3] }
+  | pat COMMA IDENT { $1 @ [addtyp $3] }
+  | IDENT COMMA IDENT { [addtyp $1; addtyp $3] }
 
 arrcont:
-| { [] }
-| simple_exp { [$1] }
-| simple_exp SEMICOLON arrcont { $1 :: $3 }
+  | { [] }
+  | simple_exp { [$1] }
+  | simple_exp SEMICOLON arrcont { $1 :: $3 }
 
 arr:
-| LBRAC VBAR arrcont VBAR RBRAC { SArray $3 }
+  | LBRAC VBAR arrcont VBAR RBRAC { SArray $3 }
