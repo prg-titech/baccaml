@@ -1,2 +1,4 @@
 let x = "Hello, world!" in
-print_string x
+let y = "Foo, bar" in
+print_string x; print_newline ();
+print_string y
