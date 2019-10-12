@@ -36,6 +36,16 @@ min_caml_print_int:
 	movl	%ebp, %esp
 	popl	%ebp
 	ret
+.globl min_caml_print_string
+min_caml_print_string:
+	pushl	%ebp
+	movl	%esp, %ebp
+	ALIGNSTACK1
+	pushl	%eax
+	call	U(printf)
+	movl	%ebp, %esp
+	popl	%ebp
+	ret
 .globl min_caml_print_byte
 min_caml_print_byte:
 	pushl	%ebp
