@@ -79,6 +79,22 @@ let rec ack x y =
 let () = ack 3 8" in
   assert_equal 2045 (test ack)
 
+let test_is_prime _ =
+  let is_prime = "
+let rec mod_ n m =
+  if n < m then n
+  else mod_ (n - m) m
+in
+let rec prime_test cand i =
+  let i2 = i * i in
+  if cand < i2 then 1
+  else if mod_ cand i = 0 then 0
+  else prime_test cand (i + 1)
+in
+let () = (prime_test 37 2)
+" in
+  assert_equal 1 (test is_prime)
+
 let suite =
   "ByteCompilerTest" >::: [
     "test_fun1" >:: test_fun1;
@@ -88,7 +104,8 @@ let suite =
     "test_gcd" >:: test_gcd;
     "test_fib" >:: test_fib;
     "test_sum" >:: test_sum;
-    "test_ack" >:: test_ack
+    "test_ack" >:: test_ack;
+    "test_is_prime" >:: test_is_prime
   ]
 
 let () =
