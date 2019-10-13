@@ -6,8 +6,8 @@ usage () {
 }
 
 filename=$1
-[ -z ${filename} ] && usage; exit 1
 output_asm="${filename%.*}".s
 output_exe="${filename%.*}".exe
-dune exec bin/min_caml.exe $1
-gcc -m32 -O2 -lm stub/stub.c stub/libmincaml.S ${output_asm} -o ${output_exe}
+
+dune exec bin/min_caml.exe $1 && \
+  gcc -m32 -O2 -lm stub/stub.c stub/libmincaml.S $(pwd)/${output_asm} -o $(pwd)/${output_exe}
