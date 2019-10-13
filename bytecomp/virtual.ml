@@ -96,11 +96,31 @@ end = struct
     JUMP;
     METHOD_ENTRY;
     EQ;
-    |]
+  |]
+
+  let insts_has_arg = [
+    (UNIT, 0);
+    (ADD, 0);
+    (SUB, 0);
+    (MUL, 0);
+    (LT, 0);
+    (CONST, 1);
+    (JUMP_IF_ZERO, 1);
+    (CALL, 1);
+    (RET, 1);
+    (DUP, 1);
+    (HALT, 0);
+    (FRAME_RESET, 0);
+    (POP1, 0);
+    (JUMP, 1);
+    (METHOD_ENTRY, 0);
+    (EQ, 0);
+  ]
 
   let index_of element array =
     fst(List.find (fun (_,v) -> v=element)
           (List.mapi (fun idx v -> (idx,v)) (Array.to_list array)) )
+
   let int_of_inst = function
     | Literal n -> n
     | Ldef lbl | Lref lbl -> failwith("unresolved "^lbl)
