@@ -19,9 +19,7 @@ let rec frame_reset stack old_base new_base ret n i =
         frame_reset stack old_base new_base ret n (i + 1));;
 
 let rec pop stack sp = stack.(sp - 1) ;;
-let rec pop2 stack sp = (stack, (sp-1), stack.(sp-1));;
 let rec push stack sp v = stack.(sp) <- v ;;
-let rec push2 stack sp v = stack.(sp) <- v; (stack, (sp+1));;
 
 let rec interp stack sp bytecode pc =
   (* print_arr stack; print_newline (); *)
@@ -68,12 +66,12 @@ let rec interp stack sp bytecode pc =
     if is_mj () then (
       stack.(sp) <- 100;
       let sp2 = sp + 1 in
-      let r = mj_call stack sp2 bytecode addr in
+      let r = interp stack sp2 bytecode addr in
       (* offset size *)
       (* ack n => sp - 1 *)
       (* tack x y z => sp - 3 *)
       stack.(sp - 1) <- r;
-      interp stack (sp - 0) bytecode (pc + 2)
+      interp stack (sp) bytecode (pc + 2)
     ) else (
       stack.(sp) <- pc + 2;
       stack.(sp + 1) <- 200;
@@ -124,7 +122,7 @@ let rec interp stack sp bytecode pc =
     let v = stack.(sp - 1) in
     let _ = stack.(sp - 2) in
     stack.(sp - 2) <- v;
-    interp stack (sp - 2) bytecode (pc + 1)
+    interp stack (sp - 1) bytecode (pc + 1)
   else if instr = 13 then       (* JUMP *)
     let addr = bytecode.(pc + 1) in
     @if addr < pc then (
@@ -135,16 +133,23 @@ let rec interp stack sp bytecode pc =
   else if instr = 14 then       (* METHOD_ENTRY *)
     (method_entry ();
      interp stack sp bytecode (pc + 1))
-  else if instr = 15 then       (* DUP0 *)
-    let v = stack.(sp - 1) in
+  else if instr = 15 then       (* EQ *)
+    let v1 = stack.(sp - 1) in
+    let v2 = stack.(sp - 2) in
+    let v = (if v1 = v2 then 1 else 0) in
+    stack.(sp - 2) <- v;
+    interp stack (sp - 1) bytecode (pc + 1)
+  else if instr = 16 then
+    let n = bytecode.(pc + 1) in
+    let v = stack.(sp - n - 1) in
     stack.(sp) <- v;
-    interp stack (sp + 1) bytecode (pc + 1)
+    interp stack (sp + 1) bytecode (pc + 2)
   else
     -1000
 ;;
 
 let rec exec code pc =
-  let stk = Array.make 5000 0 in
+  let stk = Array.make 3000 0 in
   let s = get_current_millis () in
   let r = interp stk 0 code pc in
   let e = get_current_millis () in
@@ -153,7 +158,7 @@ let rec exec code pc =
 ;;
 
 (* fib *)
-let code = Array.make 50 0 in
+(* let code = Array.make 50 0 in
 save_bp ();
 code.(0) <- 14;
 code.(1) <- 9;
@@ -192,7 +197,7 @@ code.(33) <- 1;
 code.(34) <- 10;
 exec code 29;
 
-finish_exec ();
+   finish_exec (); *)
 
 (* sum *)
 (* let code = Array.make 50 0 in
@@ -345,4 +350,53 @@ exec code 52; *)
  *
  * finish_exec () *)
 
+(* is_prime *)
+let code = Array.make 100 0 in
+save_bp ();
+let code = Array.make 100 0 in
+save_bp ();
+code.(0) <- 14;
+code.(1) <- 9; code.(2) <- 2;
+code.(3) <- 9; code.(4) <- 2;
+code.(5) <- 4;
+code.(6) <- 6; code.(7) <- 12;
+code.(8) <- 9; code.(9) <- 2;
+code.(10) <- 13; code.(11) <- 21;
+code.(12) <- 9; code.(13) <- 2;
+code.(14) <- 9; code.(15) <- 2;
+code.(16) <- 2;
+code.(17) <- 9; code.(18) <- 2;
+code.(19) <- 7; code.(20) <- 1;
+code.(21) <- 8; code.(22) <- 2;
+code.(23) <- 14;
+code.(24) <- 9; code.(25) <- 1;
+code.(26) <- 9; code.(27) <- 2;
+code.(28) <- 3;
+code.(29) <- 9; code.(30) <- 3;
+code.(31) <- 16; code.(32) <- 1;
+code.(33) <- 4;
+code.(34) <- 6; code.(35) <- 40;
+code.(36) <- 5; code.(37) <- 1;
+code.(38) <- 13; code.(39) <- 64;
+code.(40) <- 9; code.(41) <- 3;
+code.(42) <- 9; code.(43) <- 3;
+code.(44) <- 7; code.(45) <- 1;
+code.(46) <- 5; code.(47) <- 0;
+code.(48) <- 15;
+code.(49) <- 6; code.(50) <- 55;
+code.(51) <- 5; code.(52) <- 0;
+code.(53) <- 13; code.(54) <- 64;
+code.(55) <- 9; code.(56) <- 3;
+code.(57) <- 9; code.(58) <- 3;
+code.(59) <- 5; code.(60) <- 1;
+code.(61) <- 1;
+code.(62) <- 7; code.(63) <- 24;
+code.(64) <- 12; code.(65) <- 8;
+code.(66) <- 2;
+code.(67) <- 14;
+code.(68) <- 5; code.(69) <- 239;
+code.(70) <- 5; code.(71) <- 2;
+code.(72) <- 7; code.(73) <- 24;
+code.(74) <- 10;
+exec code 68;
 ()
