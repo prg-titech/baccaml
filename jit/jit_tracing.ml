@@ -99,7 +99,6 @@ and optimize_exp p reg mem tj_env (dest, typ) body exp =
 and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
   function
   | CallDir (id_l, args, fargs) ->
-    Log.debug (Printf.sprintf "CallDir (%s)" (Id.string_of_id_l id_l)) ;
     let fundef = Fundef.find p id_l in
     let pc = args |> Util.find_pc tj_env |> Array.get reg in
     let reds = args |> List.filter (fun a -> is_red reg.(int_of_id_t a)) in
@@ -122,9 +121,8 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
   | IfLE (id_t, id_or_imm, t1, t2) | SIfLE (id_t, id_or_imm, t1, t2)->
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
-    Log.debug @@ Printf.sprintf "IfLE (%s, %s) ==> %d %d"
-      id_t (string_of_id_or_imm id_or_imm) (value_of r1) (value_of r2);
-    begin match r1, r2 with
+    begin
+      match r1, r2 with
       | Green n1, Green n2 ->
         if n1 <= n2 then trace t1
         else trace t2
@@ -155,9 +153,7 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
       Log.debug @@ Printf.sprintf "IfEq mode checking (%s, %s) ==> %d %d"
         id_t (string_of_id_or_imm id_or_imm) (value_of r1) (value_of r2);
       Ans (IfEq (id_t, C (200), trace t1, guard t2))
-    end else  begin
-      Log.debug @@ Printf.sprintf "IfEq (%s, %s) ==> %d %d"
-        id_t (string_of_id_or_imm id_or_imm) (value_of r1) (value_of r2);
+    end else
       begin match r1, r2 with
         | Green n1, Green n2 ->
           if n1 = n2
@@ -182,12 +178,9 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
           else
             Ans (IfEq (id_t, id_or_imm, guard t1, trace t2))
       end
-    end
   | IfGE (id_t, id_or_imm, t1, t2) | SIfGE (id_t, id_or_imm, t1, t2) ->
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
-    Log.debug @@ Printf.sprintf "IfEq (%s, %s) ==> %d %d"
-      id_t (string_of_id_or_imm id_or_imm) (value_of r1) (value_of r2);
     begin
       match r1, r2 with
       | Green n1, Green n2 ->
