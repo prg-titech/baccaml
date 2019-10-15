@@ -52,13 +52,9 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
      in
      Asm.concat callee (dest, typ) (tj p reg mem tj_env body)
   | Let ((dest, typ), exp, body) ->
-    begin match exp with
-      | IfEq (id_t, id_or_imm, t1, t2)
-      | IfLE (id_t, id_or_imm, t1, t2)
-      | IfGE (id_t, id_or_imm, t1, t2)
-      | SIfEq (id_t, id_or_imm, t1, t2)
-      | SIfLE (id_t, id_or_imm, t1, t2)
-      | SIfGE (id_t, id_or_imm, t1, t2) ->
+    begin
+      match exp with
+      | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ ->
         Asm.concat (tj_if p reg mem tj_env exp) (dest, typ) (tj p reg mem tj_env body)
       | St (id_t1, id_t2, id_or_imm, x) ->
         let srcv = reg.(int_of_id_t id_t1) in
