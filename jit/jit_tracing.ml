@@ -42,7 +42,6 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
   | Let ((dest, typ), CallDir (Id.L "min_caml_jit_merge_point", args, fargs), body) ->
     let pc = List.hd args |> int_of_id_t |> Array.get reg |> value_of in
     Log.debug @@ Printf.sprintf "jit_merge_point: pc %d" pc;
-    tj_env.passed_pc <- tj_env.passed_pc @ [pc];
     tj p reg mem tj_env body
   | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
      let callee =
@@ -61,32 +60,29 @@ let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) 
         let destv = reg.(int_of_id_t id_t2) in
         let offsetv = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
         let body' = tj p reg mem tj_env body in
-        begin match (srcv, destv) with
-          | Green n1, Red n2 -> (
-              reg.(int_of_id_t dest) <- Green 0 ;
-              mem.(n1 + (n2 * x)) <- Green (int_of_id_t id_t1 |> Array.get reg |> value_of);
+        begin
+          match (srcv, destv) with
+          | Green n1, Red n2 ->
+            reg.(int_of_id_t dest) <- Green 0 ;
+            mem.(n1 + (n2 * x)) <- Green (int_of_id_t id_t1 |> Array.get reg |> value_of);
+            begin
               match offsetv with
               | Green n ->
                 let id' = Id.gentmp Type.Int in
-                Let
-                  ( (id_t1, Type.Int)
-                  , Set n1
-                  , Let
-                      ( (id', Type.Int)
-                      , Set n
-                      , Let ((dest, typ), St (id_t1, id_t2, C n, x), body') ) )
+                Let ((id_t1, Type.Int), Set n1
+                    , Let ((id', Type.Int), Set n
+                          , Let ((dest, typ), St (id_t1, id_t2, C n, x), body') ) )
               | Red n ->
-                Let
-                  ( (id_t1, Type.Int)
-                  , Set n1
-                  , Let ((dest, typ), St (id_t1, id_t2, id_or_imm, x), body') ) )
-          | _ -> optimize_exp p reg mem tj_env (dest, typ) body exp
+                Let ( (id_t1, Type.Int), Set n1
+                    , Let ((dest, typ), St (id_t1, id_t2, id_or_imm, x), body') )
+            end
+          | _ -> body |> optimize_exp p reg mem tj_env (dest, typ) exp
         end
-      | _ -> optimize_exp p reg mem tj_env (dest, typ) body exp
+      | _ -> body |> optimize_exp p reg mem tj_env (dest, typ) exp
     end
 
 
-and optimize_exp p reg mem tj_env (dest, typ) body exp =
+and optimize_exp p reg mem tj_env (dest, typ) exp body =
   match Jit_optimizer.run p exp reg mem with
   | Specialized v ->
     reg.(int_of_id_t dest) <- v ;
@@ -154,7 +150,8 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
         id_t (string_of_id_or_imm id_or_imm) (value_of r1) (value_of r2);
       Ans (IfEq (id_t, C (200), trace t1, guard t2))
     end else
-      begin match r1, r2 with
+      begin
+        match r1, r2 with
         | Green n1, Green n2 ->
           if n1 = n2
           then tj p reg mem tj_env t1
