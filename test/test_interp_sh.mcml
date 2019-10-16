@@ -21,6 +21,11 @@ let rec frame_reset stack old_base new_base ret n i =
   else (stack.(old_base + i) <- stack.(new_base + i);
         frame_reset stack old_base new_base ret n (i + 1));;
 
+(* declaring a casting function: int array -> int *)
+let rec cast_fAII x = x ;;
+(* declaring a casting function: int -> int array *)
+let rec cast_fIAI x = x ;;
+
 let rec pop stack sp = stack.(sp - 1) ;;
 let rec push stack sp v = stack.(sp) <- v ;;
 let rec debug_code stack sp code pc =
@@ -150,6 +155,23 @@ let rec interp stack sp bytecode pc =
     let v = stack.(sp - n - 1) in
     stack.(sp) <- v;
     interp stack (sp + 1) bytecode (pc + 2)
+  else if instr = 17 then          (* ARRAYMAKE *)
+    let size = bytecode.(pc + 1) in
+    let init = bytecode.(pc + 2) in
+    let a = Array.make size init in
+    stack.(sp) <- cast_fAII(a);
+    interp stack (sp + 1) bytecode (pc + 3)
+  else if instr = 18 then          (* LOAD *)
+    let arr = cast_fIAI(stack.(sp - 1)) in
+    let n = bytecode.(pc + 1) in
+    stack.(sp) <- arr.(n);
+    interp stack (sp + 1) bytecode (pc + 2)
+  else if instr = 19 then          (* STORE *)
+    let arr = cast_fIAI(stack.(sp - 1)) in
+    let n = bytecode.(pc + 1) in
+    let v = stack.(sp - 1) in
+    arr.(n) <- v;
+    interp stack sp bytecode (pc + 2)
   else
     -1000
 ;;
