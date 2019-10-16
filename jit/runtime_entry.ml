@@ -78,7 +78,7 @@ let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   reg.(sp_ir_addr) <- Red sp ;
   reg.(bc_ir_addr) <- Green Internal_conf.bc_tmp_addr ;
   reg.(st_ir_addr) <- Red Internal_conf.st_tmp_addr ;
-  let module JT = Jit_tracing in
+  let module JT = Jit_tracing_v2 in
   let trace_name = Trace_name.gen `Meta_tracing in
   let env =
     Jit_env.create_env
@@ -127,24 +127,25 @@ let jit_exec pc st_ptr sp stack =
     | None -> ()
   end
 
+
 let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
   with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
     if Trace_prof.over_threshold pc then
       begin match Trace_prof.find_opt pc with
-      | Some _ -> ()
-      | None ->
-        let ic = file_open () in
-        try
-          let prog =
-            ic |> Lexing.from_channel |> Opt.virtualize
-            |> Jit_annot.annotate `Meta_tracing
-          in
-          close_in ic;
-          let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-          match prog |> jit_tracing env with
-          | Ok name -> Trace_prof.register (pc, name);
-          | Error e -> raise e
-        with e -> close_in ic; ()
+        | Some _ -> ()
+        | None ->
+          let ic = file_open () in
+          try
+            let prog =
+              ic |> Lexing.from_channel |> Opt.virtualize
+              |> Jit_annot.annotate `Meta_tracing
+            in
+            close_in ic;
+            let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+            match prog |> jit_tracing env with
+            | Ok name -> Trace_prof.register (pc, name);
+            | Error e -> raise e
+          with e -> close_in ic; ()
       end
     else
       Trace_prof.count_up pc
