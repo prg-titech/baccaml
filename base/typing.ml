@@ -26,6 +26,7 @@ let rec deref_term = function
   | Not(e) -> Not(deref_term e)
   | Neg(e) -> Neg(deref_term e)
   | Add(e1, e2) -> Add(deref_term e1, deref_term e2)
+  | Mul(e1, e2) -> Mul(deref_term e1, deref_term e2)
   | Sub(e1, e2) -> Sub(deref_term e1, deref_term e2)
   | Eq(e1, e2) -> Eq(deref_term e1, deref_term e2)
   | LE(e1, e2) -> LE(deref_term e1, deref_term e2)
@@ -84,6 +85,7 @@ let rec g env e = (* 型推論ルーチン (caml2html: typing_g) *)
   try
     match e with
     | Unit -> Type.Unit
+    | String(_) -> Type.String
     | Bool(_) -> Type.Bool
     | Int(_) -> Type.Int
     | Float(_) -> Type.Float
@@ -93,7 +95,7 @@ let rec g env e = (* 型推論ルーチン (caml2html: typing_g) *)
     | Neg(e) ->
         unify Type.Int (g env e);
         Type.Int
-    | Add(e1, e2) | Sub(e1, e2) -> (* 足し算（と引き算）の型推論 (caml2html: typing_add) *)
+    | Add(e1, e2) | Sub(e1, e2) | Mul(e1, e2)-> (* 足し算（と引き算）の型推論 (caml2html: typing_add) *)
         unify Type.Int (g env e1);
         unify Type.Int (g env e2);
         Type.Int
@@ -107,7 +109,7 @@ let rec g env e = (* 型推論ルーチン (caml2html: typing_g) *)
     | Eq(e1, e2) | LE(e1, e2) ->
         unify (g env e1) (g env e2);
         Type.Bool
-    | If(e1, e2, e3) ->
+    | If(e1, e2, e3) | SIf(e1, e2, e3) ->
         unify (g env e1) Type.Bool;
         let t2 = g env e2 in
         let t3 = g env e3 in
