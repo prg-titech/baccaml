@@ -10,6 +10,17 @@ type t = (* MinCamlの型を表現するデータ型 (caml2html: type_t) *)
   | Var of t option ref
 [@@deriving show]
 
+let rec type_of_string : string -> t = fun x ->
+  match x with
+  | "unit" | "Unit" -> Unit
+  | "int" | "Int" -> Int
+  | "float" | "Float" -> Float
+  | "string" | "String" -> String
+  | "arr" | "array" | "Array" -> Array Int
+  | "arrint" | "arrayint" | "ArrayInt" -> Array Int
+  | "arrfloat" | "arrayfloat" | "ArrayFloat" -> Array Float
+  | _ -> failwith @@ Printf.sprintf "un matched pattern, %s" x
+
 let rec print_type = function
   | Unit -> print_string "Unit"
   | Bool -> print_string "Bool"

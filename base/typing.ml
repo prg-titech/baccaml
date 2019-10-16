@@ -127,9 +127,18 @@ let rec g env e = (* 型推論ルーチン (caml2html: typing_g) *)
       extenv := M.add x t !extenv;
       t
     | LetRec({ name = (x, t); args = yts; body = e1 }, e2) -> (* let recの型推論 (caml2html: typing_letrec) *)
-      let env = M.add x t env in
-      unify t (Type.Fun(List.map snd yts, g (M.add_list yts env) e1));
-      g env e2
+      let r = Str.regexp "[a-z0-9]*\\_\\_to\\\\__[a-zA-Z0-9]*" in
+      if Str.string_match r x 0 then
+        let r = Str.regexp "\\_\\_to\\_\\_" in
+        let splitted = Str.split r x in
+        assert (List.length splitted = 2);
+        let from, to_ = List.(nth splitted 0, nth splitted 1) in
+        unify t (Type.(Fun ([type_of_string from], type_of_string to_)));
+        g env e2
+      else
+        let env = M.add x t env in
+        unify t (Type.Fun(List.map snd yts, g (M.add_list yts env) e1));
+        g env e2
     | App(e, es) -> (* 関数適用の型推論 (caml2html: typing_app) *)
       let t = Type.gentyp () in
       unify (g env e) (Type.Fun(List.map (g env) es, t));
