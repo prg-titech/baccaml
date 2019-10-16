@@ -3,6 +3,14 @@ open Asm
 open Jit_util
 open Renaming
 
+let rec reg_set reg argsr argst =
+  match argst, argsr with
+  | [], [] -> ()
+  | hdt :: tlt, hdr :: tlr ->
+    reg.(int_of_id_t hdt) <- reg.(int_of_id_t hdr);
+    reg_set reg tlt tlr
+  | _ -> failwith "length of argsr and argst isn't equal"
+
 let rec inline_args reg argsr argst funbody =
   match argsr, argst with
   | [], [] ->
@@ -18,3 +26,7 @@ let rec inline_args reg argsr argst funbody =
 let inline_fundef reg argsr fundef =
   let { args; body } = Renaming.rename_fundef fundef in
   inline_args reg argsr args body
+
+let inline_fundef' reg argsr fundef =
+  let { args= argst; body } = Renaming.rename_fundef fundef in
+  inline_args reg argsr argst body, reg
