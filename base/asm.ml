@@ -1,5 +1,6 @@
 (* 2オペランドではなく3オペランドのx86アセンブリもどき *)
 type id_or_imm = V of Id.t | C of int
+[@@deriving show]
 
 let string_of_id_or_imm = function
   | V (id) -> "V " ^ id
@@ -12,6 +13,7 @@ let rec print_id_or_imm = function
 type t = (* 命令の列 (caml2html: sparcasm_t) *)
   | Ans of exp
   | Let of (Id.t * Type.t) * exp * t
+[@@deriving show]
 
 and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *)
   | Nop
@@ -50,6 +52,7 @@ and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *
   | CallDir of Id.l * Id.t list * Id.t list
   | Save of Id.t * Id.t (* レジスタ変数の値をスタック変数へ保存 (caml2html: sparcasm_save) *)
   | Restore of Id.t (* スタック変数から値を復元 (caml2html: sparcasm_restore) *)
+[@@deriving show]
 
 let print_tab () = print_string "  "
 
