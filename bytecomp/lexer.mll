@@ -25,6 +25,11 @@ rule token = parse
   | "if"      { IF }
   | "then"    { THEN }
   | "else"    { ELSE }
+  | "Array.make" { ARRAY_MAKE }
+  | "->"      { MINUS_GREATER }
+  | "<-"      { LESS_MINUS }
+  | ";"       { SEMICOLON }
+  | '.'       { DOT }
   | eof       { EOF }
   | lower (digit|lower|upper|'_')* { VAR(Lexing.lexeme lexbuf) }
   | _

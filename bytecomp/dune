@@ -4,7 +4,7 @@
 (library
  (name bytegen_lib)
  (public_name baccaml.bytegen_lib)
- (modules :standard \ bytegen bytegen_test virtual_test)
+ (modules :standard \ bytegen)
  (preprocess (pps ppx_deriving.show)))
 
 (executable
@@ -13,8 +13,3 @@
  (public_name baccaml.bytegen)
  (libraries bytegen_lib)
  (preprocess (pps ppx_deriving.show)))
-
-(tests
- (names bytegen_test virtual_test)
- (modules bytegen_test virtual_test)
- (libraries bytegen_lib oUnit))
