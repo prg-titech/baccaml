@@ -32,6 +32,9 @@ module VM : sig
     | JUMP (* addr *)
     | METHOD_ENTRY
     | EQ
+    | ARRAY_MAKE
+    | GET
+    | PUT
     (* the following constructors do not represent instructions but
        are defined for expressing operands of some instructions as
        well as label declarations and references *)
@@ -41,8 +44,9 @@ module VM : sig
 
   val max_stack_depth : int
 
-  type stack = int * int array
-  val interp : int array -> int -> stack -> int
+  type value = Int of int | Array of int array
+  type stack = int * value array
+  val interp : int array -> int -> stack -> value
 
   val int_of_inst : inst -> int
   val string_of : inst -> string (* for debugging *)
@@ -71,6 +75,9 @@ end = struct
     | JUMP
     | METHOD_ENTRY
     | EQ
+    | ARRAY_MAKE
+    | GET
+    | PUT
     | Literal of int
     | Lref of string
     | Ldef of string
@@ -96,26 +103,10 @@ end = struct
     JUMP;
     METHOD_ENTRY;
     EQ;
+    ARRAY_MAKE;
+    GET;
+    PUT;
   |]
-
-  let insts_has_arg = [
-    (UNIT, 0);
-    (ADD, 0);
-    (SUB, 0);
-    (MUL, 0);
-    (LT, 0);
-    (CONST, 1);
-    (JUMP_IF_ZERO, 1);
-    (CALL, 1);
-    (RET, 1);
-    (DUP, 1);
-    (HALT, 0);
-    (FRAME_RESET, 0);
-    (POP1, 0);
-    (JUMP, 1);
-    (METHOD_ENTRY, 0);
-    (EQ, 0);
-  ]
 
   let index_of element array =
     fst(List.find (fun (_,v) -> v=element)
@@ -140,12 +131,31 @@ end = struct
      should decouple the pair.
   *)
 
-  type stack = int * int array
-  let push : stack -> int -> stack =
+  type value = Int of int | Array of int array
+
+  module Value = struct
+    let (|+|) v1 v2 = match v1, v2 with
+      | Int i, Int j -> Int (i + j)
+      | _ -> failwith "invalid value"
+
+    let (|-|) v1 v2 = match v1, v2 with
+      | Int i, Int j -> Int (i - j)
+      | _ -> failwith "invalid value"
+
+    let (|*|) v1 v2 = match v1, v2 with
+      | Int i, Int j -> Int (i * j)
+      | _ -> failwith "invalid value"
+
+    let int_of_value = function Int i -> i | _ -> failwith "array is not int"
+    let array_of_value = function Array arr -> arr | _ -> failwith "int is not array"
+  end
+
+  type stack = int * value array
+  let push : stack -> value -> stack =
     fun (sp,stack) v -> stack.(sp)<-v; (sp+1,stack)
-  let pop  : stack -> (int * stack) =
+  let pop  : stack -> (value * stack) =
     fun (sp,stack) -> (stack.(sp-1), (sp-1, stack))
-  let take : stack -> int -> int =
+  let take : stack -> int -> value =
     fun (sp,stack) n -> stack.(sp-n-1)
   let drop : stack -> int -> stack =
     fun (sp,stack) n -> (sp-n,stack)
@@ -159,7 +169,7 @@ end = struct
         else (stack.(old_base+i)<-stack.(new_base+i);
               loop (i+1)) in
       loop 0
-  let make_stack () = (0, Array.make max_stack_depth 0)
+  let make_stack () = (0, Array.make max_stack_depth (Int 0))
 
   (* let test_stack =(9,  [|1;2;3;4;5;6;7;8;9|])
    * let reset_result = frame_reset test_stack 2 2 3
@@ -194,95 +204,102 @@ end = struct
         else counter := !counter - 1
     else fun () -> ()
 
+
   let rec interp  code pc stack =
     checkpoint ();
     (* Printf.printf "%s %s\n"
                   (code_at_pc code pc) (dump_stack stack); *)
 
+    let open Value in
     if pc<0 then fst(pop stack) else
       let i,pc = fetch code pc in
       match insts.(i) with
       | UNIT ->
-        interp code (pc + 1) stack
+         interp code (pc + 1) stack
       | ADD ->
-        let v2,stack = pop stack in
-        let v1,stack = pop stack in
-        let    stack = push stack (v1+v2) in
-        interp  code pc stack
+         let v2,stack = pop stack in
+         let v1,stack = pop stack in
+         let    stack = push stack (v1 |+| v2) in
+         interp  code pc stack
       | SUB -> let v2,stack = pop stack in
-        let v1,stack = pop stack in
-        let    stack = push stack (v1-v2) in
-        interp  code pc stack
+               let v1,stack = pop stack in
+               let    stack = push stack (v1 |-| v2) in
+               interp  code pc stack
       | MUL -> let v2,stack = pop stack in
-        let v1,stack = pop stack in
-        let    stack = push stack (v1*v2) in
-        interp  code pc stack
+               let v1,stack = pop stack in
+               let    stack = push stack (v1 |*| v2) in
+               interp  code pc stack
       | LT ->  let v2,stack = pop stack in
-        let v1,stack = pop stack in
-        let    stack = push stack (if v1<v2 then 1 else 0) in
-        interp  code pc stack
+               let v1,stack = pop stack in
+               let    stack = push stack (if v1<v2 then Int 1 else Int 0) in
+               interp  code pc stack
       | CONST -> let c,pc = fetch code pc in
-        let stack = push stack c in
-        interp  code pc stack
+                 let stack = push stack (Int c) in
+                 interp  code pc stack
       | JUMP_IF_ZERO (* addr *) ->
-        let addr,pc = fetch code pc in
-        let v,stack = pop stack in
-        (* interp  code (if v=0 then addr else pc) stack *)
-        if v=0
-        then interp code addr stack
-        else interp code pc   stack
+         let addr,pc = fetch code pc in
+         let v,stack = pop stack in
+         (* interp  code (if v=0 then addr else pc) stack *)
+         if v = Int (0)
+         then interp code addr stack
+         else interp code pc   stack
       | CALL (* addr *) ->
-        (* calling a function will create a new operand stack and lvars  *)
-        let addr,pc = fetch code pc  in
-        let stack = push stack pc in (* save return address *)
-        (* (let (sp,s)=stack in
-         *  if 2<sp then
-         *    (Printf.printf "%d CALL %d [%d %d ...]\n" (pc-2) addr
-         *       (s.(sp-2)) (s.(sp-3)))
-         *  else ())
-         * ; *)
-        interp  code addr stack
+         (* calling a function will create a new operand stack and lvars  *)
+         let addr,pc = fetch code pc  in
+         let stack = push stack (Int pc) in (* save return address *)
+         (* (let (sp,s)=stack in
+          *  if 2<sp then
+          *    (Printf.printf "%d CALL %d [%d %d ...]\n" (pc-2) addr
+          *       (s.(sp-2)) (s.(sp-3)))
+          *  else ())
+          * ; *)
+         interp  code addr stack
       | RET (* n *) ->
-        (* let pc0 = pc-1 in *)
-        let n,pc = fetch code pc in
-        let v,stack = pop stack in (* return value *)
-        let pc,stack = pop stack in (* return address *)
-        let stack = drop stack n in (* delete arguments *)
-        let stack = push stack v in (* restore return value *)
-        (* Printf.printf "%d RET with %d to %d\n" pc0 v pc; *)
-        interp  code pc stack
+         (* let pc0 = pc-1 in *)
+         let n,pc = fetch code pc in
+         let v,stack = pop stack in (* return value *)
+         let pc,stack = pop stack in (* return address *)
+         let stack = drop stack n in (* delete arguments *)
+         let stack = push stack v in (* restore return value *)
+         (* Printf.printf "%d RET with %d to %d\n" pc0 v pc; *)
+         interp  code (int_of_value pc) stack
       | DUP ->
-        let n,pc = fetch code pc in
-        let stack = push stack (take stack n) in
-        interp  code pc stack
+         let n,pc = fetch code pc in
+         let stack = push stack (take stack n) in
+         interp  code pc stack
       | HALT -> fst(pop stack)    (* just return the top value *)
       | FRAME_RESET (* n *) ->
-        let o,pc = fetch code pc in
-        let l,pc = fetch code pc in
-        let n,pc = fetch code pc in
-        let stack = frame_reset stack o l n in
-        interp  code pc stack
+         let o,pc = fetch code pc in
+         let l,pc = fetch code pc in
+         let n,pc = fetch code pc in
+         let stack = frame_reset stack o l n in
+         interp  code pc stack
       | POP1 ->
-        let v,stack = pop stack in
-        let _,stack = pop stack in
-        let stack = push stack v in
-        interp  code pc stack
+         let v,stack = pop stack in
+         let _,stack = pop stack in
+         let stack = push stack v in
+         interp  code pc stack
       | JUMP (* addr *)->
-        let n,_ = fetch code pc in
-        interp code n stack
+         let n,_ = fetch code pc in
+         interp code n stack
       | METHOD_ENTRY ->
-        interp code pc stack
+         interp code pc stack
       | EQ ->
-        let v2,stack = pop stack in
-        let v1,stack = pop stack in
-        let    stack = push stack (if v1 = v2 then 1 else 0) in
-        interp code pc stack
+         let v2,stack = pop stack in
+         let v1,stack = pop stack in
+         let    stack = push stack (if v1 = v2 then Int 1 else Int 0) in
+         interp code pc stack
+      | ARRAY_MAKE ->
+         let size,stack = pop stack in
+         let init,stack = pop stack in
+         let stack = push stack (Array (Array.make (int_of_value size) (int_of_value init))) in
+         interp code pc stack
 
   (* run the given program by calling the function id 0 *)
   type fundef_bin_t = int array
   let run_bin : fundef_bin_t -> int = fun fundefs ->
-    let stack = (push (make_stack ()) (-987)) in
-    interp fundefs 0 stack
+    let stack = (push (make_stack ()) (Int (-987))) in
+    Value.int_of_value @@ interp fundefs 0 stack
 
   (* convert the given program into binary, and then run *)
   type fundef_asm_t = inst array
@@ -331,64 +348,77 @@ end = struct
 
   (* compilation of expressions *)
   let rec compile_exp fenv exp env =
-    VM.(match exp with
-        | Int n -> [CONST; Literal n]
-        | Var v -> [DUP; Literal(lookup env v)]
-        | Add(e1,e2) ->
-          (compile_exp fenv e1 env) @
-          (compile_exp fenv e2 (shift_env env)) @ [ADD]
-        | Sub(e1, e2) ->
-          (compile_exp fenv e1 env) @
-          (compile_exp fenv e2 (shift_env env)) @ [SUB]
-        | Mul(e1,e2) ->
-          (compile_exp fenv e1 env) @
-          (compile_exp fenv e2 (shift_env env)) @ [MUL]
-        | LT(e1,e2) ->
-          (compile_exp fenv e1 env) @
-          (compile_exp fenv e2 (shift_env env)) @ [LT]
-        | Eq(e1, e2) ->
-          (compile_exp fenv e1 env) @
-          (compile_exp fenv e2 (shift_env env)) @ [EQ]
-        | If(cond,then_exp,else_exp) ->
-          let l2,l1 = gen_label(),gen_label() in
-          (compile_exp fenv cond env)
-          @ [JUMP_IF_ZERO; Lref l1]
-          @ (compile_exp fenv then_exp env)
-          @ [JUMP; Lref l2; (* unconditional jump *)
-             Ldef l1]
-          @ (compile_exp fenv else_exp env)
-          @ [Ldef l2]
-        | Call(fname, rands) | TCall(fname, rands) ->
-          (List.flatten
-             (List.rev
-                (fst
-                   (List.fold_left (fun (rev_code_list,env) exp ->
-                        (compile_exp fenv exp env)::rev_code_list,
-                        shift_env env)
-                       ([], env) rands))))
-          @ [CALL; Lref fname] (* call using a label *)
-        (* self tail calls are compiled with FRAME_RESET which moves
+    let open VM in
+    match exp with
+    | Int n -> [CONST; Literal n]
+    | Var v -> [DUP; Literal(lookup env v)]
+    | Add(e1,e2) ->
+       (compile_exp fenv e1 env) @
+         (compile_exp fenv e2 (shift_env env)) @ [ADD]
+    | Sub(e1, e2) ->
+       (compile_exp fenv e1 env) @
+         (compile_exp fenv e2 (shift_env env)) @ [SUB]
+    | Mul(e1,e2) ->
+       (compile_exp fenv e1 env) @
+         (compile_exp fenv e2 (shift_env env)) @ [MUL]
+    | LT(e1,e2) ->
+       (compile_exp fenv e1 env) @
+         (compile_exp fenv e2 (shift_env env)) @ [LT]
+    | Eq(e1, e2) ->
+       (compile_exp fenv e1 env) @
+         (compile_exp fenv e2 (shift_env env)) @ [EQ]
+    | If(cond,then_exp,else_exp) ->
+       let l2,l1 = gen_label(),gen_label() in
+       (compile_exp fenv cond env)
+       @ [JUMP_IF_ZERO; Lref l1]
+       @ (compile_exp fenv then_exp env)
+       @ [JUMP; Lref l2; (* unconditional jump *)
+          Ldef l1]
+       @ (compile_exp fenv else_exp env)
+       @ [Ldef l2]
+    | Call(fname, rands) | TCall(fname, rands) ->
+       (List.flatten
+          (List.rev
+             (fst
+                (List.fold_left (fun (rev_code_list,env) exp ->
+                     (compile_exp fenv exp env)::rev_code_list,
+                     shift_env env)
+                   ([], env) rands))))
+       @ [CALL; Lref fname] (* call using a label *)
+    (* self tail calls are compiled with FRAME_RESET which moves
            the computed arguments to the position of the actual
            parameters in the current frame. *)
-        | TCall(fname, rands) ->
-          let old_arity,local_size = arity_of_env env in
-          let new_arity = List.length rands in
-          (List.flatten
-             (List.rev
-                (fst
-                   (List.fold_left (fun (rev_code_list,env) exp ->
-                        (compile_exp fenv exp env)::rev_code_list,
-                        shift_env env)
-                       ([], env) rands))))
-          @ [FRAME_RESET;
-             Literal old_arity; Literal local_size; Literal new_arity;
-             JUMP; Lref fname]
-        | Let(var,exp,body) ->
-          let ex_env = extend_env env var in
-          (compile_exp fenv exp env)            (* in old env *)
-          @ (compile_exp fenv body ex_env)      (* in extended env *)
-          @ [POP1]                              (* drop the value *)
-      )
+    | TCall(fname, rands) ->
+       let old_arity,local_size = arity_of_env env in
+       let new_arity = List.length rands in
+       (List.flatten
+          (List.rev
+             (fst
+                (List.fold_left (fun (rev_code_list,env) exp ->
+                     (compile_exp fenv exp env)::rev_code_list,
+                     shift_env env)
+                   ([], env) rands))))
+       @ [FRAME_RESET;
+          Literal old_arity; Literal local_size; Literal new_arity;
+          JUMP; Lref fname]
+    | Let(var,exp,body) ->
+       let ex_env = extend_env env var in
+       (compile_exp fenv exp env)            (* in old env *)
+       @ (compile_exp fenv body ex_env)      (* in extended env *)
+       @ [POP1]                              (* drop the value *)
+    | Array (e1, e2) ->
+       (compile_exp fenv e1 env)
+       @ (compile_exp fenv e2 (shift_env env))
+       @ [ARRAY_MAKE]
+    | Get (e1, e2) ->
+       (compile_exp fenv e1 env)
+       @ (compile_exp fenv e2 (shift_env env))
+       @ [GET]
+    | Put (e1, e2, e3) ->
+       (compile_exp fenv e1 env)
+       @ (compile_exp fenv e2 (shift_env env))
+       @ (compile_exp fenv e2 (shift_env (shift_env env)))
+       @ [PUT]
 
   let rec tail_elim fname = function
     | If(cond,then_exp,else_exp) ->
