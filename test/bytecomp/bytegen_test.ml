@@ -12,9 +12,7 @@ let test s =
   in
   Lexing.from_string s
   |> Parser.exp Lexer.token
-  (* |> tap (fun ast -> Syntax.show_exp ast |> print_endline) *)
   |> Compiler.Test.compile_from_exp
-  (* |> tap show_insts *)
   |> VM.run_asm
 
 
@@ -95,6 +93,14 @@ let () = (prime_test 37 2)
 " in
   assert_equal 1 (test is_prime)
 
+let test_array _ =
+  let code =
+    "let () =
+       let arr = Array.make 10 0 in
+       arr.(0) <- 1; arr.(1) <- 2;
+       arr.(0) + arr.(1)" in
+  assert_equal ~printer:string_of_int 3 (test code)
+
 let suite =
   "ByteCompilerTest" >::: [
     "test_fun1" >:: test_fun1;
@@ -105,7 +111,8 @@ let suite =
     "test_fib" >:: test_fib;
     "test_sum" >:: test_sum;
     "test_ack" >:: test_ack;
-    "test_is_prime" >:: test_is_prime
+    "test_is_prime" >:: test_is_prime;
+    "test_array" >:: test_array;
   ]
 
 let () =

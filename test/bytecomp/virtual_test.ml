@@ -5,6 +5,7 @@ open OUnit2
 
 module VM_test = struct
   open VM
+  open Value
 
   (* testing *)
   let test_ex : int -> int -> string -> inst list -> int list -> int list -> int -> unit =
@@ -12,12 +13,13 @@ module VM_test = struct
       let code = Array.of_list (arity::(List.map int_of_inst instrs)) in
       let sp = List.length ostack in
       let ostack = Array.init max_stack_depth (fun i ->
-          if i < sp then List.nth ostack i else 0) in
+                       (if i < sp then List.nth ostack i else 0)
+                       |> value_of_int) in
       let v = interp code pc (sp, ostack) in
-      if v=expected
+      if int_of_value v=expected
       then (Printf.printf "OK: %s\n" name)
       else failwith
-          (Printf.sprintf "NG: %s expected=%d actual=%d\n" name expected v )
+          (Printf.sprintf "NG: %s expected=%d actual=%d\n" name expected (int_of_value v) )
 
   let test : string -> inst list -> int list -> int list -> int -> unit =
     test_ex 0 1

@@ -7,21 +7,43 @@ let virtual_flg = ref false
 
 let tap f x = f x; x
 
-let print_code arg =
-  let print_code code =
-    Array.iteri (fun i elem ->
-       Printf.printf "code.(%d) <- %d;\n" i elem) code in
-  let print_insts insts =
-    Array.iter (fun inst ->
-        Printf.printf "%s\n" (VM.show_inst inst))
-      insts in
+let print_code code =
+  Array.iteri (fun i elem ->
+      Printf.printf "code.(%d) <- %d;\n" i elem) code
+
+let print_insts insts =
+  Array.iter (fun inst ->
+      Printf.printf "%s\n" (VM.show_inst inst))
+    insts
+
+
+let emit_ast arg =
+  let ic = open_in arg in
+  try
+    Lexing.from_channel ic
+    |> Parser.exp Lexer.token
+    |> Syntax.show_exp
+    |> print_endline
+  with e ->
+    close_in ic; raise e
+
+let emit_virtual arg =
   let ic = open_in arg in
   try
     Lexing.from_channel ic
     |> Parser.exp Lexer.token
     |> Compiler.compile_from_exp
-    |> tap (fun insts ->
-        if !virtual_flg then print_insts insts)
+    |> Array.iter (fun inst -> inst |> VM.show_inst |> print_endline)
+  with e ->
+    close_in ic; raise e
+
+
+let emit_code arg =
+  let ic = open_in arg in
+  try
+    Lexing.from_channel ic
+    |> Parser.exp Lexer.token
+    |> Compiler.compile_from_exp
     |> Array.map (fun elem -> elem |> VM.int_of_inst)
     |> print_code;
     close_in ic;
@@ -37,5 +59,7 @@ let _ =
     (fun file -> files := !files @ [file])
     usage;
   List.iter
-    (fun file -> print_code file)
+    (if !ast_flg then emit_ast
+     else if !virtual_flg then emit_virtual
+     else emit_code)
     !files

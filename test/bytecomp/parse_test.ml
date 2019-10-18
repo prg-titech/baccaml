@@ -11,16 +11,16 @@ let exec_test code =
     Lexing.from_string code
     |> Parser.exp Lexer.token
     |> Syntax.show_exp
-    |> print_endline
   with e ->
     raise (Test_failed code)
 
 let test_array _ =
   let code =
-    "let arr = Array.make 10 0 in
-     arr.(0) <- 3;
-     let () = print_int (arr.(0))" in
-  exec_test code
+    "let () =
+       let arr = Array.make 10 0 in
+       arr.(0) <- 3;
+       print_int (arr.(0))" in
+  ignore (exec_test code)
 
 let suite =
   "Test Parsing" >::: [

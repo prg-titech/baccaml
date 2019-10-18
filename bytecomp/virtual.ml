@@ -44,7 +44,7 @@ module VM : sig
 
   val max_stack_depth : int
 
-  type value = Int of int | Array of int array
+  type value = VInt of int | VArray of int array
   type stack = int * value array
   val interp : int array -> int -> stack -> value
 
@@ -57,6 +57,13 @@ module VM : sig
   type fundef_asm_t = inst array
   val run_bin : fundef_bin_t -> int
   val run_asm : fundef_asm_t -> int
+
+  module Value : sig
+    val int_of_value : value -> int
+    val array_of_value : value -> int array
+    val value_of_int : int -> value
+    val value_of_array : int array -> value
+  end
 end = struct
   type inst =
     | UNIT
@@ -131,23 +138,26 @@ end = struct
      should decouple the pair.
   *)
 
-  type value = Int of int | Array of int array
+  type value = VInt of int | VArray of int array
 
   module Value = struct
     let (|+|) v1 v2 = match v1, v2 with
-      | Int i, Int j -> Int (i + j)
+      | VInt i, VInt j -> VInt (i + j)
       | _ -> failwith "invalid value"
 
     let (|-|) v1 v2 = match v1, v2 with
-      | Int i, Int j -> Int (i - j)
+      | VInt i, VInt j -> VInt (i - j)
       | _ -> failwith "invalid value"
 
     let (|*|) v1 v2 = match v1, v2 with
-      | Int i, Int j -> Int (i * j)
+      | VInt i, VInt j -> VInt (i * j)
       | _ -> failwith "invalid value"
 
-    let int_of_value = function Int i -> i | _ -> failwith "array is not int"
-    let array_of_value = function Array arr -> arr | _ -> failwith "int is not array"
+    let int_of_value = function VInt i -> i | _ -> failwith "array is not int"
+    let array_of_value = function VArray arr -> arr | _ -> failwith "int is not array"
+
+    let value_of_int i = VInt i
+    let value_of_array arr = VArray arr
   end
 
   type stack = int * value array
@@ -169,7 +179,7 @@ end = struct
         else (stack.(old_base+i)<-stack.(new_base+i);
               loop (i+1)) in
       loop 0
-  let make_stack () = (0, Array.make max_stack_depth (Int 0))
+  let make_stack () = (0, Array.make max_stack_depth (VInt 0))
 
   (* let test_stack =(9,  [|1;2;3;4;5;6;7;8;9|])
    * let reset_result = frame_reset test_stack 2 2 3
@@ -189,7 +199,7 @@ end = struct
 
   let dump_stack (sp,stack) =
     let rec loop i = if i=sp then ""
-      else (string_of_int stack.(i))^";"^(loop (i+1)) in
+      else (string_of_int @@ Value.int_of_value @@ stack.(i))^";"^(loop (i+1)) in
     "["^(loop 0)^"]"
 
   (* when the VM won't stop, you may turn on the following function to
@@ -207,9 +217,7 @@ end = struct
 
   let rec interp  code pc stack =
     checkpoint ();
-    (* Printf.printf "%s %s\n"
-                  (code_at_pc code pc) (dump_stack stack); *)
-
+    (* Printf.printf "%s %s\n" (code_at_pc code pc) (dump_stack stack); *)
     let open Value in
     if pc<0 then fst(pop stack) else
       let i,pc = fetch code pc in
@@ -231,22 +239,22 @@ end = struct
                interp  code pc stack
       | LT ->  let v2,stack = pop stack in
                let v1,stack = pop stack in
-               let    stack = push stack (if v1<v2 then Int 1 else Int 0) in
+               let    stack = push stack (if v1<v2 then VInt 1 else VInt 0) in
                interp  code pc stack
       | CONST -> let c,pc = fetch code pc in
-                 let stack = push stack (Int c) in
+                 let stack = push stack (value_of_int c) in
                  interp  code pc stack
       | JUMP_IF_ZERO (* addr *) ->
          let addr,pc = fetch code pc in
          let v,stack = pop stack in
          (* interp  code (if v=0 then addr else pc) stack *)
-         if v = Int (0)
+         if int_of_value v = 0
          then interp code addr stack
          else interp code pc   stack
       | CALL (* addr *) ->
          (* calling a function will create a new operand stack and lvars  *)
          let addr,pc = fetch code pc  in
-         let stack = push stack (Int pc) in (* save return address *)
+         let stack = push stack (value_of_int pc) in (* save return address *)
          (* (let (sp,s)=stack in
           *  if 2<sp then
           *    (Printf.printf "%d CALL %d [%d %d ...]\n" (pc-2) addr
@@ -287,19 +295,36 @@ end = struct
       | EQ ->
          let v2,stack = pop stack in
          let v1,stack = pop stack in
-         let    stack = push stack (if v1 = v2 then Int 1 else Int 0) in
+         let    stack = push stack (if v1 = v2 then value_of_int 1 else value_of_int 0) in
          interp code pc stack
       | ARRAY_MAKE ->
-         let size,stack = pop stack in
          let init,stack = pop stack in
-         let stack = push stack (Array (Array.make (int_of_value size) (int_of_value init))) in
+         let size,stack = pop stack in
+         let stack =
+           push stack
+             (value_of_array
+                (Array.make (int_of_value size) (int_of_value init))) in
+         interp code pc stack
+      | GET ->
+         let n,stack = pop stack in
+         let n = int_of_value n in
+         let arr,stack = pop stack in
+         let arr = array_of_value arr in
+         let stack = push stack (value_of_int (arr.(n))) in
+         interp code pc stack
+      | PUT ->
+         let n,stack = pop stack in
+         let i,stack = pop stack in
+         let arr,stack = pop stack in
+         (array_of_value arr).(int_of_value i) <- (int_of_value n);
          interp code pc stack
 
   (* run the given program by calling the function id 0 *)
   type fundef_bin_t = int array
   let run_bin : fundef_bin_t -> int = fun fundefs ->
-    let stack = (push (make_stack ()) (Int (-987))) in
-    Value.int_of_value @@ interp fundefs 0 stack
+    let open Value in
+    let stack = (push (make_stack ()) (value_of_int (-987))) in
+    int_of_value @@ interp fundefs 0 stack
 
   (* convert the given program into binary, and then run *)
   type fundef_asm_t = inst array
@@ -332,8 +357,10 @@ end = struct
   (* compilation environment maps local variable names to local
      variable numbers *)
   let lookup env var =
-    fst(List.find (fun (_,v) -> var=v)
-          (List.mapi (fun idx v -> (idx,v)) env))
+    match List.find_opt (fun (_,v) -> var = v)
+            (List.mapi (fun idx v -> (idx,v)) env) with
+    | Some v -> fst v
+    | None -> failwith (Printf.sprintf "%s not found" var)
   let extend_env env var = var :: env
   let shift_env env = extend_env env "*dummy*"
   let return_address_marker = "$ret_addr"
@@ -414,11 +441,12 @@ end = struct
        (compile_exp fenv e1 env)
        @ (compile_exp fenv e2 (shift_env env))
        @ [GET]
-    | Put (e1, e2, e3) ->
+    | Put (e1, e2, e3, e4) ->       (* array,index,val,cont *)
        (compile_exp fenv e1 env)
        @ (compile_exp fenv e2 (shift_env env))
-       @ (compile_exp fenv e2 (shift_env (shift_env env)))
+       @ (compile_exp fenv e3 (shift_env (shift_env env)))
        @ [PUT]
+       @ (compile_exp fenv e4 env)
 
   let rec tail_elim fname = function
     | If(cond,then_exp,else_exp) ->

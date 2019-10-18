@@ -51,7 +51,7 @@ exp:
     | VAR actual_args          { Call ($1, $2) }
     | exp SEMICOLON exp        { Let (Id.gentmp (), $1, $3) }
     | ARRAY_MAKE exp exp       { Array ($2, $3) }
-    | simple_exp DOT LPAREN exp RPAREN LESS_MINUS exp { Put ($1, $4, $7) }
+    | simple_exp DOT LPAREN exp RPAREN LESS_MINUS simple_exp SEMICOLON exp { Put ($1, $4, $7, $9) }
 
 fundef:
     | VAR formal_args EQ exp   { { name = $1; args = $2; body = $4 } }
