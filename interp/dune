@@ -1,6 +1,6 @@
 (executable
  (name jit_entry)
- (public_name baccaml.entry)
+ (public_name jit_entry)
  (modules jit_entry)
  (libraries jit)
  (modes
