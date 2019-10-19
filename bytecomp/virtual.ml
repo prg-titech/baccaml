@@ -429,7 +429,6 @@ end = struct
        @ (compile_exp fenv else_exp env)
        @ [Ldef l2]
     | Call(fname, rands) | TCall(fname, rands) ->
-       (* let env = shift_env env in *)
        ((List.fold_left
            (fun (rev_code_list,env) exp ->
              (compile_exp fenv exp env) :: rev_code_list,
