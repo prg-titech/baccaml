@@ -353,8 +353,6 @@ exec code 52; *)
 (* is_prime *)
 let code = Array.make 100 0 in
 save_bp ();
-let code = Array.make 100 0 in
-save_bp ();
 code.(0) <- 14;
 code.(1) <- 9; code.(2) <- 2;
 code.(3) <- 9; code.(4) <- 2;
