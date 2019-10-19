@@ -51,19 +51,14 @@ let rec interp stack sp bytecode pc =
   else if instr = 7 then          (* CALL *)
     let addr = bytecode.(pc + 1) in
     stack.(sp) <- pc + 2;
-    stack.(sp + 1) <- 200;
-    let sp2 = sp + 2 in
-    interp stack sp2 bytecode addr
+    interp stack (sp + 1) bytecode addr
   else if instr = 8 then          (* RET *)
     let v = stack.(sp - 1) in
-    let mode = stack.(sp - 2) in
-    if mode = 200 then
-      let n = bytecode.(pc + 1) in
-      let addr = stack.(sp - 3) in (* sp: sp - 2 *)
-      stack.(sp - n - 3) <- v;     (* sp: sp - 2 - n + 1 = sp - 1 - n *)
-      let sp2 = sp - n - 2 in
-      interp stack sp2 bytecode addr
-    else v
+    let n = bytecode.(pc + 1) in
+    let addr = stack.(sp - 2) in (* sp: sp - 2 *)
+    stack.(sp - n - 2) <- v;     (* sp: sp - 2 - n + 1 = sp - 1 - n *)
+    let sp2 = sp - n - 1 in
+    interp stack sp2 bytecode addr
   else if instr = 9 then          (* DUP *)
     let n = bytecode.(pc + 1) in
     let v = stack.(sp - n - 1) in
@@ -323,8 +318,7 @@ finish_exec ()
 
 (* is_prime *)
 (* tracing jit *)
-(*
-let code = Array.make 100 0 in
+let code = Array.make 75 0 in
 code.(0) <- 14;
 code.(1) <- 9; code.(2) <- 2;
 code.(3) <- 9; code.(4) <- 2;
@@ -343,7 +337,7 @@ code.(24) <- 9; code.(25) <- 1;
 code.(26) <- 9; code.(27) <- 2;
 code.(28) <- 3;
 code.(29) <- 9; code.(30) <- 3;
-code.(31) <- 16; code.(32) <- 1;
+code.(31) <- 9; code.(32) <- 1;
 code.(33) <- 4;
 code.(34) <- 6; code.(35) <- 40;
 code.(36) <- 5; code.(37) <- 1;
@@ -361,15 +355,15 @@ code.(57) <- 9; code.(58) <- 3;
 code.(59) <- 5; code.(60) <- 1;
 code.(61) <- 1;
 code.(62) <- 7; code.(63) <- 24;
-code.(64) <- 12; code.(65) <- 8;
-code.(66) <- 2;
+code.(64) <- 12;
+code.(65) <- 8; code.(66) <- 2;
 code.(67) <- 14;
-code.(68) <- 5; code.(69) <- 397;
+code.(68) <- 5; code.(69) <- 33;
 code.(70) <- 5; code.(71) <- 2;
 code.(72) <- 7; code.(73) <- 24;
 code.(74) <- 10;
 exec code 68;
- *)
+
 
 (* method jit *)
 (* let code = Array.make 100 0 in
@@ -419,7 +413,7 @@ code.(74) <- 10;
 exec code 68; *)
 
 (* array *)
-let code = Array.make 40 0 in
+let code = Array.make 33 0 in
 code.(0) <- 14;
 code.(1) <- 5; code.(2) <- 10;
 code.(3) <- 5; code.(4) <- 0;
@@ -441,5 +435,5 @@ code.(29) <- 17;
 code.(30) <- 1;
 code.(31) <- 12;
 code.(32) <- 10;
-exec code 1;
+exec code 0;
 ()
