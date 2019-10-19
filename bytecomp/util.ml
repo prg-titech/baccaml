@@ -35,4 +35,6 @@ let print_code insts =
        else
          (printf "code.(%d) <- %d;\n" i (int_of_inst hd));
        loop (i+1) tl
-  in loop 0 insts; flush stdout
+  in
+  printf "let code = Array.make %d %d in\n" (List.length insts) 0;
+  loop 0 insts; flush stdout
