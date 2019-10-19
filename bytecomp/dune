@@ -10,6 +10,6 @@
 (executable
  (name bytegen)
  (modules bytegen)
- (public_name baccaml.bytegen)
+ (public_name bytegen)
  (libraries bytegen_lib)
  (preprocess (pps ppx_deriving.show)))
