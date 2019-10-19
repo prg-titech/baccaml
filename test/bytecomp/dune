@@ -1,4 +1,4 @@
 (tests
- (names bytegen_test virtual_test parse_test)
- (modules bytegen_test virtual_test parse_test)
+ (names bytegen_test virtual_test parse_test util_test)
+ (modules bytegen_test virtual_test parse_test util_test)
  (libraries bytegen_lib oUnit))

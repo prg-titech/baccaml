@@ -44,6 +44,8 @@ module VM : sig
 
   val max_stack_depth : int
 
+  val has_args : (inst * bool) list
+
   type value = VInt of int | VArray of int array
   type stack = int * value array
   val interp : int array -> int -> stack -> value
@@ -113,7 +115,30 @@ end = struct
     ARRAY_MAKE;
     GET;
     PUT;
-  |]
+    |]
+
+  let has_args = [
+      UNIT, false;
+      ADD, false;
+      SUB, false;
+      MUL, false;
+      LT, false;
+      CONST, true;
+      JUMP_IF_ZERO, true;
+      JUMP, true;
+      CALL, true;
+      RET, true;
+      DUP, true;
+      HALT, false;
+      FRAME_RESET, true;
+      POP1, false;
+      JUMP, true;
+      METHOD_ENTRY, false;
+      EQ, false;
+      ARRAY_MAKE, false;
+      GET, false;
+      PUT, false;
+    ]
 
   let index_of element array =
     fst(List.find (fun (_,v) -> v=element)
@@ -404,13 +429,15 @@ end = struct
        @ (compile_exp fenv else_exp env)
        @ [Ldef l2]
     | Call(fname, rands) | TCall(fname, rands) ->
-       (List.flatten
-          (List.rev
-             (fst
-                (List.fold_left (fun (rev_code_list,env) exp ->
-                     (compile_exp fenv exp env)::rev_code_list,
-                     shift_env env)
-                   ([], env) rands))))
+       (* let env = shift_env env in *)
+       ((List.fold_left
+           (fun (rev_code_list,env) exp ->
+             (compile_exp fenv exp env) :: rev_code_list,
+             shift_env env)
+         ([], env) rands)
+        |> fst
+        |> List.rev
+        |> List.flatten)
        @ [CALL; Lref fname] (* call using a label *)
     (* self tail calls are compiled with FRAME_RESET which moves
            the computed arguments to the position of the actual

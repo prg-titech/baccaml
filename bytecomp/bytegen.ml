@@ -44,8 +44,8 @@ let emit_code arg =
     Lexing.from_channel ic
     |> Parser.exp Lexer.token
     |> Compiler.compile_from_exp
-    |> Array.map (fun elem -> elem |> VM.int_of_inst)
-    |> print_code;
+    |> Array.to_list
+    |> Util.print_code;
     close_in ic;
   with e ->
     close_in ic; raise e
