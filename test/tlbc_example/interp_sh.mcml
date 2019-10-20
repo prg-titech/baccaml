@@ -144,7 +144,10 @@ let rec interp stack sp bytecode pc =
 
 let rec exec code pc =
   let stk = Array.make 3000 0 in
+  let s = get_current_micros () in
   let r = interp stk 0 code pc in
+  let e = get_current_micros () in
+  print_int (e-s); print_string ("\t");
   print_int r; print_newline ()
 ;;
 
