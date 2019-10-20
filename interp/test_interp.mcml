@@ -156,7 +156,6 @@ let rec exec code pc =
 ;;
 
 (* fib *)
-(*
 let code = Array.make 50 0 in
 save_bp ();
 code.(0) <- 14;
@@ -182,7 +181,7 @@ code.(32) <- 7; code.(33) <- 1;
 code.(34) <- 10;
 exec code 30;
 finish_exec ();
-*)
+
 
 (* sum *)
 (*
