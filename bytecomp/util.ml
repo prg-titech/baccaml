@@ -29,6 +29,12 @@ let print_code insts =
         loop (i+1) tl)
     | Lref _ :: tl | Ldef _ :: tl ->
        failwith "Lref or Ldef is still remained"
+    | CALL :: tl ->
+       printf "code.(%d) <- %d; " i     (int_of_inst CALL);
+       printf "code.(%d) <- %d; " (i+1) (int_of_inst (List.hd tl));
+       let tl = List.tl tl in
+       printf "code.(%d) <- %d;\n" (i+2) (int_of_inst (List.hd tl));
+       loop (i+3) (List.tl tl)
     | hd :: tl ->
        if List.assoc hd has_args then
          (printf "code.(%d) <- %d; " i (int_of_inst hd))

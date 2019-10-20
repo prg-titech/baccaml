@@ -437,7 +437,7 @@ end = struct
         |> fst
         |> List.rev
         |> List.flatten)
-       @ [CALL; Lref fname] (* call using a label *)
+       @ [CALL; Lref fname; Literal (List.length rands)] (* call using a label *)
     (* self tail calls are compiled with FRAME_RESET which moves
            the computed arguments to the position of the actual
            parameters in the current frame. *)
@@ -513,9 +513,10 @@ end = struct
     |> fst
 
   let compile_fun_body fenv name arity exp env =
+    let env = shift_env env in
     VM.METHOD_ENTRY ::
-    (VM.Ldef name)::
-    (compile_exp fenv exp env) @ (
+      (VM.Ldef name) ::
+        (compile_exp fenv exp env) @ (
       if name = "main" then [VM.HALT]
       else [VM.RET; VM.Literal arity])
 

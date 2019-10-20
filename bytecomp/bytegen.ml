@@ -16,7 +16,6 @@ let print_insts insts =
       Printf.printf "%s\n" (VM.show_inst inst))
     insts
 
-
 let emit_ast arg =
   let ic = open_in arg in
   try

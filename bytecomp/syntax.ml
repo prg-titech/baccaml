@@ -1,6 +1,7 @@
 (* abstract syntax tree for a simple functional language *)
 type var = string
 [@@deriving show]
+
 type exp =
   | Unit
   | Int of int
@@ -19,6 +20,7 @@ type exp =
   | Put of exp * exp * exp * exp
   | TCall of var * exp list     (* tail call --- internal only *)
 [@@deriving show]
+
 and fundef = {name:var; args:var list; body: exp}
 [@@deriving show]
 
