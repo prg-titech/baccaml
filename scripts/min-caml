@@ -5,9 +5,9 @@ usage () {
   echo "    $0 filename.ml"
 }
 
-filename=$1
+filename=$2
 output_asm="${filename%.*}".s
 output_exe="${filename%.*}".exe
 
-dune exec min-caml $1 -- -type tjit && \
-  gcc -m32 -O2 stub/stub.c stub/libmincaml.S $(pwd)/${output_asm} -lm -o $(pwd)/${output_exe}
+dune exec min-caml $2 -- -type $1 && \
+  gcc -m32 -O2 -I$(ocamlc -where) stub/stub.c stub/libmincaml.S $(pwd)/${output_asm} -lm -o $(pwd)/${output_exe}
