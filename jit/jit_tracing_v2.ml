@@ -31,13 +31,13 @@ module JO = Jit_optimizer
 let rec tj p reg mem env t =
   match t with
   | Ans (CallDir (id_l, argsr, fargsr)) ->
-    let rec f argt argr =
-      match argt, argr with
-      | [], [] -> ()
-      | hdt :: tlt, hdr :: tlr ->
-        reg.(int_of_id_t hdt) <- reg.(int_of_id_t hdr);
-        f tlt tlr
-      | _ -> assert false in
+    (* let rec f argt argr =
+     *   match argt, argr with
+     *   | [], [] -> ()
+     *   | hdt :: tlt, hdr :: tlr ->
+     *     reg.(int_of_id_t hdt) <- reg.(int_of_id_t hdr);
+     *     f tlt tlr
+     *   | _ -> assert false in *)
     let { trace_name; index_pc; merge_pc; bytecode } = env in
     let pc = List.nth argsr index_pc |> int_of_id_t |> Array.get reg |> value_of in
     if pc = merge_pc then
