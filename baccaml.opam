@@ -5,10 +5,11 @@ homepage: "https://github.com/prg-titech/baccaml"
 bug-reports: "https://github.com/prg-titech/baccaml/issues"
 dev-repo: "https://github.com/prg-titech/baccaml.git"
 license: "Apache 2.0"
-version: "0.5.0"
+version: "0.7.1"
 build:
   [[ "dune" "build" "--only-packages" "%{name}%" "--root" "." "-j" jobs "@install" ]]
 depends: [
   "dune" {build}
   "str"
+  "ppx_deriving"
 ]
