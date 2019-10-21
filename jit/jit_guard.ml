@@ -23,7 +23,8 @@ and ignore_hits_exp = function
      IfLE (x, y, ignore_hits t1, ignore_hits t2)
   | exp -> exp
 
-let rec restore reg cont ?wlist:(ws = []) = function
+let rec restore reg args ?wlist:(ws = []) cont =
+  match args with
   | [] -> cont |> ignore_hits
   | hd :: tl when not (ignored hd ws) ->
     begin match reg.(int_of_id_t hd) with
@@ -32,13 +33,13 @@ let rec restore reg cont ?wlist:(ws = []) = function
         String.get_name hd = "code") ->
         Let ( (hd, Type.Int)
             , CallDir (Id.L ("restore_min_caml_bp"), [], [])
-            , restore reg cont tl)
+            , restore reg tl cont)
       | Green n ->
         Let ( (hd, Type.Int)
-            , Set n, restore reg cont tl)
-      | _ -> restore reg cont tl
+            , Set n, restore reg tl cont)
+      | _ -> restore reg tl cont
     end
-  | hd :: tl -> restore reg cont tl
+  | hd :: tl -> restore reg tl cont
 
 let rec jmp_to_guard tname = function
   | Ans (e) ->
@@ -60,7 +61,7 @@ module TJ : sig
 end = struct
   let create reg trace_name ?wlist:(ws = []) cont =
     let free_vars = List.unique (fv cont) in
-    let t = restore reg cont free_vars in
+    let t = restore reg free_vars cont in
     jmp_to_guard trace_name t
 end
 
@@ -69,5 +70,5 @@ module MJ : sig
 end = struct
   let rec create reg tj_env ?wlist:(ws = []) cont =
     let free_vars = List.unique (fv cont) in
-    restore reg cont free_vars
+    restore reg free_vars cont
 end

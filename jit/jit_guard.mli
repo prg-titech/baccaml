@@ -1,7 +1,7 @@
 open Base
 open Jit_env
 
-val restore : reg -> Asm.t -> ?wlist:string list -> string list -> Asm.t
+val restore : reg -> string list -> ?wlist:string list -> Asm.t -> Asm.t
 
 module TJ : sig
   val create : reg -> string -> ?wlist:string list -> Asm.t -> Asm.t
