@@ -133,8 +133,8 @@ and mj_if (p : prog) (reg : reg) (mem : mem) ({index_pc; merge_pc; bytecode} as 
        let t = Util.find_by_inst pc body in
        t |> mj p reg mem env
      else if String.get_name id_t = "mode" then
-       let module G = Jit_guard in
-       let guard_code = G.TJ.create reg env.trace_name t1 in
+       let open Jit_guard in
+       let guard_code = TJ.create reg env.trace_name t1 in
        Ans (IfEq (id_t, id_or_imm, guard_code, t2))
      else
        assert false
