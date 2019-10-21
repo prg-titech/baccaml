@@ -1,0 +1,15 @@
+(rule
+ (targets interp_sh_tj.s)
+ (deps interp_sh.mcml)
+ (action (run  ../../bin/min_caml.exe -type tjit %{deps} -o %{targets})))
+
+(rule
+ (targets interp_sh_tj.exe)
+ (deps interp_sh_tj.s ../../stub/stub.c ../../stub/libmincaml.S)
+ (action
+  (run %{cc} -m32 -O2 -lm -o %{targets} -I %{ocaml_where} -I . %{deps})))
+
+(alias
+ (name runtest)
+ (deps interp_sh.mcml)
+ (action (run ./interp_sh_tj.exe)))

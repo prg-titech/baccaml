@@ -59,7 +59,7 @@ let rec interp stack sp bytecode pc =
     let v = stack.(sp - 1) in
     let sp2 = sp - 1 in
     @if v = 0 then (
-      @if addr = (pc - 1) then (
+      @if addr < (pc - 1) then (
         can_enter_jit stack sp2 bytecode addr;
         interp stack sp2 bytecode addr
       ) else interp stack sp2 bytecode addr
@@ -341,4 +341,5 @@ code.(73) <- 5; code.(74) <- 2;
 code.(75) <- 7; code.(76) <- 25; code.(77) <- 2;
 code.(78) <- 10;
 exec code 71;
+
 ()
