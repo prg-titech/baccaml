@@ -21,6 +21,9 @@ module Util = struct
     Asm.fv t
     |> List.find (fun v -> String.get_name v = String.get_name var)
 
+  let filter ~reds args =
+    List.filter (fun arg -> List.mem (String.get_name arg) reds) args
+
 end
 
 module JO = Jit_optimizer
@@ -68,6 +71,13 @@ let rec tj p reg mem env t =
     if pc = merge_pc
     then Ans (CallDir (Id.L trace_name, List.([nth args 0; nth args 1]), []))
     else tj p reg mem env body
+  | Let ((dest, typ), CallDir (Id.L x, args, fargs), body) when String.starts_with x "min_caml" ->
+     let { red_names } = env in
+     Jit_guard.restore reg
+       (Let ((dest, typ)
+           , CallDir (Id.L x, Util.filter ~reds:red_names args, fargs)
+           , (tj p reg mem env body)))
+       args
   | Let ((dest, typ), e, body) ->
     begin match e with
     | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ ->
