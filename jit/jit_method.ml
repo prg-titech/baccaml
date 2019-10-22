@@ -57,29 +57,27 @@ let rec mj p reg mem ({trace_name; index_pc; merge_pc; red_names; bytecode} as e
         let srcv = reg.(int_of_id_t id_t1) in
         let destv = reg.(int_of_id_t id_t2) in
         let offsetv = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
-        begin
-          match (srcv, destv) with
-          | Green n1, Red n2 ->
-             reg.(int_of_id_t id_t1) <- Green 0;
-             mem.(n1 + (n2 * bitsize)) <- Green (reg.(int_of_id_t id_t1) |> value_of) ;
-             begin
-               match offsetv with
-               | Green n ->
-                  let id' = Id.gentmp Type.Int in
-                  Let ( (id_t1, Type.Int)
-                      , Set n1
-                      , Let ( (id', Type.Int)
-                            , Set n
-                            , Let ((x, typ), St (id_t1, id_t2, C n, bitsize)
-                                   , mj p reg mem env body)))
-               | Red n ->
-                  Let ( (id_t1, Type.Int)
-                      , Set n1
-                      , Let ( (x, typ)
-                            , St (id_t1, id_t2, id_or_imm, bitsize)
-                            , mj p reg mem env body) )
-             end
-          | _ -> optimize_exp p reg mem (x, typ) env exp body
+        begin match (srcv, destv) with
+        | Green n1, Red n2 ->
+           reg.(int_of_id_t id_t1) <- Green 0;
+           mem.(n1 + (n2 * bitsize)) <- Green (reg.(int_of_id_t id_t1) |> value_of) ;
+           begin match offsetv with
+           | Green n ->
+              let id' = Id.gentmp Type.Int in
+              Let ( (id_t1, Type.Int)
+                  , Set n1
+                  , Let ( (id', Type.Int)
+                        , Set n
+                        , Let ((x, typ), St (id_t1, id_t2, C n, bitsize)
+                               , mj p reg mem env body)))
+           | Red n ->
+              Let ( (id_t1, Type.Int)
+                  , Set n1
+                  , Let ( (x, typ)
+                        , St (id_t1, id_t2, id_or_imm, bitsize)
+                        , mj p reg mem env body) )
+           end
+        | _ -> optimize_exp p reg mem (x, typ) env exp body
         end
      | _ -> optimize_exp p reg mem (x, typ) env exp body
 
@@ -111,7 +109,8 @@ and mj_exp (p : prog) (reg : reg) (mem : mem) ({index_pc; merge_pc; bytecode} as
       * Asm.print_t t; print_newline (); *)
      (* if dsable renaming *)
      (* f argst argsr; t |> mj p reg mem env *)
-     Inlining.inline_fundef reg argsr { name; args= argst; fargs; body= t; ret }
+     { name; args= argst; fargs; body= t; ret }
+     |> Inlining.inline_fundef reg argsr
      |> mj p reg mem env
   | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfGE _ | SIfLE _ as exp -> exp |> mj_if p reg mem env
   | exp ->
@@ -171,11 +170,9 @@ and mj_if (p : prog) (reg : reg) (mem : mem) ({index_pc; merge_pc; bytecode} as 
 
 
 let run prog reg mem ({trace_name; red_names; index_pc= x; merge_pc= y} as env) =
-  Id.counter := 0; Renaming.counter := 0;
+  Renaming.counter := !Id.counter;
   let { args; body } = Fundef.find_fuzzy prog "interp" in
   let trace = mj prog reg mem env body in
-  { name= Id.L env.trace_name
+  { name= Id.L env.trace_name; fargs= []; body= trace; ret= Type.Int
   ; args= args |> List.filter (fun arg -> List.mem (String.get_name arg) red_names)
-  ; fargs= []
-  ; body= trace
-  ; ret= Type.Int }
+  }
