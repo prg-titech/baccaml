@@ -47,16 +47,16 @@ let rec tj p reg mem env t =
       Log.debug @@ sprintf "pc: %d, next instr: %d" pc next_instr;
       let { name; args= argst; fargs; body; ret } = Fundef.find_fuzzy p "interp" in
       let body = Util.find_by_inst next_instr body in
-      Inlining.inline_fundef reg argsr { name; args= argst; fargs; body; ret }
+      { name; args= argst; fargs; body; ret }
+      |> Inlining.inline_fundef reg argsr
       |> tj p reg mem env
   | Ans (exp) ->
-    begin
-      match exp with
-      | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ -> tj_if p reg mem env exp
-      | _ ->
-        match JO.run p exp reg mem with
-        | Specialized v -> Ans (Set (value_of v))
-        | Not_specialized (e, v) -> Ans (e)
+    begin match exp with
+    | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ -> tj_if p reg mem env exp
+    | _ ->
+       match JO.run p exp reg mem with
+       | Specialized v -> Ans (Set (value_of v))
+       | Not_specialized (e, v) -> Ans (e)
     end
   | Let ((dest, typ), CallDir (Id.L "min_caml_jit_merge_point", args, fargs), body) ->
     let pc = value_of @@ reg.(int_of_id_t @@ List.hd args) in
