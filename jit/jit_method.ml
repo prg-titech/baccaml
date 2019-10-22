@@ -7,6 +7,10 @@ open Jit_env
 open Jit_util
 
 module Util = struct
+  let call_inst = 7
+
+  let ret_inst = 8
+
   let rec find_by_inst inst t =
     match t with
     | Ans (IfEq (id_t, C (n), t1, t2)) ->
@@ -17,6 +21,31 @@ module Util = struct
 
   let filter_by_names ~red_names args =
     args |> List.filter (fun arg -> List.mem (String.get_name arg) red_names)
+
+  let find_entry_all bytecode =
+    (* TOOD: specify externally *)
+    List.mapi (fun i x -> (i,x)) bytecode
+    |> List.find_all (fun (i,x) -> x = 14)
+    |> List.map fst
+
+  let find_call_within bytecode merge_pc =
+    let bytecode = Array.mapi (fun i x -> (i,x)) bytecode |> Array.to_list in
+    let entry_pc, _ = bytecode |> List.find (fun (i,x) -> i = merge_pc)
+    and ret_pc, _ = bytecode |> List.find (fun (i,x) -> x = ret_inst) in
+    bytecode
+    |> List.filter (fun (i,x) -> entry_pc <= i && i <= ret_pc)
+    |> List.filter (fun (i,x) -> x = call_inst)
+
+  let find_call_dest (bytecode : int array) (call_pcs : (int * int) list) =
+    call_pcs |> List.map (fun (call_pc,_) -> Array.get bytecode (call_pc + 1))
+
+
+  let _ =
+    let bytecode = [|1;2;7;1;1;2;3;14;9;1;9;2;5;3;7;1;1;5;3;7;21;2;8;|]
+    and merge_pc = 7 in
+    assert (find_call_within bytecode merge_pc = [(14,7); (19,7)]);
+    assert (find_call_within bytecode merge_pc |> find_call_dest bytecode = [1;21])
+
 
   let (<=>) e (n1, n2) =
     match e with
