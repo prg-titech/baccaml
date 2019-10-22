@@ -6,12 +6,20 @@ open Asm
 open Jit_env
 open Jit_util
 
-module Util = struct
-  let call_inst = 7
+module Util : sig
+  type args = string list
+  val find_by_inst : inst:int -> t -> t
+  val filter_by_names : red_names:string list -> args -> args
+  val find_call_dest : int array -> (int * int) list -> int list
 
-  let ret_inst = 8
+  val ( <=> ) : exp -> (int * int) -> bool
+  val ( <|> ) : exp -> (Id.t * id_or_imm * t * t) -> exp
+end = struct
+  let call_inst, ret_inst = 7, 8
 
-  let rec find_by_inst inst t =
+  type args = string list
+
+  let rec find_by_inst ~inst t =
     match t with
     | Ans (IfEq (id_t, C (n), t1, t2)) ->
        if inst = n then t1
