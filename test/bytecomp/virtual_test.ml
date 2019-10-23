@@ -69,17 +69,17 @@ module VM_test = struct
        ADD;               (* stack =   [9;8;5;4] *)
        RET; Literal 2;    (* stack =         [9] *)
        (* stack =       [5;4] *)
-       CALL; Literal 1;   (* stack =         [9] *)
-       Literal 1;
+       CALL; Literal 1; Literal 2;  (* stack =         [9] *)
+
        HALT]
       [ 4;5 ] [] 9
   let _ = test_ex 2 8 "CALL mul add"
-      [DUP; Literal 2; (* 1;2 *)
-       DUP; Literal 2; (* 3;4 *)
+      [DUP; Literal 2;  (* 1;2 *)
+       DUP; Literal 2;  (* 3;4 *)
        MUL;             (* 5 *)
        RET; Literal 2;  (* 6;7 *)
-       CALL; Literal 1;  (* 8;9 *)
-       ADD;              (* 10 *)
-       HALT]              (* 11 *)
-      [ 1; 2; 3 ] [] 6
+       CALL; Literal 1;  Literal 2; (* 8;9 *)
+       ADD;             (* 10 *)
+       HALT]            (* 11 *)
+      [ 1; 2; 3 ] [] 7
  end
