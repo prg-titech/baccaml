@@ -1,12 +1,9 @@
 open Std
 open Base
 open Jit_env
+open Jit_prof
 
 open Runtime_lib
-
-module Method_prof = Make_prof(struct let threshold = 0 end)
-
-module Trace_prof = Make_prof(struct let threshold = 1000 end)
 
 type runtime_env =
   { bytecode: int array
