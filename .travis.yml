@@ -19,4 +19,4 @@ install:
   - opam update --upgrade
   - opam install -y dune oUnit ppx_deriving
 script:
-  - make
+  - dune runtest -f test
