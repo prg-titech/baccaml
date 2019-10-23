@@ -23,7 +23,7 @@ and ignore_hits_exp = function
      IfLE (x, y, ignore_hits t1, ignore_hits t2)
   | exp -> exp
 
-let rec restore reg args ?wlist:(ws = []) cont =
+let rec restore reg ~args ?wlist:(ws = []) cont =
   match args with
   | [] -> cont |> ignore_hits
   | hd :: tl when not (ignored hd ws) ->
