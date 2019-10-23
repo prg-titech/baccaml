@@ -7,9 +7,7 @@ let tap f x = f x; x
 
 let test s =
   let open Virtual in
-  let show_insts insts =
-    insts |> Array.map VM.show_inst |> Array.to_list |> String.concat "\n" |> print_endline
-  in
+  stack_hybridized := false;
   Lexing.from_string s
   |> Parser.exp Lexer.token
   |> Compiler.Test.compile_from_exp
@@ -18,7 +16,7 @@ let test s =
 
 let test_fun1 _ =
   let test1 = "let rec f x = x + 1 in let () = f 1" in
-  assert_equal 2 (test test1)
+  assert_equal ~printer:string_of_int 2 (test test1)
 
 let test_fun2 _ =
   let test2 = "
@@ -58,7 +56,7 @@ let rec fib n =
   else fib (n - 1) + fib (n - 2)
 in
 let () = fib 10" in
-  assert_equal 55 (test fib)
+  assert_equal ~printer:string_of_int 55 (test fib)
 
 let test_sum _ =
   let sum = "

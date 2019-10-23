@@ -1,5 +1,7 @@
 open Syntax
 
+let stack_hybridized = ref true
+
 module VM : sig
   (* instruction set: a stack machine *)
   type inst =
@@ -279,7 +281,7 @@ end = struct
       | CALL (* addr *) ->
          (* calling a function will create a new operand stack and lvars  *)
          let addr,pc = fetch code pc  in
-         let stack = push stack (value_of_int pc) in (* save return address *)
+         let stack = push stack (value_of_int (pc+1)) in (* save return address *)
          (* (let (sp,s)=stack in
           *  if 2<sp then
           *    (Printf.printf "%d CALL %d [%d %d ...]\n" (pc-2) addr
@@ -513,7 +515,7 @@ end = struct
     |> fst
 
   let compile_fun_body fenv name arity exp env =
-    let env = shift_env env in
+    let env = if !stack_hybridized then shift_env env else env in
     VM.METHOD_ENTRY ::
       (VM.Ldef name) ::
         (compile_exp fenv exp env) @ (

@@ -59,7 +59,7 @@ module VM_test = struct
       [POP1; ADD; HALT] [ 1;2;3 ] [] 4
 
   let _ = test_ex 0 2 "CALL simple"
-      [HALT; CALL; Literal 1;] [] [] 4
+      [HALT; CALL; Literal 1; Literal 1;] [] [] 5
   let _ = test_ex 0 1 "RET simple"
       [RET; Literal 1; ADD; HALT] [4;5;3;6] [] 10
   let _ = test_ex 2 8 "CALL and RET"
@@ -70,6 +70,7 @@ module VM_test = struct
        RET; Literal 2;    (* stack =         [9] *)
        (* stack =       [5;4] *)
        CALL; Literal 1;   (* stack =         [9] *)
+       Literal 1;
        HALT]
       [ 4;5 ] [] 9
   let _ = test_ex 2 8 "CALL mul add"
@@ -80,5 +81,5 @@ module VM_test = struct
        CALL; Literal 1;  (* 8;9 *)
        ADD;              (* 10 *)
        HALT]              (* 11 *)
-      [ 1; 2; 3 ] [] 7
+      [ 1; 2; 3 ] [] 6
  end
