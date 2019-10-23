@@ -10,7 +10,7 @@ module Util : sig
   type args = string list
   val find_by_inst : inst:int -> t -> t
   val filter_by_names : red_names:string list -> args -> args
-  val find_call_dest : int array -> (int * int) list -> int list
+  val find_call_dest : int array -> int -> int list
 
   val ( <=> ) : exp -> (int * int) -> bool
   val ( <|> ) : exp -> (Id.t * id_or_imm * t * t) -> exp
@@ -44,15 +44,15 @@ end = struct
     |> List.filter (fun (i,x) -> entry_pc <= i && i <= ret_pc)
     |> List.filter (fun (i,x) -> x = call_inst)
 
-  let find_call_dest (bytecode : int array) (call_pcs : (int * int) list) =
-    call_pcs |> List.map (fun (call_pc,_) -> Array.get bytecode (call_pc + 1))
-
+  let find_call_dest bytecode merge_pc =
+    find_call_within bytecode merge_pc
+    |> List.map (fun (call_pc,_) -> Array.get bytecode (call_pc + 1))
 
   let _ =
     let bytecode = [|1;2;7;1;1;2;3;14;9;1;9;2;5;3;7;1;1;5;3;7;21;2;8;|]
     and merge_pc = 7 in
     assert (find_call_within bytecode merge_pc = [(14,7); (19,7)]);
-    assert (find_call_within bytecode merge_pc |> find_call_dest bytecode = [1;21])
+    assert (find_call_dest bytecode merge_pc = [1;21])
 
 
   let (<=>) e (n1, n2) =
@@ -127,7 +127,8 @@ and optimize_exp p reg mem (x, typ) env exp body =
      reg.(int_of_id_t x) <- v;
      Let ((x, typ), e, mj p reg mem env body)
 
-and mj_exp (p : prog) (reg : reg) (mem : mem) ({index_pc; merge_pc; bytecode} as env : env) : exp -> t =
+and mj_exp : prog -> reg -> mem -> env -> exp -> t =
+  fun p reg mem ({index_pc; merge_pc; bytecode} as env) ->
   function
   | CallDir (id_l, argsr, fargs) ->
      (* let rec f argt argr =
@@ -157,7 +158,8 @@ and mj_exp (p : prog) (reg : reg) (mem : mem) ({index_pc; merge_pc; bytecode} as
         Let ((id, Type.Int), Set (value_of v), Ans (Mov id))
      | Not_specialized (e, v) -> Ans e
 
-and mj_if (p : prog) (reg : reg) (mem : mem) ({index_pc; merge_pc; bytecode} as env : env) : exp -> t =
+and mj_if : prog -> reg -> mem -> env -> exp -> t =
+  fun p reg mem ({index_pc; merge_pc; bytecode} as env) ->
   function
   | IfEq (id_t, id_or_imm, t1, t2)
   | IfLE (id_t, id_or_imm, t1, t2)
@@ -210,6 +212,13 @@ let run prog reg mem ({trace_name; red_names; index_pc= x; merge_pc= y} as env) 
   Renaming.counter := !Id.counter;
   let { args; body } = Fundef.find_fuzzy prog "interp" in
   let trace = mj prog reg mem env body in
-  { name= Id.L env.trace_name; fargs= []; body= trace; ret= Type.Int
-  ; args= args |> List.filter (fun arg -> List.mem (String.get_name arg) red_names)
-  }
+  { name= Id.L env.trace_name; fargs= []; body= trace; ret= Type.Int;
+    args= args |> List.filter (fun arg -> List.mem (String.get_name arg) red_names) }
+
+let run_multi p reg mem env =
+  let {trace_name; red_names; index_pc; merge_pc; bytecode} = env in
+  let call_dests = Util.find_call_dest bytecode merge_pc in
+  List.map (fun pc ->
+      let env = {trace_name; red_names; index_pc; merge_pc=pc; bytecode} in
+      run p reg mem env)
+    (merge_pc :: call_dests)
