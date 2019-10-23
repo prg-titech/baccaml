@@ -6,10 +6,22 @@ open Asm
 open Jit_env
 open Jit_util
 
+type mj_env = {
+    trace_name : string;
+    red_names : string list;
+    index_pc : int;
+    merge_pc : int;
+    function_pcs : int list;
+    bytecode : int array;
+  }
+
+let create_mj_env ~trace_name ~red_names ~index_pc ~merge_pc ~function_pcs ~bytecode =
+  { trace_name; red_names; index_pc; merge_pc; function_pcs; bytecode }
+
 module Util : sig
   type args = string list
   val find_by_inst : inst:int -> t -> t
-  val filter_by_names : red_names:string list -> args -> args
+  val filter_by_names : reds:string list -> args -> args
   val find_call_dest : int array -> int -> int list
 
   val ( <=> ) : exp -> (int * int) -> bool
@@ -27,8 +39,8 @@ end = struct
     | Ans exp -> raise Not_found
     | Let (_, _, t) -> find_by_inst inst t
 
-  let filter_by_names ~red_names args =
-    args |> List.filter (fun arg -> List.mem (String.get_name arg) red_names)
+  let filter_by_names ~reds args =
+    args |> List.filter (fun arg -> List.mem (String.get_name arg) reds)
 
   let find_entry_all bytecode =
     (* TOOD: specify externally *)
@@ -70,7 +82,9 @@ end = struct
     | _ -> assert false
 end
 
-let rec mj p reg mem ({trace_name; index_pc; merge_pc; red_names; bytecode} as env : env) = function
+let rec mj : prog -> reg -> mem -> mj_env -> t -> t =
+  fun p reg mem ({trace_name; red_names; index_pc; merge_pc; function_pcs; bytecode} as env) ->
+  function
   | Ans (exp) -> exp |> mj_exp p reg mem env
   | Let ((x, typ), CallDir (Id.L ("min_caml_jit_merge_point"), args, fargs), body) ->
      let pc = List.hd args |> int_of_id_t |> Array.get reg |> value_of in
@@ -81,9 +95,12 @@ let rec mj p reg mem ({trace_name; index_pc; merge_pc; red_names; bytecode} as e
      Log.debug ("can_enter_jit: " ^ string_of_int pc);
      mj p reg mem env body
   | Let ((x, typ), CallDir (Id.L ("min_caml_mj_call"), args, fargs), body) ->
-     Let ((x, typ), CallDir (Id.L (trace_name), Util.filter_by_names red_names args, fargs), mj p reg mem env body)
+     let reds = Util.filter_by_names red_names args in
+     Let ((x, typ), CallDir (Id.L (trace_name), reds, fargs), mj p reg mem env body)
   | Let ((x, typ), CallDir (id_l, args, fargs), body) ->
-     Let ((x, typ), CallDir (id_l, args, fargs), body |> mj p reg mem env)
+     let reds = Util.filter_by_names ~reds:red_names args in
+     Let ((x, typ), CallDir (id_l, reds, []), body |> mj p reg mem env)
+     |> Jit_guard.restore reg ~args:args
   | Let ((x, typ), exp, body) ->
      match exp with
      | (IfEq _ | IfGE _ | IfLE _ | SIfEq _ | SIfLE _ | SIfGE _) ->
@@ -127,7 +144,7 @@ and optimize_exp p reg mem (x, typ) env exp body =
      reg.(int_of_id_t x) <- v;
      Let ((x, typ), e, mj p reg mem env body)
 
-and mj_exp : prog -> reg -> mem -> env -> exp -> t =
+and mj_exp : prog -> reg -> mem -> mj_env -> exp -> t =
   fun p reg mem ({index_pc; merge_pc; bytecode} as env) ->
   function
   | CallDir (id_l, argsr, fargs) ->
@@ -158,7 +175,7 @@ and mj_exp : prog -> reg -> mem -> env -> exp -> t =
         Let ((id, Type.Int), Set (value_of v), Ans (Mov id))
      | Not_specialized (e, v) -> Ans e
 
-and mj_if : prog -> reg -> mem -> env -> exp -> t =
+and mj_if : prog -> reg -> mem -> mj_env -> exp -> t =
   fun p reg mem ({index_pc; merge_pc; bytecode} as env) ->
   function
   | IfEq (id_t, id_or_imm, t1, t2)
@@ -208,17 +225,22 @@ and mj_if : prog -> reg -> mem -> env -> exp -> t =
      end
 
 
-let run prog reg mem ({trace_name; red_names; index_pc= x; merge_pc= y} as env) =
+let run : prog -> reg -> mem -> env -> fundef =
+  fun prog reg mem ({trace_name; red_names; index_pc; merge_pc; bytecode}) ->
   Renaming.counter := !Id.counter;
   let { args; body } = Fundef.find_fuzzy prog "interp" in
+  let env = {trace_name; red_names; index_pc; merge_pc; function_pcs=[merge_pc]; bytecode} in
   let trace = mj prog reg mem env body in
   { name= Id.L env.trace_name; fargs= []; body= trace; ret= Type.Int;
     args= args |> List.filter (fun arg -> List.mem (String.get_name arg) red_names) }
 
-let run_multi p reg mem env =
-  let {trace_name; red_names; index_pc; merge_pc; bytecode} = env in
+let run_multi : prog -> reg -> mem -> env -> t list =
+  fun p reg mem ({trace_name; red_names; index_pc; merge_pc; bytecode}) ->
   let call_dests = Util.find_call_dest bytecode merge_pc in
   List.map (fun pc ->
-      let env = {trace_name; red_names; index_pc; merge_pc=pc; bytecode} in
-      run p reg mem env)
+      let env = create_mj_env ~trace_name:trace_name ~red_names:red_names ~index_pc:index_pc
+                  ~merge_pc:pc ~function_pcs:call_dests ~bytecode:bytecode in
+      Renaming.counter := !Id.counter;
+      let { body } = Fundef.find_fuzzy p "interp" in
+      mj p reg mem env body)
     (merge_pc :: call_dests)
