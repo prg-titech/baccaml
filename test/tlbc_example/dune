@@ -7,7 +7,7 @@
  (targets interp_sh_tj.exe)
  (deps interp_sh_tj.s ../../stub/stub.c ../../stub/libmincaml.S)
  (action
-  (run %{cc} -m32 -O2 -lm -o %{targets} -I %{ocaml_where} -I . %{deps})))
+  (run %{cc} -lm -o %{targets} -I %{ocaml_where} -I . %{deps})))
 
 (alias
  (name runtest)
