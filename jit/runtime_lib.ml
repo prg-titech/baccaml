@@ -3,28 +3,6 @@ open Base
 
 exception Jit_compilation_failed
 
-module Trace_name : sig
-  type t = Trace_name of string
-
-  val gen : [< `Meta_tracing | `Meta_method] -> t
-  val value : t -> string
-end = struct
-  type t = Trace_name of string
-
-  let counter = ref 0
-
-  let gen typ =
-    let mark = match typ with
-        `Meta_tracing -> "tj"
-      | `Meta_method -> "mj"
-    in
-    let name = "trace" ^ mark ^ string_of_int !counter in
-    incr counter;
-    Trace_name (Id.genid name)
-
-  let value = function Trace_name s -> s
-end
-
 module Internal_conf = struct
   let size = Sys.max_array_length
 
