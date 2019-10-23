@@ -76,7 +76,7 @@ let rec tj p reg mem env t =
      (Let ((dest, typ)
          , CallDir (Id.L x, Util.filter ~reds:red_names args, fargs)
          , (tj p reg mem env body)))
-     |> Jit_guard.restore reg args
+     |> Jit_guard.restore reg ~args:args
   | Let ((dest, typ), e, body) ->
     begin match e with
     | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ ->
