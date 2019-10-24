@@ -240,10 +240,10 @@ let run : prog -> reg -> mem -> env -> fundef =
   let { args; body } = Fundef.find_fuzzy prog "interp" in
   let env = {trace_name; red_names; index_pc; merge_pc; function_pcs=[merge_pc]; bytecode} in
   let trace = mj prog reg mem env body in
-  { name= Id.L env.trace_name; fargs= []; body= trace; ret= Type.Int;
-    args= args |> List.filter (fun arg -> List.mem (String.get_name arg) red_names) }
+  let args = args |> List.filter (fun arg -> List.mem (String.get_name arg) red_names) in
+  Fundef.create_fundef ~name:(Id.L env.trace_name) ~args:args ~fargs:[] ~body:trace ~ret:(Type.Int)
 
-let run_multi : prog -> reg -> mem -> env -> t list =
+let run_multi : prog -> reg -> mem -> env -> fundef list =
   fun p reg mem ({trace_name; red_names; index_pc; merge_pc; bytecode}) ->
   let call_dests = Util.find_call_dest bytecode merge_pc in
   (* register trace names *)
@@ -256,6 +256,9 @@ let run_multi : prog -> reg -> mem -> env -> t list =
       let env = create_mj_env ~trace_name:trace_name ~red_names:red_names ~index_pc:index_pc
                   ~merge_pc:pc ~function_pcs:call_dests ~bytecode:bytecode in
       Renaming.counter := !Id.counter;
-      let { body } = Fundef.find_fuzzy p "interp" in
-      mj p reg mem env body)
-    (merge_pc :: call_dests)
+      let { body; args } = Fundef.find_fuzzy p "interp" in
+      let trace = mj p reg mem env body in
+      let args = args |> List.filter (fun arg -> List.mem (String.get_name arg) red_names) in
+      Fundef.create_fundef ~name:(Id.L (Method_prof.find pc))
+        ~args:args ~fargs:[] ~body:trace ~ret:Type.Int
+    ) (merge_pc :: call_dests)
