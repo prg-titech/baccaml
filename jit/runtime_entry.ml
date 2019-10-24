@@ -13,40 +13,50 @@ type runtime_env =
   ; bc_ptr: int
   ; st_ptr: int }
 
-let get_id elem = List.find (fun arg -> String.get_name arg = elem)
+module Util = struct
+  let get_id elem = List.find (fun arg -> String.get_name arg = elem)
 
-let filter typ = match typ with
-    `Red ->
-     List.filter (fun a -> (List.mem (String.get_name a) Internal_conf.reds))
-  | `Green ->
-     List.filter (fun a -> List.mem (String.get_name a) Internal_conf.greens)
+  let filter typ = match typ with
+      `Red ->
+       List.filter (fun a -> (List.mem (String.get_name a) Internal_conf.reds))
+    | `Green ->
+       List.filter (fun a -> List.mem (String.get_name a) Internal_conf.greens)
+end
 
-let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
-  Debug.print_arr string_of_int bytecode;
-  let prog = Jit_annot.annotate `Meta_method prog in
-  let Asm.{args; body} = Fundef.find_fuzzy prog "interp" in
-  let reg = make_reg prog args sp in
-  let mem =
-    Internal_conf.(make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack)
-  in
-  let pc_method_entry = pc in
-  let pc_ir_addr = get_ir_addr args "pc" in
-  let sp_ir_addr = get_ir_addr args "sp" in
-  let bc_ir_addr = get_ir_addr args "bytecode" in
-  let st_ir_addr = get_ir_addr args "stack" in
-  let module E = Jit_env in
-  reg.(pc_ir_addr) <- E.Green pc_method_entry ;
-  reg.(sp_ir_addr) <- E.Red sp ;
-  reg.(bc_ir_addr) <- E.Green Internal_conf.bc_tmp_addr ;
-  reg.(st_ir_addr) <- E.Red Internal_conf.st_tmp_addr ;
+module Setup = struct
+  let env {bytecode; stack; pc; sp; bc_ptr; st_ptr} typ prog =
+    let open Asm in
+    Debug.print_arr string_of_int bytecode;
+    let prog = Jit_annot.annotate typ prog
+    and {args; body} = Fundef.find_fuzzy prog "interp" in
+    let reg = make_reg prog args sp
+    and mem = Internal_conf.(make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack)
+    and pc_method_entry = pc
+    and pc_ir_addr = get_ir_addr args "pc"
+    and sp_ir_addr = get_ir_addr args "sp"
+    and bc_ir_addr = get_ir_addr args "bytecode"
+    and st_ir_addr = get_ir_addr args "stack" in
+    let module E = Jit_env in
+    reg.(pc_ir_addr) <- E.Green pc_method_entry ;
+    reg.(sp_ir_addr) <- E.Red sp ;
+    reg.(bc_ir_addr) <- E.Green Internal_conf.bc_tmp_addr ;
+    reg.(st_ir_addr) <- E.Red Internal_conf.st_tmp_addr ;
+    reg, mem
+end
+
+let jit_method ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
+  let open Asm in
+  let open Jit_env in
   let module JM = Jit_method in
+  let reg, mem = Setup.env runtime_env `Meta_method prog in
+  let { args } = Fundef.find_fuzzy prog "interp" in
   let trace_name = Trace_name.gen `Meta_method in
   let env =
-    E.create_env
+    create_env
       ~trace_name:(Trace_name.value trace_name)
       ~red_names:(!Config.reds)
-      ~index_pc:(List.index (get_id "pc" args) args)
-      ~merge_pc:pc_method_entry
+      ~index_pc:(List.index (Util.get_id "pc" args) args)
+      ~merge_pc:pc
       ~bytecode:bytecode
   in
   let trace = JM.run prog reg mem env |> Simm.h in
@@ -59,26 +69,15 @@ let jit_method {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
   with e ->
     close_out oc; raise e
 
-let jit_tracing {bytecode; stack; pc; sp; bc_ptr; st_ptr} prog =
-  Renaming.counter := 0;
-  let prog = Jit_annot.annotate `Meta_tracing prog in
-  let Asm.{args; body} = Fundef.find_fuzzy prog "interp" in
-  let reg = make_reg prog args sp in
-  let mem =
-    Internal_conf.(make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack)
-  in
-  let pc_ir_addr = get_ir_addr args "pc" in
-  let sp_ir_addr = get_ir_addr args "sp" in
-  let bc_ir_addr = get_ir_addr args "bytecode" in
-  let st_ir_addr = get_ir_addr args "stack" in
-  reg.(pc_ir_addr) <- Green pc ;
-  reg.(sp_ir_addr) <- Red sp ;
-  reg.(bc_ir_addr) <- Green Internal_conf.bc_tmp_addr ;
-  reg.(st_ir_addr) <- Red Internal_conf.st_tmp_addr ;
+let jit_tracing ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
+  let open Asm in
+  let open Jit_env in
   let module JT = Jit_tracing_v2 in
+  let reg, mem = Setup.env runtime_env `Meta_tracing prog in
+  let { args } = Fundef.find_fuzzy prog "interp" in
   let trace_name = Trace_name.gen `Meta_tracing in
   let env =
-    Jit_env.create_env
+    create_env
       ~index_pc:(
         let pc_id = List.find (fun arg -> String.get_name arg = "pc") args in
         List.index pc_id args)
@@ -124,7 +123,6 @@ let jit_exec pc st_ptr sp stack =
     | None -> ()
   end
 
-
 let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
   with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
     if Trace_prof.over_threshold pc then
@@ -147,7 +145,6 @@ let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
     else
       Trace_prof.count_up pc
   end
-
 
 let jit_method_compile bytecode stack pc sp bc_ptr st_ptr =
   Printf.printf "pc: %d, sp: %d, bc_ptr: %d, st_ptr: %d\n" pc sp bc_ptr st_ptr;
