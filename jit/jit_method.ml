@@ -5,6 +5,7 @@ open Asm
 
 open Jit_env
 open Jit_util
+open Jit_prof
 
 type mj_env = {
     trace_name : string;
@@ -23,6 +24,7 @@ module Util : sig
   val find_by_inst : inst:int -> t -> t
   val filter_by_names : reds:string list -> args -> args
   val find_call_dest : int array -> int -> int list
+  val get_pc : reg -> string -> int
 
   val ( <=> ) : exp -> (int * int) -> bool
   val ( <|> ) : exp -> (Id.t * id_or_imm * t * t) -> exp
@@ -66,6 +68,8 @@ end = struct
     assert (find_call_within bytecode merge_pc = [(14,7); (19,7)]);
     assert (find_call_dest bytecode merge_pc = [1;21])
 
+  let get_pc reg arg =
+    arg |> int_of_id_t |> Array.get reg |> value_of
 
   let (<=>) e (n1, n2) =
     match e with
@@ -95,8 +99,13 @@ let rec mj : prog -> reg -> mem -> mj_env -> t -> t =
      Log.debug ("can_enter_jit: " ^ string_of_int pc);
      mj p reg mem env body
   | Let ((x, typ), CallDir (Id.L ("min_caml_mj_call"), args, fargs), body) ->
+     let pc = Util.get_pc reg (List.nth args index_pc) in
      let reds = Util.filter_by_names red_names args in
-     Let ((x, typ), CallDir (Id.L (trace_name), reds, fargs), mj p reg mem env body)
+     if pc = merge_pc then
+       Let ((x, typ), CallDir (Id.L (trace_name), reds, fargs), mj p reg mem env body)
+     else
+       let trace_name = Method_prof.find pc in
+       Let ((x, typ), CallDir (Id.L (trace_name), reds, fargs), mj p reg mem env body)
   | Let ((x, typ), CallDir (id_l, args, fargs), body) ->
      let reds = Util.filter_by_names ~reds:red_names args in
      Let ((x, typ), CallDir (id_l, reds, []), body |> mj p reg mem env)
@@ -237,6 +246,12 @@ let run : prog -> reg -> mem -> env -> fundef =
 let run_multi : prog -> reg -> mem -> env -> t list =
   fun p reg mem ({trace_name; red_names; index_pc; merge_pc; bytecode}) ->
   let call_dests = Util.find_call_dest bytecode merge_pc in
+  (* register trace names *)
+  List.iter (fun pc ->
+      let trace_name = Trace_name.(gen `Meta_method |> value) in
+      Method_prof.register (pc, trace_name)
+    ) (merge_pc :: call_dests);
+  (* compile them *)
   List.map (fun pc ->
       let env = create_mj_env ~trace_name:trace_name ~red_names:red_names ~index_pc:index_pc
                   ~merge_pc:pc ~function_pcs:call_dests ~bytecode:bytecode in
