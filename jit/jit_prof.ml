@@ -7,6 +7,8 @@ end
 module Make_prof (M_prof : Prof) = struct
   open M_prof
 
+  exception Not_found_name of string
+
   type pc = int
   type name = string
   let count_tbl = Hashtbl.create 1000
@@ -22,6 +24,11 @@ module Make_prof (M_prof : Prof) = struct
     | Some count ->
       Hashtbl.replace count_tbl pc (count + 1)
     | None -> Hashtbl.add count_tbl pc 1
+
+  let find : pc -> name = fun pc ->
+    try
+      Hashtbl.find compiled_tbl pc
+    with Not_found -> raise (Not_found_name (string_of_int pc))
 
   let find_opt : pc -> name option = fun pc ->
     Hashtbl.find_opt compiled_tbl pc
