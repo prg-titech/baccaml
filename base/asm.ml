@@ -155,7 +155,7 @@ let print_fundef { name; args; fargs; body; ret } =
   print_newline (); print_tab ();
   print_t body;
   print_newline (); print_tab ();
-  print_string "ret= "; Type.print_type ret; print_newline ();
+  print_string "ret= "; Type.print_type ret; print_string ";"; print_newline ();
   print_string "}"; print_newline ()
 
 (* プログラム全体 = 浮動小数点数テーブル + トップレベル関数 + メインの式 (caml2html: sparcasm_prog) *)
