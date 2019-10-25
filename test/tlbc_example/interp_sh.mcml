@@ -433,4 +433,43 @@ code.(65) <- 12;
 code.(66) <- 12;
 code.(67) <- 10;
 exec code 32;
+
+(* tarai *)
+let code = Array.make 67 0 in
+code.(0) <- 14;
+code.(1) <- 9; code.(2) <- 4;
+code.(3) <- 9; code.(4) <- 4;
+code.(5) <- 5; code.(6) <- 1;
+code.(7) <- 1;
+code.(8) <- 4;
+code.(9) <- 6; code.(10) <- 15;
+code.(11) <- 9; code.(12) <- 3;
+code.(13) <- 13; code.(14) <- 54;
+code.(15) <- 9; code.(16) <- 4;
+code.(17) <- 5; code.(18) <- 1;
+code.(19) <- 2;
+code.(20) <- 9; code.(21) <- 4;
+code.(22) <- 9; code.(23) <- 4;
+code.(24) <- 7; code.(25) <- 1; code.(26) <- 3;
+code.(27) <- 9; code.(28) <- 4;
+code.(29) <- 5; code.(30) <- 1;
+code.(31) <- 2;
+code.(32) <- 9; code.(33) <- 4;
+code.(34) <- 9; code.(35) <- 7;
+code.(36) <- 7; code.(37) <- 1; code.(38) <- 3;
+code.(39) <- 9; code.(40) <- 4;
+code.(41) <- 5; code.(42) <- 1;
+code.(43) <- 2;
+code.(44) <- 9; code.(45) <- 7;
+code.(46) <- 9; code.(47) <- 7;
+code.(48) <- 7; code.(49) <- 1; code.(50) <- 3;
+code.(51) <- 7; code.(52) <- 1; code.(53) <- 3;
+code.(54) <- 8; code.(55) <- 3;
+code.(56) <- 14;
+code.(57) <- 5; code.(58) <- 12;
+code.(59) <- 5; code.(60) <- 6;
+code.(61) <- 5; code.(62) <- 0;
+code.(63) <- 7; code.(64) <- 1; code.(65) <- 3;
+code.(66) <- 10;
+exec code 57;
 ()
