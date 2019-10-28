@@ -42,6 +42,11 @@ module Debug = struct
 
 end
 
+module Compat = struct
+  let of_bytecode bytecode =
+    Array.map (fun x -> if x = -1024 then 0 else x) bytecode
+end
+
 let file_open () =
   match !Config.file_name with
   | Some name -> open_in name

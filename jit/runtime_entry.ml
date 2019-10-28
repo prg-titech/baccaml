@@ -146,19 +146,6 @@ let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
       Trace_prof.count_up pc
   end
 
-let jit_method_compile bytecode stack pc sp bc_ptr st_ptr =
-  Printf.printf "pc: %d, sp: %d, bc_ptr: %d, st_ptr: %d\n" pc sp bc_ptr st_ptr;
-  let ic = file_open () in
-  let p =
-    ic |> Lexing.from_channel |> Opt.virtualize
-    |> Jit_annot.annotate `Meta_method
-  in
-  close_in ic;
-  let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-  match p |> jit_method env with
-  | Ok name -> Method_prof.register (pc, name)
-  | Error e -> raise e
-
 let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
   match Method_prof.find_opt pc with
   | Some name ->
@@ -175,6 +162,8 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
          |> Jit_annot.annotate `Meta_method
        in
        close_in ic;
+       let bytecode = Compat.of_bytecode bytecode in
+       Debug.print_stack bytecode;
        let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
        match p |> jit_method env with
        | Ok name ->
@@ -192,4 +181,3 @@ let callbacks () =
   Callback.register "jit_tracing_entry" jit_tracing_entry;
   Callback.register "jit_exec" jit_exec;
   Callback.register "jit_method_call" jit_method_call;
-  Callback.register "jit_method_compile" jit_method_compile;
