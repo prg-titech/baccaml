@@ -1,6 +1,5 @@
 (executable
  (name jit_entry)
- (public_name jit_entry)
  (modules jit_entry)
  (libraries jit)
  (modes
