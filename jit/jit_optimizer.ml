@@ -21,7 +21,6 @@ let run p e reg mem = match e with
        | V (id_t) -> reg.(int_of_id_t id_t)
        | C (n) -> Green (n)
      in
-     let id_t2 = match id_or_imm with V (id) -> id | C (n) -> string_of_int n in
      (match r1, r2 with
       | Green (n1), Green (n2) ->
         Specialized (Green (n1 + n2))
@@ -84,11 +83,6 @@ let run p e reg mem = match e with
             | Green (n1) -> Green (n1 * x)
             | Red (n1) -> Red (n1 * x))
         | C (n) -> Green (n * x))
-     in
-     let id_t2 =
-       match id_or_imm with
-         V (id) -> id
-       | C (n) -> string_of_int n
      in
      (match destld, offsetld with
       | Green (n1), Green (n2) ->
@@ -158,6 +152,5 @@ let run p e reg mem = match e with
         end
      end
   | _ ->
-    let msg = "un suported instruction" in
-    Asm.print_exp e; print_newline ();
-    failwith msg
+     Asm.print_exp e; print_newline ();
+     failwith ("un suported instruction")

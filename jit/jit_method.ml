@@ -243,6 +243,7 @@ let run : prog -> reg -> mem -> env -> fundef =
   let args = args |> List.filter (fun arg -> List.mem (String.get_name arg) red_names) in
   Fundef.create_fundef ~name:(Id.L env.trace_name) ~args:args ~fargs:[] ~body:trace ~ret:(Type.Int)
 
+
 let run_multi : prog -> reg -> mem -> env -> fundef list =
   fun p reg mem ({trace_name; red_names; index_pc; merge_pc; bytecode}) ->
   let call_dests = Util.find_call_dest bytecode merge_pc in

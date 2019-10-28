@@ -10,11 +10,11 @@ let int_of_id_t id =
   Str.split str id |> List.last |> int_of_string
 
 let int_of_id_or_imm = function
-  | V (id) -> int_of_id_t id
+    V (id) -> int_of_id_t id
   | C (n) -> n
 
 let value_of = function
-    Red n
+    Red n -> n
   | Green n -> n
 
 let is_red = function
