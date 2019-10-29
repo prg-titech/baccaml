@@ -59,15 +59,19 @@ let jit_method ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
       ~merge_pc:pc
       ~bytecode:bytecode
   in
-  let trace = JM.run prog reg mem env |> Simm.h in
-  Asm.print_fundef trace; print_newline ();
+  (* let trace = JM.run prog reg mem env |> Simm.h in
+   * Asm.print_fundef trace; print_newline (); *)
+  let trace = JM.run_multi prog reg mem env |> List.map Simm.h in
+  List.iter print_fundef trace;
+  assert false;
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
-  try
-    emit_dyn oc prog `Meta_method trace_name trace;
-    close_out oc;
-    compile_dyn (Trace_name.value trace_name)
-  with e ->
-    close_out oc; raise e
+  Ok ""
+  (* try
+   *   emit_dyn oc prog `Meta_method trace_name trace;
+   *   close_out oc;
+   *   compile_dyn (Trace_name.value trace_name)
+   * with e ->
+   *   close_out oc; raise e *)
 
 let jit_tracing ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
   let open Asm in
