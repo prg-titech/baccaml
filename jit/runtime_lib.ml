@@ -1,5 +1,5 @@
 open Std
-open Base
+open MinCaml
 
 exception Jit_compilation_failed
 

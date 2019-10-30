@@ -8,4 +8,5 @@
  (name jit)
  (public_name baccaml.jit)
  (modules (:standard \ dynload_stub))
- (libraries str unix dynload_stub base log std))
+ (libraries str unix dynload_stub minCaml log std)
+ (preprocess (pps ppx_inline_test)))

@@ -1,4 +1,4 @@
-open Base
+open MinCaml
 type rename_env = Id.t -> Id.t
 val counter : int ref
 val empty_env : string -> 'a

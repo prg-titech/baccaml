@@ -3,11 +3,11 @@
  (public_name    min-caml)
  (flags          (-w -4-33-40-41))
  (modules        Min_caml)
- (libraries      base jit))
+ (libraries      minCaml jit))
 
 (executable
  (name           min_c)
  (public_name    min-c)
  (flags          (-w -4-33-40-41))
  (modules        min_c)
- (libraries      base))
+ (libraries      minCaml))

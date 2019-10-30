@@ -2,7 +2,7 @@ open OUnit2
 open Jit
 open Jit_prof
 
-module Make_prof_test = Make_prof(struct let threshold = 10 end)
+module Make_prof_test = Make_prof(struct let threshold = 10;; let typ = `Meta_tracing end)
 
 let test_prof _ =
   Make_prof_test.register (1, "tracetj0");

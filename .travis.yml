@@ -17,7 +17,7 @@ before_install:
   - export OPAMVERBOSE=1
 install:
   - opam update --upgrade
-  - opam install -y dune oUnit ppx_deriving
+  - opam install -y dune oUnit ppx_deriving ppx_inline_test alcotest
 script:
   - dune runtest -f test/jit
   - dune runtest -f test/bytecomp

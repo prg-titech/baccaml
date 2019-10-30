@@ -1,5 +1,5 @@
 open Std
-open Base
+open MinCaml
 open Asm
 open Inlining
 open Renaming

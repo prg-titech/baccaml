@@ -1,4 +1,4 @@
-open Base
+open MinCaml
 
 module Trace_name : sig
   type t = Trace_name of string
