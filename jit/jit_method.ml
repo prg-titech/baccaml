@@ -85,11 +85,11 @@ let rec mj p reg mem ({trace_name; red_names; index_pc; merge_pc; function_pcs; 
        Let ((x, typ), CallDir (Id.L (trace_name), reds, fargs), mj p reg mem env body)
      else
        (try
-         let trace_name = Method_prof.find pc in
-         Let ((x, typ), CallDir (Id.L (trace_name), args, fargs), mj p reg mem env body)
-       with Not_found ->
-         (Let ((x, typ), CallDir (Id.L ("interp"), args, fargs), mj p reg mem env body))
-         |> Jit_guard.restore reg ~args)
+          let trace_name = Method_prof.find pc in
+          Let ((x, typ), CallDir (Id.L (trace_name), reds, fargs), mj p reg mem env body)
+        with Not_found ->
+          Let ((x, typ), CallDir (Id.L ("interp"), args, fargs), mj p reg mem env body)
+          |> Jit_guard.restore reg ~args)
   | Let ((x, typ), CallDir (id_l, args, fargs), body) ->
      let reds = Util.filter_by_names ~reds:red_names args in
      Let ((x, typ), CallDir (id_l, reds, []), body |> mj p reg mem env)
@@ -223,23 +223,23 @@ let run prog reg mem ({trace_name; red_names; index_pc; merge_pc; bytecode} : en
   Fundef.create_fundef ~name:(Id.L env.trace_name) ~args:reds ~fargs:[] ~body:trace ~ret:(Type.Int)
 
 
-let run_multi p reg mem (env : env) =
+let run_multi p reg mem ({trace_name; red_names; index_pc; merge_pc; bytecode} : env) =
   Renaming.counter := !Id.counter;
-  let call_dests = Util.find_call_dests env.bytecode env.merge_pc in
-  let merge_pcs = call_dests @ [env.merge_pc] |> List.unique in
+  let call_dests = Util.find_call_dests bytecode merge_pc in
+  let merge_pcs = call_dests @ [merge_pc] |> List.unique in
   let { args } = Fundef.find_fuzzy p "interp" in
-  merge_pcs
-  |> List.map begin fun pc ->
-       let trace_name = Trace_name.gen_str `Meta_method in
-       Method_prof.register (pc, trace_name);
-       pc, trace_name
-       end
-  |> List.map
-       begin fun (pc,trace_name) ->
-       Log.debug @@ Printf.sprintf "method jit: pc %d, name %s" pc trace_name;
-       let pc_id = args |> List.find (fun arg -> String.get_name arg = "pc") in
-       let new_env = create_env ~trace_name:trace_name ~red_names:env.red_names
-                       ~index_pc:env.index_pc ~merge_pc:pc ~bytecode:env.bytecode in
-       reg.(int_of_id_t pc_id) <- Green (pc);
-       run p reg mem new_env
-       end
+  let compiled =
+    merge_pcs
+    |> List.map (fun pc ->
+      let trace_name = Trace_name.gen_str `Meta_method in
+      Method_prof.register (pc, trace_name);
+      pc, trace_name)
+    |> List.map (fun (pc,trace_name) ->
+      Log.debug @@ Printf.sprintf "method jit: pc %d, name %s" pc trace_name;
+      let pc_id = args |> List.find (fun arg -> String.get_name arg = "pc") in
+      let new_env = create_env ~trace_name:trace_name ~red_names:red_names
+          ~index_pc:index_pc ~merge_pc:pc ~bytecode:bytecode in
+      reg.(int_of_id_t pc_id) <- Green (pc);
+      pc, run p reg mem new_env)
+  in
+  `Mj_result (List.assoc merge_pc compiled, List.(remove_assoc merge_pc compiled |> map snd))

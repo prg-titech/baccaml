@@ -14,6 +14,8 @@ type runtime_env =
   ; st_ptr: int }
 
 module Util = struct
+  open Asm
+
   let get_id elem = List.find (fun arg -> String.get_name arg = elem)
 
   let filter typ = match typ with
@@ -21,6 +23,16 @@ module Util = struct
        List.filter (fun a -> (List.mem (String.get_name a) Internal_conf.reds))
     | `Green ->
        List.filter (fun a -> List.mem (String.get_name a) Internal_conf.greens)
+
+  let emit_and_compile prog typ (trace : fundef) =
+    let { name= Id.L trace_name; } = trace in
+    let oc = open_out (trace_name ^ ".s") in
+    try
+      emit_dyn oc prog typ trace_name trace;
+      close_out oc;
+      compile_dyn trace_name
+    with e ->
+      close_out oc; raise e
 end
 
 module Setup = struct
@@ -59,19 +71,36 @@ let jit_method ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
       ~merge_pc:pc
       ~bytecode:bytecode
   in
-  (* let trace = JM.run prog reg mem env |> Simm.h in
-   * Asm.print_fundef trace; print_newline (); *)
-  let trace = JM.run_multi prog reg mem env |> List.map Simm.h in
-  List.iter print_fundef trace;
-  assert false;
-  let oc = open_out (Trace_name.value trace_name ^ ".s") in
-  Ok ""
-  (* try
-   *   emit_dyn oc prog `Meta_method trace_name trace;
-   *   close_out oc;
-   *   compile_dyn (Trace_name.value trace_name)
-   * with e ->
-   *   close_out oc; raise e *)
+  let trace = JM.run prog reg mem env |> Simm.h in
+  Debug.with_debug (fun _ -> print_fundef trace);
+  Util.emit_and_compile prog `Meta_method trace
+
+let jit_method_multi ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
+  let open Asm in
+  let open Jit_env in
+  let module JM = Jit_method in
+  let reg, mem = Setup.env runtime_env `Meta_method prog in
+  let { args } = Fundef.find_fuzzy prog "interp" in
+  let trace_name = Trace_name.gen `Meta_method in
+  let env =
+    create_env
+      ~trace_name:(Trace_name.value trace_name)
+      ~red_names:(!Config.reds)
+      ~index_pc:(List.index (Util.get_id "pc" args) args)
+      ~merge_pc:pc
+      ~bytecode:bytecode
+  in
+  try
+    let main_name = ref None in
+    JM.run_multi prog reg mem env
+    |> function `Mj_result (main, aux) as res ->
+      List.iter (fun trc -> print_fundef trc; print_newline ()) (main :: aux);
+      let { name= Id.L x } = main in
+      main_name := Some (x);
+      res
+    |> emit_and_compile_mj;
+    Ok (!main_name |> Option.get)
+  with e -> Error e
 
 let jit_tracing ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
   let open Asm in
@@ -169,7 +198,7 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
        let bytecode = Compat.of_bytecode bytecode in
        Debug.print_stack bytecode;
        let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-       match p |> jit_method env with
+       match p |> jit_method_multi env with
        | Ok name ->
           Printf.printf "[mj] compiled %s at pc: %d\n" name pc;
           Method_prof.register (pc, name);
