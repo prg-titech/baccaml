@@ -17,7 +17,7 @@ let error s =
 let debug s =
   match !log_level with
   | `Debug ->
-     Printf.fprintf stdout "[debug] %s\n" s; flush stdout
+     Printf.fprintf stderr "[debug] %s\n" s; flush stderr
   | _ -> ()
 
 let info s =
