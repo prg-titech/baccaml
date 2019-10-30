@@ -66,6 +66,13 @@ module Make_prof (M_prof : Prof) = struct
 
   let gen_name _ =
     Trace_name.(gen typ |> value)
+
+  let%test _ =
+    register (1, "tracetj0");
+    for i = 1 to threshold + 10 do
+      count_up 1;
+    done;
+    over_threshold 1 = true
 end
 
 module Method_prof =
