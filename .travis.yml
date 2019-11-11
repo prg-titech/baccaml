@@ -21,3 +21,4 @@ install:
 script:
   - dune runtest -f test/jit
   - dune runtest -f test/bytecomp
+  - dune runtest -f jit
