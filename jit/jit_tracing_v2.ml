@@ -8,6 +8,8 @@ open Jit_util
 
 open Printf
 
+let p = sprintf
+
 module Util = struct
   let rec find_by_inst inst t =
     match t with
@@ -24,22 +26,29 @@ module Util = struct
   let filter ~reds args =
     List.filter (fun arg -> List.mem (String.get_name arg) reds) args
 
+  let get_pc reg args index_pc =
+    List.nth args index_pc
+    |> int_of_id_t
+    |> Array.get reg
+    |> value_of
+
 end
 
 module JO = Jit_optimizer
 
 let rec tj p reg mem env t =
+  let rec setup_reg argt argr =
+    match argt, argr with
+    | [], [] -> ()
+    | hdt :: tlt, hdr :: tlr ->
+       reg.(int_of_id_t hdt) <- reg.(int_of_id_t hdr);
+       setup_reg tlt tlr
+    | _ -> assert false
+  in
   match t with
   | Ans (CallDir (id_l, argsr, fargsr)) ->
-    (* let rec f argt argr =
-     *   match argt, argr with
-     *   | [], [] -> ()
-     *   | hdt :: tlt, hdr :: tlr ->
-     *     reg.(int_of_id_t hdt) <- reg.(int_of_id_t hdr);
-     *     f tlt tlr
-     *   | _ -> assert false in *)
     let { trace_name; index_pc; merge_pc; bytecode } = env in
-    let pc = List.nth argsr index_pc |> int_of_id_t |> Array.get reg |> value_of in
+    let pc = Util.get_pc reg argsr index_pc in
     if pc = merge_pc then
       Ans (CallDir (Id.L trace_name, List.([nth argsr 0; nth argsr 1]), []))
     else
@@ -77,6 +86,13 @@ let rec tj p reg mem env t =
          , CallDir (Id.L x, Util.filter ~reds:red_names args, fargs)
          , (tj p reg mem env body)))
      |> Jit_guard.restore reg ~args:args
+  | Let ((dest, typ), CallDir (Id.L x, argsr, fargsr), body) -> (* inline function call *)
+     let { index_pc; red_names; bytecode } = env in
+     let pc = Util.get_pc reg argsr index_pc in
+     let next_instr = bytecode.(pc) in
+     let { name; args= argst; fargs; body; ret } = Fundef.find_fuzzy p "interp" in
+     let next_body = Util.find_by_inst next_instr body in
+     { name; args= argst; fargs; body= next_body; ret } |> Inlining.inline_fundef reg argsr
   | Let ((dest, typ), e, body) ->
     begin match e with
     | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ ->
