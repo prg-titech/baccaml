@@ -32,22 +32,21 @@ module Util = struct
     |> Array.get reg
     |> value_of
 
+  let rec setup_reg reg argt argr =
+    match argt, argr with
+    | [], [] -> ()
+    | hdt :: tlt, hdr :: tlr ->
+      reg.(int_of_id_t hdt) <- reg.(int_of_id_t hdr);
+      setup_reg reg tlt tlr
+    | _ -> assert false
+
 end
 
 module JO = Jit_optimizer
 
-let rec tj p reg mem env t =
-  let rec setup_reg argt argr =
-    match argt, argr with
-    | [], [] -> ()
-    | hdt :: tlt, hdr :: tlr ->
-       reg.(int_of_id_t hdt) <- reg.(int_of_id_t hdr);
-       setup_reg tlt tlr
-    | _ -> assert false
-  in
+let rec tj p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as env) t =
   match t with
   | Ans (CallDir (id_l, argsr, fargsr)) ->
-    let { trace_name; index_pc; merge_pc; bytecode } = env in
     let pc = Util.get_pc reg argsr index_pc in
     if pc = merge_pc then
       Ans (CallDir (Id.L trace_name, List.([nth argsr 0; nth argsr 1]), []))
@@ -83,16 +82,20 @@ let rec tj p reg mem env t =
   | Let ((dest, typ), CallDir (Id.L x, args, fargs), body) when String.starts_with x "min_caml" ->
      let { red_names } = env in
      (Let ((dest, typ)
-         , CallDir (Id.L x, Util.filter ~reds:red_names args, fargs)
-         , (tj p reg mem env body)))
+          , CallDir (Id.L x, Util.filter ~reds:red_names args, fargs)
+          , (tj p reg mem env body)))
      |> Jit_guard.restore reg ~args:args
   | Let ((dest, typ), CallDir (Id.L x, argsr, fargsr), body) -> (* inline function call *)
-     let { index_pc; red_names; bytecode } = env in
      let pc = Util.get_pc reg argsr index_pc in
      let next_instr = bytecode.(pc) in
-     let { name; args= argst; fargs; body; ret } = Fundef.find_fuzzy p "interp" in
+     let { name; args= argst; fargs; body= interp_body; ret } = Fundef.find_fuzzy p "interp" in
      let next_body = Util.find_by_inst next_instr body in
-     { name; args= argst; fargs; body= next_body; ret } |> Inlining.inline_fundef reg argsr
+     let inlined_fun =
+       { name; args= argst; fargs; body= next_body; ret }
+       |> Inlining.inline_fundef reg argsr
+       |> tj p reg mem env
+     in
+     Asm.concat inlined_fun (dest, typ) (tj p reg mem env body)
   | Let ((dest, typ), e, body) ->
     begin match e with
     | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ ->
