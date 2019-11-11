@@ -1,5 +1,5 @@
 open MinCaml
 open Asm
 
-val g : t -> t
-val h : fundef -> fundef
+val elim_hints : t -> t
+val elim_hints_fundef : fundef -> fundef
