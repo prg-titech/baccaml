@@ -98,7 +98,7 @@ let compile_dyn_exn tname =
   let so = get_so_name tname in
   ignore (
     Sys.command (
-      Printf.sprintf "gcc -x c -m32 -g -DRUNTIME -shared -fPIC -ldl -o %s %s" so asm))
+      Printf.sprintf "gcc -m32 -g -DRUNTIME -shared -fPIC -ldl -o %s %s" so asm))
 
 let compile_stdout tname =
   let so = get_so_name tname in
@@ -121,10 +121,9 @@ let emit_and_compile_mj = function `Mj_result (main, auxs) ->
   let oc = open_out (tname ^ ".s") in
   try
     main |> Simm.h |> RegAlloc.h |> Jit_emit.emit_mj oc;
-    List.iter (fun trace ->
-        trace |> Simm.h |> RegAlloc.h |> Emit.h oc) auxs;
-    compile_dyn_exn tname
-  with e -> close_out oc; raise e
+    List.iter (fun trace -> trace |> Simm.h |> RegAlloc.h |> Emit.h oc) auxs;
+    compile_dyn tname
+  with e -> close_out oc; Error e
 
 let with_jit_flg ~on:f ~off:g =
   match !Config.jit_flag with

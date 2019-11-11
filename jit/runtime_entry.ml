@@ -71,7 +71,7 @@ let jit_method ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
       ~merge_pc:pc
       ~bytecode:bytecode
   in
-  let trace = JM.run prog reg mem env |> Simm.h in
+  let trace = JM.run prog reg mem env |> Jit_constfold.iter_fundef ~n:100 in
   Debug.with_debug (fun _ -> print_fundef trace);
   Util.emit_and_compile prog `Meta_method trace
 
@@ -91,15 +91,8 @@ let jit_method_multi ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) 
       ~bytecode:bytecode
   in
   try
-    let main_name = ref None in
     JM.run_multi prog reg mem env
-    |> function `Mj_result (main, aux) as res ->
-      List.iter (fun trc -> print_fundef trc; print_newline ()) (main :: aux);
-      let { name= Id.L x } = main in
-      main_name := Some (x);
-      res
-    |> emit_and_compile_mj;
-    Ok (!main_name |> Option.get)
+    |> emit_and_compile_mj
   with e -> Error e
 
 let jit_tracing ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
