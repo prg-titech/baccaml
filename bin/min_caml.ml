@@ -1,4 +1,3 @@
-
 open MinCaml
 open Jit
 
@@ -8,7 +7,17 @@ let run_typ = ref `Emit
 
 let jit_typ = ref `Not_specified
 
+let flg_elim_hints = ref `No
+
 let id x = x
+
+let virtualize l =
+  let open Asm in
+  let f = Jit_elim_hints.elim_hints_fundef in
+  let Prog (flttbl, strtbl, fundefs, main) as ir = Opt.virtualize l in
+  match !flg_elim_hints with
+  | `Yes -> Prog (flttbl, strtbl, fundefs |> List.map f, main)
+  | `No -> ir
 
 let open_out_file f =
   match !output_file with
@@ -23,7 +32,7 @@ let annot p =
 let run_dump f =
   let inchan = open_in f in
   try
-    Lexing.from_channel inchan |> Opt.virtualize |> Simm.f |> annot
+    Lexing.from_channel inchan |> virtualize |> Simm.f |> annot
     |> Asm.print_prog;
     close_in inchan
   with e -> close_in inchan ; raise e
@@ -31,7 +40,7 @@ let run_dump f =
 let run_interp f =
   let ic = open_in f in
   try
-    Lexing.from_channel ic |> Opt.virtualize |> Simm.f |> annot |> Interp.f
+    Lexing.from_channel ic |> virtualize |> Simm.f |> annot |> Interp.f
     |> string_of_int |> print_endline
   with e -> close_in ic ; raise e
 
@@ -39,7 +48,7 @@ let run_compile f =
   let inchan = open_in f in
   let outchan = open_out_file f in
   try
-    Lexing.from_channel inchan |> Opt.virtualize |> Simm.f |> annot
+    Lexing.from_channel inchan |> virtualize |> Simm.f |> annot
     |> RegAlloc.f |> Emit.f outchan ;
     close_in inchan ;
     close_out outchan
@@ -76,6 +85,7 @@ let spec_list =
   ; ("-debug", Arg.Unit (fun _ -> Log.log_level := `Debug), "Specify loglevel as debug")
   ; ("-dump", Arg.Unit (fun _ -> run_typ := `Dump), "emit virtual machine code")
   ; ("-ast", Arg.Unit (fun _ -> run_typ := `Ast), "emit ast")
+  ; ("-no-hint", Arg.Unit (fun _ -> flg_elim_hints := `Yes), "eliminate hint functions written in your meta-interp.")
   ; ("-interp", Arg.Unit (fun _ -> run_typ := `Interp), "run as interpreter") ]
 
 let usage =
