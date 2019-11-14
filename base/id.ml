@@ -4,11 +4,13 @@ type t = string (* 変数の名前 (caml2html: id_t) *)
 type l = L of string (* トップレベル関数やグローバル配列のラベル (caml2html: id_l) *)
 [@@deriving show]
 
-let string_of_id_l = function
-    L id -> "L " ^ id
+let (=||=) id_l str = match id_l with L name -> name = str
 
-let print_id_l = function
-    L name -> print_string "L "; print_string name; print_string ""
+let l_eq id_l str = id_l =||= str
+
+let string_of_id_l = function L id -> "L " ^ id
+
+let print_id_l = function L name -> print_string "L "; print_string name; print_string ""
 
 let rec pp_list = function
   | [] -> ""
