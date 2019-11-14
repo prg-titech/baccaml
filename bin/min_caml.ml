@@ -1,5 +1,4 @@
-
-open Base
+open MinCaml
 open Jit
 
 let output_file = ref None
@@ -8,7 +7,23 @@ let run_typ = ref `Emit
 
 let jit_typ = ref `Not_specified
 
+let need_interp_wo_hints = ref `No
+
 let id x = x
+
+let emit_interp_wo_hints p =
+  let open Asm in
+  let open Jit_elim_hints in
+  match !need_interp_wo_hints with
+  | `Yes ->
+    (match !jit_typ with
+    | `Not_specified -> p
+    | (`Meta_tracing | `Meta_method) as typ ->
+      let Prog (flttbl, strtbl, fundefs, main) = p in
+      Prog (flttbl, strtbl, elim_hints_and_rename typ fundefs, main))
+  | `No -> p
+
+let virtualize l = Opt.virtualize l |> emit_interp_wo_hints
 
 let open_out_file f =
   match !output_file with
@@ -23,7 +38,7 @@ let annot p =
 let run_dump f =
   let inchan = open_in f in
   try
-    Lexing.from_channel inchan |> Opt.virtualize |> Simm.f |> annot
+    Lexing.from_channel inchan |> virtualize |> Simm.f |> annot
     |> Asm.print_prog;
     close_in inchan
   with e -> close_in inchan ; raise e
@@ -31,7 +46,7 @@ let run_dump f =
 let run_interp f =
   let ic = open_in f in
   try
-    Lexing.from_channel ic |> Opt.virtualize |> Simm.f |> annot |> Interp.f
+    Lexing.from_channel ic |> virtualize |> Simm.f |> annot |> Interp.f
     |> string_of_int |> print_endline
   with e -> close_in ic ; raise e
 
@@ -39,7 +54,10 @@ let run_compile f =
   let inchan = open_in f in
   let outchan = open_out_file f in
   try
-    Lexing.from_channel inchan |> Opt.virtualize |> Simm.f |> annot
+    Lexing.from_channel inchan
+    |> virtualize
+    |> Simm.f
+    |> annot
     |> RegAlloc.f |> Emit.f outchan ;
     close_in inchan ;
     close_out outchan
@@ -58,14 +76,10 @@ let print_ast f =
 
 let spec_list =
   [ ("-o", Arg.String (fun out -> output_file := Some out), "output file")
-  ; ( "-inline"
-    , Arg.Int (fun i -> Inline.threshold := i)
-    , "maximum size of functions inlined" )
-  ; ( "-iter"
-    , Arg.Int (fun i -> Opt.limit := i)
-    , "maximum number of optimizations iterated" )
-  ; ( "-type"
-    , Arg.String
+  ; ( "-inline", Arg.Int (fun i -> Inline.threshold := i), "maximum size of functions inlined" )
+  ; ( "-iter", Arg.Int (fun i -> Opt.limit := i), "maximum number of optimizations iterated" )
+  ; ( "-type" ,
+      Arg.String
         (fun str ->
           match str with
           | "mjit" -> jit_typ := `Meta_method
@@ -76,6 +90,7 @@ let spec_list =
   ; ("-debug", Arg.Unit (fun _ -> Log.log_level := `Debug), "Specify loglevel as debug")
   ; ("-dump", Arg.Unit (fun _ -> run_typ := `Dump), "emit virtual machine code")
   ; ("-ast", Arg.Unit (fun _ -> run_typ := `Ast), "emit ast")
+  ; ("-no-hint", Arg.Unit (fun _ -> need_interp_wo_hints := `Yes), "eliminate hint functions written in your meta-interp.")
   ; ("-interp", Arg.Unit (fun _ -> run_typ := `Interp), "run as interpreter") ]
 
 let usage =

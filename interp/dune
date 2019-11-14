@@ -30,12 +30,12 @@
 (rule
  (targets test_interp_tj.s)
  (deps test_interp.mcml)
- (action (run ../bin/min_caml.exe -o %{targets} %{deps} -type tjit)))
+ (action (run ../bin/min_caml.exe -o %{targets} %{deps} -type tjit -no-hint)))
 
 (rule
  (targets test_interp_mj.s)
  (deps test_interp.mcml)
- (action (run ../bin/min_caml.exe -o %{targets} %{deps} -type mjit)))
+ (action (run ../bin/min_caml.exe -o %{targets} %{deps} -type mjit -no-hint)))
 
 (rule
  (targets test_interp_tj.exe)

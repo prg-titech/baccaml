@@ -1,5 +1,5 @@
 open Std
-open Base
+open MinCaml
 open Jit_env
 open Jit_prof
 
@@ -14,6 +14,8 @@ type runtime_env =
   ; st_ptr: int }
 
 module Util = struct
+  open Asm
+
   let get_id elem = List.find (fun arg -> String.get_name arg = elem)
 
   let filter typ = match typ with
@@ -21,6 +23,16 @@ module Util = struct
        List.filter (fun a -> (List.mem (String.get_name a) Internal_conf.reds))
     | `Green ->
        List.filter (fun a -> List.mem (String.get_name a) Internal_conf.greens)
+
+  let emit_and_compile prog typ (trace : fundef) =
+    let { name= Id.L trace_name; } = trace in
+    let oc = open_out (trace_name ^ ".s") in
+    try
+      emit_dyn oc prog typ trace_name trace;
+      close_out oc;
+      compile_dyn trace_name
+    with e ->
+      close_out oc; raise e
 end
 
 module Setup = struct
@@ -59,15 +71,29 @@ let jit_method ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
       ~merge_pc:pc
       ~bytecode:bytecode
   in
-  let trace = JM.run prog reg mem env |> Simm.h in
-  Asm.print_fundef trace; print_newline ();
-  let oc = open_out (Trace_name.value trace_name ^ ".s") in
+  let trace = JM.run prog reg mem env |> Jit_constfold.iter_fundef ~n:100 in
+  Debug.with_debug (fun _ -> print_fundef trace);
+  Util.emit_and_compile prog `Meta_method trace
+
+let jit_method_multi ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
+  let open Asm in
+  let open Jit_env in
+  let module JM = Jit_method in
+  let reg, mem = Setup.env runtime_env `Meta_method prog in
+  let { args } = Fundef.find_fuzzy prog "interp" in
+  let trace_name = Trace_name.gen `Meta_method in
+  let env =
+    create_env
+      ~trace_name:(Trace_name.value trace_name)
+      ~red_names:(!Config.reds)
+      ~index_pc:(List.index (Util.get_id "pc" args) args)
+      ~merge_pc:pc
+      ~bytecode:bytecode
+  in
   try
-    emit_dyn oc prog `Meta_method trace_name trace;
-    close_out oc;
-    compile_dyn (Trace_name.value trace_name)
-  with e ->
-    close_out oc; raise e
+    JM.run_multi prog reg mem env
+    |> emit_and_compile_mj
+  with e -> Error e
 
 let jit_tracing ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
   let open Asm in
@@ -113,11 +139,11 @@ let jit_exec pc st_ptr sp stack =
     match Trace_prof.find_opt pc with
     | Some (tname) ->
       (* Debug.print_stack stack; Printf.printf "[sp] %d\n" sp; *)
-      Printf.printf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc sp;
+      Printf.eprintf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc sp;
       let s = Unix.gettimeofday () in
       let _ = exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp in
       let e = Unix.gettimeofday () in
-      Printf.printf "[tj] ellapsed time: %f μ s\n" ((e -. s) *. 1e6);
+      Printf.eprintf "[tj] ellapsed time: %f μ s\n" ((e -. s) *. 1e6);
       flush stdout;
       ()
     | None -> ()
@@ -146,26 +172,14 @@ let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
       Trace_prof.count_up pc
   end
 
-let jit_method_compile bytecode stack pc sp bc_ptr st_ptr =
-  Printf.printf "pc: %d, sp: %d, bc_ptr: %d, st_ptr: %d\n" pc sp bc_ptr st_ptr;
-  let ic = file_open () in
-  let p =
-    ic |> Lexing.from_channel |> Opt.virtualize
-    |> Jit_annot.annotate `Meta_method
-  in
-  close_in ic;
-  let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-  match p |> jit_method env with
-  | Ok name -> Method_prof.register (pc, name)
-  | Error e -> raise e
-
 let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
   match Method_prof.find_opt pc with
   | Some name ->
      let s = Unix.gettimeofday () in
      let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
      let e = Unix.gettimeofday () in
-     Printf.printf "[mj] elapced time: %fus\n" ((e -. s) *. 1e6); flush stdout;
+     Printf.eprintf "[mj] elapced time: %fus\n" ((e -. s) *. 1e6);
+     flush stderr;
      r
   | None ->
      let ic = file_open () in
@@ -175,15 +189,17 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
          |> Jit_annot.annotate `Meta_method
        in
        close_in ic;
+       let bytecode = Compat.of_bytecode bytecode in
        let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
        match p |> jit_method env with
        | Ok name ->
-          Printf.printf "[mj] compiled %s at pc: %d\n" name pc;
+          Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
           Method_prof.register (pc, name);
           let s = Unix.gettimeofday () in
           let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
           let e = Unix.gettimeofday () in
-          Printf.printf "[mj] elapced time: %fus\n" ((e -. s) *. 1e6); flush stdout;
+          Printf.eprintf "[mj] elapced time: %F us\n" ((e -. s) *. 1e6);
+          flush stderr;
           r
        | Error e -> raise e
      with e -> close_in ic; raise e
@@ -192,4 +208,3 @@ let callbacks () =
   Callback.register "jit_tracing_entry" jit_tracing_entry;
   Callback.register "jit_exec" jit_exec;
   Callback.register "jit_method_call" jit_method_call;
-  Callback.register "jit_method_compile" jit_method_compile;

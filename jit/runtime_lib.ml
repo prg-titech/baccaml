@@ -1,5 +1,5 @@
 open Std
-open Base
+open MinCaml
 
 exception Jit_compilation_failed
 
@@ -40,6 +40,11 @@ module Debug = struct
     | `Debug -> f ()
     | _ -> ()
 
+end
+
+module Compat = struct
+  let of_bytecode bytecode =
+    Array.map (fun x -> if x = -1024 then 0 else x) bytecode
 end
 
 let file_open () =
@@ -88,6 +93,19 @@ let compile_dyn trace_name =
   | Unix.WEXITED (i) when i = 0 -> Ok trace_name
   | _ -> Error (Jit_compilation_failed)
 
+let compile_dyn_exn tname =
+  let asm = tname ^ ".s" in
+  let so = get_so_name tname in
+  ignore (
+    Sys.command (
+      Printf.sprintf "gcc -m32 -g -DRUNTIME -shared -fPIC -ldl -o %s %s" so asm))
+
+let compile_stdout tname =
+  let so = get_so_name tname in
+  ignore (
+    Sys.command (
+      Printf.sprintf "| gcc -x c -m32 -g -DRUNTIME -shared -fPIC -ldl -o %s -" so))
+
 let emit_dyn oc p typ tname trace =
   try
     match typ with
@@ -96,6 +114,16 @@ let emit_dyn oc p typ tname trace =
     | `Meta_method ->
       trace |> Simm.h |> RegAlloc.h |> Jit_emit.emit_mj oc
   with e -> close_out oc; raise e
+
+let emit_and_compile_mj = function `Mj_result (main, auxs) ->
+  let open Asm in
+  let { name= Id.L tname; } = main in
+  let oc = open_out (tname ^ ".s") in
+  try
+    main |> Simm.h |> RegAlloc.h |> Jit_emit.emit_mj oc;
+    List.iter (fun trace -> trace |> Simm.h |> RegAlloc.h |> Emit.h oc) auxs;
+    compile_dyn tname
+  with e -> close_out oc; Error e
 
 let with_jit_flg ~on:f ~off:g =
   match !Config.jit_flag with

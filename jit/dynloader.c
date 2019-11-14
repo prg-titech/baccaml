@@ -47,7 +47,9 @@ CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1, value
 
   sym = (fun_arg2)dlsym(handle, String_val(funcname));
   if (sym == NULL) {
-    failwith("error: dlsym\n");
+    char msg[100];
+    sprintf(msg, "error: dlsym funcname: %s\n", funcname);
+    failwith(msg);
     return -1;
   }
 

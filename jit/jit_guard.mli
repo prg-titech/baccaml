@@ -1,4 +1,4 @@
-open Base
+open MinCaml
 open Jit_env
 
 val restore : reg -> args:string list -> ?wlist:string list -> Asm.t -> Asm.t
