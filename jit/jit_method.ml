@@ -84,12 +84,8 @@ let rec mj p reg mem ({trace_name; red_names; index_pc; merge_pc; function_pcs; 
      if pc = merge_pc then
        Let ((x, typ), CallDir (Id.L (trace_name), reds, fargs), mj p reg mem env body)
      else
-       (try
-          let trace_name = Method_prof.find pc in
-          Let ((x, typ), CallDir (Id.L (trace_name), reds, fargs), mj p reg mem env body)
-        with Not_found ->
-          Let ((x, typ), CallDir (Id.L ("interp"), args, fargs), mj p reg mem env body)
-          |> Jit_guard.restore reg ~args)
+       Let ((x, typ), CallDir (Id.L ("interp_no_hints"), args, fargs), mj p reg mem env body)
+       |> Jit_guard.restore reg ~args
   | Let ((x, typ), CallDir (id_l, args, fargs), body) ->
      let reds = Util.filter_by_names ~reds:red_names args in
      Let ((x, typ), CallDir (id_l, reds, []), body |> mj p reg mem env)

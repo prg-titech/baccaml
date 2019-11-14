@@ -316,6 +316,7 @@ exec code 54;
 
 (* is_prime *)
 let code = Array.make 80 0 in
+save_bp ();
 code.(0) <- 14;
 code.(1) <- 9; code.(2) <- 3;
 code.(3) <- 9; code.(4) <- 3;

@@ -191,7 +191,7 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
        close_in ic;
        let bytecode = Compat.of_bytecode bytecode in
        let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-       match p |> jit_method_multi env with
+       match p |> jit_method env with
        | Ok name ->
           Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
           Method_prof.register (pc, name);

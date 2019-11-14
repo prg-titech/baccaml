@@ -16,8 +16,11 @@ let emit_interp_wo_hints p =
   let open Jit_elim_hints in
   match !need_interp_wo_hints with
   | `Yes ->
-    let Prog (flttbl, strtbl, fundefs, main) = p in
-    Prog (flttbl, strtbl, elim_hints_and_rename fundefs , main)
+    (match !jit_typ with
+    | `Not_specified -> p
+    | (`Meta_tracing | `Meta_method) as typ ->
+      let Prog (flttbl, strtbl, fundefs, main) = p in
+      Prog (flttbl, strtbl, elim_hints_and_rename typ fundefs, main))
   | `No -> p
 
 let virtualize l = Opt.virtualize l |> emit_interp_wo_hints

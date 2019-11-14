@@ -29,6 +29,8 @@ let rename_interp ({name= Id.L (name'); args; fargs; body; ret} as fundef) =
   and rename' = function
     | CallDir (id_l, args, fargs) when let open Id in id_l =||= "interp" ->
       CallDir (Id.L ("interp_no_hints"), args, fargs)
+    | CallDir (id_l, args, fargs) when let open Id in id_l =||= "min_caml_mj_call" ->
+      CallDir (Id.L ("interp_no_hints"), args, fargs)
     | IfEq (x, y, t1, t2) -> IfEq (x, y, rename t1, rename t2)
     | IfLE (x, y, t1, t2) -> IfLE (x, y, rename t1, rename t2)
     | IfGE (x, y, t1, t2) -> IfGE (x, y, rename t1, rename t2)
@@ -46,10 +48,12 @@ let elim_hints_fundef ({name; args; fargs; body; ret}) =
   {name; args; fargs; body= elim_hints body; ret}
 
 
-let elim_hints_and_rename fundefs =
+let elim_hints_and_rename typ fundefs =
   let open Id in
   match fundefs |> List.find_opt (fun fundef -> fundef.name =||= "interp") with
-  | Some interp -> (elim_hints_fundef interp |> rename_interp) :: fundefs
+  | Some interp -> (elim_hints_fundef interp
+                    |> rename_interp
+                    |> Jit_annot.annotate_fundef typ) :: fundefs
   | None -> fundefs
 
 
