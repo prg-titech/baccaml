@@ -75,17 +75,15 @@ let print_ast f =
   with e -> close_in ic; raise e
 
 let spec_list =
+  let set_jittyp str = match str with
+    | "mjit" -> jit_typ := `Meta_method
+    | "tjit" -> jit_typ := `Meta_tracing
+    | _ -> ()
+  in
   [ ("-o", Arg.String (fun out -> output_file := Some out), "output file")
   ; ( "-inline", Arg.Int (fun i -> Inline.threshold := i), "maximum size of functions inlined" )
   ; ( "-iter", Arg.Int (fun i -> Opt.limit := i), "maximum number of optimizations iterated" )
-  ; ( "-type" ,
-      Arg.String
-        (fun str ->
-          match str with
-          | "mjit" -> jit_typ := `Meta_method
-          | "tjit" -> jit_typ := `Meta_tracing
-          | _ -> () )
-    , "specify jit type" )
+  ; ( "-type" , Arg.String (set_jittyp), "specify jit type" )
   ; ("-err", Arg.Unit (fun _ -> Log.log_level := `Error), "Specify loglevel as error")
   ; ("-debug", Arg.Unit (fun _ -> Log.log_level := `Debug), "Specify loglevel as debug")
   ; ("-dump", Arg.Unit (fun _ -> run_typ := `Dump), "emit virtual machine code")
