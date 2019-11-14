@@ -54,16 +54,16 @@ and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *
   | Restore of Id.t (* スタック変数から値を復元 (caml2html: sparcasm_restore) *)
 [@@deriving show]
 
-let print_tab () = print_string "  "
+let print_tab () = print_string "\t"
 
-let print_semi_colon () = print_string ", "
+let print_semi_colon () = print_string ","
 
 let rec print_t = function
   | Ans exp -> print_string "Ans ("; print_exp exp; print_string ")"
   | Let ((id, typ), exp, t) ->
      print_string "Let (";
      print_string "("; print_string id; print_string ", "; Type.print_type typ; print_string ")";
-     print_string ", "; print_exp exp; print_string ", ";
+     print_string ","; print_tab (); print_exp exp; print_string ", ";
      print_newline (); print_tab ();
      print_t t; print_string ")"
 

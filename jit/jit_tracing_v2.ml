@@ -10,6 +10,8 @@ open Printf
 
 let p = sprintf
 
+let interp_fundef p = Fundef.find_fuzzy p "interp"
+
 module Util = struct
   let rec find_by_inst inst t =
     match t with
@@ -88,7 +90,7 @@ let rec tj p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as
   | Let ((dest, typ), CallDir (Id.L x, argsr, fargsr), body) -> (* inline function call *)
      let pc = Util.get_pc reg argsr index_pc in
      let next_instr = bytecode.(pc) in
-     let { name; args= argst; fargs; body= interp_body; ret } = Fundef.find_fuzzy p "interp" in
+     let { name; args= argst; fargs; body= interp_body; ret } = interp_fundef p in
      let next_body = Util.find_by_inst next_instr body in
      let inlined_fun =
        { name; args= argst; fargs; body= next_body; ret }
