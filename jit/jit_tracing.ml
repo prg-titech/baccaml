@@ -1,120 +1,147 @@
 open Std
+
 open MinCaml
 open Asm
-open Inlining
-open Renaming
-open Operands
-open Jit_util
+
 open Jit_env
+open Jit_util
 
+open Printf
 
-type tj_env =
-  { trace_name : string;
-    red_names : string list;
-    index_pc : int;
-    merge_pc : int;
-    bytecode : int array;
-    mutable passed_pc : int list
-  }
+let p = sprintf
+
+let interp_fundef p = Fundef.find_fuzzy p "interp"
 
 module Util = struct
-  let find_pc {index_pc} args =
-    match List.nth_opt args index_pc with
-    | Some s -> int_of_id_t s
-    | None -> failwith "find_pc is failed"
+  let rec find_by_inst inst t =
+    match t with
+    | Ans (IfEq (id_t, C (n), t1, t2)) ->
+      if inst = n then t1
+      else find_by_inst inst t2
+    | Ans exp -> raise Not_found
+    | Let (_, _, t) -> find_by_inst inst t
+
+  let find_var var t =
+    Asm.fv t
+    |> List.find (fun v -> String.get_name v = String.get_name var)
+
+  let filter ~reds args =
+    List.filter (fun arg -> List.mem (String.get_name arg) reds) args
+
+  let get_pc reg args index_pc =
+    List.nth args index_pc
+    |> int_of_id_t
+    |> Array.get reg
+    |> value_of
+
+  let rec setup_reg reg argt argr =
+    match argt, argr with
+    | [], [] -> ()
+    | hdt :: tlt, hdr :: tlr ->
+      reg.(int_of_id_t hdt) <- reg.(int_of_id_t hdr);
+      setup_reg reg tlt tlr
+    | _ -> assert false
+
 end
 
-module Guard = Jit_guard.TJ
+module JO = Jit_optimizer
 
-let rec tj (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) : t -> t =
-  function
-  | Ans exp -> tj_exp p reg mem tj_env exp
-  | Let ((dest, typ), CallDir (Id.L "min_caml_can_enter_jit", args, fargs), body) ->
-    let { trace_name; index_pc; merge_pc; passed_pc } = tj_env in
-    let id_pc = index_pc |> List.nth args in
-    let pc = id_pc |> int_of_id_t |> Array.get reg |> value_of in
-    Log.debug ("can_enter_jit: pc " ^ string_of_int pc);
+let rec tj p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as env) t =
+  match t with
+  | Ans (CallDir (id_l, argsr, fargsr)) ->
+    let pc = Util.get_pc reg argsr index_pc in
     if pc = merge_pc then
-      let reds = List.nth args 0 :: List.nth args 1 :: [] in
-      Ans (CallDir (Id.L trace_name, reds, []))
+      Ans (CallDir (Id.L trace_name, List.([nth argsr 0; nth argsr 1]), []))
     else
-      tj p reg mem tj_env body
+      let next_instr = bytecode.(pc) in
+      Log.debug @@ sprintf "pc: %d, next instr: %d" pc next_instr;
+      let { name; args= argst; fargs; body; ret } = Fundef.find_fuzzy p "interp" in
+      let body = Util.find_by_inst next_instr body in
+      { name; args= argst; fargs; body; ret }
+      |> Inlining.inline_fundef reg argsr
+      |> tj p reg mem env
+  | Ans (exp) ->
+    begin match exp with
+    | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ -> tj_if p reg mem env exp
+    | _ ->
+       match JO.run p exp reg mem with
+       | Specialized v -> Ans (Set (value_of v))
+       | Not_specialized (e, v) -> Ans (e)
+    end
   | Let ((dest, typ), CallDir (Id.L "min_caml_jit_merge_point", args, fargs), body) ->
-    let pc = List.hd args |> int_of_id_t |> Array.get reg |> value_of in
-    Log.debug @@ Printf.sprintf "jit_merge_point: pc %d" pc;
-    tj p reg mem tj_env body
-  | Let ((dest, typ), CallDir (id_l, args, fargs), body) ->
-     let callee =
-       Fundef.find p id_l
-       |> Inlining.inline_fundef reg args
-       |> tj p reg mem tj_env
+    let pc = value_of @@ reg.(int_of_id_t @@ List.hd args) in
+    Log.debug @@ sprintf "jit_merge_point: %d" pc;
+    tj p reg mem env body
+  | Let ((dest, typ), CallDir (Id.L "min_caml_method_entry", args, fargs), body) ->
+    tj p reg mem env body
+  | Let ((dest, typ), CallDir (Id.L "min_caml_can_enter_jit", args, fargs), body) ->
+    let { trace_name; index_pc; merge_pc } = env in
+    let pc = value_of @@ reg.(int_of_id_t @@ List.nth args index_pc) in
+    Log.debug @@ sprintf "can_enter_jit: %d" pc;
+    if pc = merge_pc
+    then Ans (CallDir (Id.L trace_name, List.([nth args 0; nth args 1]), []))
+    else tj p reg mem env body
+  | Let ((dest, typ), CallDir (Id.L x, args, fargs), body) when String.starts_with x "min_caml" ->
+     let { red_names } = env in
+     (Let ((dest, typ)
+          , CallDir (Id.L x, Util.filter ~reds:red_names args, fargs)
+          , (tj p reg mem env body)))
+     |> Jit_guard.restore reg ~args:args
+  | Let ((dest, typ), CallDir (Id.L x, argsr, fargsr), body) -> (* inline function call *)
+     let pc = Util.get_pc reg argsr index_pc in
+     let next_instr = bytecode.(pc) in
+     let { name; args= argst; fargs; body= interp_body; ret } = interp_fundef p in
+     let next_body = Util.find_by_inst next_instr body in
+     let inlined_fun =
+       { name; args= argst; fargs; body= next_body; ret }
+       |> Inlining.inline_fundef reg argsr
+       |> tj p reg mem env
      in
-     Asm.concat callee (dest, typ) (tj p reg mem tj_env body)
-  | Let ((dest, typ), exp, body) ->
-    begin
-      match exp with
-      | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ ->
-        Asm.concat (tj_if p reg mem tj_env exp) (dest, typ) (tj p reg mem tj_env body)
-      | St (id_t1, id_t2, id_or_imm, x) ->
-        let srcv = reg.(int_of_id_t id_t1) in
-        let destv = reg.(int_of_id_t id_t2) in
-        let offsetv = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
-        let body' = tj p reg mem tj_env body in
-        begin
-          match (srcv, destv) with
-          | Green n1, Red n2 ->
-            reg.(int_of_id_t dest) <- Green 0 ;
-            mem.(n1 + (n2 * x)) <- Green (int_of_id_t id_t1 |> Array.get reg |> value_of);
-            begin
-              match offsetv with
-              | Green n ->
-                let id' = Id.gentmp Type.Int in
-                Let ((id_t1, Type.Int), Set n1
-                    , Let ((id', Type.Int), Set n
-                          , Let ((dest, typ), St (id_t1, id_t2, C n, x), body') ) )
-              | Red n ->
-                Let ( (id_t1, Type.Int), Set n1
-                    , Let ((dest, typ), St (id_t1, id_t2, id_or_imm, x), body') )
-            end
-          | _ -> body |> optimize_exp p reg mem tj_env (dest, typ) exp
-        end
-      | _ -> body |> optimize_exp p reg mem tj_env (dest, typ) exp
+     Asm.concat inlined_fun (dest, typ) (tj p reg mem env body)
+  | Let ((dest, typ), e, body) ->
+    begin match e with
+    | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ ->
+       Asm.concat (tj_if p reg mem env e) (dest, typ) (tj p reg mem env body)
+    | St (id_t1, id_t2, id_or_imm, x) ->
+       let srcv = reg.(int_of_id_t id_t1) in
+       let destv = reg.(int_of_id_t id_t2) in
+       let offsetv = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
+       begin match (srcv, destv) with
+       | Green n1, Red n2 ->
+          reg.(int_of_id_t dest) <- Green 0;
+          mem.(n1 + (n2 * x)) <- Green (int_of_id_t id_t1 |> Array.get reg |> value_of);
+          (match offsetv with
+           | Green n ->
+              let id' = Id.gentmp Type.Int in
+              let body' = tj p reg mem env body in
+              Let ((id_t1, Type.Int), Set n1
+                   , Let ((id', Type.Int), Set n
+                          , Let ((dest, typ), St (id_t1, id_t2, C n, x), body')))
+           | Red n ->
+              let body' = tj p reg mem env body in
+              Let ((id_t1, Type.Int), Set n1
+                   , Let ((dest, typ), St (id_t1, id_t2, id_or_imm, x), body')))
+       | _ -> body |> optimize_exp p reg mem env (dest, typ) e
+       end
+    | _ -> body |> optimize_exp p reg mem env (dest, typ) e
     end
 
 
-and optimize_exp p reg mem tj_env (dest, typ) exp body =
-  match Jit_optimizer.run p exp reg mem with
+and optimize_exp p reg mem env (dest, typ) exp body =
+  match JO.run p exp reg mem with
   | Specialized v ->
-    reg.(int_of_id_t dest) <- v ;
-    tj p reg mem tj_env body
+    reg.(int_of_id_t dest) <- v;
+    tj p reg mem env body
   | Not_specialized (e, v) ->
     reg.(int_of_id_t dest) <- v ;
-    Let ((dest, typ), e, tj p reg mem tj_env body)
+    Let ((dest, typ), e, tj p reg mem env body)
 
 
-and tj_exp (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
-  function
-  | CallDir (id_l, args, fargs) ->
-    let fundef = Fundef.find p id_l in
-    let pc = args |> Util.find_pc tj_env |> Array.get reg in
-    let reds = args |> List.filter (fun a -> is_red reg.(int_of_id_t a)) in
-    let {merge_pc; trace_name} = tj_env in
-    if value_of pc = merge_pc && let (Id.L x) = id_l in String.contains x "interp"
-    then Ans (CallDir (Id.L trace_name, reds, []))
-    else Inlining.inline_fundef reg args fundef |> tj p reg mem tj_env
-  | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ as exp ->
-    tj_if p reg mem tj_env exp
-  | exp ->
-    match Jit_optimizer.run p exp reg mem with
-    | Specialized v -> Ans (Set (value_of v))
-    | Not_specialized (e, v) -> Ans e
-
-
-and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
-  let trace = tj p reg mem tj_env in
-  let guard = Guard.create reg tj_env.trace_name in
-  function
-  | IfLE (id_t, id_or_imm, t1, t2) | SIfLE (id_t, id_or_imm, t1, t2)->
+and tj_if p reg mem env exp =
+  let trace = tj p reg mem env in
+  let guard = Jit_guard.TJ.create reg env.trace_name in
+  match exp with
+  | IfLE (id_t, id_or_imm, t1, t2) | SIfLE (id_t, id_or_imm, t1, t2) ->
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
     begin
@@ -147,15 +174,14 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
     let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
     if String.get_name id_t = "mode" then begin
       Log.debug @@ Printf.sprintf "IfEq mode checking (%s, %s) ==> %d %d"
-        id_t (string_of_id_or_imm id_or_imm) (value_of r1) (value_of r2);
+                     id_t (string_of_id_or_imm id_or_imm) (value_of r1) (value_of r2);
       Ans (IfEq (id_t, C (200), trace t1, guard t2))
     end else
-      begin
-        match r1, r2 with
+      begin match r1, r2 with
         | Green n1, Green n2 ->
           if n1 = n2
-          then tj p reg mem tj_env t1
-          else tj p reg mem tj_env t2
+          then tj p reg mem env t1
+          else tj p reg mem env t2
         | Red n1, Green n2 ->
           if n1 = n2
           then Ans (IfEq (id_t, C (n2), trace t1, guard t2))
@@ -182,9 +208,9 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
       match r1, r2 with
       | Green n1, Green n2 ->
         if n1 >= n2 then
-          tj p reg mem tj_env t1
+          tj p reg mem env t1
         else
-          tj p reg mem tj_env t2
+          tj p reg mem env t2
       | Red n1, Green n2 ->
         if n1 >= n2 then
           Ans (IfGE (id_t, C (n2), trace t1, guard t2))
@@ -206,26 +232,13 @@ and tj_if (p : prog) (reg : value array) (mem : value array) (tj_env : tj_env) =
           Ans (IfGE (id_t, id_or_imm, guard t1, trace t2))
     end
 
-let rec validate t =
-  let rec validate' e = match e with
-    | Set (n) when n = -1000 -> failwith "reached an exception"
-    | IfEq (_, _, t1, t2) | IfLE (_, _, t1, t2) | IfGE (_, _, t1, t2) ->
-      validate t1; validate t2
-    | _ -> ()
-  in
-  match t with
-  | Let (_, e, t) -> validate' e; validate t
-  | Ans (e) -> validate' e
 
-let run : Asm.prog -> reg -> mem -> Jit_env.env -> Asm.fundef =
-  fun p reg mem {trace_name; red_names; index_pc; merge_pc; bytecode} ->
-  Renaming.counter := 0;
+let run p reg mem ({ trace_name; red_names; merge_pc} as env) =
+  Renaming.counter := !Id.counter;
+  Log.debug @@ Printf.sprintf "staring trace (merge_pc: %d)" merge_pc;
   let (Prog (tbl, _, fundefs, m)) = p in
   let {body= ibody; args= iargs} = Fundef.find_fuzzy p "interp" in
-  let tj_env = { trace_name; red_names; bytecode;
-                 index_pc; merge_pc ; passed_pc = [] } in
-  let trace = ibody |> tj p reg mem tj_env in
-  validate trace;
+  let trace = ibody |> tj p reg mem env in
   { name= Id.L trace_name ; fargs= []; body= trace; ret= Type.Int
   ; args= iargs |> List.filter (fun arg -> List.mem (String.get_name arg) red_names)
   }

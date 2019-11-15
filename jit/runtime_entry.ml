@@ -98,7 +98,7 @@ let jit_method_multi ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) 
 let jit_tracing ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
   let open Asm in
   let open Jit_env in
-  let module JT = Jit_tracing_v2 in
+  let module JT = Jit_tracing in
   let reg, mem = Setup.env runtime_env `Meta_tracing prog in
   let { args } = Fundef.find_fuzzy prog "interp" in
   let trace_name = Trace_name.gen `Meta_tracing in
