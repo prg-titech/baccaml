@@ -1,5 +1,4 @@
 (tests
  (names
-   test_jit_elim
    test_jit_constfold)
  (libraries minCaml jit oUnit alcotest))
