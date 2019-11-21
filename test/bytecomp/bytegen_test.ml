@@ -6,13 +6,12 @@ open OUnit2
 let tap f x = f x; x
 
 let test s =
-  let open Virtual in
+  let open Compiler in
   stack_hybridized := false;
   Lexing.from_string s
   |> Parser.exp Lexer.token
   |> Compiler.Test.compile_from_exp
   |> VM.run_asm
-
 
 let test_fun1 _ =
   let test1 = "let rec f x = x + 1 in let () = f 1" in
@@ -98,6 +97,20 @@ let test_array _ =
        arr.(0) <- 1; arr.(1) <- 2;
        arr.(0) + arr.(1)" in
   assert_equal ~printer:string_of_int 3 (test code)
+
+let test_loop _ =
+  let code ="
+let rec f n =
+  let arr = Array.make 1 0 in
+  while arr.(0) < 10 do
+    let x = arr.(0) + 1 in
+    arr.(0) <- x;
+    ()
+  done;
+  arr.(0)
+in let () = f 10
+" in
+  assert_equal ~printer:string_of_int 1 (test code)
 
 let suite =
   "ByteCompilerTest" >::: [

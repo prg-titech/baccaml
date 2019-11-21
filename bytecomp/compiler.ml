@@ -33,6 +33,7 @@ let arity_of_env env =
 let rec compile_exp fenv exp env =
   let open VM in
   match exp with
+  | Unit -> []
   | Int n -> [CONST; Literal n]
   | Var v -> [DUP; Literal(lookup env v)]
   | Add(e1,e2) ->
@@ -104,19 +105,14 @@ let rec compile_exp fenv exp env =
     @ (compile_exp fenv e3 (shift_env (shift_env env)))
     @ [PUT]
     @ (compile_exp fenv e4 env)
-  | For (Range(var1, from_exp, to_exp), body_exp, succ_exp) ->
-    let ex_env = extend_env env var1 in
+  | While (cond, e1, e2) ->
     let l1 = gen_label () in
-    (compile_exp fenv from_exp ex_env) @
     [Ldef l1] @
-    (compile_exp fenv body_exp ex_env) @
-    [DUP; Literal (lookup ex_env var1)] @
-    [ADD] @
-    (compile_exp fenv to_exp ex_env) @
-    [LT] @
+    (compile_exp fenv e1 env) @
+    (compile_exp fenv cond env) @
     [JUMP_IF_ZERO; Lref l1] @
-    (compile_exp fenv succ_exp ex_env) @
-    [POP1]
+    (compile_exp fenv e2 env)
+  | _ -> failwith (Printf.sprintf "match failure %s" (Syntax.show_exp exp))
 
 let rec tail_elim fname = function
   | If(cond,then_exp,else_exp) ->
@@ -215,3 +211,8 @@ module Test = struct
     let others = fundefs |> List.filter (fun { name } -> name <> "main") in
     (compile_funs (main :: others))
 end
+
+let%test_module "compiler_test" = (module struct
+  open Syntax
+  open VM
+end)

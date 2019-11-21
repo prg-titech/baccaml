@@ -110,7 +110,9 @@ module Value = struct
     | _ -> failwith "invalid value"
 
   let int_of_value = function VInt i -> i | _ -> failwith "array is not int"
-  let array_of_value = function VArray arr -> arr | _ -> failwith "int is not array"
+  let array_of_value pc = function
+      VArray arr -> arr
+    | _ -> failwith (Printf.sprintf "int is not array (pc: %d)" pc)
 
   let value_of_int i = VInt i
   let value_of_array arr = VArray arr
@@ -175,7 +177,7 @@ let rec interp  code pc stack =
   checkpoint ();
   (* Printf.printf "%s %s\n" (code_at_pc code pc) (dump_stack stack); *)
   let open Value in
-  if pc<0 then fst(pop stack) else
+  if pc<0 then fst(pop stack) else begin
     let i,pc = fetch code pc in
     match insts.(i) with
     | UNIT ->
@@ -207,9 +209,9 @@ let rec interp  code pc stack =
       if int_of_value v = 0
       then interp code addr stack
       else interp code pc   stack
-    | CALL (* addr *) ->
+    | CALL (* addr argnum *) ->
       (* calling a function will create a new operand stack and lvars  *)
-      let addr,pc = fetch code pc  in
+      let addr,pc = fetch code pc in
       let stack = push stack (value_of_int (pc+1)) in (* save return address *)
       (* (let (sp,s)=stack in
        *  if 2<sp then
@@ -265,15 +267,16 @@ let rec interp  code pc stack =
       let n,stack = pop stack in
       let n = int_of_value n in
       let arr,stack = pop stack in
-      let arr = array_of_value arr in
+      let arr = array_of_value pc arr in
       let stack = push stack (value_of_int (arr.(n))) in
       interp code pc stack
     | PUT ->
       let n,stack = pop stack in
       let i,stack = pop stack in
       let arr,stack = pop stack in
-      (array_of_value arr).(int_of_value i) <- (int_of_value n);
+      (array_of_value pc arr).(int_of_value i) <- (int_of_value n);
       interp code pc stack
+  end
 
 (* run the given program by calling the function id 0 *)
 type fundef_bin_t = int array

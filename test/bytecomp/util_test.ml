@@ -1,7 +1,6 @@
 open OUnit2
 
 open Bytegen_lib
-open Virtual
 open VM
 
 let test_print _ =

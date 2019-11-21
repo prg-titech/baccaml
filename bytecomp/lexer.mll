@@ -27,6 +27,7 @@ rule token = parse
   | "else"    { ELSE }
   | "for"     { FOR }
   | "to"      { TO }
+  | "while"   { WHILE }
   | "do"      { DO }
   | "done"    { DONE }
   | "Array.make" { ARRAY_MAKE }

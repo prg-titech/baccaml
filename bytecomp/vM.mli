@@ -59,7 +59,6 @@ val run_asm : fundef_asm_t -> int
 
 module Value : sig
   val int_of_value : value -> int
-  val array_of_value : value -> int array
   val value_of_int : int -> value
   val value_of_array : int array -> value
 end

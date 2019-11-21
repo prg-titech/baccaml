@@ -1,5 +1,7 @@
 open Syntax
 
+val stack_hybridized : bool ref
+
 val compile_funs : fundef list -> VM.inst array
 
 (* for tracing *)

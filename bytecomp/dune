@@ -5,11 +5,12 @@
  (name bytegen_lib)
  (public_name baccaml.bytegen_lib)
  (modules :standard \ bytegen)
- (preprocess (pps ppx_deriving.show)))
+ (inline_tests)
+ (preprocess (pps ppx_deriving.show ppx_inline_test)))
 
 (executable
  (name bytegen)
  (modules bytegen)
  (public_name bytegen)
  (libraries bytegen_lib)
- (preprocess (pps ppx_deriving.show)))
+ (preprocess (pps ppx_deriving.show ppx_inline_test)))

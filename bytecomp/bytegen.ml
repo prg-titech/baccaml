@@ -31,7 +31,10 @@ let emit_virtual arg =
     Lexing.from_channel ic
     |> Parser.exp Lexer.token
     |> Compiler.compile_from_exp
-    |> Array.iter (fun inst -> inst |> VM.show_inst |> print_endline)
+    |> Array.iteri (fun i inst ->
+        let inst_str = VM.show_inst inst in
+        Printf.printf "%d\t%s\n" i inst_str;
+        flush stdout)
   with e ->
     close_in ic; raise e
 
