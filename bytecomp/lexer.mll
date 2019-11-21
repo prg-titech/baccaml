@@ -25,6 +25,10 @@ rule token = parse
   | "if"      { IF }
   | "then"    { THEN }
   | "else"    { ELSE }
+  | "for"     { FOR }
+  | "to"      { TO }
+  | "do"      { DO }
+  | "done"    { DONE }
   | "Array.make" { ARRAY_MAKE }
   | "->"      { MINUS_GREATER }
   | "<-"      { LESS_MINUS }

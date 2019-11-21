@@ -18,8 +18,11 @@ type exp =
   | Array of exp * exp
   | Get of exp * exp
   | Put of exp * exp * exp * exp
+  | For of range * exp * exp      (* loop (condition, body, successors) *)
   | TCall of var * exp list     (* tail call --- internal only *)
 [@@deriving show]
+
+and range = Range of var * exp * exp (* var = exp to exp => Range (var, exp, exp) *)
 
 and fundef = {name:var; args:var list; body: exp}
 [@@deriving show]
@@ -39,4 +42,6 @@ let rec find_fundefs ?(name = None) exp = match exp with
   | Array (e1, e2) -> (find_fundefs e1) @ (find_fundefs e2)
   | Get (e1, e2) -> (find_fundefs e1) @ (find_fundefs e2)
   | Put (e1, e2, e3, e4) ->
-     (find_fundefs e1) @ (find_fundefs e2) @ (find_fundefs e3) @ (find_fundefs e4)
+    (find_fundefs e1) @ (find_fundefs e2) @ (find_fundefs e3) @ (find_fundefs e4)
+  | For (_, e2, e3) ->
+    (find_fundefs e2) @ (find_fundefs e3)

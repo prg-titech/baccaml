@@ -1,5 +1,4 @@
 open Bytegen_lib
-open Virtual
 
 open OUnit2
 
@@ -82,4 +81,5 @@ module VM_test = struct
        ADD;             (* 10 *)
        HALT]            (* 11 *)
       [ 1; 2; 3 ] [] 7
+
  end

@@ -1,5 +1,4 @@
 open Bytegen_lib
-open Virtual
 
 let usage = "Usage: " ^ Sys.argv.(0) ^ "[-ast] [-virtual]"
 let ast_flg = ref false
