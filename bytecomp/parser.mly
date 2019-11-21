@@ -12,13 +12,14 @@
 %token LET REC
 %token IN
 %token EQ
+%token NOT
 %token COMMA
 %token ARRAY_MAKE
 %token LESS_MINUS
 %token MINUS_GREATER
 %token SEMICOLON
 %token DOT
-%token FOR WHILE TO DO DONE
+%token FOR TO DO DONE
 %token MAIN
 %token EOF
 %left PLUS MINUS
@@ -35,6 +36,7 @@ simple_exp:
     | LPAREN exp RPAREN      { $2 }
     | INT                    { Int ($1) }
     | VAR                    { Var ($1) }
+    | NOT exp                { Not ($2) }
     | simple_exp DOT LPAREN exp RPAREN { Get ($1, $4) }
 
 exp:
@@ -53,7 +55,6 @@ exp:
     | ARRAY_MAKE exp exp       { Array ($2, $3) }
     | simple_exp DOT LPAREN exp RPAREN LESS_MINUS simple_exp SEMICOLON exp { Put ($1, $4, $7, $9) }
     | FOR VAR EQ exp TO exp DO exp DONE SEMICOLON exp { For(Range($2, $4, $6), $8, $11) }
-    | WHILE exp DO exp DONE SEMICOLON exp { While($2, $4, $7) }
 
 fundef:
     | VAR formal_args EQ exp   { { name = $1; args = $2; body = $4 } }

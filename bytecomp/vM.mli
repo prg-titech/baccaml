@@ -1,3 +1,5 @@
+val debug_flg : bool ref
+
 (* instruction set: a stack machine *)
 type inst =
   | UNIT
@@ -32,6 +34,8 @@ type inst =
   | ARRAY_MAKE
   | GET
   | PUT
+  | NOT
+  | POP0
   (* the following constructors do not represent instructions but
      are defined for expressing operands of some instructions as
      well as label declarations and references *)

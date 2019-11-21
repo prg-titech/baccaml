@@ -35,6 +35,9 @@ let rec compile_exp fenv exp env =
   match exp with
   | Unit -> []
   | Int n -> [CONST; Literal n]
+  | Not e1 ->
+    (compile_exp fenv e1 env) @
+    [NOT]
   | Var v -> [DUP; Literal(lookup env v)]
   | Add(e1,e2) ->
     (compile_exp fenv e1 env) @
@@ -105,13 +108,20 @@ let rec compile_exp fenv exp env =
     @ (compile_exp fenv e3 (shift_env (shift_env env)))
     @ [PUT]
     @ (compile_exp fenv e4 env)
-  | While (cond, e1, e2) ->
+  | For (Range (var, from_exp, to_exp), body_exp, next_exp) ->
     let l1 = gen_label () in
+    let ex_env = extend_env env var in
+    (compile_exp fenv from_exp env) @
     [Ldef l1] @
-    (compile_exp fenv e1 env) @
-    (compile_exp fenv cond env) @
+    (compile_exp fenv body_exp ex_env) @
+    [CONST; Literal 1] @
+    [ADD] @
+    [DUP; Literal (lookup ex_env var)] @
+    (compile_exp fenv to_exp ex_env) @
+    [LT; NOT] @
     [JUMP_IF_ZERO; Lref l1] @
-    (compile_exp fenv e2 env)
+    [POP0] @
+    (compile_exp fenv next_exp env)
   | _ -> failwith (Printf.sprintf "match failure %s" (Syntax.show_exp exp))
 
 let rec tail_elim fname = function

@@ -5,6 +5,14 @@ open OUnit2
 
 let tap f x = f x; x
 
+let load_file f =
+  let ic = open_in f in
+  let n = in_channel_length ic in
+  let s = Bytes.create n in
+  really_input ic s 0 n;
+  close_in ic;
+  Bytes.to_string s
+
 let test s =
   let open Compiler in
   stack_hybridized := false;
@@ -98,19 +106,19 @@ let test_array _ =
        arr.(0) + arr.(1)" in
   assert_equal ~printer:string_of_int 3 (test code)
 
-let test_loop _ =
+let test_for_loop _ =
   let code ="
 let rec f n =
   let arr = Array.make 1 0 in
-  while arr.(0) < 10 do
-    let x = arr.(0) + 1 in
+  for i = 0 to 10 do
+    let x = arr.(0) + i in
     arr.(0) <- x;
     ()
   done;
   arr.(0)
 in let () = f 10
 " in
-  assert_equal ~printer:string_of_int 1 (test code)
+  assert_equal ~printer:string_of_int 15 (test code)
 
 let suite =
   "ByteCompilerTest" >::: [
@@ -126,5 +134,11 @@ let suite =
     "test_array" >:: test_array;
   ]
 
+let loop_site =
+  "LazyTest" >::: [
+    "test_for" >:: test_for_loop;
+  ]
+
 let () =
-  run_test_tt_main suite
+  run_test_tt_main suite;
+  run_test_tt_main loop_site

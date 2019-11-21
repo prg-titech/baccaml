@@ -5,6 +5,7 @@ type var = string
 type exp =
   | Unit
   | Int of int
+  | Not of exp
   | Var of var
   | Add of exp * exp
   | Sub of exp * exp
@@ -19,7 +20,6 @@ type exp =
   | Get of exp * exp
   | Put of exp * exp * exp * exp
   | For of range * exp * exp    (* loop (condition, body, next) *)
-  | While of exp * exp * exp    (* while cond, body, next *)
   | TCall of var * exp list     (* tail call --- internal only *)
 [@@deriving show]
 

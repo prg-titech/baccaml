@@ -1,3 +1,5 @@
+let debug_flg = ref false
+
 type inst =
   | UNIT
   | ADD
@@ -18,6 +20,8 @@ type inst =
   | ARRAY_MAKE
   | GET
   | PUT
+  | NOT
+  | POP0
   | Literal of int
   | Lref of string
   | Ldef of string
@@ -46,6 +50,8 @@ let insts = [|
   ARRAY_MAKE;
   GET;
   PUT;
+  NOT;
+  POP0;
 |]
 
 let has_args = [
@@ -69,6 +75,8 @@ let has_args = [
   ARRAY_MAKE, false;
   GET, false;
   PUT, false;
+  NOT, false;
+  POP0, false;
 ]
 
 let index_of element array =
@@ -109,10 +117,19 @@ module Value = struct
     | VInt i, VInt j -> VInt (i * j)
     | _ -> failwith "invalid value"
 
-  let int_of_value = function VInt i -> i | _ -> failwith "array is not int"
-  let array_of_value pc = function
+  let (|<|) v1 v2 = match v1, v2 with
+    | VInt i, VInt j ->
+      if !debug_flg then
+        print_endline (Printf.sprintf "v1: %d v2: %d" i j);
+      i < j
+    | _ -> failwith "invalid value"
+
+  let int_of_value = function
+      VInt i -> i
+    | _ -> failwith "array is not int"
+  let array_of_value= function
       VArray arr -> arr
-    | _ -> failwith (Printf.sprintf "int is not array (pc: %d)" pc)
+    | _ -> failwith ("int is not array")
 
   let value_of_int i = VInt i
   let value_of_array arr = VArray arr
@@ -157,7 +174,11 @@ let code_at_pc code pc =
 
 let dump_stack (sp,stack) =
   let rec loop i = if i=sp then ""
-    else (string_of_int @@ Value.int_of_value @@ stack.(i))^";"^(loop (i+1)) in
+    else (
+      (match stack.(i) with
+      | VInt i -> string_of_int i
+      | VArray _ -> "array") ^";"^ (loop (i+1))
+    ) in
   "["^(loop 0)^"]"
 
 (* when the VM won't stop, you may turn on the following function to
@@ -172,16 +193,24 @@ let checkpoint =
       else counter := !counter - 1
   else fun () -> ()
 
-
 let rec interp  code pc stack =
   checkpoint ();
-  (* Printf.printf "%s %s\n" (code_at_pc code pc) (dump_stack stack); *)
   let open Value in
   if pc<0 then fst(pop stack) else begin
     let i,pc = fetch code pc in
-    match insts.(i) with
+    let inst = insts.(i) in
+    (* Printf.printf "%d %s %s\n" pc (show_inst inst) (dump_stack stack); *)
+    match inst with
     | UNIT ->
       interp code (pc + 1) stack
+    | NOT ->
+      let v,stack = pop stack in
+      let stack =
+        if int_of_value v = 0
+        then push stack (VInt 1)
+        else push stack (VInt 0)
+      in
+      interp code pc stack
     | ADD ->
       let v2,stack = pop stack in
       let v1,stack = pop stack in
@@ -195,9 +224,10 @@ let rec interp  code pc stack =
       let v1,stack = pop stack in
       let    stack = push stack (v1 |*| v2) in
       interp  code pc stack
-    | LT ->  let v2,stack = pop stack in
+    | LT ->
+      let v2,stack = pop stack in
       let v1,stack = pop stack in
-      let    stack = push stack (if v1<v2 then VInt 1 else VInt 0) in
+      let    stack = push stack (if v1 |<| v2 then VInt 1 else VInt 0) in
       interp  code pc stack
     | CONST -> let c,pc = fetch code pc in
       let stack = push stack (value_of_int c) in
@@ -240,6 +270,9 @@ let rec interp  code pc stack =
       let n,pc = fetch code pc in
       let stack = frame_reset stack o l n in
       interp  code pc stack
+    | POP0 ->
+      let _,stack = pop stack in
+      interp code pc stack
     | POP1 ->
       let v,stack = pop stack in
       let _,stack = pop stack in
@@ -267,14 +300,14 @@ let rec interp  code pc stack =
       let n,stack = pop stack in
       let n = int_of_value n in
       let arr,stack = pop stack in
-      let arr = array_of_value pc arr in
+      let arr = array_of_value arr in
       let stack = push stack (value_of_int (arr.(n))) in
       interp code pc stack
     | PUT ->
       let n,stack = pop stack in
       let i,stack = pop stack in
       let arr,stack = pop stack in
-      (array_of_value pc arr).(int_of_value i) <- (int_of_value n);
+      (array_of_value arr).(int_of_value i) <- (int_of_value n);
       interp code pc stack
   end
 
