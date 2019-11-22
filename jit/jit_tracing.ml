@@ -74,6 +74,8 @@ let rec tj p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as
     tj p reg mem env body
   | Let ((dest, typ), CallDir (Id.L "min_caml_method_entry", args, fargs), body) ->
     tj p reg mem env body
+  | Let ((dest, typ), CallDir (Id.L "min_caml_guard_promote", args, fargs), body) ->
+    tj p reg mem env body
   | Let ((dest, typ), CallDir (Id.L "min_caml_can_enter_jit", args, fargs), body) ->
     let { trace_name; index_pc; merge_pc } = env in
     let pc = value_of @@ reg.(int_of_id_t @@ List.nth args index_pc) in

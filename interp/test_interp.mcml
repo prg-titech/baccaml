@@ -90,6 +90,7 @@ let rec interp stack sp bytecode pc =
     let v = stack.(sp - 1) in
     let mode = stack.(sp - 2) in
     if mode = 200 then
+      guard_promote stack sp bytecode pc;
       let n = bytecode.(pc + 1) in
       let addr = stack.(sp - 3) in
       stack.(sp - n - 3) <- v;

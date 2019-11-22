@@ -56,6 +56,12 @@ let rec jmp_to_guard tname = function
     end
   | Let (x, e, t) -> Let (x, e, jmp_to_guard tname t)
 
+let rec promote reg ~trace_name:tname = function
+  | Let (x, CallDir (Id.L ("min_caml_guard_promote"), args, fargs), body) ->
+    restore reg ~args:args (Ans (CallDir (Id.L ("guard_" ^ tname), args, [])))
+  | Let (x, e, body) -> promote reg tname body
+  | Ans (_) -> failwith "Jit_guard.promote cannot find min_caml_guard_promote."
+
 module TJ : sig
   val create : reg -> string -> ?wlist:'a list -> t -> t
 end = struct

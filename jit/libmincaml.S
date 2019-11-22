@@ -305,6 +305,9 @@ min_caml_loop_end:
 .globl min_caml_method_entry
 min_caml_method_entry:
 	ret
+.globl min_caml_guard_promote
+min_caml_guard_promote:
+	ret
 .data
 format_int:
 	.asciz	"%d"

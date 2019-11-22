@@ -162,7 +162,7 @@ and mj_exp p reg mem ({index_pc; merge_pc; bytecode} as env) = function
         Let ((id, Type.Int), Set (value_of v), Ans (Mov id))
      | Not_specialized (e, v) -> Ans e
 
-and mj_if p reg mem ({index_pc; merge_pc; bytecode} as env) = function
+and mj_if p reg mem ({index_pc; merge_pc; trace_name; bytecode} as env) = function
   | IfEq (id_t, id_or_imm, t1, t2)
   | IfLE (id_t, id_or_imm, t1, t2)
   | IfGE (id_t, id_or_imm, t1, t2) as exp ->
@@ -173,8 +173,8 @@ and mj_if p reg mem ({index_pc; merge_pc; bytecode} as env) = function
        let t = Util.find_by_inst pc body in
        t |> mj p reg mem env
      else if String.get_name id_t = "mode" then
-       let open Jit_guard in
-       let guard_code = TJ.create reg env.trace_name t1 in
+       let module G = Jit_guard in
+       let guard_code = G.promote reg ~trace_name:trace_name t1 in
        Ans (IfEq (id_t, id_or_imm, guard_code, t2))
      else
        (Asm.print_exp exp; print_newline (); assert false)
