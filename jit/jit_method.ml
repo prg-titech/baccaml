@@ -86,6 +86,8 @@ let rec mj p reg mem ({trace_name; red_names; index_pc; merge_pc; function_pcs; 
      else
        Let ((x, typ), CallDir (Id.L ("interp_no_hints"), args, fargs), mj p reg mem env body)
        |> Jit_guard.restore reg ~args
+  | Let ((x, typ), CallDir (Id.L ("min_caml_gaurd_promote"), args, fargs), body) ->
+    mj p reg mem env body
   | Let ((x, typ), CallDir (id_l, args, fargs), body) ->
      let reds = Util.filter_by_names ~reds:red_names args in
      Let ((x, typ), CallDir (id_l, reds, []), body |> mj p reg mem env)
@@ -174,8 +176,8 @@ and mj_if p reg mem ({index_pc; merge_pc; trace_name; bytecode} as env) = functi
        t |> mj p reg mem env
      else if String.get_name id_t = "mode" then
        let module G = Jit_guard in
-       let guard_code = G.promote reg ~trace_name:trace_name t1 in
-       Ans (IfEq (id_t, id_or_imm, guard_code, t2))
+       let guard_code = G.TJ.create reg trace_name t1 in
+       Ans (IfEq (id_t, id_or_imm, guard_code, mj p reg mem env t2))
      else
        (Asm.print_exp exp; print_newline (); assert false)
   | SIfEq (id_t, id_or_imm, t1, t2)
