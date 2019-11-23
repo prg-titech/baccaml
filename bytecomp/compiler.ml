@@ -155,6 +155,7 @@ let resolve_labels instrs =
   List.filter (function VM.Ldef _ -> false | _ -> true)
     (List.map (assoc_if (make_label_env instrs)) instrs)
 
+
 let make_fenv exp =
   fun name ->
   find_fundefs exp
@@ -162,19 +163,22 @@ let make_fenv exp =
   |> List.find (fun (_, {name=n}) -> name=n)
   |> fst
 
-let compile_fun_body fenv name arity exp env =
+
+let compile_fun_body fenv name arity annot exp env =
   let env = if !stack_hybridized then shift_env env else env in
-  VM.METHOD_ENTRY ::
-  (VM.Ldef name) ::
-  (compile_exp fenv exp env) @ (
-    if name = "main" then [VM.HALT]
-    else [VM.RET; VM.Literal arity])
+  (match annot with
+   | None | Some TracingComp ->
+     [VM.METHOD_ENTRY; VM.Ldef name]
+   | Some MethodComp ->
+     [VM.METHOD_COMP; VM.METHOD_ENTRY;  VM.Ldef name]) @
+  (compile_exp fenv exp env) @ (if name = "main" then [VM.HALT] else [VM.RET; VM.Literal arity])
 
 
-let compile_fun fenv {name; args; body} =
-  compile_fun_body fenv name (List.length args)
+let compile_fun fenv {name; args; body; annot} =
+  compile_fun_body fenv name (List.length args) annot
     (tail_elim name body)
     (build_arg_env args)
+
 
 let compile_funs fundefs =
   let fenv name = fst(List.find (fun (_,{name=n}) -> name=n)

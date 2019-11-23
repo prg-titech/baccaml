@@ -22,6 +22,7 @@ rule token = parse
   | "not"     { NOT }
   | "let"     { LET }
   | "rec"     { REC }
+  | "%" (lower|upper)+ as it { ANNOT(it) }
   | "in"      { IN }
   | "if"      { IF }
   | "then"    { THEN }

@@ -1,5 +1,18 @@
 %{
   open Syntax
+
+  let annot_of_string str =
+    if not (String.contains str '%') then
+      failwith "invalid annotation"
+    else
+      let annot_body = List.tl (String.split_on_char '%' str) in
+      if List.length annot_body > 1 then
+        failwith "invalid annotation"
+      else
+        (match List.hd annot_body with
+         | "mj" -> Some MethodComp
+         | "tj" -> Some TracingComp
+         | _ -> None)
 %}
 
 %token <int> INT
@@ -10,6 +23,7 @@
 %token LESS GREATER
 %token LESS_EQ GREATER_EQ
 %token LET REC
+%token <string> ANNOT
 %token IN
 %token EQ
 %token NOT
@@ -48,8 +62,8 @@ exp:
     | exp EQ exp               { Eq ($1, $3) }
     | IF exp THEN exp ELSE exp { If ($2, $4, $6) }
     | LET VAR EQ exp IN exp    { Let ($2, $4, $6) }
-    | LET REC fundef IN exp    { LetRec ($3, $5) }
-    | LET LPAREN RPAREN EQ exp { LetRec ({name="main"; args=[]; body=$5}, Unit) }
+    | fundef IN exp            { LetRec ($1, $3) }
+    | LET LPAREN RPAREN EQ exp { LetRec ({name="main"; args=[]; body=$5; annot=None}, Unit) }
     | VAR actual_args          { Call ($1, $2) }
     | exp SEMICOLON exp        { Let (Id.gentmp (), $1, $3) }
     | ARRAY_MAKE exp exp       { Array ($2, $3) }
@@ -57,7 +71,8 @@ exp:
     | FOR VAR EQ exp TO exp DO exp DONE SEMICOLON exp { For(Range($2, $4, $6), $8, $11) }
 
 fundef:
-    | VAR formal_args EQ exp   { { name = $1; args = $2; body = $4 } }
+    | LET REC VAR formal_args EQ exp   { { name=$3; args=$4; body=$6; annot=None } }
+    | LET ANNOT REC VAR formal_args EQ exp { { name=$4; args=$5; body=$7; annot=annot_of_string $2 } }
 
 formal_args:
     | VAR formal_args { $1 :: $2 }

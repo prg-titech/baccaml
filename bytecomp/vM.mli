@@ -36,6 +36,7 @@ type inst =
   | PUT
   | NOT
   | POP0
+  | METHOD_COMP
   (* the following constructors do not represent instructions but
      are defined for expressing operands of some instructions as
      well as label declarations and references *)
