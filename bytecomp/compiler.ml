@@ -30,49 +30,48 @@ let arity_of_env env =
   (List.length env - num_local_vars  - 1, num_local_vars)
 
 (* compilation of expressions *)
-let rec compile_exp fenv exp env =
+let rec compile_exp fenv env exp =
   let open VM in
   match exp with
   | Unit -> []
   | Int n -> [CONST; Literal n]
   | Not e1 ->
-    (compile_exp fenv e1 env) @
+    (e1 |> compile_exp fenv env) @
     [NOT]
   | Var v -> [DUP; Literal(lookup env v)]
   | Add(e1,e2) ->
-    (compile_exp fenv e1 env) @
-    (compile_exp fenv e2 (shift_env env)) @ [ADD]
+    (e1 |> compile_exp fenv env) @
+    (e2 |> compile_exp fenv (shift_env env)) @ [ADD]
   | Sub(e1, e2) ->
-    (compile_exp fenv e1 env) @
-    (compile_exp fenv e2 (shift_env env)) @ [SUB]
+    (compile_exp fenv env e1) @
+    (compile_exp fenv (shift_env env) e2) @ [SUB]
   | Mul(e1,e2) ->
-    (compile_exp fenv e1 env) @
-    (compile_exp fenv e2 (shift_env env)) @ [MUL]
+    (e1 |> compile_exp fenv env) @
+    (e2 |> compile_exp fenv (shift_env env)) @ [MUL]
   | LT(e1,e2) ->
-    (compile_exp fenv e1 env) @
-    (compile_exp fenv e2 (shift_env env)) @ [LT]
+    (e1 |> compile_exp fenv env) @
+    (e2 |> compile_exp fenv (shift_env env)) @ [LT]
   | Eq(e1, e2) ->
-    (compile_exp fenv e1 env) @
-    (compile_exp fenv e2 (shift_env env)) @ [EQ]
+    (e1 |> compile_exp fenv env) @
+    (e2 |> compile_exp fenv (shift_env env)) @ [EQ]
   | If(cond,then_exp,else_exp) ->
     let l2,l1 = gen_label(),gen_label() in
-    (compile_exp fenv cond env)
+    (cond |> compile_exp fenv env)
     @ [JUMP_IF_ZERO; Lref l1]
-    @ (compile_exp fenv then_exp env)
+    @ (then_exp |> compile_exp fenv env)
     @ [JUMP; Lref l2; (* unconditional jump *)
        Ldef l1]
-    @ (compile_exp fenv else_exp env)
+    @ (else_exp |> compile_exp fenv env)
     @ [Ldef l2]
   | Call(fname, rands) | TCall(fname, rands) ->
-    ((List.fold_left
-        (fun (rev_code_list,env) exp ->
-           (compile_exp fenv exp env) :: rev_code_list,
-           shift_env env)
-        ([], env) rands)
+    (List.fold_left (fun (rev_code_list,env) exp ->
+         (exp |> compile_exp fenv env) :: rev_code_list, shift_env env)
+        ([], env) rands
      |> fst
      |> List.rev
      |> List.flatten)
-    @ [CALL; Lref fname; Literal (List.length rands)] (* call using a label *)
+    @ [CALL; Lref fname; Literal (List.length rands)]
+  (* call using a label (call label size_of_args) *)
   (* self tail calls are compiled with FRAME_RESET which moves
          the computed arguments to the position of the actual
          parameters in the current frame. *)
@@ -83,7 +82,7 @@ let rec compile_exp fenv exp env =
        (List.rev
           (fst
              (List.fold_left (fun (rev_code_list,env) exp ->
-                  (compile_exp fenv exp env)::rev_code_list,
+                  (exp |> compile_exp fenv env)::rev_code_list,
                   shift_env env)
                  ([], env) rands))))
     @ [FRAME_RESET;
@@ -91,37 +90,40 @@ let rec compile_exp fenv exp env =
        JUMP; Lref fname]
   | Let(var,exp,body) ->
     let ex_env = extend_env env var in
-    (compile_exp fenv exp env)            (* in old env *)
-    @ (compile_exp fenv body ex_env)      (* in extended env *)
+    (exp |> compile_exp fenv env)         (* in old env *)
+    @ (body |> compile_exp fenv ex_env)   (* in extended env *)
     @ [POP1]                              (* drop the value *)
   | Array (e1, e2) ->
-    (compile_exp fenv e1 env)
-    @ (compile_exp fenv e2 (shift_env env))
-    @ [ARRAY_MAKE]
+    (e1 |> compile_exp fenv env) @
+    (e2 |> compile_exp fenv (shift_env env)) @
+    [ARRAY_MAKE]
   | Get (e1, e2) ->
-    (compile_exp fenv e1 env)
-    @ (compile_exp fenv e2 (shift_env env))
-    @ [GET]
+    (e1 |> compile_exp fenv env) @
+    (e2 |> compile_exp fenv (shift_env env)) @
+    [GET]
   | Put (e1, e2, e3, e4) ->       (* array,index,val,cont *)
-    (compile_exp fenv e1 env)
-    @ (compile_exp fenv e2 (shift_env env))
-    @ (compile_exp fenv e3 (shift_env (shift_env env)))
+    (e1 |> compile_exp fenv env)
+    @ (e2 |> compile_exp fenv (shift_env env))
+    @ (e3 |> compile_exp fenv (shift_env (shift_env env)))
     @ [PUT]
-    @ (compile_exp fenv e4 env)
+    @ (e4 |> compile_exp fenv env)
+  (* for var = from_exp to to_exp do
+   *   body_exp
+   * done;
+   * next_exp *)
   | For (Range (var, from_exp, to_exp), body_exp, next_exp) ->
     let l1 = gen_label () in
-    let ex_env = extend_env env var in
-    (compile_exp fenv from_exp env) @
+    let ex_env = extend_env env var in   (* for i = 0 *)
+    (from_exp |> compile_exp fenv env) @
     [Ldef l1] @
-    (compile_exp fenv body_exp ex_env) @
-    [CONST; Literal 1] @
-    [ADD] @
-    [DUP; Literal (lookup ex_env var)] @
-    (compile_exp fenv to_exp ex_env) @
-    [LT; NOT] @
+    (body_exp |> compile_exp fenv ex_env) @ (* body of loop *)
+    [CONST; Literal 1; ADD] @            (* increment var *)
+    [DUP; Literal (lookup ex_env var)] @ (* copy var *)
+    (to_exp |> compile_exp fenv ex_env) @
+    [LT; NOT] @                          (* compaire with to *)
     [JUMP_IF_ZERO; Lref l1] @
-    [POP0] @
-    (compile_exp fenv next_exp env)
+    [POP0] @                             (* remove var *)
+    (next_exp |> compile_exp fenv env)
   | _ -> failwith (Printf.sprintf "match failure %s" (Syntax.show_exp exp))
 
 let rec tail_elim fname = function
