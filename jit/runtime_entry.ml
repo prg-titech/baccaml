@@ -75,25 +75,6 @@ let jit_method ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
   Debug.with_debug (fun _ -> print_fundef trace);
   Util.emit_and_compile prog `Meta_method trace
 
-let jit_method_multi ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
-  let open Asm in
-  let open Jit_env in
-  let module JM = Jit_method in
-  let reg, mem = Setup.env runtime_env `Meta_method prog in
-  let { args } = Fundef.find_fuzzy prog "interp" in
-  let trace_name = Trace_name.gen `Meta_method in
-  let env =
-    create_env
-      ~trace_name:(Trace_name.value trace_name)
-      ~red_names:(!Config.reds)
-      ~index_pc:(List.index (Util.get_id "pc" args) args)
-      ~merge_pc:pc
-      ~bytecode:bytecode
-  in
-  try
-    JM.run_multi prog reg mem env
-    |> emit_and_compile_mj
-  with e -> Error e
 
 let jit_tracing ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
   let open Asm in
