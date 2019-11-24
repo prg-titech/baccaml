@@ -18,14 +18,14 @@ type exp =
   | Eq of exp * exp
   | LT of exp * exp             (* less than *)
   | If of exp * exp * exp
-  | Call of var * exp list
+  | Call of annot option * var * exp list
   | Let of var * exp * exp
   | LetRec of fundef * exp
   | Array of exp * exp
   | Get of exp * exp
   | Put of exp * exp * exp * exp
   | For of range * exp * exp    (* loop (condition, body, next) *)
-  | TCall of var * exp list     (* tail call --- internal only *)
+  | TCall of annot option * var * exp list     (* tail call --- internal only *)
 [@@deriving show]
 
 and range = Range of var * exp * exp (* var = exp to exp => Range (var, exp, exp) *)
@@ -39,7 +39,7 @@ let rec find_fundefs ?(name = None) = function
      (find_fundefs e1) @ (find_fundefs e2)
   | If (e1, e2, e3) -> (find_fundefs e1) @ (find_fundefs e2) @ (find_fundefs e3)
   | Let (_, e1, e2) -> find_fundefs e1 @ find_fundefs e2
-  | Call (_, exps) | TCall(_, exps) -> exps |> List.map find_fundefs |> List.flatten
+  | Call (_, _, exps) | TCall(_, _, exps) -> exps |> List.map find_fundefs |> List.flatten
   | LetRec (fundef, e) ->
     begin
       match name with

@@ -23,6 +23,7 @@ type inst =
   | NOT
   | POP0
   | METHOD_COMP                 (* annotation *)
+  | CALL_HS
   | Literal of int
   | Lref of string
   | Ldef of string
@@ -54,6 +55,7 @@ let insts = [|
   NOT;
   POP0;
   METHOD_COMP;
+  CALL_HS;
 |]
 
 let has_args = [
@@ -80,6 +82,7 @@ let has_args = [
   NOT, false;
   POP0, false;
   METHOD_COMP, false;
+  CALL_HS, true;
 ]
 
 let index_of element array =

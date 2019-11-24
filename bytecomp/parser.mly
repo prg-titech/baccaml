@@ -64,7 +64,7 @@ exp:
     | LET VAR EQ exp IN exp    { Let ($2, $4, $6) }
     | fundef IN exp            { LetRec ($1, $3) }
     | LET LPAREN RPAREN EQ exp { LetRec ({name="main"; args=[]; body=$5; annot=None}, Unit) }
-    | VAR actual_args          { Call ($1, $2) }
+    | VAR actual_args          { Call (None, $1, $2) }
     | exp SEMICOLON exp        { Let (Id.gentmp (), $1, $3) }
     | ARRAY_MAKE exp exp       { Array ($2, $3) }
     | simple_exp DOT LPAREN exp RPAREN LESS_MINUS simple_exp SEMICOLON exp { Put ($1, $4, $7, $9) }

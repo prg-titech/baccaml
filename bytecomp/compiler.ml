@@ -63,19 +63,25 @@ let rec compile_exp fenv env exp =
        Ldef l1]
     @ (else_exp |> compile_exp fenv env)
     @ [Ldef l2]
-  | Call(fname, rands) | TCall(fname, rands) ->
+  | Call(annot, fname, rands) | TCall(annot, fname, rands) ->
     (List.fold_left (fun (rev_code_list,env) exp ->
          (exp |> compile_exp fenv env) :: rev_code_list, shift_env env)
         ([], env) rands
      |> fst
      |> List.rev
-     |> List.flatten)
-    @ [CALL; Lref fname; Literal (List.length rands)]
+     |> List.flatten) @
+    begin
+      match annot with
+      | Some MethodComp ->
+        [CALL_HS; Lref fname; Literal (List.length rands)]
+      | _ ->
+        [CALL; Lref fname; Literal (List.length rands)]
+    end
   (* call using a label (call label size_of_args) *)
   (* self tail calls are compiled with FRAME_RESET which moves
          the computed arguments to the position of the actual
          parameters in the current frame. *)
-  | TCall(fname, rands) ->
+  | TCall(annot, fname, rands) ->
     let old_arity,local_size = arity_of_env env in
     let new_arity = List.length rands in
     (List.flatten
@@ -113,29 +119,43 @@ let rec compile_exp fenv env exp =
    * next_exp *)
   | For (Range (var, from_exp, to_exp), body_exp, next_exp) ->
     let l1 = gen_label () in
-    let ex_env = extend_env env var in   (* for i = 0 *)
+    let ex_env = extend_env env var in      (* var *)
     (from_exp |> compile_exp fenv env) @
     [Ldef l1] @
     (body_exp |> compile_exp fenv ex_env) @ (* body of loop *)
-    [CONST; Literal 1; ADD] @            (* increment var *)
-    [DUP; Literal (lookup ex_env var)] @ (* copy var *)
+    [CONST; Literal 1; ADD] @               (* increment var *)
+    [DUP; Literal (lookup ex_env var)] @    (* copy var *)
     (to_exp |> compile_exp fenv ex_env) @
-    [LT; NOT] @                          (* compaire with to *)
+    [LT; NOT] @                             (* compaire with to *)
     [JUMP_IF_ZERO; Lref l1] @
-    [POP0] @                             (* remove var *)
+    [POP0] @                                (* remove var *)
     (next_exp |> compile_exp fenv env)
   | _ -> failwith (Printf.sprintf "match failure %s" (Syntax.show_exp exp))
 
 let rec tail_elim fname = function
   | If(cond,then_exp,else_exp) ->
     If(cond, tail_elim fname then_exp, tail_elim fname else_exp)
-  | Call(fname', rands) ->
+  | Call(annot, fname', rands) ->
     if fname=fname'
-    then TCall(fname', rands)
-    else Call(fname', rands)
+    then TCall(annot, fname', rands)
+    else Call(annot, fname', rands)
   | Let(var,exp,body) ->
     Let(var,exp, tail_elim fname body)
   | others -> others
+
+
+let rec call_annot (fenv : var -> fundef) = function
+  | If(cond, then_exp, else_exp) ->
+    If(cond, call_annot fenv then_exp, call_annot fenv else_exp)
+  | Call(annot', fname', rands) ->
+    let callee = fenv fname' in
+    (match callee.annot with
+    | Some MethodComp -> Call(Some MethodComp, fname', rands)
+    | _ -> Call(annot', fname', rands))
+  | Let(var,exp,body) ->
+    Let(var,exp,call_annot fenv body)
+  | others -> others
+
 
 (* resolving labels *)
 let assoc_if subst elm =
@@ -152,18 +172,11 @@ let make_label_env instrs =
             | Ldef n -> (addr, (Lref n, Literal(addr))::env)
             | _ ->      (addr+1, env)) (0,[]) instrs)
 
+
 (* remove all Ldefs and replace Lrefs with Literals *)
 let resolve_labels instrs =
   List.filter (function VM.Ldef _ -> false | _ -> true)
     (List.map (assoc_if (make_label_env instrs)) instrs)
-
-
-let make_fenv exp =
-  fun name ->
-  find_fundefs exp
-  |> List.mapi (fun i fundef -> (i, fundef))
-  |> List.find (fun (_, {name=n}) -> name=n)
-  |> fst
 
 
 let compile_fun_body fenv name arity annot exp env =
@@ -173,22 +186,25 @@ let compile_fun_body fenv name arity annot exp env =
      [VM.METHOD_ENTRY; VM.Ldef name]
    | Some MethodComp ->
      [VM.METHOD_COMP; VM.METHOD_ENTRY;  VM.Ldef name]) @
-  (compile_exp fenv exp env) @ (if name = "main" then [VM.HALT] else [VM.RET; VM.Literal arity])
+  (exp |> call_annot fenv |> compile_exp fenv env) @
+  (if name = "main" then [VM.HALT] else [VM.RET; VM.Literal arity])
 
 
-let compile_fun fenv {name; args; body; annot} =
+let compile_fun (fenv : var -> fundef) {name; args; body; annot} =
   compile_fun_body fenv name (List.length args) annot
     (tail_elim name body)
     (build_arg_env args)
 
 
 let compile_funs fundefs =
-  let fenv name = fst(List.find (fun (_,{name=n}) -> name=n)
-                        (List.mapi (fun idx fdef -> (idx,fdef))
-                           fundefs)) in
+  (* let fenv name = fst(List.find (fun (_,{name=n}) -> name=n)
+   *                       (List.mapi (fun idx fdef -> (idx,fdef))
+   *                          fundefs)) in *)
+  let fenv name = List.find (fun {name=n} -> n=name) fundefs in
   Array.of_list(resolve_labels
                   (List.flatten
                      (List.map (compile_fun fenv) fundefs)))
+
 
 let compile_from_exp (exp : Syntax.exp) : VM.inst array =
   let fundefs = find_fundefs exp in
@@ -213,8 +229,8 @@ module Test = struct
     Printf.sprintf "code1: %s\ncode2: %s\n"
       (string_of_code_list code1) (string_of_code_list code2)
   let test_ex compiler name exp expected =
-    let actual = compiler (fun _ -> 47) exp
-        (extend_env (build_arg_env ["x";"y"]) "w") in
+    let actual = exp |> compiler (fun _ -> 47)
+                   (extend_env (build_arg_env ["x";"y"]) "w") in
     if actual = expected
     then (Printf.printf "%s: %s\n" name "OK")
     else failwith (Printf.sprintf "%s: NG\n%s"
