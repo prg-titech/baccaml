@@ -153,7 +153,9 @@ let rec call_annot (fenv : var -> fundef) = function
     | Some MethodComp -> Call(Some MethodComp, fname', rands)
     | _ -> Call(annot', fname', rands))
   | Let(var,exp,body) ->
-    Let(var,exp,call_annot fenv body)
+    Let(var,call_annot fenv exp,call_annot fenv body)
+  | For(range, body_exp, next_exp) ->
+    For(range, call_annot fenv body_exp, call_annot fenv next_exp)
   | others -> others
 
 
