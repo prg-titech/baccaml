@@ -150,10 +150,10 @@ let rec call_annot (fenv : var -> fundef) = function
   | Call(annot', fname', rands) ->
     let callee = fenv fname' in
     (match callee.annot with
-    | Some MethodComp -> Call(Some MethodComp, fname', rands)
-    | _ -> Call(annot', fname', rands))
+     | Some MethodComp -> Call(Some MethodComp, fname', rands)
+     | _ -> Call(annot', fname', rands))
   | Let(var,exp,body) ->
-    Let(var,call_annot fenv exp,call_annot fenv body)
+    Let(var, call_annot fenv exp, call_annot fenv body)
   | For(range, body_exp, next_exp) ->
     For(range, call_annot fenv body_exp, call_annot fenv next_exp)
   | others -> others
@@ -184,12 +184,12 @@ let resolve_labels instrs =
 let compile_fun_body fenv name arity annot exp env =
   let env = if !stack_hybridized then shift_env env else env in
   (match annot with
-   | None | Some TracingComp ->
-     [VM.METHOD_ENTRY; VM.Ldef name]
-   | Some MethodComp ->
-     [VM.METHOD_COMP; VM.METHOD_ENTRY;  VM.Ldef name]) @
-  (exp |> call_annot fenv |> compile_exp fenv env) @
-  (if name = "main" then [VM.HALT] else [VM.RET; VM.Literal arity])
+   | None | Some TracingComp -> [VM.METHOD_ENTRY; VM.Ldef name]
+   | Some MethodComp -> [VM.METHOD_COMP; VM.METHOD_ENTRY; VM.Ldef name]) @
+  (call_annot fenv exp |> compile_exp fenv env) @
+  (if name = "main"
+   then [VM.HALT]
+   else [VM.RET; VM.Literal arity])
 
 
 let compile_fun (fenv : var -> fundef) {name; args; body; annot} =
@@ -210,9 +210,9 @@ let compile_funs fundefs =
 
 let compile_from_exp (exp : Syntax.exp) : VM.inst array =
   let fundefs = find_fundefs exp in
-  let main = fundefs |> List.find (fun { name } -> name = "main") in
+  let main = fundefs |> List.find_all (fun { name } -> name = "main") in
   let others = fundefs |> List.filter (fun { name } -> name <> "main") in
-  (compile_funs (others @ [main]))
+  (compile_funs (others @ main))
 
 
 (* for testing *)

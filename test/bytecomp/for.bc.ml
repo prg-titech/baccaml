@@ -3,12 +3,12 @@ let%mj rec fib n =
   else fib (n-1) + fib(n-2)
 in
 let rec f n =
-  let arr = Array.make 1 0 in
-  for i = 0 to 10 do
+  let arr = Array.make 2 1 in
+  for i = 1 to 21 do
     let x = fib i in
-    let y = arr.(0) + x in
-    arr.(0) <- y;
+    let y = arr.(1) + x in
+    arr.(1) <- y;
     ()
   done;
-  arr.(0)
+  arr.(1)
 in let () = f 10
