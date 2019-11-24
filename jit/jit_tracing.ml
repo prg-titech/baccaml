@@ -1,11 +1,9 @@
 open Std
-
 open MinCaml
 open Asm
-
 open Jit_env
 open Jit_util
-
+open Jit_prof
 open Printf
 
 let p = sprintf
@@ -89,7 +87,15 @@ let rec tj p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as
           , CallDir (Id.L x, Util.filter ~reds:red_names args, fargs)
           , (tj p reg mem env body)))
      |> Jit_guard.restore reg ~args:args
-  | Let ((dest, typ), CallDir (Id.L x, argsr, fargsr), body) -> (* inline function call *)
+  | Let ((dest, typ), CallDir (Id.L x, argsr, fargsr), body) when x = "min_caml_mj_call" ->
+     let pc = Util.get_pc reg argsr index_pc in
+     (match Method_prof.find_opt pc with
+      | Some tname ->
+        Let ((dest, typ), CallDir (Id.L (tname), argsr, fargsr), tj p reg mem env body)
+      | None ->
+        Jit_guard.restore reg ~args:argsr
+          (Let ((dest, typ), CallDir (Id.L ("interp_no_hints"), argsr, fargsr), tj p reg mem env body)))
+    | Let ((dest, typ), CallDir (Id.L x, argsr, fargsr), body) -> (* inline function call *)
      let pc = Util.get_pc reg argsr index_pc in
      let next_instr = bytecode.(pc) in
      let { name; args= argst; fargs; body= interp_body; ret } = interp_fundef p in
