@@ -176,9 +176,9 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
        | Ok name ->
           Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
           Method_prof.register (pc, name);
-          let s = Unix.gettimeofday () in
+          let s = Sys.time () in
           let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
-          let e = Unix.gettimeofday () in
+          let e = Sys.time () in
           Printf.eprintf "[mj] elapced time: %F us\n" ((e -. s) *. 1e6);
           flush stderr;
           r
