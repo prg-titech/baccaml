@@ -86,6 +86,6 @@ module Method_prof =
 module Trace_prof =
   Make_prof(
       struct
-        let threshold = 100
+        let threshold = 0
         let typ = `Meta_tracing
       end)

@@ -109,7 +109,7 @@ let jit_tracing ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog 
       ~bytecode:bytecode
   in
   let trace = JT.run prog reg mem env in
-  Asm.print_fundef trace;
+  Asm.print_fundef trace; flush stdout;
   let oc = open_out (Trace_name.value trace_name ^ ".s") in
   try
     emit_dyn oc prog `Meta_tracing trace_name trace;
@@ -171,9 +171,9 @@ let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
 let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
   match Method_prof.find_opt pc with
   | Some name ->
-    let s = Unix.gettimeofday () in
+    let s = Sys.time () in
     let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
-    let e = Unix.gettimeofday () in
+    let e = Sys.time () in
     Printf.eprintf "[mj] elapced time: %fus\n" ((e -. s) *. 1e6);
     flush stderr;
     r
@@ -224,8 +224,7 @@ let method_compile bytecode stack pc sp bc_ptr st_ptr =
 
 
 let jit_method_compile_only bytecode stack pc sp bc_ptr st_ptr =
-  Util.find_mj_entries bytecode
-  |> List.map (fun pc_entry ->
+  Util.find_mj_entries bytecode |> List.map (fun pc_entry ->
       method_compile bytecode stack pc_entry sp bc_ptr st_ptr)
 
 
