@@ -227,4 +227,6 @@ let run prog reg mem ({trace_name; red_names; index_pc; merge_pc; bytecode} : en
   let reds = args |> List.find_all (fun x -> List.mem (String.get_name x) red_names) in
   let env = {trace_name; red_names; index_pc; merge_pc; function_pcs=[merge_pc]; bytecode} in
   let trace = mj prog reg mem env fenv body in
-  Fundef.create_fundef ~name:(Id.L env.trace_name) ~args:reds ~fargs:[] ~body:trace ~ret:(Type.Int)
+  create_fundef
+    ~name:(Id.L env.trace_name) ~args:reds ~fargs:[]
+    ~body:trace ~ret:(Type.Int)

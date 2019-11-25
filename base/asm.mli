@@ -48,6 +48,8 @@ val show_exp : exp -> string
 
 type fundef = { name : Id.l; args : Id.t list; fargs : Id.t list; body : t; ret : Type.t }
 
+val create_fundef : name:Id.l -> args:Id.t list -> fargs:Id.t list -> body: t -> ret:Type.t -> fundef
+
 type prog = Prog of (Id.l * float) list * (string * Id.t) list * fundef list * t
 
 val string_of_id_or_imm : id_or_imm -> string

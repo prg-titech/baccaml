@@ -54,7 +54,7 @@ and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *
   | Restore of Id.t (* スタック変数から値を復元 (caml2html: sparcasm_restore) *)
 [@@deriving show]
 
-let print_tab () = print_string "\t"
+let print_tab () = print_string "  "
 
 let print_semi_colon () = print_string ","
 
@@ -141,6 +141,9 @@ and print_exp = function
   | _ -> ()
 
 type fundef = { name : Id.l; args : Id.t list; fargs : Id.t list; body : t; ret : Type.t }
+
+let create_fundef ~name ~args ~fargs ~body ~ret =
+  { name; args; fargs; body; ret }
 
 let print_fundef { name; args; fargs; body; ret } =
   print_string "{ ";
