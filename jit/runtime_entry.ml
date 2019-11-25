@@ -20,9 +20,9 @@ module Util = struct
 
   let filter typ = match typ with
       `Red ->
-       List.filter (fun a -> (List.mem (String.get_name a) Internal_conf.reds))
+      List.filter (fun a -> (List.mem (String.get_name a) Internal_conf.reds))
     | `Green ->
-       List.filter (fun a -> List.mem (String.get_name a) Internal_conf.greens)
+      List.filter (fun a -> List.mem (String.get_name a) Internal_conf.greens)
 
   let emit_and_compile prog typ (trace : fundef) =
     let { name= Id.L trace_name; } = trace in
@@ -39,6 +39,15 @@ module Util = struct
     List.map fst
       ((List.find_all(fun (i,elem) -> elem = annot_mj_comp)
           (List.mapi (fun i x -> (i, x)) (Array.to_list bytecode))))
+
+  let%test "find_mj_entries test" =
+    let bytecode = Array.init 100 (fun i ->  if i mod 42 = 0 then 21 else i) in
+    let expected = bytecode
+                   |> Array.to_list
+                   |> List.mapi (fun i x -> (i,x))
+                   |> List.find_all (fun (i,x) -> x = 21)
+                   |> List.map fst in
+    find_mj_entries bytecode = expected
 end
 
 module Setup = struct
@@ -162,39 +171,43 @@ let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
 let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
   match Method_prof.find_opt pc with
   | Some name ->
-     let s = Unix.gettimeofday () in
-     let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
-     let e = Unix.gettimeofday () in
-     Printf.eprintf "[mj] elapced time: %fus\n" ((e -. s) *. 1e6);
-     flush stderr;
-     r
+    let s = Unix.gettimeofday () in
+    let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
+    let e = Unix.gettimeofday () in
+    Printf.eprintf "[mj] elapced time: %fus\n" ((e -. s) *. 1e6);
+    flush stderr;
+    r
   | None ->
-     let ic = file_open () in
-     try
-       let p =
-         ic |> Lexing.from_channel |> Opt.virtualize
-         |> Jit_annot.annotate `Meta_method
-       in
-       close_in ic;
-       let bytecode = Compat.of_bytecode bytecode in
-       let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-       match p |> jit_method env with
-       | Ok name ->
-          Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
-          Method_prof.register (pc, name);
-          let s = Sys.time () in
-          let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
-          let e = Sys.time () in
-          Printf.eprintf "[mj] elapced time: %F us\n" ((e -. s) *. 1e6);
-          flush stderr;
-          r
-       | Error e -> raise e
-     with e -> close_in ic; raise e
+    let ic = file_open () in
+    try
+      let p =
+        ic |> Lexing.from_channel |> Opt.virtualize
+        |> Jit_annot.annotate `Meta_method
+      in
+      close_in ic;
+      let bytecode = Compat.of_bytecode bytecode in
+      let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+      match p |> jit_method env with
+      | Ok name ->
+        Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
+        Method_prof.register (pc, name);
+        let s = Sys.time () in
+        let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
+        let e = Sys.time () in
+        Printf.eprintf "[mj] elapced time: %F us\n" ((e -. s) *. 1e6);
+        flush stderr;
+        r
+      | Error e -> raise e
+    with e -> close_in ic; raise e
+
 
 let method_compile bytecode stack pc sp bc_ptr st_ptr =
   let ic = file_open () in
   try
-    let p = ic |> Lexing.from_channel |>  Opt.virtualize |> Jit_annot.annotate `Meta_method in
+    let p =
+      ic |> Lexing.from_channel |>  Opt.virtualize
+      |> Jit_annot.annotate `Meta_method
+    in
     close_in ic;
     let bytecode = Compat.of_bytecode bytecode in
     let env = {bytecode; stack; pc; sp; bc_ptr; st_ptr} in
@@ -209,6 +222,7 @@ let method_compile bytecode stack pc sp bc_ptr st_ptr =
   with e ->
     close_in ic
 
+
 let jit_method_compile_only bytecode stack pc sp bc_ptr st_ptr =
   Util.find_mj_entries bytecode
   |> List.map (fun pc_entry ->
@@ -219,4 +233,4 @@ let callbacks () =
   Callback.register "jit_tracing_entry" jit_tracing_entry;
   Callback.register "jit_exec" jit_exec;
   Callback.register "jit_method_call" jit_method_call;
-  Callback.register "jit_method" jit_method_compile_only;
+  Callback.register "jit_method_comp" jit_method_compile_only;
