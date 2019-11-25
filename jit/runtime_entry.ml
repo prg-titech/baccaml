@@ -33,6 +33,12 @@ module Util = struct
       compile_dyn trace_name
     with e ->
       close_out oc; raise e
+
+  let find_mj_entries bytecode =
+    let annot_mj_comp = 21 in
+    List.map fst
+      ((List.find_all(fun (i,elem) -> elem = annot_mj_comp)
+          (List.mapi (fun i x -> (i, x)) (Array.to_list bytecode))))
 end
 
 module Setup = struct
@@ -185,7 +191,32 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
        | Error e -> raise e
      with e -> close_in ic; raise e
 
+let method_compile bytecode stack pc sp bc_ptr st_ptr =
+  let ic = file_open () in
+  try
+    let p = ic |> Lexing.from_channel |>  Opt.virtualize |> Jit_annot.annotate `Meta_method in
+    close_in ic;
+    let bytecode = Compat.of_bytecode bytecode in
+    let env = {bytecode; stack; pc; sp; bc_ptr; st_ptr} in
+    match jit_method env p with
+    | Ok name ->
+      Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
+      Method_prof.register (pc, name);
+      flush stderr;
+      ()
+    | Error e ->
+      ()
+  with e ->
+    close_in ic
+
+let jit_method_compile_only bytecode stack pc sp bc_ptr st_ptr =
+  Util.find_mj_entries bytecode
+  |> List.map (fun pc_entry ->
+      method_compile bytecode stack pc_entry sp bc_ptr st_ptr)
+
+
 let callbacks () =
   Callback.register "jit_tracing_entry" jit_tracing_entry;
   Callback.register "jit_exec" jit_exec;
   Callback.register "jit_method_call" jit_method_call;
+  Callback.register "jit_method" jit_method_compile_only;
