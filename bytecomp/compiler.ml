@@ -34,11 +34,16 @@ let rec compile_exp fenv env exp =
   let open VM in
   match exp with
   | Unit -> []
-  | Int n -> [CONST; Literal n]
+  | Int n ->
+    if n = 0 then [CONST0]
+    else [CONST; Literal n]
   | Not e1 ->
     (e1 |> compile_exp fenv env) @
     [NOT]
-  | Var v -> [DUP; Literal(lookup env v)]
+  | Var v ->
+    let n = lookup env v in
+    if n = 0 then [DUP0]
+    else [DUP; Literal n]
   | Add(e1,e2) ->
     (e1 |> compile_exp fenv env) @
     (e2 |> compile_exp fenv (shift_env env)) @ [ADD]
@@ -63,7 +68,7 @@ let rec compile_exp fenv env exp =
        Ldef l1]
     @ (else_exp |> compile_exp fenv env)
     @ [Ldef l2]
-  | Call(annot, fname, rands) | TCall(annot, fname, rands) ->
+  | Call(annot, fname, rands) | TCall (annot, fname, rands) ->
     (List.fold_left (fun (rev_code_list,env) exp ->
          (exp |> compile_exp fenv env) :: rev_code_list, shift_env env)
         ([], env) rands
@@ -124,7 +129,9 @@ let rec compile_exp fenv env exp =
     [Ldef l1] @
     (body_exp |> compile_exp fenv ex_env) @ (* body of loop *)
     [CONST; Literal 1; ADD] @               (* increment var *)
-    [DUP; Literal (lookup ex_env var)] @    (* copy var *)
+    (let n = lookup ex_env var in
+     if n = 0 then [DUP0]
+     else [DUP; Literal n]) @               (* copy var *)
     (to_exp |> compile_exp fenv ex_env) @
     [LT; NOT] @                             (* compaire with to *)
     [JUMP_IF_ZERO; Lref l1] @

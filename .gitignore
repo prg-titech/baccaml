@@ -35,3 +35,5 @@ _build/
 *.install
 
 *.dSYM/
+
+_static/

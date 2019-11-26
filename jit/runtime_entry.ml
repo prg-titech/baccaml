@@ -2,7 +2,7 @@ open Std
 open MinCaml
 open Jit_env
 open Jit_prof
-
+open Jit_compile
 open Runtime_lib
 
 type runtime_env =
@@ -23,16 +23,6 @@ module Util = struct
       List.filter (fun a -> (List.mem (String.get_name a) Internal_conf.reds))
     | `Green ->
       List.filter (fun a -> List.mem (String.get_name a) Internal_conf.greens)
-
-  let emit_and_compile prog typ (trace : fundef) =
-    let { name= Id.L trace_name; } = trace in
-    let oc = open_out (trace_name ^ ".s") in
-    try
-      emit_dyn oc prog typ trace_name trace;
-      close_out oc;
-      compile_dyn trace_name
-    with e ->
-      close_out oc; raise e
 
   let find_mj_entries bytecode =
     let annot_mj_comp = 21 in
@@ -88,7 +78,7 @@ let jit_method ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
   in
   let trace = JM.run prog reg mem env |> Jit_constfold.iter_fundef ~n:100 in
   Debug.with_debug (fun _ -> print_fundef trace);
-  Util.emit_and_compile prog `Meta_method trace
+  emit_and_compile prog `Meta_method trace
 
 
 let jit_tracing ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog =
@@ -108,15 +98,12 @@ let jit_tracing ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog 
       ~red_names:(!Config.reds)
       ~bytecode:bytecode
   in
-  let trace = JT.run prog reg mem env in
-  Asm.print_fundef trace; flush stdout;
-  let oc = open_out (Trace_name.value trace_name ^ ".s") in
-  try
-    emit_dyn oc prog `Meta_tracing trace_name trace;
-    close_out oc;
-    compile_dyn (Trace_name.value trace_name)
-  with e ->
-    close_out oc; raise e
+  let `Result (trace, others) = JT.run prog reg mem env in
+  Debug.with_debug (fun _ -> print_fundef trace);
+  if List.length others = 0 then
+    emit_and_compile prog `Meta_tracing trace
+  else
+    emit_and_compile_with_so prog `Meta_tracing others trace
 
 let exec_dyn_arg2 ~name ~arg1 ~arg2 =
   Dynload_stub.call_arg2
@@ -162,7 +149,7 @@ let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
             match prog |> jit_tracing env with
             | Ok name -> Trace_prof.register (pc, name);
             | Error e -> raise e
-          with e -> close_in ic; ()
+          with e -> close_in ic; raise e
       end
     else
       Trace_prof.count_up pc

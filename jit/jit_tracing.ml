@@ -6,7 +6,9 @@ open Jit_util
 open Jit_prof
 open Printf
 
-let p = sprintf
+module JO = Jit_optimizer
+
+let sp = sprintf
 
 let interp_fundef p = Fundef.find_fuzzy p "interp"
 
@@ -42,21 +44,21 @@ module Util = struct
 
 end
 
-module JO = Jit_optimizer
+let other_dependencies = ref []
 
 let rec tj p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as env) t =
   match t with
-  | Ans (CallDir (id_l, argsr, fargsr)) ->
-    let pc = Util.get_pc reg argsr index_pc in
+  | Ans (CallDir (id_l, args', fargs')) ->
+    let pc = Util.get_pc reg args' index_pc in
     if pc = merge_pc then
-      Ans (CallDir (Id.L trace_name, List.([nth argsr 0; nth argsr 1]), []))
+      Ans (CallDir (Id.L trace_name, Util.filter ~reds:red_names args', []))
     else
       let next_instr = bytecode.(pc) in
-      Log.debug @@ sprintf "pc: %d, next instr: %d" pc next_instr;
-      let { name; args= argst; fargs; body; ret } = Fundef.find_fuzzy p "interp" in
+      Log.debug @@ sp "pc: %d, next instr: %d" pc next_instr;
+      let { name; args= argst; fargs; body; ret } = interp_fundef p in
       let body = Util.find_by_inst next_instr body in
       { name; args= argst; fargs; body; ret }
-      |> Inlining.inline_fundef reg argsr
+      |> Inlining.inline_fundef reg args'
       |> tj p reg mem env
   | Ans (exp) ->
     begin match exp with
@@ -81,21 +83,28 @@ let rec tj p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as
     if pc = merge_pc
     then Ans (CallDir (Id.L trace_name, List.([nth args 0; nth args 1]), []))
     else tj p reg mem env body
-  | Let ((dest, typ), CallDir (Id.L x, args, fargs), body) when String.starts_with x "min_caml" ->
-     let { red_names } = env in
+  | Let ((dest, typ), CallDir (Id.L x, args', fargs'), body) when x = "min_caml_mj_call" ->
+    let pc = Util.get_pc reg args' index_pc in
+    begin
+      match Method_prof.find_opt pc with
+      | Some tname ->
+        other_dependencies := !other_dependencies @ [tname];
+        Let ((dest, typ),
+             CallDir (Id.L (tname), Util.filter ~reds:red_names args', fargs'),
+             tj p reg mem env body)
+      | None ->
+        Jit_guard.restore reg ~args:args'
+          (Let ((dest, typ), CallDir (Id.L ("interp_no_hints"), args', fargs') ,tj p reg mem env body))
+    end
+  | Let ((dest, typ), CallDir (Id.L x, args, fargs), body) when String.starts_with x "min_caml" -> (* foreign functions *)
+    let { red_names } = env in
+    Jit_guard.restore reg ~args:args
      (Let ((dest, typ)
           , CallDir (Id.L x, Util.filter ~reds:red_names args, fargs)
           , (tj p reg mem env body)))
-     |> Jit_guard.restore reg ~args:args
-  | Let ((dest, typ), CallDir (Id.L x, argsr, fargsr), body) when x = "min_caml_mj_call" ->
-     let pc = Util.get_pc reg argsr index_pc in
-     (match Method_prof.find_opt pc with
-      | Some tname ->
-        Let ((dest, typ), CallDir (Id.L (tname), argsr, fargsr), tj p reg mem env body)
-      | None ->
-        Jit_guard.restore reg ~args:argsr
-          (Let ((dest, typ), CallDir (Id.L ("interp_no_hints"), argsr, fargsr), tj p reg mem env body)))
-    | Let ((dest, typ), CallDir (Id.L x, argsr, fargsr), body) -> (* inline function call *)
+  | Let ((dest, typ), CallDir (Id.L x, args', fargs'), body) when String.starts_with x "cast_" ->
+    Let ((dest, typ), CallDir (Id.L x, args', fargs'), tj p reg mem env body)
+  | Let ((dest, typ), CallDir (Id.L x, argsr, fargsr), body) -> (* inline function call *)
      let pc = Util.get_pc reg argsr index_pc in
      let next_instr = bytecode.(pc) in
      let { name; args= argst; fargs; body= interp_body; ret } = interp_fundef p in
@@ -242,11 +251,12 @@ and tj_if p reg mem env exp =
 
 
 let run p reg mem ({ trace_name; red_names; merge_pc} as env) =
-  Renaming.counter := !Id.counter;
+  Renaming.counter := !Id.counter + 1;
   Log.debug @@ Printf.sprintf "staring trace (merge_pc: %d)" merge_pc;
+  let fenv name = Fundef.find_fuzzy p name in
   let (Prog (tbl, _, fundefs, m)) = p in
-  let {body= ibody; args= iargs} = Fundef.find_fuzzy p "interp" in
-  let trace = ibody |> tj p reg mem env in
-  { name= Id.L trace_name ; fargs= []; body= trace; ret= Type.Int
-  ; args= iargs |> List.filter (fun arg -> List.mem (String.get_name arg) red_names)
-  }
+  let {body= body'; args= args'} = fenv "interp" in
+  let trace = body' |> tj p reg mem env in
+  `Result (
+    { name= Id.L trace_name; fargs= []; body= trace; ret= Type.Int; args= Util.filter ~reds:red_names args'},
+    !other_dependencies)

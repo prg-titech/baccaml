@@ -1,15 +1,25 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <dlfcn.h>
-#include <caml/mlvalues.h>
-#include <caml/memory.h>
+#include "caml/compatibility.h"
 #include <caml/custom.h>
+#include <caml/memory.h>
+#include <caml/mlvalues.h>
+#include <dlfcn.h>
+#include <stdint.h>
+#include <stdio.h>
 
-typedef int (*fun_arg3)(int*, int, int*);
+typedef int (*fun_arg3)(int *, int, int *);
 
 typedef int (*fun_arg2)(intptr_t, int);
 
 typedef int (*fun_arg1)(int);
+
+int exists_file(char *name) {
+  FILE *file = fopen(name, "r");
+  if (file == NULL) {
+    return 0;
+  }
+  fclose(file);
+  return 1;
+}
 
 CAMLprim value call_dlfun_arg1(value filename, value funcname, value arg1) {
   fun_arg1 sym = NULL;
@@ -32,23 +42,37 @@ CAMLprim value call_dlfun_arg1(value filename, value funcname, value arg1) {
   return Val_int(res);
 }
 
-CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1, value arg2) {
+CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1,
+                               value arg2) {
   fun_arg2 sym = NULL;
   void *handle = NULL;
   int res = 0;
+  char* name = String_val(filename);
 
-  handle = dlopen(String_val(filename), RTLD_LAZY);
+#ifdef DEBUG_DLOPEN
+  if (!exists_file(name)) {
+    fprintf(stderr, "NG: %s\n", name);
+    return -1;
+  } else {
+    fprintf(stderr, "OK: %s\n", name);
+  }
+#endif
+
+  handle = dlopen(name, RTLD_LAZY);
   if (handle == NULL) {
     char s[100];
-    sprintf(s, "dlopen error: %s, %s", String_val(filename), String_val(funcname));
+    sprintf(s, "dlopen error: %s, %s", name,
+            String_val(funcname));
     failwith(s);
     return -1;
   }
 
+  dlerror();
+
   sym = (fun_arg2)dlsym(handle, String_val(funcname));
   if (sym == NULL) {
     char msg[100];
-    sprintf(msg, "error: dlsym funcname: %s\n", funcname);
+    sprintf(msg, "error: dlsym funcname: %s\n", String_val(funcname));
     failwith(msg);
     return -1;
   }
@@ -62,15 +86,16 @@ CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1, value
   return Val_int(res);
 }
 
-CAMLprim value call_dlfun_arg3(value filename, value funcname,
-                               value arg1, value arg2, value arg3) {
+CAMLprim value call_dlfun_arg3(value filename, value funcname, value arg1,
+                               value arg2, value arg3) {
   fun_arg3 sym = NULL;
   void *handle = NULL;
 
   handle = dlopen(String_val(filename), RTLD_LAZY);
   if (handle == NULL) {
     char s[100];
-    sprintf(s, "dlopen error: %s, %s", String_val(filename), String_val(funcname));
+    sprintf(s, "dlopen error: %s, %s", String_val(filename),
+            String_val(funcname));
     failwith(s);
     return -1;
   }

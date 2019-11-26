@@ -24,6 +24,8 @@ type inst =
   | POP0
   | METHOD_COMP                 (* annotation *)
   | CALL_HS
+  | DUP0
+  | CONST0
   | Literal of int
   | Lref of string
   | Ldef of string
@@ -56,6 +58,8 @@ let insts = [|
   POP0;
   METHOD_COMP;
   CALL_HS;
+  DUP0;
+  CONST0;
 |]
 
 let has_args = [
@@ -83,6 +87,8 @@ let has_args = [
   POP0, false;
   METHOD_COMP, false;
   CALL_HS, true;
+  DUP0, false;
+  CONST0, false;
 ]
 
 let index_of element array =
@@ -207,7 +213,7 @@ let rec interp  code pc stack =
     let inst = insts.(i) in
     (* Printf.printf "%d %s %s\n" pc (show_inst inst) (dump_stack stack); *)
     match inst with
-    | UNIT ->
+    | UNIT | METHOD_COMP ->
       interp code (pc + 1) stack
     | NOT ->
       let v,stack = pop stack in
@@ -235,6 +241,9 @@ let rec interp  code pc stack =
       let v1,stack = pop stack in
       let    stack = push stack (if v1 |<| v2 then VInt 1 else VInt 0) in
       interp  code pc stack
+    | CONST0 ->
+      let stack = push stack (VInt 0) in
+      interp  code pc stack
     | CONST -> let c,pc = fetch code pc in
       let stack = push stack (value_of_int c) in
       interp  code pc stack
@@ -245,7 +254,7 @@ let rec interp  code pc stack =
       if int_of_value v = 0
       then interp code addr stack
       else interp code pc   stack
-    | CALL (* addr argnum *) ->
+    | CALL (* addr argnum *) | CALL_HS ->
       (* calling a function will create a new operand stack and lvars  *)
       let addr,pc = fetch code pc in
       let stack = push stack (value_of_int (pc+1)) in (* save return address *)
@@ -269,6 +278,10 @@ let rec interp  code pc stack =
       let n,pc = fetch code pc in
       let stack = push stack (take stack n) in
       interp  code pc stack
+    | DUP0 ->
+      let v = take stack 0 in
+      let stack = push stack v in
+      interp code pc stack
     | HALT -> fst(pop stack)    (* just return the top value *)
     | FRAME_RESET (* n *) ->
       let o,pc = fetch code pc in

@@ -38,6 +38,8 @@ type inst =
   | POP0
   | METHOD_COMP
   | CALL_HS
+  | DUP0
+  | CONST0
   (* the following constructors do not represent instructions but
      are defined for expressing operands of some instructions as
      well as label declarations and references *)

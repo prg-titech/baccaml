@@ -13,7 +13,6 @@ let rec pop stack sp = stack.(sp - 1) ;;
 let rec push stack sp v = stack.(sp) <- v ;;
 
 let rec interp stack sp bytecode pc =
-  print_string "pc: "; print_int pc; print_newline ();
   let instr = bytecode.(pc) in
   if instr = 1 then               (* ADD *)
     let v2 = stack.(sp - 1) in    (* sp: sp - 1 *)
@@ -412,4 +411,50 @@ code.(30) <- 1;
 code.(31) <- 12;
 code.(32) <- 10;
 exec code 0;
+
+let code = Array.make 76 0 in
+code.(0) <- 14;
+code.(1) <- 9; code.(2) <- 1;
+code.(3) <- 5; code.(4) <- 2;
+code.(5) <- 4;
+code.(6) <- 6; code.(7) <- 12;
+code.(8) <- 9; code.(9) <- 1;
+code.(10) <- 13; code.(11) <- 29;
+code.(12) <- 9; code.(13) <- 1;
+code.(14) <- 5; code.(15) <- 1;
+code.(16) <- 2;
+code.(17) <- 7; code.(18) <- 1; code.(19) <- 1;
+code.(20) <- 9; code.(21) <- 2;
+code.(22) <- 5; code.(23) <- 2;
+code.(24) <- 2;
+code.(25) <- 7; code.(26) <- 1; code.(27) <- 1;
+code.(28) <- 1;
+code.(29) <- 8; code.(30) <- 1;
+code.(31) <- 14;
+code.(32) <- 9; code.(33) <- 2;
+code.(34) <- 5; code.(35) <- 1;
+code.(36) <- 15;
+code.(37) <- 6; code.(38) <- 43;
+code.(39) <- 9; code.(40) <- 1;
+code.(41) <- 13; code.(42) <- 65;
+code.(43) <- 9; code.(44) <- 2;
+code.(45) <- 7; code.(46) <- 1; code.(47) <- 1;
+code.(48) <- 9; code.(49) <- 3;
+code.(50) <- 5; code.(51) <- 1;
+code.(52) <- 2;
+code.(53) <- 9; code.(54) <- 1;
+code.(55) <- 9; code.(56) <- 4;
+code.(57) <- 1;
+code.(58) <- 11; code.(59) <- 2;
+code.(60) <- 1;
+code.(61) <- 2;
+code.(62) <- 13; code.(63) <- 32;
+code.(64) <- 12;
+code.(65) <- 8; code.(66) <- 2;
+code.(67) <- 14;
+code.(68) <- 5; code.(69) <- 10;
+code.(70) <- 5; code.(71) <- 1;
+code.(72) <- 7; code.(73) <- 32; code.(74) <- 2;
+code.(75) <- 10;
+exec code 67;
 ()

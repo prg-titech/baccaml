@@ -67,7 +67,7 @@ let rec interp stack sp bytecode pc =
     let v = stack.(sp - 1) in
     let sp2 = sp - 1 in
     @if v = 0 then (
-      @if addr < (pc - 1) then (
+      @if addr < pc then (
         can_enter_jit stack sp2 bytecode addr;
         interp stack sp2 bytecode addr
       ) else interp stack sp2 bytecode addr
@@ -86,11 +86,12 @@ let rec interp stack sp bytecode pc =
       stack.(sp) <- pc + 3;
       stack.(sp + 1) <- 200;
       let sp2 = sp + 2 in
-      @if addr < pc then (
-        can_enter_jit stack sp2 bytecode addr;
-        interp stack sp2 bytecode addr
-      ) else (
-        interp stack sp2 bytecode addr))
+      (* @if addr < pc then (
+       *   can_enter_jit stack sp2 bytecode addr;
+       *   interp stack sp2 bytecode addr
+       * ) else (
+       *   interp stack sp2 bytecode addr) *)
+      interp stack sp2 bytecode addr)
   else if instr = 22 then       (* CALL_HS *)
     let addr = bytecode.(pc + 1) in
     let rands = bytecode.(pc + 2) in
@@ -107,17 +108,22 @@ let rec interp stack sp bytecode pc =
       let addr = stack.(sp - 3) in
       stack.(sp - n - 3) <- v;
       let sp2 = sp - n - 2 in
-      @if addr = pc - 1 then (
-        can_enter_jit stack sp2 bytecode addr;
-        interp stack sp2 bytecode addr
-      ) else (
-        interp stack sp2 bytecode addr)
+      (* @if addr = pc - 1 then (
+       *   can_enter_jit stack sp2 bytecode addr;
+       *   interp stack sp2 bytecode addr
+       * ) else (
+       *   interp stack sp2 bytecode addr) *)
+      interp stack sp2 bytecode addr
     ) else v
-  else if instr = 9 then        (* DUP *)
+  else if instr = 9 then         (* DUP *)
     let n = bytecode.(pc + 1) in
     let v = stack.(sp - n - 1) in
     stack.(sp) <- v;
     interp stack (sp + 1) bytecode (pc + 2)
+  else if instr = 23 then        (* DUP0 *)
+    let v = stack.(sp - 1) in
+    stack.(sp) <- v;
+    interp stack (sp + 1) bytecode (pc + 1)
   else if instr = 10 then        (* HALT *)
     stack.(sp - 1)
   else if instr = 11 then        (* FRAME_RESET *)
@@ -129,15 +135,15 @@ let rec interp stack sp bytecode pc =
     let new_base = sp - n in
     let sp2 = frame_reset stack old_base new_base ret n 0 in
     interp stack sp2 bytecode (pc + 4)
-  else if instr = 12 then       (* POP1 *)
+  else if instr = 12 then        (* POP1 *)
     let v = stack.(sp - 1) in
     let _ = stack.(sp - 2) in
     stack.(sp - 2) <- v;
     interp stack (sp - 1) bytecode (pc + 1)
-  else if instr = 20 then          (* POP0 *)
+  else if instr = 20 then        (* POP0 *)
     let _ = stack.(sp - 1) in
     interp stack (sp - 1) bytecode (pc + 1)
-  else if instr = 13 then       (* JUMP *)
+  else if instr = 13 then        (* JUMP *)
     let addr = bytecode.(pc + 1) in
     @if addr < pc then (
       can_enter_jit stack sp bytecode addr;
@@ -152,29 +158,29 @@ let rec interp stack sp bytecode pc =
     let v = (@if v1 = v2 then 1 else 0) in
     stack.(sp - 2) <- v;
     interp stack (sp - 1) bytecode (pc + 1)
-  else if instr = 16 then          (* ARRAYMAKE *)
+  else if instr = 16 then       (* ARRAYMAKE *)
     let init = stack.(sp - 1) in
     let size = stack.(sp - 2) in
     let a = Array.make size init in
     stack.(sp - 2) <- cast_fAII(a);
     interp stack (sp - 1) bytecode (pc + 1)
-  else if instr = 17 then          (* GET *)
+  else if instr = 17 then       (* GET *)
     let n = stack.(sp - 1) in
     let arr = cast_fIAI(stack.(sp - 2)) in
     stack.(sp - 2) <- arr.(n);
     interp stack (sp - 1) bytecode (pc + 1)
-  else if instr = 18 then          (* PUT *)
+  else if instr = 18 then       (* PUT *)
     let n = stack.(sp - 1) in
     let i = stack.(sp - 2) in
     let arr = cast_fIAI(stack.(sp - 3)) in
     arr.(i) <- n;
     interp stack (sp - 3) bytecode (pc + 1)
-  else if instr = 19 then          (* NOT *)
+  else if instr = 19 then       (* NOT *)
     let v = stack.(sp - 1) in
-    let n = (if v = 0 then 1 else 0)in
+    let n = (@if v = 0 then 1 else 0)in
     stack.(sp - 1) <- n;
     interp stack sp bytecode (pc + 1)
-  else if instr = 21 then          (* METHOD_COMP (annotation) *)
+  else if instr = 21 then       (* METHOD_COMP (annotation) *)
     interp stack sp bytecode (pc + 1)
   else
     -1000
@@ -350,6 +356,7 @@ exec code 54;
 *)
 
 (* is_prime *)
+(*
 let code = Array.make 80 0 in
 save_bp ();
 code.(0) <- 14;
@@ -395,10 +402,11 @@ code.(71) <- 5; code.(72) <- 10;
 code.(73) <- 5; code.(74) <- 2;
 code.(75) <- 7; code.(76) <- 25; code.(77) <- 2;
 code.(78) <- 10;
-(* exec code 71; *)
+exec code 71;
+*)
 
 (* for loop + method-compiled function *)
-let code = Array.make 90 0 in
+let code = Array.make 87 0 in
 save_bp ();
 code.(0) <- 21;
 code.(1) <- 14;
@@ -423,35 +431,36 @@ code.(33) <- 5; code.(34) <- 2;
 code.(35) <- 5; code.(36) <- 1;
 code.(37) <- 16;
 code.(38) <- 5; code.(39) <- 1;
-code.(40) <- 9; code.(41) <- 0;
-code.(42) <- 22; code.(43) <- 2; code.(44) <- 1;
-code.(45) <- 9; code.(46) <- 2;
-code.(47) <- 5; code.(48) <- 1;
-code.(49) <- 17;
-code.(50) <- 9; code.(51) <- 1;
-code.(52) <- 1;
-code.(53) <- 9; code.(54) <- 3;
-code.(55) <- 5; code.(56) <- 1;
-code.(57) <- 9; code.(58) <- 2;
-code.(59) <- 18;
+code.(40) <- 23;
+code.(41) <- 22; code.(42) <- 2; code.(43) <- 1;
+code.(44) <- 9; code.(45) <- 2;
+code.(46) <- 5; code.(47) <- 1;
+code.(48) <- 17;
+code.(49) <- 9; code.(50) <- 1;
+code.(51) <- 1;
+code.(52) <- 9; code.(53) <- 3;
+code.(54) <- 5; code.(55) <- 1;
+code.(56) <- 9; code.(57) <- 2;
+code.(58) <- 18;
+code.(59) <- 12;
 code.(60) <- 12;
-code.(61) <- 12;
-code.(62) <- 5; code.(63) <- 1;
-code.(64) <- 1;
-code.(65) <- 9; code.(66) <- 0;
-code.(67) <- 5; code.(68) <- 40;
-code.(69) <- 4;
-code.(70) <- 19;
-code.(71) <- 6; code.(72) <- 40;
-code.(73) <- 20;
-code.(74) <- 9; code.(75) <- 0;
-code.(76) <- 5; code.(77) <- 1;
-code.(78) <- 17;
-code.(79) <- 12;
-code.(80) <- 8; code.(81) <- 1;
-code.(82) <- 14;
-code.(83) <- 5; code.(84) <- 20;
-code.(85) <- 7; code.(86) <- 33; code.(87) <- 1;
-code.(88) <- 10;
-exec code 83;
+code.(61) <- 5; code.(62) <- 1;
+code.(63) <- 1;
+code.(64) <- 23;
+code.(65) <- 5; code.(66) <- 21;
+code.(67) <- 4;
+code.(68) <- 19;
+code.(69) <- 6; code.(70) <- 40;
+code.(71) <- 20;
+code.(72) <- 23;
+code.(73) <- 5; code.(74) <- 1;
+code.(75) <- 17;
+code.(76) <- 12;
+code.(77) <- 8; code.(78) <- 1;
+code.(79) <- 14;
+code.(80) <- 5; code.(81) <- 10;
+code.(82) <- 7; code.(83) <- 33; code.(84) <- 1;
+code.(85) <- 10;
+exec code 79;
+
 ()

@@ -1,8 +1,6 @@
 open Std
 open MinCaml
 
-exception Jit_compilation_failed
-
 module Internal_conf = struct
   let size = Sys.max_array_length
 
@@ -33,7 +31,7 @@ module Debug = struct
 
   let print_stack stk =
     let str = Array.string_of_array string_of_int stk in
-    print_string "[stack]"; print_endline str
+    print_string "[stack] "; print_endline str
 
   let with_debug = fun f ->
     match !Config.log_level with
@@ -57,10 +55,6 @@ let get_ir_addr args name =
   |> String.get_extension
   |> int_of_string
 
-(* [warn] work only in Linux *)
-let get_so_name : string -> string =
-  fun name -> "lib" ^ name ^ ".so"
-
 let make_reg prog args sp =
   let open Jit_env in
   let reg = Array.make Internal_conf.size (Red 0) in
@@ -80,50 +74,6 @@ let make_mem ~bc_addr ~st_addr bytecode stack =
   stack
   |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Jit_env.Red a) ;
   mem
-
-(* [warn] work only in Linux *)
-let compile_dyn trace_name =
-  let asm_name = trace_name ^ ".s" in
-  let so = get_so_name trace_name in
-  Printf.sprintf
-    "gcc -m32 -g -DRUNTIME -o %s %s -shared -fPIC -ldl"
-    so asm_name
-  |> Unix.system
-  |> function
-  | Unix.WEXITED (i) when i = 0 -> Ok trace_name
-  | _ -> Error (Jit_compilation_failed)
-
-let compile_dyn_exn tname =
-  let asm = tname ^ ".s" in
-  let so = get_so_name tname in
-  ignore (
-    Sys.command (
-      Printf.sprintf "gcc -m32 -g -DRUNTIME -shared -fPIC -ldl -o %s %s" so asm))
-
-let compile_stdout tname =
-  let so = get_so_name tname in
-  ignore (
-    Sys.command (
-      Printf.sprintf "| gcc -x c -m32 -g -DRUNTIME -shared -fPIC -ldl -o %s -" so))
-
-let emit_dyn oc p typ tname trace =
-  try
-    match typ with
-    | `Meta_tracing ->
-      trace |> Simm.h |> RegAlloc.h |> Jit_emit.emit_tj oc
-    | `Meta_method ->
-      trace |> Simm.h |> RegAlloc.h |> Jit_emit.emit_mj oc
-  with e -> close_out oc; raise e
-
-let emit_and_compile_mj = function `Mj_result (main, auxs) ->
-  let open Asm in
-  let { name= Id.L tname; } = main in
-  let oc = open_out (tname ^ ".s") in
-  try
-    main |> Simm.h |> RegAlloc.h |> Jit_emit.emit_mj oc;
-    List.iter (fun trace -> trace |> Simm.h |> RegAlloc.h |> Emit.h oc) auxs;
-    compile_dyn tname
-  with e -> close_out oc; Error e
 
 let with_jit_flg ~on:f ~off:g =
   match !Config.jit_flag with

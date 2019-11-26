@@ -1,6 +1,6 @@
 open Bytegen_lib
 
-let usage = "Usage: " ^ Sys.argv.(0) ^ "[-ast] [-virtual]"
+let usage = "Usage: " ^ Sys.argv.(0) ^ "[-ast] [-virtual] [-no-hybridize]"
 let ast_flg = ref false
 let virtual_flg = ref false
 
@@ -56,7 +56,9 @@ let _ =
   let files = ref [] in
   Arg.parse
     [("-ast", Arg.Unit (fun _ -> ast_flg := true), "emit abstract syntax tree");
-     ("-virtual", Arg.Unit (fun _ -> virtual_flg := true), "emit virtual machine instructions")]
+     ("-virtual", Arg.Unit (fun _ -> virtual_flg := true), "emit virtual machine instructions");
+     ("-no-hybridize", Arg.Unit (fun _ -> Compiler.stack_hybridized := false), "dsaible stack hybridization")
+    ]
     (fun file -> files := !files @ [file])
     usage;
   List.iter
