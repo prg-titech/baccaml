@@ -30,7 +30,7 @@ You need the OCaml 4.07.0+ configured with 32bit mode. This is run only on Linux
 To run the interpreter already defined, execute following commands.
 
 ```bash
-$ dune build interp/test_interp.exe
+$ dune build interp/test_interp_{mj,tj}.exe
 # debug
 # execute as tracing jit
 $ dune exec interp/test_interp_tj.exe
