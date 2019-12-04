@@ -88,7 +88,7 @@ let rec interp stack sp bytecode pc =
   else if instr = 7 then        (* CALL (CALL_US) *)
     let addr = bytecode.(pc+1) in
     let rands = bytecode.(pc+2) in
-    let annot = bytecode.(addr-2) in
+    let annot = bytecode.(addr-1) in
     if annot = 21 then (
       stack.(sp) <- 100;
       let sp2 = sp + 2 in
@@ -510,10 +510,10 @@ code.(63) <- 7; code.(64) <- 1; code.(65) <- 3;
 code.(66) <- 10;
 exec code 57;
 
-(* mj call *)
+(* fact + mj *)
 let code = Array.make 33 0 in
-code.(0) <- 21;
-code.(1) <- 14;
+code.(0) <- 14;
+code.(1) <- 21;
 code.(2) <- 9; code.(3) <- 2;
 code.(4) <- 5; code.(5) <- 1;
 code.(6) <- 4;

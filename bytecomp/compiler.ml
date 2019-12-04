@@ -77,10 +77,8 @@ let rec compile_exp fenv env exp =
      |> List.flatten) @
     begin
       match annot with
-      | Some MethodComp ->
-        [CALL_HS; Lref fname; Literal (List.length rands)]
-      | _ ->
-        [CALL; Lref fname; Literal (List.length rands)]
+      | Some MethodComp -> [CALL_HS; Lref fname; Literal (List.length rands)]
+      | _ -> [CALL; Lref fname; Literal (List.length rands)]
     end
   (* call using a label (call label size_of_args) *)
   (* self tail calls are compiled with FRAME_RESET which moves
@@ -192,7 +190,7 @@ let compile_fun_body fenv name arity annot exp env =
   let env = if !stack_hybridized then shift_env env else env in
   (match annot with
    | None | Some TracingComp -> [VM.METHOD_ENTRY; VM.Ldef name]
-   | Some MethodComp -> [VM.METHOD_COMP; VM.METHOD_ENTRY; VM.Ldef name]) @
+   | Some MethodComp -> [VM.METHOD_ENTRY; VM.METHOD_COMP; VM.Ldef name]) @
   (call_annot fenv exp |> compile_exp fenv env) @
   (if name = "main"
    then [VM.HALT]
