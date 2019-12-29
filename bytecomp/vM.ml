@@ -259,7 +259,8 @@ let rec interp code pc stack =
     | CALL (* addr argnum *) | CALL_HS ->
       (* calling a function will create a new operand stack and lvars  *)
       let addr,pc = fetch code pc in
-      let stack = push stack (value_of_int (pc+1)) in (* save return address *)
+      let _,pc = fetch code pc  in
+      let stack = push stack (value_of_int pc) in (* save return address *)
       (* (let (sp,s)=stack in
        *  if 2<sp then
        *    (Printf.printf "%d CALL %d [%d %d ...]\n" (pc-2) addr
