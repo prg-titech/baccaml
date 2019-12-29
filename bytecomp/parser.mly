@@ -66,10 +66,10 @@ exp:
     | exp LESS exp             { LT ($1, $3) }
     | exp EQ exp               { Eq ($1, $3) }
     | IF exp THEN exp ELSE exp { If ($2, $4, $6) }
-    | LET VAR EQ exp IN exp    %prec prec_let { Let ($2, $4, $6) }
-    | fundef IN exp            %prec prec_let { LetRec ($1, $3) }
-    | LET LPAREN RPAREN EQ exp %prec prec_let { LetRec ({name="main"; args=[]; body=$5; annot=None}, Unit) }
-    | VAR actual_args          %prec prec_app { Call (None, $1, $2) }
+    | LET VAR EQ exp IN exp    { Let ($2, $4, $6) }
+    | fundef IN exp            { LetRec ($1, $3) }
+    | LET LPAREN RPAREN EQ exp { LetRec ({name="main"; args=[]; body=$5; annot=None}, Unit) }
+    | VAR actual_args          { Call (None, $1, $2) }
     | exp SEMICOLON exp        { Let (Id.gentmp (), $1, $3) }
     | ARRAY_MAKE simple_exp simple_exp       { Array($2, $3) }
     | simple_exp DOT LPAREN exp RPAREN LESS_MINUS simple_exp SEMICOLON exp { Put ($1, $4, $7, $9) }
