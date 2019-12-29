@@ -82,6 +82,15 @@ let rec ack x y =
 let () = ack 3 8" in
   assert_equal ~printer:string_of_int 2045 (test ack)
 
+let test_power _ =
+  let code = "
+let rec power m n =
+  if n < 1 then 1 else
+    m * (power m (n-1))
+in let () = power 3 3
+  " in
+  assert_equal ~printer:string_of_int 27 (test code)
+
 let test_is_prime _ =
   let is_prime = "
 let rec mod_ n m =
@@ -153,6 +162,7 @@ let suite =
     "test_sum" >:: test_sum;
     "test_ack" >:: test_ack;
     "test_is_prime" >:: test_is_prime;
+    "test_power" >:: test_power;
     "test_array" >:: test_array;
   ]
 
