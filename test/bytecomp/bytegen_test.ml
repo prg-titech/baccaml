@@ -99,12 +99,15 @@ let () = (prime_test 37 2)
   assert_equal 1 (test is_prime)
 
 let test_array _ =
-  let code =
-    "let () =
-       let arr = Array.make 10 0 in
-       arr.(0) <- 1; arr.(1) <- 2;
-       arr.(0) + arr.(1)" in
-  assert_equal ~printer:string_of_int 3 (test code)
+  let code ="
+let rec simple x y =
+  let arr = Array.make 10 0 in
+  arr.(5) <- x; arr.(7) <- y;
+  arr.(5) + arr.(7)
+in
+let () = simple 10 20
+" in
+  assert_equal ~printer:string_of_int 30 (test code)
 
 let test_for_loop _ =
   let code ="

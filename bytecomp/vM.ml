@@ -1,3 +1,5 @@
+open Printf
+
 let debug_flg = ref false
 
 type inst =
@@ -139,9 +141,9 @@ module Value = struct
   let int_of_value = function
       VInt i -> i
     | _ -> failwith "array is not int"
-  let array_of_value= function
-      VArray arr -> arr
-    | _ -> failwith ("int is not array")
+  let array_of_value = function
+    | VArray arr -> arr
+    | VInt i -> failwith (sprintf "int %d is not array" i)
 
   let value_of_int i = VInt i
   let value_of_array arr = VArray arr
@@ -205,7 +207,7 @@ let checkpoint =
       else counter := !counter - 1
   else fun () -> ()
 
-let rec interp  code pc stack =
+let rec interp code pc stack =
   checkpoint ();
   let open Value in
   if pc<0 then fst(pop stack) else begin
@@ -310,11 +312,15 @@ let rec interp  code pc stack =
     | ARRAY_MAKE ->
       let init,stack = pop stack in
       let size,stack = pop stack in
-      let stack =
-        push stack
-          (value_of_array
-             (Array.make (int_of_value size) (int_of_value init))) in
-      interp code pc stack
+      (try
+        let stack =
+          push stack
+            (value_of_array
+               (Array.make (int_of_value size) (int_of_value init))) in
+        interp code pc stack
+       with e -> (
+           Printf.eprintf "\nstack push failed at %d" pc;
+           raise e))
     | GET ->
       let n,stack = pop stack in
       let n = int_of_value n in
