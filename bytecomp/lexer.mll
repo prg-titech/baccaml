@@ -31,10 +31,12 @@ rule token = parse
   | "to"      { TO }
   | "do"      { DO }
   | "done"    { DONE }
-  | "Array.make" { ARRAY_MAKE }
+  | "Array.make" { ARRAY_CREATE }
   | "->"      { MINUS_GREATER }
   | "<-"      { LESS_MINUS }
+  | "<>"      { LESS_GREATER }
   | ";"       { SEMICOLON }
+  | ";;"      { SEMISEMI }
   | '.'       { DOT }
   | eof       { EOF }
   | lower (digit|lower|upper|'_')* { VAR(Lexing.lexeme lexbuf) }
