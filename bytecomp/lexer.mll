@@ -12,6 +12,7 @@ rule token = parse
     space+    { token lexbuf }
   | '('       { LPAREN }
   | ')'       { RPAREN }
+  | "(*"      { comment lexbuf; token lexbuf }
   | digit+    { INT (int_of_string (Lexing.lexeme lexbuf)) }
   | '-'       { MINUS }
   | '+'       { PLUS }
@@ -44,3 +45,9 @@ rule token = parse
            (Lexing.lexeme lexbuf)
            (Lexing.lexeme_start lexbuf)
            (Lexing.lexeme_end lexbuf)) }
+
+and comment = parse
+  | "*)" { () }
+  | "(*" { comment lexbuf; comment lexbuf }
+  | eof  { Format.eprintf "warning: unterminated comment@." }
+  | _    { comment lexbuf }
