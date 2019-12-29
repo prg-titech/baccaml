@@ -71,7 +71,7 @@ let rec sum n =
   if n < 2 then 1
   else n + sum (n - 1)
 in let () = sum 1000" in
-  assert_equal 500500 (test sum)
+  assert_equal ~printer:string_of_int 500500 (test sum)
 
 let test_ack _ =
   let ack = "
@@ -80,7 +80,7 @@ let rec ack x y =
   if y < 1 then ack (x - 1) 1 else
   ack (x - 1) (ack x (y - 1)) in
 let () = ack 3 8" in
-  assert_equal 2045 (test ack)
+  assert_equal ~printer:string_of_int 2045 (test ack)
 
 let test_is_prime _ =
   let is_prime = "
