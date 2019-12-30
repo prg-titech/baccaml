@@ -221,7 +221,7 @@ let compile_from_exp (exp : Syntax.exp) : VM.inst array =
   let fundefs = find_fundefs exp in
   let main = fundefs |> List.find_all (fun { name } -> name = "main") in
   let others = fundefs |> List.filter (fun { name } -> name <> "main") in
-  (compile_funs (others @ main))
+  (compile_funs (main @ others))
 
 
 (* for testing *)

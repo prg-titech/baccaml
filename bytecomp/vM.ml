@@ -116,37 +116,40 @@ let string_of = function
    should decouple the pair.
 *)
 
-type value = VInt of int | VArray of int array
+type value =
+    Int' of int
+  | Array' of value array
 
 module Value = struct
   let (|+|) v1 v2 = match v1, v2 with
-    | VInt i, VInt j -> VInt (i + j)
+    | Int' i, Int' j -> Int' (i + j)
     | _ -> failwith "invalid value"
 
   let (|-|) v1 v2 = match v1, v2 with
-    | VInt i, VInt j -> VInt (i - j)
+    | Int' i, Int' j -> Int' (i - j)
     | _ -> failwith "invalid value"
 
   let (|*|) v1 v2 = match v1, v2 with
-    | VInt i, VInt j -> VInt (i * j)
+    | Int' i, Int' j -> Int' (i * j)
     | _ -> failwith "invalid value"
 
   let (|<|) v1 v2 = match v1, v2 with
-    | VInt i, VInt j ->
+    | Int' i, Int' j ->
       if !debug_flg then
         print_endline (Printf.sprintf "v1: %d v2: %d" i j);
       i < j
     | _ -> failwith "invalid value"
 
   let int_of_value = function
-      VInt i -> i
+      Int' i -> i
     | _ -> failwith "array is not int"
   let array_of_value = function
-    | VArray arr -> arr
-    | VInt i -> failwith (sprintf "int %d is not array" i)
+    | Array' arr -> arr
+    | Int' i -> failwith (sprintf "int %d is not array" i)
 
-  let value_of_int i = VInt i
-  let value_of_array arr = VArray arr
+  let value_of_int i = Int' i
+
+  let value_of_array arr = Array' arr
 end
 
 type stack = int * value array
@@ -168,7 +171,7 @@ let frame_reset : stack -> int -> int -> int -> stack =
     else (stack.(old_base+i)<-stack.(new_base+i);
           loop (i+1)) in
   loop 0
-let make_stack () = (0, Array.make max_stack_depth (VInt 0))
+let make_stack () = (0, Array.make max_stack_depth (Int' 0))
 
 (* let test_stack =(9,  [|1;2;3;4;5;6;7;8;9|])
  * let reset_result = frame_reset test_stack 2 2 3
@@ -190,8 +193,8 @@ let dump_stack (sp,stack) =
   let rec loop i = if i=sp then ""
     else (
       (match stack.(i) with
-      | VInt i -> string_of_int i
-      | VArray _ -> "array") ^";"^ (loop (i+1))
+      | Int' i -> string_of_int i
+      | Array' _ -> "array") ^";"^ (loop (i+1))
     ) in
   "["^(loop 0)^"]"
 
@@ -213,7 +216,7 @@ let rec interp code pc stack =
   if pc<0 then fst(pop stack) else begin
     let i,pc = fetch code pc in
     let inst = insts.(i) in
-    (* Printf.printf "%d %s %s\n" pc (show_inst inst) (dump_stack stack); *)
+    Printf.printf "%d %s %s\n" (pc-1) (show_inst inst) (dump_stack stack);
     match inst with
     | UNIT | METHOD_COMP ->
       interp code (pc + 1) stack
@@ -221,8 +224,8 @@ let rec interp code pc stack =
       let v,stack = pop stack in
       let stack =
         if int_of_value v = 0
-        then push stack (VInt 1)
-        else push stack (VInt 0)
+        then push stack (Int' 1)
+        else push stack (Int' 0)
       in
       interp code pc stack
     | ADD ->
@@ -241,10 +244,10 @@ let rec interp code pc stack =
     | LT ->
       let v2,stack = pop stack in
       let v1,stack = pop stack in
-      let    stack = push stack (if v1 |<| v2 then VInt 1 else VInt 0) in
+      let    stack = push stack (if v1 |<| v2 then Int' 1 else Int' 0) in
       interp  code pc stack
     | CONST0 ->
-      let stack = push stack (VInt 0) in
+      let stack = push stack (Int' 0) in
       interp  code pc stack
     | CONST -> let c,pc = fetch code pc in
       let stack = push stack (value_of_int c) in
@@ -313,27 +316,23 @@ let rec interp code pc stack =
     | ARRAY_MAKE ->
       let init,stack = pop stack in
       let size,stack = pop stack in
-      (try
-        let stack =
-          push stack
-            (value_of_array
-               (Array.make (int_of_value size) (int_of_value init))) in
-        interp code pc stack
-       with e -> (
-           Printf.eprintf "\nstack push failed at %d" pc;
-           raise e))
+      let stack =
+        push stack
+          (value_of_array
+             (Array.make (int_of_value size) init)) in
+      interp code pc stack
     | GET ->
       let n,stack = pop stack in
       let n = int_of_value n in
       let arr,stack = pop stack in
       let arr = array_of_value arr in
-      let stack = push stack (value_of_int (arr.(n))) in
+      let stack = push stack (arr.(n)) in
       interp code pc stack
     | PUT ->
       let n,stack = pop stack in
       let i,stack = pop stack in
       let arr,stack = pop stack in
-      (array_of_value arr).(int_of_value i) <- (int_of_value n);
+      (array_of_value arr).(int_of_value i) <- n;
       interp code pc stack
   end
 

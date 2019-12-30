@@ -118,6 +118,22 @@ let () = simple 10 20
 " in
   assert_equal ~printer:string_of_int 30 (test code)
 
+let test_array2 _ =
+  let code ="
+let rec simple x y =
+  let a = Array.make 2 0 in
+  let b = Array.make 2 a in
+  b.(0).(0) <- x; b.(0).(1) <- x;
+  b.(1).(0) <- x; b.(1).(1) <- x;
+  let c = Array.make 2 0 in
+  let d = Array.make 2 c in
+  d.(0).(0) <- y; d.(0).(1) <- y;
+  d.(1).(0) <- y; d.(1).(1) <- y;
+  b.(1).(0) + d.(1).(1)
+in let () = simple 10 20
+" in
+  assert_equal ~printer:string_of_int 30 (test code)
+
 let test_for_loop _ =
   let code ="
 let rec f n =

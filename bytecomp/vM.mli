@@ -51,7 +51,7 @@ val max_stack_depth : int
 
 val has_args : (inst * bool) list
 
-type value = VInt of int | VArray of int array
+type value = Int' of int | Array' of value array
 type stack = int * value array
 val interp : int array -> int -> stack -> value
 
@@ -68,5 +68,5 @@ val run_asm : fundef_asm_t -> int
 module Value : sig
   val int_of_value : value -> int
   val value_of_int : int -> value
-  val value_of_array : int array -> value
+  val value_of_array : value array -> value
 end
