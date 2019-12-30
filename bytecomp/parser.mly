@@ -32,6 +32,7 @@
 %token LESS_MINUS
 %token MINUS_GREATER
 %token SEMICOLON
+%token UNDER_SCORE
 %token DOT
 %token FOR TO DO DONE
 %token MAIN
@@ -51,7 +52,7 @@
 %%
 
 simple_exp:
-    | LPAREN RPAREN          { Unit }
+    | unit                   { $1 }
     | LPAREN exp RPAREN      { $2 }
     | INT                    { Int ($1) }
     | VAR                    { Var ($1) }
@@ -69,15 +70,20 @@ exp:
     | IF exp THEN exp ELSE exp { If ($2, $4, $6) }
     | LET VAR EQ exp IN exp    { Let ($2, $4, $6) }
     | fundef IN exp            { LetRec ($1, $3) }
-    | LET LPAREN RPAREN EQ exp { LetRec ({name="main"; args=[]; body=$5; annot=None}, Unit) }
+    | LET unit EQ exp { LetRec ({name="main"; args=[]; body=$4; annot=None}, Unit) }
     | VAR actual_args          { Call (None, $1, $2) }
     | exp SEMICOLON exp        { Let (Id.gentmp (), $1, $3) }
+    | LET UNDER_SCORE EQ exp IN exp { Let (Id.gentmp (), $4, $6) }
     | FOR VAR EQ exp TO exp DO exp DONE SEMICOLON exp { For(Range($2, $4, $6), $8, $11) }
     | error
         { failwith
             (Printf.sprintf "parse error near characters %d-%d"
                (Parsing.symbol_start ())
                (Parsing.symbol_end ()))  }
+
+unit:
+    | LPAREN RPAREN             { Unit }
+    | UNDER_SCORE               { Unit }
 
 array:
     | ARRAY_MAKE simple_exp simple_exp                       { Array($2, $3) }

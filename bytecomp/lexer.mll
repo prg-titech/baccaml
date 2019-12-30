@@ -20,6 +20,7 @@ rule token = parse
   | '<'       { LESS }
   | '='       { EQ }
   | ','       { COMMA }
+  | '_'       { UNDER_SCORE }
   | "not"     { NOT }
   | "let"     { LET }
   | "rec"     { REC }

@@ -34,16 +34,11 @@ let rec compile_exp fenv env exp =
   let open VM in
   match exp with
   | Unit -> []
-  | Int n ->
-    if n = 0 then [CONST0]
-    else [CONST; Literal n]
-  | Not e1 ->
-    (e1 |> compile_exp fenv env) @
-    [NOT]
-  | Var v ->
-    let n = lookup env v in
-    if n = 0 then [DUP0]
-    else [DUP; Literal n]
+  | Int n when n = 0 -> [CONST0]
+  | Int n -> [CONST; Literal n]
+  | Not e1 -> (e1 |> compile_exp fenv env) @ [NOT]
+  | Var v when lookup env v = 0 -> [DUP0]
+  | Var v -> [DUP; Literal (lookup env v)]
   | Add(e1,e2) ->
     (e1 |> compile_exp fenv env) @
     (e2 |> compile_exp fenv (shift_env env)) @ [ADD]
@@ -70,16 +65,17 @@ let rec compile_exp fenv env exp =
     @ [Ldef l2]
   | Call(annot, fname, rands) | TCall (annot, fname, rands) ->
     (List.fold_left (fun (rev_code_list,env) exp ->
-         (exp |> compile_exp fenv env) :: rev_code_list, shift_env env)
+         (exp |> compile_exp fenv env) :: rev_code_list,
+         shift_env env)
         ([], env) rands
      |> fst
      |> List.rev
      |> List.flatten) @
-    begin
-      match annot with
-      | Some MethodComp -> [CALL_HS; Lref fname; Literal (List.length rands)]
-      | _ -> [CALL; Lref fname; Literal (List.length rands)]
-    end
+    (match annot with
+      | Some MethodComp ->
+        [CALL_HS; Lref fname; Literal (List.length rands)]
+      | _ ->
+        [CALL; Lref fname; Literal (List.length rands)])
   (* call using a label (call label size_of_args) *)
   (* self tail calls are compiled with FRAME_RESET which moves
          the computed arguments to the position of the actual

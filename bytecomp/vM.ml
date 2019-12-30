@@ -134,10 +134,7 @@ module Value = struct
     | _ -> failwith "invalid value"
 
   let (|<|) v1 v2 = match v1, v2 with
-    | Int' i, Int' j ->
-      if !debug_flg then
-        print_endline (Printf.sprintf "v1: %d v2: %d" i j);
-      i < j
+    | Int' i, Int' j -> i < j
     | _ -> failwith "invalid value"
 
   let int_of_value = function
@@ -212,7 +209,7 @@ let checkpoint =
 
 let debug pc inst stack =
   if !debug_flg then
-    Printf.eprintf "%d %s %s\n" (pc-1) (show_inst inst) (dump_stack stack)
+    Printf.printf "%d %s %s\n" (pc-1) (show_inst inst) (dump_stack stack)
   else ()
 
 let rec interp code pc stack =
@@ -284,7 +281,7 @@ let rec interp code pc stack =
       let stack = drop stack n in (* delete arguments *)
       let stack = push stack v in (* restore return value *)
       (* Printf.printf "%d RET with %d to %d\n" pc0 v pc; *)
-      interp  code (int_of_value pc) stack
+      interp code (int_of_value pc) stack
     | DUP ->
       let n,pc = fetch code pc in
       let stack = push stack (take stack n) in
@@ -322,9 +319,8 @@ let rec interp code pc stack =
       let init,stack = pop stack in
       let size,stack = pop stack in
       let stack =
-        push stack
-          (value_of_array
-             (Array.make (int_of_value size) init)) in
+        push stack (value_of_array
+                      (Array.make (int_of_value size) init)) in
       interp code pc stack
     | GET ->
       let n,stack = pop stack in
@@ -336,8 +332,13 @@ let rec interp code pc stack =
     | PUT ->
       let n,stack = pop stack in
       let i,stack = pop stack in
+      let i = int_of_value i in
       let arr,stack = pop stack in
-      (array_of_value arr).(int_of_value i) <- n;
+      let arr = array_of_value arr in
+      (try arr.(i) <- n; with e ->
+         Printf.eprintf
+           "array manupilation error: arr.(%d) <- %d\n" i (int_of_value n);
+         raise e);
       interp code pc stack
   end
 
