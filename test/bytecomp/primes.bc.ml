@@ -8,4 +8,10 @@ let rec is_prime cand i =
   else if mod_ cand i = 0 then 0
   else is_prime cand (i + 1)
 in
-let () = (is_prime 32 2)
+let rec primes n acc =
+  if n < 1 then acc
+  else (
+    let m = is_prime n 2 in
+    primes (n-1) (acc+m))
+in
+let () = primes 121 0
