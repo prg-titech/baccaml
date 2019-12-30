@@ -6,6 +6,7 @@
  (public_name baccaml.bytegen_lib)
  (modules :standard \ bytegen)
  (inline_tests)
+ (libraries str)
  (preprocess (pps ppx_deriving.show ppx_inline_test)))
 
 (executable

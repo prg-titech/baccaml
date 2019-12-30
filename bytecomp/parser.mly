@@ -60,6 +60,7 @@ simple_exp:
 
 exp:
     | simple_exp               { $1 }
+    | array                    { $1 }
     | exp PLUS exp             { Add ($1, $3) }
     | exp MINUS exp            { Sub ($1, $3) }
     | exp TIMES exp            { Mul ($1, $3) }
@@ -71,14 +72,17 @@ exp:
     | LET LPAREN RPAREN EQ exp { LetRec ({name="main"; args=[]; body=$5; annot=None}, Unit) }
     | VAR actual_args          { Call (None, $1, $2) }
     | exp SEMICOLON exp        { Let (Id.gentmp (), $1, $3) }
-    | ARRAY_MAKE simple_exp simple_exp       { Array($2, $3) }
-    | simple_exp DOT LPAREN exp RPAREN LESS_MINUS simple_exp SEMICOLON exp { Put ($1, $4, $7, $9) }
     | FOR VAR EQ exp TO exp DO exp DONE SEMICOLON exp { For(Range($2, $4, $6), $8, $11) }
     | error
         { failwith
             (Printf.sprintf "parse error near characters %d-%d"
                (Parsing.symbol_start ())
                (Parsing.symbol_end ()))  }
+
+array:
+    | ARRAY_MAKE simple_exp simple_exp                       { Array($2, $3) }
+    | simple_exp DOT LPAREN exp RPAREN LESS_MINUS simple_exp { Put ($1, $4, $7) }
+
 
 fundef:
     | LET REC VAR formal_args EQ exp   { { name=$3; args=$4; body=$6; annot=None } }

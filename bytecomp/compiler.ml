@@ -98,11 +98,16 @@ let rec compile_exp fenv env exp =
        Literal old_arity; Literal local_size; Literal new_arity;
        JUMP; Lref fname]
   | Let(var,exp,body) ->
-    let ex_env = extend_env env var in
-    (exp |> compile_exp fenv env)         (* in old env *)
-    @ (body |> compile_exp fenv ex_env)   (* in extended env *)
-    @ [POP1]                              (* drop the value *)
-  | Array (e1, e2) ->
+    let re = Str.regexp "^tmp__[1-9]*" in
+    if Str.string_partial_match re var 0 then
+      (exp |> compile_exp fenv env) @
+      (body |> compile_exp fenv env)
+    else
+      let ex_env = extend_env env var in
+      (exp |> compile_exp fenv env)         (* in old env *)
+      @ (body |> compile_exp fenv ex_env)   (* in extended env *)
+      @ [POP1]                              (* drop the value *)
+  | Array (e1, e2) ->                     (* size,init *)
     (e1 |> compile_exp fenv env) @
     (e2 |> compile_exp fenv (shift_env env)) @
     [ARRAY_MAKE]
@@ -110,12 +115,11 @@ let rec compile_exp fenv env exp =
     (e1 |> compile_exp fenv env) @
     (e2 |> compile_exp fenv (shift_env env)) @
     [GET]
-  | Put (e1, e2, e3, e4) ->       (* array,index,val,cont *)
-    (e1 |> compile_exp fenv env)
-    @ (e2 |> compile_exp fenv (shift_env env))
-    @ (e3 |> compile_exp fenv (shift_env (shift_env env)))
-    @ [PUT]
-    @ (e4 |> compile_exp fenv env)
+  | Put (e1, e2, e3) ->       (* array,index,val,cont *)
+    (e1 |> compile_exp fenv env) @
+    (e2 |> compile_exp fenv (shift_env env)) @
+    (e3 |> compile_exp fenv (shift_env (shift_env env))) @
+    [PUT]
   (* for var = from_exp to to_exp do
    *   body_exp
    * done;

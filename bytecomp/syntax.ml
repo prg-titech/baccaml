@@ -23,7 +23,7 @@ type exp =
   | LetRec of fundef * exp
   | Array of exp * exp
   | Get of exp * exp
-  | Put of exp * exp * exp * exp
+  | Put of exp * exp * exp
   | For of range * exp * exp    (* loop (condition, body, next) *)
   | TCall of annot option * var * exp list     (* tail call --- internal only *)
 [@@deriving show]
@@ -48,7 +48,7 @@ let rec find_fundefs ?(name = None) = function
     end
   | Array (e1, e2) -> (find_fundefs e1) @ (find_fundefs e2)
   | Get (e1, e2) -> (find_fundefs e1) @ (find_fundefs e2)
-  | Put (e1, e2, e3, e4) ->
-    (find_fundefs e1) @ (find_fundefs e2) @ (find_fundefs e3) @ (find_fundefs e4)
+  | Put (e1, e2, e3) ->
+    (find_fundefs e1) @ (find_fundefs e2) @ (find_fundefs e3)
   | For (_, e2, e3) ->
     (find_fundefs e2) @ (find_fundefs e3)
