@@ -3,6 +3,7 @@ open Bytegen_lib
 let usage = "Usage: " ^ Sys.argv.(0) ^ "[-ast] [-virtual] [-no-hybridize]"
 let ast_flg = ref false
 let virtual_flg = ref false
+let interp_flg = ref false
 
 let tap f x = f x; x
 
@@ -14,6 +15,21 @@ let print_insts insts =
   Array.iter (fun inst ->
       Printf.printf "%s\n" (VM.show_inst inst))
     insts
+
+let run_interp arg =
+  let open Compiler in
+  stack_hybridized := false;
+  let ic = open_in arg in
+  try
+    Lexing.from_channel ic
+    |> Parser.exp Lexer.token
+    |> Test.compile_from_exp
+    |> VM.run_asm
+    |> print_int;
+    stack_hybridized := true;
+    close_in ic
+  with e ->
+    close_in ic; raise e
 
 let emit_ast arg =
   let ic = open_in arg in
@@ -57,12 +73,13 @@ let _ =
   Arg.parse
     [("-ast", Arg.Unit (fun _ -> ast_flg := true), "emit abstract syntax tree");
      ("-virtual", Arg.Unit (fun _ -> virtual_flg := true), "emit virtual machine instructions");
-     ("-no-hybridize", Arg.Unit (fun _ -> Compiler.stack_hybridized := false), "dsaible stack hybridization")
-    ]
+     ("-interp", Arg.Unit (fun _ -> interp_flg := true), "run as interpreter");
+     ("-no-sh", Arg.Unit (fun _ -> Compiler.stack_hybridized := false), "dsaible stack hybridization")]
     (fun file -> files := !files @ [file])
     usage;
   List.iter
     (if !ast_flg then emit_ast
      else if !virtual_flg then emit_virtual
+     else if !interp_flg then run_interp
      else emit_code)
     !files
