@@ -74,6 +74,7 @@ let _ =
     [("-ast", Arg.Unit (fun _ -> ast_flg := true), "emit abstract syntax tree");
      ("-virtual", Arg.Unit (fun _ -> virtual_flg := true), "emit virtual machine instructions");
      ("-interp", Arg.Unit (fun _ -> interp_flg := true), "run as interpreter");
+     ("-debug", Arg.Unit (fun _ -> VM.debug_flg := true), "turn on debug mode");
      ("-no-sh", Arg.Unit (fun _ -> Compiler.stack_hybridized := false), "dsaible stack hybridization")]
     (fun file -> files := !files @ [file])
     usage;

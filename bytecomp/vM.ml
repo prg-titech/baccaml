@@ -210,13 +210,18 @@ let checkpoint =
       else counter := !counter - 1
   else fun () -> ()
 
+let debug pc inst stack =
+  if !debug_flg then
+    Printf.eprintf "%d %s %s\n" (pc-1) (show_inst inst) (dump_stack stack)
+  else ()
+
 let rec interp code pc stack =
   checkpoint ();
   let open Value in
   if pc<0 then fst(pop stack) else begin
     let i,pc = fetch code pc in
     let inst = insts.(i) in
-    Printf.printf "%d %s %s\n" (pc-1) (show_inst inst) (dump_stack stack);
+    debug pc inst stack;
     match inst with
     | UNIT | METHOD_COMP ->
       interp code (pc + 1) stack
