@@ -1,5 +1,5 @@
 open Bytegen_lib
-
+open Insts
 open OUnit2
 
 module VM_test = struct

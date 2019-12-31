@@ -1,4 +1,5 @@
 open VM
+open Insts
 
 open Printf
 

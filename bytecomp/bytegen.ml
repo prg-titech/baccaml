@@ -13,7 +13,7 @@ let print_code code =
 
 let print_insts insts =
   Array.iter (fun inst ->
-      Printf.printf "%s\n" (VM.show_inst inst))
+      Printf.printf "%s\n" (Insts.show_inst inst))
     insts
 
 let run_interp arg =
@@ -48,7 +48,7 @@ let emit_virtual arg =
     |> Parser.exp Lexer.token
     |> Compiler.compile_from_exp
     |> Array.iteri (fun i inst ->
-        let inst_str = VM.show_inst inst in
+        let inst_str = Insts.show_inst inst in
         Printf.printf "%d\t%s\n" i inst_str;
         flush stdout)
   with e ->

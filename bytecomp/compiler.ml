@@ -1,4 +1,5 @@
 open Syntax
+open Insts
 
 let stack_hybridized = ref true
 
@@ -31,7 +32,6 @@ let arity_of_env env =
 
 (* compilation of expressions *)
 let rec compile_exp fenv env exp =
-  let open VM in
   match exp with
   | Unit -> []
   | Int n when n = 0 -> [CONST0]
@@ -182,19 +182,19 @@ let make_label_env instrs =
 
 (* remove all Ldefs and replace Lrefs with Literals *)
 let resolve_labels instrs =
-  List.filter (function VM.Ldef _ -> false | _ -> true)
+  List.filter (function Ldef _ -> false | _ -> true)
     (List.map (assoc_if (make_label_env instrs)) instrs)
 
 
 let compile_fun_body fenv name arity annot exp env =
   let env = if !stack_hybridized then shift_env env else env in
   (match annot with
-   | None | Some TracingComp -> [VM.METHOD_ENTRY; VM.Ldef name]
-   | Some MethodComp -> [VM.METHOD_ENTRY; VM.METHOD_COMP; VM.Ldef name]) @
+   | None | Some TracingComp -> [METHOD_ENTRY; Ldef name]
+   | Some MethodComp -> [METHOD_ENTRY; METHOD_COMP; Ldef name]) @
   (call_annot fenv exp |> compile_exp fenv env) @
   (if name = "main"
-   then [VM.HALT]
-   else [VM.RET; VM.Literal arity])
+   then [HALT]
+   else [RET; Literal arity])
 
 
 let compile_fun (fenv : var -> fundef) {name; args; body; annot} =
@@ -213,7 +213,7 @@ let compile_funs fundefs =
                      (List.map (compile_fun fenv) fundefs)))
 
 
-let compile_from_exp (exp : Syntax.exp) : VM.inst array =
+let compile_from_exp (exp : Syntax.exp) : inst array =
   let fundefs = find_fundefs exp in
   let main = fundefs |> List.find_all (fun { name } -> name = "main") in
   let others = fundefs |> List.filter (fun { name } -> name <> "main") in
@@ -228,7 +228,7 @@ module Test = struct
   let print_insts insts =
     let rec print_inst inst =
       match inst with
-      | VM.Literal i -> print_int i; print_newline ()
+      | Literal i -> print_int i; print_newline ()
       | _ -> VM.string_of inst |> print_string; print_string " "
     in
     insts |> List.map print_inst |> ignore
@@ -244,7 +244,7 @@ module Test = struct
                      name (print_code_pair expected actual))
   let test = test_ex compile_exp
 
-  let compile_from_exp (exp : Syntax.exp) : VM.inst array =
+  let compile_from_exp (exp : Syntax.exp) : inst array =
     let fundefs = find_fundefs exp in
     let main = fundefs |> List.find (fun { name } -> name = "main") in
     let others = fundefs |> List.filter (fun { name } -> name <> "main") in

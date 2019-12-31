@@ -1,97 +1,9 @@
 open Printf
+open Insts
 
 let debug_flg = ref false
 
-type inst =
-  | UNIT
-  | ADD
-  | SUB
-  | MUL
-  | LT
-  | CONST
-  | JUMP_IF_ZERO (* addr *)
-  | CALL (* fun-id *)
-  | RET
-  | DUP (* n *)
-  | HALT
-  | FRAME_RESET (* o l n *)
-  | POP1
-  | JUMP
-  | METHOD_ENTRY
-  | EQ
-  | ARRAY_MAKE
-  | GET
-  | PUT
-  | NOT
-  | POP0
-  | METHOD_COMP                 (* annotation *)
-  | CALL_HS
-  | DUP0
-  | CONST0
-  | Literal of int
-  | Lref of string
-  | Ldef of string
-[@@deriving show]
-
 let max_stack_depth = 100000
-
-(* the next array determines the opcode *)
-let insts = [|
-  UNIT;
-  ADD;
-  SUB;
-  MUL;
-  LT;
-  CONST;
-  JUMP_IF_ZERO; (* LOAD; STORE; *)
-  CALL;
-  RET;
-  DUP;
-  HALT;
-  FRAME_RESET;
-  POP1;
-  JUMP;
-  METHOD_ENTRY;
-  EQ;
-  ARRAY_MAKE;
-  GET;
-  PUT;
-  NOT;
-  POP0;
-  METHOD_COMP;
-  CALL_HS;
-  DUP0;
-  CONST0;
-|]
-
-let has_args = [
-  UNIT, false;
-  ADD, false;
-  SUB, false;
-  MUL, false;
-  LT, false;
-  CONST, true;
-  JUMP_IF_ZERO, true;
-  JUMP, true;
-  CALL, true;
-  RET, true;
-  DUP, true;
-  HALT, false;
-  FRAME_RESET, true;
-  POP1, false;
-  JUMP, true;
-  METHOD_ENTRY, false;
-  EQ, false;
-  ARRAY_MAKE, false;
-  GET, false;
-  PUT, false;
-  NOT, false;
-  POP0, false;
-  METHOD_COMP, false;
-  CALL_HS, true;
-  DUP0, false;
-  CONST0, false;
-]
 
 let index_of element array =
   fst(List.find (fun (_,v) -> v=element)
@@ -134,7 +46,10 @@ module Value = struct
     | _ -> failwith "invalid value"
 
   let (|<|) v1 v2 = match v1, v2 with
-    | Int' i, Int' j -> i < j
+    | Int' i, Int' j ->
+      if !debug_flg then
+        print_endline (Printf.sprintf "v1: %d v2: %d" i j);
+      i < j
     | _ -> failwith "invalid value"
 
   let int_of_value = function
@@ -209,7 +124,7 @@ let checkpoint =
 
 let debug pc inst stack =
   if !debug_flg then
-    Printf.printf "%d %s %s\n" (pc-1) (show_inst inst) (dump_stack stack)
+    Printf.eprintf "%d %s %s\n" (pc-1) (Insts.show_inst inst) (dump_stack stack)
   else ()
 
 let rec interp code pc stack =
@@ -281,7 +196,7 @@ let rec interp code pc stack =
       let stack = drop stack n in (* delete arguments *)
       let stack = push stack v in (* restore return value *)
       (* Printf.printf "%d RET with %d to %d\n" pc0 v pc; *)
-      interp code (int_of_value pc) stack
+      interp  code (int_of_value pc) stack
     | DUP ->
       let n,pc = fetch code pc in
       let stack = push stack (take stack n) in
@@ -319,8 +234,9 @@ let rec interp code pc stack =
       let init,stack = pop stack in
       let size,stack = pop stack in
       let stack =
-        push stack (value_of_array
-                      (Array.make (int_of_value size) init)) in
+        push stack
+          (value_of_array
+             (Array.make (int_of_value size) init)) in
       interp code pc stack
     | GET ->
       let n,stack = pop stack in
@@ -332,13 +248,8 @@ let rec interp code pc stack =
     | PUT ->
       let n,stack = pop stack in
       let i,stack = pop stack in
-      let i = int_of_value i in
       let arr,stack = pop stack in
-      let arr = array_of_value arr in
-      (try arr.(i) <- n; with e ->
-         Printf.eprintf
-           "array manupilation error: arr.(%d) <- %d\n" i (int_of_value n);
-         raise e);
+      (array_of_value arr).(int_of_value i) <- n;
       interp code pc stack
   end
 

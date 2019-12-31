@@ -1,4 +1,4 @@
 (tests
  (names
    test_jit_constfold)
- (libraries minCaml jit oUnit alcotest))
+ (libraries minCaml jit oUnit))
