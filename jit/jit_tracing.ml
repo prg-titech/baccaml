@@ -71,13 +71,16 @@ let rec tj p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as
   | Let ((dest, typ), CallDir (Id.L "min_caml_jit_merge_point", args, fargs), body) ->
     let pc = value_of @@ reg.(int_of_id_t @@ List.hd args) in
     Log.debug @@ sprintf "jit_merge_point: %d" pc;
-    tj p reg mem env body
+    if pc = merge_pc then
+      Ans (CallDir (Id.L (trace_name),
+                    Util.filter ~reds:red_names args,
+                    Util.filter ~reds:red_names fargs))
+    else tj p reg mem env body
   | Let ((dest, typ), CallDir (Id.L "min_caml_method_entry", args, fargs), body) ->
     tj p reg mem env body
   | Let ((dest, typ), CallDir (Id.L "min_caml_guard_promote", args, fargs), body) ->
     tj p reg mem env body
   | Let ((dest, typ), CallDir (Id.L "min_caml_can_enter_jit", args, fargs), body) ->
-    let { trace_name; index_pc; merge_pc } = env in
     let pc = value_of @@ reg.(int_of_id_t @@ List.nth args index_pc) in
     Log.debug @@ sprintf "can_enter_jit: %d" pc;
     if pc = merge_pc
