@@ -46,6 +46,8 @@ end
 
 let other_dependencies = ref []
 
+let re_entry_flg = ref false
+
 let rec tj p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as env) t =
   match t with
   | Ans (CallDir (id_l, args', fargs')) ->
@@ -72,9 +74,11 @@ let rec tj p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as
     let pc = value_of @@ reg.(int_of_id_t @@ List.hd args) in
     Log.debug @@ sprintf "jit_merge_point: %d" pc;
     if pc = merge_pc then
-      Ans (CallDir (Id.L (trace_name),
-                    Util.filter ~reds:red_names args,
-                    Util.filter ~reds:red_names fargs))
+      if !re_entry_flg then
+        Ans (CallDir (Id.L (trace_name),
+                      Util.filter ~reds:red_names args,
+                      Util.filter ~reds:red_names fargs))
+      else (re_entry_flg := true; tj p reg mem env body)
     else tj p reg mem env body
   | Let ((dest, typ), CallDir (Id.L "min_caml_method_entry", args, fargs), body) ->
     tj p reg mem env body
@@ -99,7 +103,8 @@ let rec tj p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as
         Jit_guard.restore reg ~args:args'
           (Let ((dest, typ), CallDir (Id.L ("interp_no_hints"), args', fargs') ,tj p reg mem env body))
     end
-  | Let ((dest, typ), CallDir (Id.L x, args, fargs), body) when String.starts_with x "min_caml" -> (* foreign functions *)
+  | Let ((dest, typ), CallDir (Id.L x, args, fargs), body)
+    when String.starts_with x "min_caml" -> (* foreign functions *)
     let { red_names } = env in
     Jit_guard.restore reg ~args:args
      (Let ((dest, typ)
@@ -128,19 +133,19 @@ let rec tj p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as
        let offsetv = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
        begin match (srcv, destv) with
        | Green n1, Red n2 ->
-          reg.(int_of_id_t dest) <- Green 0;
-          mem.(n1 + (n2 * x)) <- Green (int_of_id_t id_t1 |> Array.get reg |> value_of);
-          (match offsetv with
-           | Green n ->
-              let id' = Id.gentmp Type.Int in
-              let body' = tj p reg mem env body in
-              Let ((id_t1, Type.Int), Set n1
-                   , Let ((id', Type.Int), Set n
-                          , Let ((dest, typ), St (id_t1, id_t2, C n, x), body')))
-           | Red n ->
-              let body' = tj p reg mem env body in
-              Let ((id_t1, Type.Int), Set n1
-                   , Let ((dest, typ), St (id_t1, id_t2, id_or_imm, x), body')))
+         reg.(int_of_id_t dest) <- Green 0;
+         mem.(n1 + (n2 * x)) <- Green (int_of_id_t id_t1 |> Array.get reg |> value_of);
+         (match offsetv with
+          | Green n ->
+            let id' = Id.gentmp Type.Int in
+            let body' = tj p reg mem env body in
+            Let ((id_t1, Type.Int), Set n1
+                , Let ((id', Type.Int), Set n
+                      , Let ((dest, typ), St (id_t1, id_t2, C n, x), body')))
+          | Red n ->
+            let body' = tj p reg mem env body in
+            Let ((id_t1, Type.Int), Set n1
+                , Let ((dest, typ), St (id_t1, id_t2, id_or_imm, x), body')))
        | _ -> body |> optimize_exp p reg mem env (dest, typ) e
        end
     | _ -> body |> optimize_exp p reg mem env (dest, typ) e
