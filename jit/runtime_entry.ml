@@ -30,6 +30,74 @@ module Util = struct
       ((List.find_all(fun (i,elem) -> elem = annot_mj_comp)
           (List.mapi (fun i x -> (i, x)) (Array.to_list bytecode))))
 
+
+  let find_tj_entries bytecode =
+    let annot_tj_comp = 22 in
+    List.map fst
+      ((List.find_all(fun (i,elem) -> elem = annot_tj_comp)
+          (List.mapi (fun i x -> (i, x)) (Array.to_list bytecode))))
+
+
+  let file_open () =
+    match !Config.file_name with
+    | Some name -> open_in name
+    | None -> failwith "argument is not specified."
+
+
+  let get_ir_addr args name =
+    List.find (fun a -> String.get_name a = name) args
+    |> String.get_extension
+    |> int_of_string
+
+
+  let make_reg prog args sp =
+    let open Jit_env in
+    let reg = Array.make Internal_conf.size (Red 0) in
+    let Asm.{args; body= t} = Fundef.find_fuzzy prog "interp" in
+    Asm.fv t @ args
+    |> List.iteri
+      (fun i a ->
+         if List.mem (String.get_name a) Internal_conf.greens then reg.(i) <- Green 0
+         else reg.(i) <- Red 0 ) ;
+    reg
+
+
+  let make_mem ~bc_addr ~st_addr bytecode stack =
+    let open Jit_env in
+    let mem = Array.make Internal_conf.size (Green 0) in
+    bytecode
+    |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Jit_env.Green a) ;
+    stack
+    |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Jit_env.Red a) ;
+    mem
+
+
+  let with_jit_flg ~on:f ~off:g =
+    match !Config.jit_flag with
+    | `On -> f ()
+    | `Off -> g ()
+
+
+  let with_comp_flg ~on:f ~off:g =
+    match !Config.comp_only_flag with
+    | `On -> f ()
+    | `Off -> g ()
+
+
+  let exec_dyn_arg2 ~name ~arg1 ~arg2 =
+    Dynload_stub.call_arg2
+      ~lib:("./" ^ get_so_name name)
+      ~func:(String.split_on_char '.' name |> List.hd)
+      ~arg1:arg1 ~arg2:arg2
+
+
+  let exec_dyn_arg3 ~name ~arg1 ~arg2 ~arg3 =
+    Dynload_stub.call_arg3
+      ~lib:("./" ^ get_so_name name)
+      ~func:(String.split_on_char '.' name |> List.hd)
+      ~arg1:arg1 ~arg2:arg2 ~arg3:arg3
+
+
   let%test "find_mj_entries test" =
     let bytecode = Array.init 100 (fun i ->  if i mod 42 = 0 then 21 else i) in
     let expected = bytecode
@@ -43,6 +111,7 @@ end
 module Setup = struct
   let env {bytecode; stack; pc; sp; bc_ptr; st_ptr} typ prog =
     let open Asm in
+    let open Util in
     Debug.print_arr string_of_int bytecode;
     let prog = Jit_annot.annotate typ prog
     and {args; body} = Fundef.find_fuzzy prog "interp" in
@@ -105,91 +174,83 @@ let jit_tracing ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog 
   else
     emit_and_compile_with_so prog `Meta_tracing others trace
 
-let exec_dyn_arg2 ~name ~arg1 ~arg2 =
-  Dynload_stub.call_arg2
-    ~lib:("./" ^ get_so_name name)
-    ~func:(String.split_on_char '.' name |> List.hd)
-    ~arg1:arg1 ~arg2:arg2
-
-let exec_dyn_arg3 ~name ~arg1 ~arg2 ~arg3 =
-  Dynload_stub.call_arg3
-    ~lib:("./" ^ get_so_name name)
-    ~func:(String.split_on_char '.' name |> List.hd)
-    ~arg1:arg1 ~arg2:arg2 ~arg3:arg3
 
 let jit_exec pc st_ptr sp stack =
-  with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
-    match Trace_prof.find_opt pc with
-    | Some (tname) ->
-      (* Debug.print_stack stack; Printf.printf "[sp] %d\n" sp; *)
-      Printf.eprintf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc sp;
-      let s = Unix.gettimeofday () in
-      let _ = exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp in
-      let e = Unix.gettimeofday () in
-      Printf.eprintf "[tj] ellapsed time: %f μ s\n" ((e -. s) *. 1e6);
-      flush stdout;
-      ()
-    | None -> ()
-  end
+  Util.(
+    with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
+      match Trace_prof.find_opt pc with
+      | Some (tname) ->
+        (* Debug.print_stack stack; Printf.printf "[sp] %d\n" sp; *)
+        Printf.eprintf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc sp;
+        let s = Unix.gettimeofday () in
+        let _ = exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp in
+        let e = Unix.gettimeofday () in
+        Printf.eprintf "[tj] ellapsed time: %f μ s\n" ((e -. s) *. 1e6);
+        flush stdout;
+        ()
+      | None -> ()
+    end)
 
 let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
-  with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
-    if Trace_prof.over_threshold pc then
-      begin match Trace_prof.find_opt pc with
-        | Some _ -> ()
-        | None ->
-          let ic = file_open () in
-          try
-            let prog =
-              ic |> Lexing.from_channel |> Opt.virtualize
-              |> Jit_annot.annotate `Meta_tracing
-            in
-            close_in ic;
-            let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-            match prog |> jit_tracing env with
-            | Ok name -> Trace_prof.register (pc, name);
-            | Error e -> raise e
-          with e -> close_in ic; raise e
-      end
-    else
-      Trace_prof.count_up pc
-  end
+  Util.(
+    with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
+      if Trace_prof.over_threshold pc then
+        begin match Trace_prof.find_opt pc with
+          | Some _ -> ()
+          | None ->
+            let ic = file_open () in
+            try
+              let prog =
+                ic |> Lexing.from_channel |> Opt.virtualize
+                |> Jit_annot.annotate `Meta_tracing
+              in
+              close_in ic;
+              let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+              match prog |> jit_tracing env with
+              | Ok name -> Trace_prof.register (pc, name);
+              | Error e -> raise e
+            with e -> close_in ic; raise e
+        end
+      else
+        Trace_prof.count_up pc
+    end)
 
 let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
-  match Method_prof.find_opt pc with
-  | Some name ->
-    let s = Sys.time () in
-    let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
-    let e = Sys.time () in
-    Printf.eprintf "[mj] elapced time: %fus\n" ((e -. s) *. 1e6);
-    flush stderr;
-    r
-  | None ->
-    let ic = file_open () in
-    try
-      let p =
-        ic |> Lexing.from_channel |> Opt.virtualize
-        |> Jit_annot.annotate `Meta_method
-      in
-      close_in ic;
-      let bytecode = Compat.of_bytecode bytecode in
-      let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-      match p |> jit_method env with
-      | Ok name ->
-        Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
-        Method_prof.register (pc, name);
-        let s = Sys.time () in
-        let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
-        let e = Sys.time () in
-        Printf.eprintf "[mj] elapced time: %F us\n" ((e -. s) *. 1e6);
-        flush stderr;
-        r
-      | Error e -> raise e
-    with e -> close_in ic; raise e
+  Util.(
+    match Method_prof.find_opt pc with
+    | Some name ->
+      let s = Sys.time () in
+      let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
+      let e = Sys.time () in
+      Printf.eprintf "[mj] elapced time: %fus\n" ((e -. s) *. 1e6);
+      flush stderr;
+      r
+    | None ->
+      let ic = Util.file_open () in
+      try
+        let p =
+          ic |> Lexing.from_channel |> Opt.virtualize
+          |> Jit_annot.annotate `Meta_method
+        in
+        close_in ic;
+        let bytecode = Compat.of_bytecode bytecode in
+        let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+        match p |> jit_method env with
+        | Ok name ->
+          Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
+          Method_prof.register (pc, name);
+          let s = Sys.time () in
+          let r = exec_dyn_arg2 ~name:name ~arg1:st_ptr ~arg2:sp in
+          let e = Sys.time () in
+          Printf.eprintf "[mj] elapced time: %F us\n" ((e -. s) *. 1e6);
+          flush stderr;
+          r
+        | Error e -> raise e
+      with e -> close_in ic; raise e)
 
 
 let method_compile bytecode stack pc sp bc_ptr st_ptr =
-  let ic = file_open () in
+  let ic = Util.file_open () in
   try
     let p =
       ic |> Lexing.from_channel |>  Opt.virtualize
