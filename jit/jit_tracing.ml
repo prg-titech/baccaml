@@ -44,7 +44,7 @@ module Util = struct
 
 end
 
-let other_dependencies = ref []
+let other_deps : string list option ref = ref None
 
 let rec tj p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as env) t =
   match t with
@@ -118,7 +118,8 @@ and tj_exp p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as
     begin
       match Method_prof.find_opt pc with
       | Some tname ->
-        other_dependencies := !other_dependencies @ [tname];
+        other_deps := Option.bind !other_deps
+            (fun x -> Some (x @ [tname]));
         Let ((dest, typ),
              CallDir (Id.L (tname), Util.filter ~reds:red_names args', fargs'),
              tj p reg mem env body)
@@ -262,5 +263,9 @@ let run p reg mem ({ trace_name; red_names; merge_pc} as env) =
   let {body= body'; args= args'} = fenv "interp" in
   let trace = body' |> tj p reg mem env in
   `Result (
-    { name= Id.L trace_name; fargs= []; body= trace; ret= Type.Int; args= Util.filter ~reds:red_names args'},
-    !other_dependencies)
+    { name= Id.L trace_name;
+      fargs= []; body= trace;
+      ret= Type.Int;
+      args= Util.filter ~reds:red_names args'
+    },
+    !other_deps)

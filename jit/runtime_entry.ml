@@ -169,10 +169,10 @@ let jit_tracing ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog 
   in
   let `Result (trace, others) = JT.run prog reg mem env in
   Debug.with_debug (fun _ -> print_fundef trace);
-  if List.length others = 0 then
-    emit_and_compile prog `Meta_tracing trace
-  else
-    emit_and_compile_with_so prog `Meta_tracing others trace
+  match others with
+  | None -> emit_and_compile prog `Meta_tracing trace
+  | Some others -> emit_and_compile_with_so prog `Meta_tracing others trace
+
 
 
 let jit_exec pc st_ptr sp stack =
