@@ -87,12 +87,12 @@ let rec interp stack sp bytecode pc =
       stack.(sp) <- pc + 3;
       stack.(sp + 1) <- 200;
       let sp2 = sp + 2 in
-      (* @if addr < pc then (
-       *   can_enter_jit stack sp2 bytecode addr;
-       *   interp stack sp2 bytecode addr
-       * ) else (
-       *   interp stack sp2 bytecode addr) *)
-      interp stack sp2 bytecode addr)
+      @if addr < pc then (
+        can_enter_jit stack sp2 bytecode addr;
+        interp stack sp2 bytecode addr
+      ) else (
+        interp stack sp2 bytecode addr))
+      (* interp stack sp2 bytecode addr) *)
   else if instr = 22 then       (* CALL_HS *)
     let addr = bytecode.(pc + 1) in
     let rands = bytecode.(pc + 2) in
@@ -109,12 +109,12 @@ let rec interp stack sp bytecode pc =
       let addr = stack.(sp - 3) in
       stack.(sp - n - 3) <- v;
       let sp2 = sp - n - 2 in
-      (* @if addr = pc - 1 then (
-       *   can_enter_jit stack sp2 bytecode addr;
-       *   interp stack sp2 bytecode addr
-       * ) else (
-       *   interp stack sp2 bytecode addr) *)
-      interp stack sp2 bytecode addr
+      @if addr = pc - 1 then (
+        can_enter_jit stack sp2 bytecode addr;
+        interp stack sp2 bytecode addr
+      ) else (
+        interp stack sp2 bytecode addr)
+      (* interp stack sp2 bytecode addr *)
     ) else v
   else if instr = 9 then         (* DUP *)
     let n = bytecode.(pc + 1) in
@@ -197,7 +197,7 @@ let rec exec code pc =
 ;;
 
 (* fib *)
-(*
+
 let code = Array.make 38 0 in
 save_bp ();
 code.(0) <- 14;
@@ -222,7 +222,7 @@ code.(32) <- 5; code.(33) <- 20;
 code.(34) <- 7; code.(35) <- 1; code.(36) <- 1;
 code.(37) <- 10;
 exec code 32;
- *)
+
 
 (* sum *)
 (*
@@ -407,6 +407,7 @@ exec code 71;
 *)
 
 (* for loop + method-compiled function *)
+(*
 let code = Array.make 87 0 in
 save_bp ();
 code.(0) <- 21;
@@ -463,5 +464,6 @@ code.(80) <- 5; code.(81) <- 10;
 code.(82) <- 7; code.(83) <- 33; code.(84) <- 1;
 code.(85) <- 10;
 exec code 79;
+*)
 
 ()

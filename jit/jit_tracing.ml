@@ -46,8 +46,6 @@ end
 
 let other_dependencies = ref []
 
-let re_entry_flg = ref false
-
 let rec tj p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as env) t =
   match t with
   | Ans (CallDir (id_l, args', fargs')) ->
@@ -106,21 +104,7 @@ and tj_exp p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as
   | CallDir (Id.L "min_caml_jit_merge_point", args, fargs) ->
     let pc = value_of @@ reg.(int_of_id_t @@ List.hd args) in
     Log.debug @@ sprintf "jit_merge_point: %d" pc;
-    if pc = merge_pc
-    then
-      if !re_entry_flg
-      then
-        Ans (
-          CallDir (
-            Id.L (trace_name),
-            Util.filter ~reds:red_names args,
-            Util.filter ~reds:red_names fargs))
-      else begin
-        re_entry_flg := true;
-        tj p reg mem env body
-      end
-    else
-      tj p reg mem env body
+    tj p reg mem env body
   | CallDir (Id.L "min_caml_method_entry", args, fargs) -> tj p reg mem env body
   | CallDir (Id.L "min_caml_guard_promote", args, fargs) -> tj p reg mem env body
   | CallDir (Id.L "min_caml_can_enter_jit", args, fargs) ->
