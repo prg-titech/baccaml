@@ -73,11 +73,11 @@ int call_caml_mj_call(int *st, int sp, int *bc, int pc) {
   return Int_val(caml_callbackN(*jit_method_call_closure, 6, ml_args));
 }
 
-void call_caml_jit_method_comp(int *st, int sp, int *bc, int pc) {
+void call_caml_jit_tracing_entry(int *st, int sp, int *bc, int pc) {
   static value *jit_method_comp_closure = NULL;
   value ml_args[6];
   if (jit_method_comp_closure == NULL) {
-    jit_method_comp_closure = caml_named_value("jit_method_comp");
+    jit_method_comp_closure = caml_named_value("jit_tracing_start");
   }
   ml_args[0] = caml_alloc_array(init_g, bc);
   ml_args[1] = caml_alloc_array(init_f, st);

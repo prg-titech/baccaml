@@ -180,7 +180,7 @@ let jit_exec pc st_ptr sp stack =
     with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
       match Trace_prof.find_opt pc with
       | Some (tname) ->
-        (* Debug.print_stack stack; Printf.printf "[sp] %d\n" sp; *)
+        (* Debug.print_int_arr stack; Printf.printf "[sp] %d\n" sp; *)
         Printf.eprintf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc sp;
         let s = Unix.gettimeofday () in
         let _ = exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp in
@@ -249,35 +249,24 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
       with e -> close_in ic; raise e)
 
 
-let method_compile bytecode stack pc sp bc_ptr st_ptr =
+let jit_tracing_start stack sp bytecode pc bc_ptr st_ptr pc_ptr =
+  let bytecode = Compat.of_bytecode bytecode in
   let ic = Util.file_open () in
-  try
-    let p =
-      ic |> Lexing.from_channel |>  Opt.virtualize
-      |> Jit_annot.annotate `Meta_method
-    in
-    close_in ic;
-    let bytecode = Compat.of_bytecode bytecode in
-    let env = {bytecode; stack; pc; sp; bc_ptr; st_ptr} in
-    match jit_method env p with
-    | Ok name ->
-      Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
-      Method_prof.register (pc, name);
-      flush stderr;
-      ()
-    | Error e ->
-      ()
-  with e ->
-    close_in ic
-
-
-let jit_method_compile_only bytecode stack pc sp bc_ptr st_ptr =
-  Util.find_mj_entries bytecode |> List.map (fun pc_entry ->
-      method_compile bytecode stack pc_entry sp bc_ptr st_ptr)
+  let p = Lexing.from_channel ic
+          |> Opt.virtualize
+          |> Jit_annot.annotate `Meta_tracing in
+  close_in ic;
+  Util.find_tj_entries bytecode
+  |> List.fold_left begin fun _ pc ->
+    let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+    (match jit_tracing env p with
+    | Ok tname -> Trace_prof.register (pc, tname)
+    | Error e -> raise e)
+  end ()
 
 
 let callbacks () =
   Callback.register "jit_tracing_entry" jit_tracing_entry;
   Callback.register "jit_exec" jit_exec;
   Callback.register "jit_method_call" jit_method_call;
-  Callback.register "jit_method_comp" jit_method_compile_only;
+  Callback.register "jit_tracing_start" jit_tracing_start

@@ -3,13 +3,9 @@ open MinCaml
 
 module Internal_conf = struct
   let size = Sys.max_array_length
-
   let greens = !Config.greens
-
   let reds = !Config.reds
-
   let bc_tmp_addr = 0
-
   let st_tmp_addr = 1000
 end
 
@@ -29,7 +25,7 @@ module Debug = struct
       | None -> Printf.printf "%s\n" str
     else ()
 
-  let print_stack stk =
+  let print_int_arr stk =
     let str = Array.string_of_array string_of_int stk in
     print_string "[stack] "; print_endline str
 
