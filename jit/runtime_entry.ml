@@ -181,11 +181,11 @@ let jit_exec pc st_ptr sp stack =
       match Trace_prof.find_opt pc with
       | Some (tname) ->
         (* Debug.print_int_arr stack; Printf.printf "[sp] %d\n" sp; *)
-        Printf.eprintf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc sp;
+        Printf.printf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc sp;
         let s = Unix.gettimeofday () in
         let _ = exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp in
         let e = Unix.gettimeofday () in
-        Printf.eprintf "[tj] ellapsed time: %f μ s\n" ((e -. s) *. 1e6);
+        Printf.printf "[tj] ellapsed time: %f μ s\n" ((e -. s) *. 1e6);
         flush stdout;
         ()
       | None -> ()
@@ -249,24 +249,33 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
       with e -> close_in ic; raise e)
 
 
-let jit_tracing_start stack sp bytecode pc bc_ptr st_ptr pc_ptr =
-  let bytecode = Compat.of_bytecode bytecode in
-  let ic = Util.file_open () in
-  let p = Lexing.from_channel ic
-          |> Opt.virtualize
-          |> Jit_annot.annotate `Meta_tracing in
-  close_in ic;
-  Util.find_tj_entries bytecode
-  |> List.fold_left begin fun _ pc ->
-    let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-    (match jit_tracing env p with
-    | Ok tname -> Trace_prof.register (pc, tname)
-    | Error e -> raise e)
-  end ()
+let rec jit_tracing_start bytecode stack pc sp bc_ptr st_ptr =
+  Util.with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
+    let bytecode = Compat.of_bytecode bytecode in
+    let ic = Util.file_open () in
+    let p = Lexing.from_channel ic
+            |> Opt.virtualize
+            |> Jit_annot.annotate `Meta_tracing in
+    close_in ic;
+    Util.find_tj_entries bytecode
+    |> List.fold_left begin fun _ pc ->
+      let pc = pc + 1 in
+      let stack = Array.make 3000 0 in
+      (* stack.(sp - 1) <- (Sys.getenv "TJ_RET_ADDR" |> int_of_string);
+       * stack.(sp) <- (Sys.getenv "TJ_MODE" |> int_of_string);
+       * stack.(sp + 1) <- (Sys.getenv "TJ_RET_VAL" |> int_of_string); *)
+      Printf.eprintf "[tracing] tj entry: %d\n" pc;
+      let env = { bytecode; stack; pc= pc; sp= sp+3; bc_ptr; st_ptr } in
+      (match jit_tracing env p with
+       | Ok tname -> Trace_prof.register (pc, tname)
+       | Error e -> raise e)
+    end ()
+  end
 
 
 let callbacks () =
   Callback.register "jit_tracing_entry" jit_tracing_entry;
   Callback.register "jit_exec" jit_exec;
   Callback.register "jit_method_call" jit_method_call;
-  Callback.register "jit_tracing_start" jit_tracing_start
+  Callback.register "jit_tracing_start" jit_tracing_start;
+  ()
