@@ -1,4 +1,5 @@
 (* -*- mode: tuareg -*- *)
+(* vim:set syntax=ocaml: *)
 (* let rec jit_merge_point _ _ _ = ();;
  * let rec can_enter_jit _ _ _ _ = ();;
  * let rec method_entry _ = ();;
@@ -76,7 +77,7 @@ let rec interp stack sp bytecode pc =
   else if instr = 7 then        (* CALL *)
     let addr = bytecode.(pc + 1) in
     let rands = bytecode.(pc + 2) in
-    if is_mj () then (
+    if is_mj (addr) then (
       stack.(sp) <- 100;
       let sp2 = sp + 2 in
       let r = mj_call stack sp2 bytecode addr in

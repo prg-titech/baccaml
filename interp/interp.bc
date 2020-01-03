@@ -75,7 +75,7 @@ let rec interp stack sp bytecode pc =
     let addr = bytecode.(pc + 1) in
     let rands = bytecode.(pc + 2) in
     if is_mj addr then
-      (stack.(sp) <- 200;
+      (stack.(sp) <- 200;       (* push jit flag *)
        let sp2 = sp+2 in
        let r = mj_call stack sp2 bytecode addr in
        stack.(sp - rands) <- r;
@@ -93,7 +93,7 @@ let rec interp stack sp bytecode pc =
     let v = stack.(sp - 1) in
     let addr = stack.(sp-2) in  (* sp: sp-3 *)
     let mode = stack.(sp-3) in  (* sp: sp-3 *)
-    if mode = 100 then
+    if mode = 100 then          (* check jit flag *)
       (stack.(sp - n - 3) <- v; (* sp: sp-3-n+1 = sp-2-n *)
        let sp2 = sp - n - 2 in
        interp stack sp2 bytecode addr)
@@ -164,5 +164,6 @@ let rec read_code i n arr =
 let n = read_int () in
 let arr = Array.make n 0 in
 let code = read_code 0 n arr in
+(* jit_entry code; *)
 let _ = (interp stk 1 code 0) in
 ()
