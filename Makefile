@@ -7,11 +7,10 @@ clean: comp-clean
 	dune clean
 
 comp-clean:
-	$(RM) *.so *.s
+	$(RM) *.so *.s *.o
 
-test:
+test: comp-clean
 	dune runtest -f
-	$(RM) *.so *.s
 
 benchmark:
 	$(MAKE) -C benchmark
