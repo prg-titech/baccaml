@@ -168,7 +168,8 @@ let jit_tracing ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog 
       ~bytecode:bytecode
   in
   let `Result (trace, others) = JT.run prog reg mem env in
-  Debug.with_debug (fun _ -> print_fundef trace);
+  (* Debug.with_debug (fun _ -> print_fundef trace); *)
+  print_fundef trace;
   match others with
   | None -> emit_and_compile prog `Meta_tracing trace
   | Some others -> emit_and_compile_with_so prog `Meta_tracing others trace
@@ -195,7 +196,8 @@ let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
   Util.(
     with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
       if Trace_prof.over_threshold pc then
-        begin match Trace_prof.find_opt pc with
+        begin
+          match Trace_prof.find_opt pc with
           | Some _ -> ()
           | None ->
             let ic = file_open () in
