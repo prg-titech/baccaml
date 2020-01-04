@@ -112,8 +112,8 @@ let rec interp stack sp bytecode pc =
       @if addr = pc - 1 then (
         can_enter_jit stack sp2 bytecode addr;
         interp stack sp2 bytecode addr
-      ) else (
-        interp stack sp2 bytecode addr)
+      ) else
+        interp stack sp2 bytecode addr
       (* interp stack sp2 bytecode addr *)
     ) else v
   else if instr = 9 then         (* DUP *)
@@ -243,22 +243,22 @@ code.(16) <- 5; code.(17) <- 1;
 code.(18) <- 2;
 code.(19) <- 7; code.(20) <- 1; code.(21) <- 1;
 
-code.(22) <- 1;
-code.(23) <- 8; code.(24) <- 1;
-code.(25) <- 14;
-code.(26) <- 5; code.(27) <- 20000;
-code.(28) <- 7; code.(29) <- 1; code.(30) <- 1;
-code.(31) <- 10;
-exec code 26;
-
-(* code.(22) <- 22;
- * code.(23) <- 1;
- * code.(24) <- 8; code.(25) <- 1;
- * code.(26) <- 14;
- * code.(27) <- 5; code.(28) <- 2000;
- * code.(29) <- 7; code.(30) <- 1; code.(31) <- 1;
- * code.(32) <- 10;
+(* code.(22) <- 1;
+ * code.(23) <- 8; code.(24) <- 1;
+ * code.(25) <- 14;
+ * code.(26) <- 5; code.(27) <- 2000;
+ * code.(28) <- 7; code.(29) <- 1; code.(30) <- 1;
+ * code.(31) <- 10;
  * exec code 26; *)
+
+code.(22) <- 22;
+code.(23) <- 1;
+code.(24) <- 8; code.(25) <- 1;
+code.(26) <- 14;
+code.(27) <- 5; code.(28) <- 2000;
+code.(29) <- 7; code.(30) <- 1; code.(31) <- 1;
+code.(32) <- 10;
+exec code 26;
 
 
 (* fact *)

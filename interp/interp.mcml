@@ -101,7 +101,7 @@ let rec interp stack sp bytecode pc =
     if mode = 200 then          (* check jit flag *)
       (stack.(sp - n - 3) <- v; (* sp: sp-3-n+1 = sp-2-n *)
        let sp2 = sp - n - 2 in
-       if addr < pc then (
+       if addr < pc then (      (* if add = 41 then (fib) *)
          can_enter_jit stack sp2 bytecode addr;
          interp stack sp2 bytecode addr
        ) else
@@ -181,36 +181,7 @@ let rec read_code i n arr =
 (* sum *)
 let code = Array.make 100 0 in
 save_bp ();
-(* code.(0) <- 15; code.(1) <- 1000;
- * code.(2) <- 24;
- * code.(3) <- 10; code.(4) <- 12;
- * code.(5) <- 1;
- * code.(6) <- 24;
- * code.(7) <- 20;
- * code.(8) <- 14;
- * code.(9) <- 14;
- * code.(10) <- 12;
- * code.(11) <- 26;
- * code.(12) <- 13; code.(13) <- 2;
- * code.(14) <- 23;
- * code.(15) <- 6;
- * code.(16) <- 8; code.(17) <- 21;
- * code.(18) <- 23;
- * code.(19) <- 9; code.(20) <- 36;
- * code.(21) <- 13; code.(22) <- 2;
- * code.(23) <- 15; code.(24) <- 1;
- * code.(25) <- 2;
- * code.(26) <- 24;
- * code.(27) <- 10; code.(28) <- 12;
- * code.(29) <- 1;
- * code.(30) <- 24;
- * code.(31) <- 13; code.(32) <- 5;
- * code.(33) <- 1;
- * code.(34) <- 14;
- * code.(35) <- 14;
- * code.(36) <- 11; code.(37) <- 1; *)
-(* fib *)
-code.(0) <- 15; code.(1) <- 20;
+code.(0) <- 15; code.(1) <- 1000;
 code.(2) <- 24;
 code.(3) <- 10; code.(4) <- 12;
 code.(5) <- 1;
@@ -221,28 +192,59 @@ code.(9) <- 14;
 code.(10) <- 12;
 code.(11) <- 26;
 code.(12) <- 13; code.(13) <- 2;
-code.(14) <- 15; code.(15) <- 2;
-code.(16) <- 6;
-code.(17) <- 8; code.(18) <- 23;
-code.(19) <- 13; code.(20) <- 2;
-code.(21) <- 9; code.(22) <- 50;
-code.(23) <- 13; code.(24) <- 2;
-code.(25) <- 15; code.(26) <- 1;
-code.(27) <- 2;
-code.(28) <- 24;
-code.(29) <- 10; code.(30) <- 12; code.(31) <- 1;
-code.(32) <- 13; code.(33) <- 4;
-code.(34) <- 15; code.(35) <- 2;
-code.(36) <- 2;
-code.(37) <- 24;
-code.(38) <- 10; code.(39) <- 12; code.(40) <- 1;
-code.(41) <- 13; code.(42) <- 2;
-code.(43) <- 13; code.(44) <- 1;
-code.(45) <- 1;
-code.(46) <- 14;
-code.(47) <- 14;
-code.(48) <- 14;
-code.(49) <- 14;
-code.(50) <- 11; code.(51) <- 1;
-let _ = (interp stk 1 code 0) in
+code.(14) <- 23;
+code.(15) <- 6;
+code.(16) <- 8; code.(17) <- 21;
+code.(18) <- 23;
+code.(19) <- 9; code.(20) <- 36;
+code.(21) <- 13; code.(22) <- 2;
+code.(23) <- 15; code.(24) <- 1;
+code.(25) <- 2;
+code.(26) <- 24;
+code.(27) <- 10; code.(28) <- 12;
+code.(29) <- 1;
+code.(30) <- 24;
+code.(31) <- 13; code.(32) <- 5;
+code.(33) <- 1;
+code.(34) <- 14;
+code.(35) <- 14;
+code.(36) <- 11; code.(37) <- 1;
+(* fib *)
+(* code.(0) <- 15; code.(1) <- 20;
+ * code.(2) <- 24;
+ * code.(3) <- 10; code.(4) <- 12;
+ * code.(5) <- 1;
+ * code.(6) <- 24;
+ * code.(7) <- 20;
+ * code.(8) <- 14;
+ * code.(9) <- 14;
+ * code.(10) <- 12;
+ * code.(11) <- 26;
+ * code.(12) <- 13; code.(13) <- 2;
+ * code.(14) <- 15; code.(15) <- 2;
+ * code.(16) <- 6;
+ * code.(17) <- 8; code.(18) <- 23;
+ * code.(19) <- 13; code.(20) <- 2;
+ * code.(21) <- 9; code.(22) <- 50;
+ * code.(23) <- 13; code.(24) <- 2;
+ * code.(25) <- 15; code.(26) <- 1;
+ * code.(27) <- 2;
+ * code.(28) <- 24;
+ * code.(29) <- 10; code.(30) <- 12;
+ * code.(31) <- 1;
+ * code.(32) <- 13; code.(33) <- 4;
+ * code.(34) <- 15; code.(35) <- 2;
+ * code.(36) <- 2;
+ * code.(37) <- 24;
+ * code.(38) <- 10; code.(39) <- 12;
+ * code.(40) <- 1;
+ * code.(41) <- 13; code.(42) <- 2;
+ * code.(43) <- 13; code.(44) <- 1;
+ * code.(45) <- 1;
+ * code.(46) <- 14;
+ * code.(47) <- 14;
+ * code.(48) <- 14;
+ * code.(49) <- 14;
+ * code.(50) <- 11; code.(51) <- 1; *)
+let r = (interp stk 1 code 0) in
 ()
