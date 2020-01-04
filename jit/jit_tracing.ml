@@ -48,17 +48,17 @@ let other_deps : string list option ref = ref None
 
 let rec tj p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as env) t =
   match t with
-  | Ans (CallDir (id_l, args', fargs')) ->
-    let pc = Util.get_pc reg args' index_pc in
+  | Ans (CallDir (id_l, args, fargs)) ->
+    let pc = Util.get_pc reg args index_pc in
     if pc = merge_pc then
-      Ans (CallDir (Id.L trace_name, Util.filter ~reds:red_names args', []))
+      Ans (CallDir (Id.L trace_name, Util.filter ~reds:red_names args, []))
     else
       let next_instr = bytecode.(pc) in
       Log.debug @@ sp "pc: %d, next instr: %d" pc next_instr;
       let { name; args= argst; fargs; body; ret } = interp_fundef p in
       let body = Util.find_by_inst next_instr body in
       { name; args= argst; fargs; body; ret }
-      |> Inlining.inline_fundef reg args'
+      |> Inlining.inline_fundef reg args
       |> tj p reg mem env
   | Ans (exp) ->
     begin
@@ -136,6 +136,7 @@ and tj_exp p reg mem ({ trace_name; red_names; index_pc; merge_pc; bytecode } as
   | CallDir (Id.L x, args', fargs') when String.starts_with x "cast_" ->
     Let ((dest, typ), CallDir (Id.L x, args', fargs'), tj p reg mem env body)
   | CallDir (Id.L x, argsr, fargsr) -> (* inline function call *)
+    print_endline (x);
     let pc = Util.get_pc reg argsr index_pc in
     let next_instr = bytecode.(pc) in
     let { name; args= argst; fargs; body= interp_body; ret } = interp_fundef p in
@@ -196,7 +197,7 @@ and tj_if p reg mem env exp =
     let r2 = match id_or_imm with V id -> reg.(int_of_id_t id) | C n -> Green n in
     if String.get_name id_t = "mode" then begin
       Log.debug @@ Printf.sprintf "IfEq mode checking (%s, %s) ==> %d %d"
-                     id_t (string_of_id_or_imm id_or_imm) (value_of r1) (value_of r2);
+        id_t (string_of_id_or_imm id_or_imm) (value_of r1) (value_of r2);
       Ans (IfEq (id_t, C (200), trace t1, guard t2))
     end else
       begin match r1, r2 with

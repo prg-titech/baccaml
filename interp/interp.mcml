@@ -1,8 +1,6 @@
 (* -*- mode: tuareg -*- *)
 (* vim: set syntax=ocaml: *)
 
-let rec is_mj _ = false in
-
 let rec frame_reset stack old_base new_base ret n i =
   if n = i then (stack.(old_base + n) <- ret; old_base + n + 1)
   else (stack.(old_base + i) <- stack.(new_base + i);
@@ -22,8 +20,8 @@ let rec pop stack sp = stack.(sp - 1) in
 let rec push stack sp v = stack.(sp) <- v in
 
 let rec interp stack sp bytecode pc =
+  jit_merge_point pc stack sp;
   let instr = bytecode.(pc) in
-  print_debug pc instr sp;
   if instr = 0 then             (* UNIT *)
     interp stack sp bytecode (pc + 1)
   else if instr = 1 then        (* ADD *)
@@ -80,25 +78,34 @@ let rec interp stack sp bytecode pc =
   else if instr = 10 then        (* CALL *)
     let addr = bytecode.(pc + 1) in
     let rands = bytecode.(pc + 2) in
-    if is_mj addr then
-      (stack.(sp) <- 200;       (* push jit flag *)
+    if is_mj () then
+      (stack.(sp) <- 100;       (* push jit flag *)
        let sp2 = sp+2 in
        let r = interp stack sp2 bytecode addr in
        stack.(sp - rands) <- r;
        interp stack (sp-rands+1) bytecode (pc+3))
     else
-      (stack.(sp) <- 100;       (* push jit flag *)
+      (stack.(sp) <- 200;       (* push jit flag *)
        stack.(sp + 1) <- pc + 3;
-       interp stack (sp + 2) bytecode addr)
+       let sp2 = sp+2 in
+       if addr < pc then (
+         can_enter_jit stack sp2 bytecode addr;
+         interp stack sp2 bytecode addr
+       ) else
+         interp stack sp2 bytecode addr)
   else if instr = 11 then       (* RET *)
     let n = bytecode.(pc + 1) in
     let v = stack.(sp - 1) in
     let addr = stack.(sp-2) in  (* sp: sp-3 *)
     let mode = stack.(sp-3) in  (* sp: sp-3 *)
-    if mode = 100 then          (* check jit flag *)
+    if mode = 200 then          (* check jit flag *)
       (stack.(sp - n - 3) <- v; (* sp: sp-3-n+1 = sp-2-n *)
        let sp2 = sp - n - 2 in
-       interp stack sp2 bytecode addr)
+       if addr < pc then (
+         can_enter_jit stack sp2 bytecode addr;
+         interp stack sp2 bytecode addr
+       ) else
+         interp stack sp2 bytecode addr)
     else v
   else if instr = 12 then       (* HALT *)
     stack.(sp - 1)
@@ -143,9 +150,9 @@ let rec interp stack sp bytecode pc =
     let v = stack.(sp - 1) in
     print_int v;
     interp stack (sp - 1) bytecode (pc + 1)
-  else if instr = 21 then       (* POP0 *)
-    let _ = stack.(sp - 1) in
-    interp stack (sp - 1) bytecode (pc + 1)
+  else if instr = 21 then       (* PRINT_NEWLINE *)
+    (print_newline ();
+     interp stack sp bytecode (pc + 1))
   else if instr = 22 then       (* METHOD_ENTRY *)
     interp stack sp bytecode (pc + 1)
   else if instr = 23 then       (* CONST0 *)
@@ -161,7 +168,8 @@ let rec interp stack sp bytecode pc =
     interp stack sp bytecode (pc+1)
   else
     -1000 in
-let stk  = Array.make 200000 (-987) in
+let stk  = Array.make 300000 0 in
+stk.(0) <- (-987);
 let rec read_code i n arr =
   if i = n then arr
   else
@@ -170,35 +178,64 @@ let rec read_code i n arr =
 (* let n = read_int () in
  * let arr = Array.make n 0 in
  * let code = read_code 0 n arr in *)
-let code = Array.make 1000 0 in
-code.(0) <- 15; code.(1) <- 10;
+(* sum *)
+let code = Array.make 100 0 in
+save_bp ();
+(* code.(0) <- 15; code.(1) <- 1000;
+ * code.(2) <- 24;
+ * code.(3) <- 10; code.(4) <- 12;
+ * code.(5) <- 1;
+ * code.(6) <- 24;
+ * code.(7) <- 20;
+ * code.(8) <- 14;
+ * code.(9) <- 14;
+ * code.(10) <- 12;
+ * code.(11) <- 26;
+ * code.(12) <- 13; code.(13) <- 2;
+ * code.(14) <- 23;
+ * code.(15) <- 6;
+ * code.(16) <- 8; code.(17) <- 21;
+ * code.(18) <- 23;
+ * code.(19) <- 9; code.(20) <- 36;
+ * code.(21) <- 13; code.(22) <- 2;
+ * code.(23) <- 15; code.(24) <- 1;
+ * code.(25) <- 2;
+ * code.(26) <- 24;
+ * code.(27) <- 10; code.(28) <- 12;
+ * code.(29) <- 1;
+ * code.(30) <- 24;
+ * code.(31) <- 13; code.(32) <- 5;
+ * code.(33) <- 1;
+ * code.(34) <- 14;
+ * code.(35) <- 14;
+ * code.(36) <- 11; code.(37) <- 1; *)
+(* fib *)
+code.(0) <- 15; code.(1) <- 20;
 code.(2) <- 24;
-code.(3) <- 10; code.(4) <- 11;
+code.(3) <- 10; code.(4) <- 12;
 code.(5) <- 1;
 code.(6) <- 24;
 code.(7) <- 20;
 code.(8) <- 14;
 code.(9) <- 14;
 code.(10) <- 12;
-code.(11) <- 13; code.(12) <- 2;
-code.(13) <- 15; code.(14) <- 2;
-code.(15) <- 6;
-code.(16) <- 8; code.(17) <- 23;
-code.(18) <- 13; code.(19) <- 2;
-code.(20) <- 23;
-code.(21) <- 8; code.(22) <- 50;
+code.(11) <- 26;
+code.(12) <- 13; code.(13) <- 2;
+code.(14) <- 15; code.(15) <- 2;
+code.(16) <- 6;
+code.(17) <- 8; code.(18) <- 23;
+code.(19) <- 13; code.(20) <- 2;
+code.(21) <- 9; code.(22) <- 50;
 code.(23) <- 13; code.(24) <- 2;
 code.(25) <- 15; code.(26) <- 1;
 code.(27) <- 2;
 code.(28) <- 24;
-code.(29) <- 10; code.(30) <- 11;
-code.(31) <- 1;
+code.(29) <- 10; code.(30) <- 12; code.(31) <- 1;
 code.(32) <- 13; code.(33) <- 4;
 code.(34) <- 15; code.(35) <- 2;
 code.(36) <- 2;
 code.(37) <- 24;
-code.(38) <- 10; code.(39) <- 11;
-code.(40) <- 1;
+code.(38) <- 10; code.(39) <- 12; code.(40) <- 1;
 code.(41) <- 13; code.(42) <- 2;
 code.(43) <- 13; code.(44) <- 1;
 code.(45) <- 1;

@@ -32,7 +32,7 @@ module Util = struct
 
 
   let find_tj_entries bytecode =
-    let annot_tj_comp = 22 in
+    let annot_tj_comp = 26 in
     List.map fst
       ((List.find_all(fun (i,elem) -> elem = annot_tj_comp)
           (List.mapi (fun i x -> (i, x)) (Array.to_list bytecode))))
@@ -174,7 +174,6 @@ let jit_tracing ({bytecode; stack; pc; sp; bc_ptr; st_ptr} as runtime_env) prog 
   | Some others -> emit_and_compile_with_so prog `Meta_tracing others trace
 
 
-
 let jit_exec pc st_ptr sp stack =
   Util.(
     with_jit_flg ~off:(fun _ -> ()) ~on:begin fun _ ->
@@ -190,6 +189,7 @@ let jit_exec pc st_ptr sp stack =
         ()
       | None -> ()
     end)
+
 
 let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
   Util.(
@@ -208,12 +208,13 @@ let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
               let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
               match prog |> jit_tracing env with
               | Ok name -> Trace_prof.register (pc, name);
-              | Error e -> raise e
-            with e -> close_in ic; raise e
+              | Error e -> ()
+            with e -> close_in ic; ()
         end
       else
         Trace_prof.count_up pc
     end)
+
 
 let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
   Util.(
@@ -228,10 +229,9 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
     | None ->
       let ic = Util.file_open () in
       try
-        let p =
-          ic |> Lexing.from_channel |> Opt.virtualize
-          |> Jit_annot.annotate `Meta_method
-        in
+        let p = Lexing.from_channel ic
+                |> Opt.virtualize
+                |> Jit_annot.annotate `Meta_method in
         close_in ic;
         let bytecode = Compat.of_bytecode bytecode in
         let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
@@ -257,8 +257,7 @@ let rec jit_tracing_start bytecode stack pc sp bc_ptr st_ptr =
             |> Opt.virtualize
             |> Jit_annot.annotate `Meta_tracing in
     close_in ic;
-    Util.find_tj_entries bytecode
-    |> List.fold_left begin fun _ pc ->
+    Util.find_tj_entries bytecode |> List.fold_left begin fun _ pc ->
       let pc = pc + 1 in
       let stack = Array.make 3000 0 in
       (* stack.(sp - 1) <- (Sys.getenv "TJ_RET_ADDR" |> int_of_string);
