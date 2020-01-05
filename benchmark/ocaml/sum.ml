@@ -1,11 +1,13 @@
-open Time;;
-let rec sum n =
-  if n = 0 then 0
-  else n + sum (n - 1)
-in
+open Time
+
+;;
+let rec sum n = if n = 0 then 0 else n + sum (n - 1) in
 let rec loop_sum n =
-  if n = 0 then ()
-  else let _ = sum 1000 in loop_sum (n - 1)
+  if n = 0
+  then ()
+  else (
+    let _ = sum 1000 in
+    loop_sum (n - 1))
 in
 let start = get_micro_time () in
 loop_sum 100000;

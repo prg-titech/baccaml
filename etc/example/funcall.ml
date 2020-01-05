@@ -1,3 +1,4 @@
+;;
 let a = xxx 1 in
 let b = yyy 1 in
 let c = hhh 1 in

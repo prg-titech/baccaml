@@ -1,10 +1,8 @@
 (env
  (dev
-  (flags (-w -4-33-40-41-42-43-34-44
-         -short-paths
-         -strict-sequence
-         -strict-formats
-         -short-paths
-         -keep-locs)))
+  (flags
+   (-w -4-33-40-41-42-43-34-44 -short-paths -strict-sequence -strict-formats
+     -short-paths -keep-locs)))
  (release
-  (flags (-w K -O3))))
+  (flags
+   (-w K -O3))))

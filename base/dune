@@ -1,11 +1,17 @@
-(ocamllex (modules lexer))
-(ocamlyacc (modules parser))
+(ocamllex
+ (modules lexer))
+
+(ocamlyacc
+ (modules parser))
 
 (library
- (name           minCaml)
- (public_name    baccaml.base)
- (modules        (:standard \ anchor))
- (flags          (-annot -w -4-33-40-41))
- (libraries      str std log)
- (c_names        float)
- (preprocess     (pps ppx_deriving.show)))
+ (name minCaml)
+ (public_name baccaml.base)
+ (modules
+  (:standard \ anchor))
+ (flags
+  (-annot -w -4-33-40-41))
+ (libraries str std log)
+ (c_names float)
+ (preprocess
+  (pps ppx_deriving.show)))

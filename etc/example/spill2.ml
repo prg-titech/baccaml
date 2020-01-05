@@ -1,4 +1,6 @@
 (* http://smpl.seesaa.net/article/9342186.html#comment *)
+
+;;
 let rec f _ = 12345 in
 let rec g y = y + 1 in
 let z = Array.make 10 1 in
@@ -21,6 +23,23 @@ let z13 = z12 + z12 in
 let z14 = z13 + z13 in
 let z15 = z14 + z14 in
 print_int
-  (if z.(1) = 0 then g y else
-  z0 + z1 + z2 + z3 + z4 + z5 + z6 + z7 +
-    z8 + z9 + z10 + z11 + z12 + z13 + z14 + z15 + x)
+  (if z.(1) = 0
+  then g y
+  else
+    z0
+    + z1
+    + z2
+    + z3
+    + z4
+    + z5
+    + z6
+    + z7
+    + z8
+    + z9
+    + z10
+    + z11
+    + z12
+    + z13
+    + z14
+    + z15
+    + x)

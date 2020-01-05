@@ -1,7 +1,8 @@
 (rule
  (targets interp_sh_tj.s)
  (deps interp_sh.mcml)
- (action (run  ../../bin/min_caml.exe -type tjit %{deps} -o %{targets})))
+ (action
+  (run ../../bin/min_caml.exe -type tjit %{deps} -o %{targets})))
 
 (rule
  (targets interp_sh_tj.exe)
@@ -12,4 +13,5 @@
 (alias
  (name runtest)
  (deps interp_sh.mcml)
- (action (run ./interp_sh_tj.exe)))
+ (action
+  (run ./interp_sh_tj.exe)))

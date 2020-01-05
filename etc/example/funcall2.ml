@@ -1,3 +1,4 @@
+;;
 let rec f a b = a + b in
 let rec g d =
   let e = d + 1 in
@@ -5,4 +6,4 @@ let rec g d =
   e + e2
 in
 let res = g 2 in
-print_int (res)
+print_int res
