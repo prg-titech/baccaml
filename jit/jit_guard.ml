@@ -24,10 +24,10 @@ and ignore_hits_exp = function
   | exp -> exp
 ;;
 
-let rec restore reg ~args ?wlist:(ws = []) cont =
+let rec restore reg ~args cont =
   match args with
   | [] -> cont |> ignore_hits
-  | hd :: tl when not (ignored hd ws) ->
+  | hd :: tl ->
     (match reg.(int_of_id_t hd) with
     | Green n
       when String.get_name hd = "bytecode" || String.get_name hd = "code" ->
@@ -37,7 +37,6 @@ let rec restore reg ~args ?wlist:(ws = []) cont =
         , restore reg tl cont )
     | Green n -> Let ((hd, Type.Int), Set n, restore reg tl cont)
     | _ -> restore reg tl cont)
-  | hd :: tl -> restore reg tl cont
 ;;
 
 let rec promote_interp tname = function

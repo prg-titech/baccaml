@@ -1,7 +1,7 @@
 open MinCaml
 open Jit_env
 
-val restore : reg -> args:string list -> ?wlist:string list -> Asm.t -> Asm.t
+val restore : reg -> args:string list -> Asm.t -> Asm.t
 val promote : reg -> trace_name:string -> Asm.t -> Asm.t
 
 module TJ : sig
