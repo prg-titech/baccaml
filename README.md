@@ -36,7 +36,7 @@ To run the interpreter already defined, execute following commands.
 $ dune build interp/test_interp_{mj,tj}.exe
 # debug
 # execute as tracing jit
-$ dune exec interp/test_interp_tj.exe
+$ dune exec interp/test_interp_tj.exe -- interp/test_interp.mcml
 # execute as method jit
-$ dune exec interp/test_interp_mj.exe
+$ dune exec interp/test_interp_mj.exe -- interp/test_interp.mcml
 ```
