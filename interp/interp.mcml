@@ -169,14 +169,13 @@ let rec interp stack sp bytecode pc =
   else
     -1000 in
 let stk  = Array.make 300000 0 in
-stk.(0) <- (-987);
 let rec read_code i n arr =
   if i = n then arr
   else
     (arr.(i) <- read_int ();
      read_code (i+1) n arr) in
 (* let n = read_int () in
- * let arr = Array.make n 0 in
+ * let arr = Array.make n 0 inn
  * let code = read_code 0 n arr in *)
 (* sum *)
 let code = Array.make 100 0 in
@@ -212,39 +211,38 @@ save_bp ();
 (* fib *)
 code.(0) <- 15; code.(1) <- 40;
 code.(2) <- 24;
-code.(3) <- 10; code.(4) <- 12;
+code.(3) <- 10; code.(4) <- 11;
 code.(5) <- 1;
 code.(6) <- 24;
 code.(7) <- 20;
 code.(8) <- 14;
 code.(9) <- 14;
 code.(10) <- 12;
-code.(11) <- 26;
-code.(12) <- 13; code.(13) <- 2;
-code.(14) <- 15; code.(15) <- 2;
-code.(16) <- 6;
-code.(17) <- 8; code.(18) <- 23;
-code.(19) <- 13; code.(20) <- 2;
-code.(21) <- 9; code.(22) <- 50;
-code.(23) <- 13; code.(24) <- 2;
-code.(25) <- 15; code.(26) <- 1;
-code.(27) <- 2;
-code.(28) <- 24;
-code.(29) <- 10; code.(30) <- 12;
-code.(31) <- 1;
-code.(32) <- 13; code.(33) <- 4;
-code.(34) <- 15; code.(35) <- 2;
-code.(36) <- 2;
-code.(37) <- 24;
-code.(38) <- 10; code.(39) <- 12;
-code.(40) <- 1;
-code.(41) <- 13; code.(42) <- 2;
-code.(43) <- 13; code.(44) <- 1;
-code.(45) <- 1;
+code.(11) <- 13; code.(12) <- 2;
+code.(13) <- 15; code.(14) <- 2;
+code.(15) <- 6;
+code.(16) <- 8; code.(17) <- 22;
+code.(18) <- 15; code.(19) <- 1;
+code.(20) <- 9; code.(21) <- 49;
+code.(22) <- 13; code.(23) <- 2;
+code.(24) <- 15; code.(25) <- 1;
+code.(26) <- 2;
+code.(27) <- 24;
+code.(28) <- 10; code.(29) <- 11;
+code.(30) <- 1;
+code.(31) <- 13; code.(32) <- 4;
+code.(33) <- 15; code.(34) <- 2;
+code.(35) <- 2;
+code.(36) <- 24;
+code.(37) <- 10; code.(38) <- 11;
+code.(39) <- 1;
+code.(40) <- 13; code.(41) <- 2;
+code.(42) <- 13; code.(43) <- 1;
+code.(44) <- 1;
+code.(45) <- 14;
 code.(46) <- 14;
 code.(47) <- 14;
 code.(48) <- 14;
-code.(49) <- 14;
-code.(50) <- 11; code.(51) <- 1;
-let r = (interp stk 1 code 0) in
+code.(49) <- 11; code.(50) <- 1;
+let r = (interp stk 0 code 0) in
 ()
