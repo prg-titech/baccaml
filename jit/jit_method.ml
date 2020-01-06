@@ -5,6 +5,11 @@ open Jit_env
 open Jit_util
 open Jit_prof
 
+open Printf
+
+let pp = print_endline
+let sp = sprintf
+
 type mj_env =
   { trace_name : string
   ; red_names : string list
@@ -198,6 +203,7 @@ and mj_exp p reg mem ({ index_pc; merge_pc; bytecode } as env) fenv = function
       List.nth argsr index_pc |> int_of_id_t |> Array.get reg |> value_of
     in
     let next_instr = bytecode.(pc) in
+    pp @@ sp "next pc %d instr %d" pc next_instr;
     let { name; args = argst; fargs; body; ret } = fenv "interp" in
     let t = Util.find_by_inst next_instr body in
     (* debug *)
@@ -225,7 +231,7 @@ and mj_if p reg mem ({ index_pc; merge_pc; trace_name; bytecode } as env) fenv
     if String.get_name id_t = "instr"
     then (
       let pc = reg.(int_of_id_t id_t) |> value_of in
-      Log.debug ("instr: " ^ string_of_int pc);
+      pp @@ sp "instr: %d, pc: %d" bytecode.(pc) pc;
       let { body } = fenv "interp" in
       let t = Util.find_by_inst pc body in
       t |> mj p reg mem env fenv)
@@ -233,6 +239,7 @@ and mj_if p reg mem ({ index_pc; merge_pc; trace_name; bytecode } as env) fenv
     then
       let module G = Jit_guard in
       let guard_code = G.TJ.create reg trace_name t1 in
+      pp @@ sp "mode checking ==> IfEq(%d, %d)" (value_of @@ reg.(int_of_id_t id_t)) 100;
       Ans (IfEq (id_t, id_or_imm, guard_code, mj p reg mem env fenv t2))
     else (
       Asm.print_exp exp;
