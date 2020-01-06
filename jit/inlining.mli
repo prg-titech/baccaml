@@ -1,5 +1,5 @@
 open MinCaml
+open Jit_env
 
-val inline_fundef : 'a array -> string list -> Asm.fundef -> Asm.t
-val inline_fundef' : 'a array -> string list -> Asm.fundef -> Asm.t * 'a array
-val inline_fundef : 'a array -> string list -> Asm.fundef -> Asm.t
+val inline_fundef' : reg -> string list -> Asm.fundef -> Asm.t * reg
+val inline_fundef : reg -> string list -> Asm.fundef -> Asm.t
