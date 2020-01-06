@@ -4,7 +4,6 @@ open Asm
 open Jit_env
 open Jit_util
 open Jit_prof
-
 open Printf
 
 let pp = print_endline
@@ -37,6 +36,14 @@ module Util : sig
   val filter_by_names : reds:string list -> string list -> string list
   val find_call_dests : int array -> int -> int list
   val get_pc : reg -> string -> int
+
+  val inline_fun
+    :  reg
+    -> string list
+    -> fundef
+    -> (reg -> t -> t)
+    -> t
+
   val ( <=> ) : exp -> int * int -> bool
   val ( <|> ) : exp -> Id.t * id_or_imm * t * t -> exp
 end = struct
@@ -77,6 +84,24 @@ end = struct
 
   let get_pc reg arg = arg |> int_of_id_t |> Array.get reg |> value_of
 
+  let rec inline_fun (reg : reg) argr fundef k =
+    let {args;body} = fundef in
+    let argt, body = Renaming.rename (args,body) in
+    let rec loop reg argr argt =
+      match argr, argt with
+      | [], [] -> k reg body
+      | hdr :: tlr, hdt :: tlt ->
+        let v = reg.(int_of_id_t hdr) in
+        reg.(int_of_id_t hdt) <- v;
+        (match v with
+        | Green n ->
+          Let ((hdt, Type.Int), Set n, loop reg tlr tlt)
+        | Red n ->
+          Let ((hdt, Type.Int), Mov hdr, loop reg tlr tlt))
+      | _ -> failwith "Un matched pattern."
+    in loop reg argr argt
+  ;;
+
   let ( <=> ) e (n1, n2) =
     match e with
     | SIfEq _ | IfEq _ -> n1 = n2
@@ -102,6 +127,11 @@ let rec mj
     env)
     fenv
   = function
+  | Ans (CallDir (id_l, args, fargs)) ->
+    let { name; args = argst; fargs; body; ret } = fenv "interp" in
+    { name; args = argst; fargs; body; ret }
+    |> Inlining.inline_fundef reg args
+    |> mj p reg mem env fenv
   | Ans exp -> exp |> mj_exp p reg mem env fenv
   | Let ((x, typ), CallDir (Id.L "min_caml_jit_merge_point", args, fargs), body)
     ->
@@ -199,19 +229,13 @@ and mj_exp p reg mem ({ index_pc; merge_pc; bytecode } as env) fenv = function
      *     reg.(int_of_id_t hdt) <- reg.(int_of_id_t hdr);
      *     f tlt tlr
      *   | _ -> assert false in *)
-    let pc =
-      List.nth argsr index_pc |> int_of_id_t |> Array.get reg |> value_of
-    in
-    let next_instr = bytecode.(pc) in
-    pp @@ sp "next pc %d instr %d" pc next_instr;
-    let { name; args = argst; fargs; body; ret } = fenv "interp" in
-    let t = Util.find_by_inst next_instr body in
+    (* let t = Util.find_by_inst next_instr body in *)
     (* debug *)
     (* print_string (string_of_int pc ^ ", ");
      * Asm.print_t t; print_newline (); *)
     (* if dsable renaming *)
-    (* f argst argsr; t |> mj p reg mem env *)
-    { name; args = argst; fargs; body = t; ret }
+    (* t |> mj p reg mem env *)
+    fenv "interp"
     |> Inlining.inline_fundef reg argsr
     |> mj p reg mem env fenv
   | (IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfGE _ | SIfLE _) as exp ->
@@ -224,27 +248,32 @@ and mj_exp p reg mem ({ index_pc; merge_pc; bytecode } as env) fenv = function
     | Not_specialized (e, v) -> Ans e)
 
 and mj_if p reg mem ({ index_pc; merge_pc; trace_name; bytecode } as env) fenv
-  = function
+  =
+  let open Util in
+  function
   | ( IfEq (id_t, id_or_imm, t1, t2)
     | IfLE (id_t, id_or_imm, t1, t2)
     | IfGE (id_t, id_or_imm, t1, t2) ) as exp ->
-    if String.get_name id_t = "instr"
+    if String.get_name id_t = "mode"
     then (
-      let pc = reg.(int_of_id_t id_t) |> value_of in
-      pp @@ sp "instr: %d, pc: %d" bytecode.(pc) pc;
-      let { body } = fenv "interp" in
-      let t = Util.find_by_inst pc body in
-      t |> mj p reg mem env fenv)
-    else if String.get_name id_t = "mode"
-    then
       let module G = Jit_guard in
       let guard_code = G.TJ.create reg trace_name t1 in
-      pp @@ sp "mode checking ==> IfEq(%d, %d)" (value_of @@ reg.(int_of_id_t id_t)) 100;
-      Ans (IfEq (id_t, id_or_imm, guard_code, mj p reg mem env fenv t2))
+      Log.debug
+      @@ sp
+           "mode checking ==> IfEq(%d, %d)"
+           (value_of @@ reg.(int_of_id_t id_t))
+           100;
+      Ans (IfEq (id_t, id_or_imm, guard_code, mj p reg mem env fenv t2)))
     else (
-      Asm.print_exp exp;
-      print_newline ();
-      assert false)
+      let r1 = reg.(int_of_id_t id_t) in
+      let r2 = match id_or_imm with
+          V x -> reg.(int_of_id_t x)
+        | C n -> Green n in
+      let n1,n2 = value_of r1, value_of r2 in
+      Log.debug @@ sp "If (%s, %s) ==> %d %d" id_t (string_of_id_or_imm id_or_imm) n1 n2;
+      if exp <=> (n1, n2)
+      then mj p reg mem env fenv t1
+      else mj p reg mem env fenv t2)
   | ( SIfEq (id_t, id_or_imm, t1, t2)
     | SIfGE (id_t, id_or_imm, t1, t2)
     | SIfLE (id_t, id_or_imm, t1, t2) ) as exp ->
@@ -254,8 +283,7 @@ and mj_if p reg mem ({ index_pc; merge_pc; trace_name; bytecode } as env) fenv
     let mem2 = Array.copy mem in
     let r1 = reg.(int_of_id_t id_t) in
     let r2 = reg.(int_of_id_or_imm id_or_imm) in
-    let open Util in
-    (match r1, r2 with
+      (match r1, r2 with
     | Green n1, Green n2 ->
       if exp <=> (n1, n2)
       then t1 |> mj p reg mem env fenv
