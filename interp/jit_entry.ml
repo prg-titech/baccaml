@@ -16,7 +16,7 @@ let () =
     ]
     (fun f -> file := f)
     ("Usage: " ^ Sys.argv.(0) ^ " [--options] [your interp]");
-  set file_name (Some !file);
+  set file_name (Some (!file));
   set reds [ "stack"; "sp"; "sp2"; "mode" ];
   set greens [ "pc"; "bytecode" ];
   Runtime_entry.callbacks ()
