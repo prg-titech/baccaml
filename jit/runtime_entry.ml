@@ -157,7 +157,7 @@ let jit_method ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env) prog
       ~merge_pc:pc
       ~bytecode
   in
-  let trace = JM.run prog reg mem env |> Jit_constfold.iter_fundef ~n:100 in
+  let trace = JM.run prog reg mem env in
   Debug.with_debug (fun _ -> print_fundef trace);
   emit_and_compile prog `Meta_method trace
 ;;
@@ -265,8 +265,7 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
            Method_prof.register (pc, name);
            let s = Sys.time () in
            let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
-           let e = Sys.time () in
-           Printf.eprintf "[mj] elapced time: %F us\n" ((e -. s) *. 1e6);
+           Printf.eprintf "[mj] elapced time: %f us\n" ((Sys.time () -. s) *. 1e6);
            flush stderr;
            r
          | Error e -> raise e
