@@ -13,6 +13,11 @@ let run p e reg mem =
     (match r with
     | Green n -> Specialized (Green n)
     | Red n -> Not_specialized (exp, Red n))
+  | Neg id_t as exp ->
+    let r = reg.(int_of_id_t id_t) in
+    (match r with
+    | Green n -> Specialized (Green n)
+    | Red n -> Not_specialized (exp, Red n))
   | Add (id_t1, id_or_imm) as exp ->
     let r1 = reg.(int_of_id_t id_t1) in
     let r2 =
