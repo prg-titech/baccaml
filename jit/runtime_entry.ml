@@ -51,6 +51,14 @@ module Util = struct
     | None -> failwith "argument is not specified."
   ;;
 
+  let gen_ir () =
+    let ic = file_open () in
+    try
+      let p = ic |> Lexing.from_channel |> Opt.virtualize in
+      close_in ic; p
+    with e -> close_in ic; raise e
+  ;;
+
   let get_ir_addr args name =
     List.find (fun a -> String.get_name a = name) args
     |> String.get_extension
@@ -141,6 +149,8 @@ module Setup = struct
   ;;
 end
 
+let interp_ir : Asm.prog option ref = ref None
+
 let jit_method ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env) prog
   =
   let open Asm in
@@ -190,7 +200,29 @@ let jit_tracing
   | Some others -> emit_and_compile_with_so prog `Meta_tracing others trace
 ;;
 
-let jit_exec pc st_ptr sp stack =
+let jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr =
+  let open Util in
+  let prog = Option.get !interp_ir |> Jit_annot.annotate `Meta_tracing in
+  let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+  match prog |> jit_tracing env with
+  | Ok name -> Trace_prof.register (pc, name)
+  | Error e -> ()
+;;
+
+let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
+  Util.(
+    with_jit_flg
+      ~off:(fun _ -> ())
+      ~on:(fun _ ->
+        if Trace_prof.over_threshold pc
+        then (
+          match Trace_prof.find_opt pc with
+          | Some _ -> ()
+          | None -> jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr)
+        else Trace_prof.count_up pc))
+;;
+
+let jit_tracing_exec pc st_ptr sp stack =
   Util.(
     with_jit_flg
       ~off:(fun _ -> ())
@@ -208,34 +240,15 @@ let jit_exec pc st_ptr sp stack =
         | None -> ()))
 ;;
 
-let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
-  Util.(
-    with_jit_flg
-      ~off:(fun _ -> ())
-      ~on:(fun _ ->
-        if Trace_prof.over_threshold pc
-        then (
-          match Trace_prof.find_opt pc with
-          | Some _ -> ()
-          | None ->
-            let ic = file_open () in
-            (try
-               let prog =
-                 ic
-                 |> Lexing.from_channel
-                 |> Opt.virtualize
-                 |> Jit_annot.annotate `Meta_tracing
-               in
-               close_in ic;
-               let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-               match prog |> jit_tracing env with
-               | Ok name -> Trace_prof.register (pc, name)
-               | Error e -> ()
-             with
-            | e ->
-              close_in ic;
-              ()))
-        else Trace_prof.count_up pc))
+let jit_method_gen_trace bytecode stack pc sp bc_ptr st_ptr =
+  let p = Option.get !interp_ir |> Jit_annot.annotate `Meta_method in
+  let bytecode = Compat.of_bytecode bytecode in
+  let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+  match p |> jit_method env with
+  | Ok name ->
+    Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
+    Method_prof.register (pc, name)
+  | Error e -> raise e
 ;;
 
 let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
@@ -249,64 +262,52 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
       flush stderr;
       r
     | None ->
-      let ic = Util.file_open () in
-      (try
-         let p =
-           Lexing.from_channel ic
-           |> Opt.virtualize
-           |> Jit_annot.annotate `Meta_method
-         in
-         close_in ic;
-         let bytecode = Compat.of_bytecode bytecode in
-         let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-         match p |> jit_method env with
-         | Ok name ->
-           Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
-           Method_prof.register (pc, name);
-           let s = Sys.time () in
-           let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
-           Printf.eprintf "[mj] elapced time: %f us\n" ((Sys.time () -. s) *. 1e6);
-           flush stderr;
-           r
-         | Error e -> raise e
-       with
-      | e ->
-        close_in ic;
-        raise e))
+      let p = Option.get !interp_ir |> Jit_annot.annotate `Meta_method in
+      let bytecode = Compat.of_bytecode bytecode in
+      let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+      match p |> jit_method env with
+      | Ok name ->
+        Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
+        Method_prof.register (pc, name);
+        let s = Sys.time () in
+        let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
+        Printf.eprintf
+          "[mj] elapced time: %f us\n"
+          ((Sys.time () -. s) *. 1e6);
+        flush stderr;
+        r
+      | Error e -> raise e)
 ;;
 
-let rec jit_tracing_start bytecode stack pc sp bc_ptr st_ptr =
-  Util.with_jit_flg
-    ~off:(fun _ -> ())
-    ~on:(fun _ ->
-      let bytecode = Compat.of_bytecode bytecode in
-      let ic = Util.file_open () in
-      let p =
-        Lexing.from_channel ic
-        |> Opt.virtualize
-        |> Jit_annot.annotate `Meta_tracing
-      in
-      close_in ic;
-      Util.find_tj_entries bytecode
-      |> List.fold_left
-           (fun _ pc ->
-             let pc = pc + 1 in
-             let stack = Array.make 3000 0 in
-             (* stack.(sp - 1) <- (Sys.getenv "TJ_RET_ADDR" |> int_of_string);
-              * stack.(sp) <- (Sys.getenv "TJ_MODE" |> int_of_string);
-              * stack.(sp + 1) <- (Sys.getenv "TJ_RET_VAL" |> int_of_string); *)
-             Printf.eprintf "[tracing] tj entry: %d\n" pc;
-             let env = { bytecode; stack; pc; sp = sp + 3; bc_ptr; st_ptr } in
-             match jit_tracing env p with
-             | Ok tname -> Trace_prof.register (pc, tname)
-             | Error e -> raise e)
-           ())
+let jit_gen_trace bytecode stack pc sp bc_ptr st_ptr =
+  let parse_str_list str = String.split_on_char ',' str in
+  let int_of_str_lsit lst = List.map int_of_string lst in
+  let jit_apply f pcs =
+    List.iter (fun pc -> f bytecode stack pc sp bc_ptr st_ptr) pcs
+  in
+  let tj_pcs =
+    Option.fold
+      ~none:[]
+      ~some:(fun str -> parse_str_list str |> int_of_str_lsit)
+      (Sys.getenv_opt "TJ_ENTRIES")
+  in
+  let mj_pcs =
+    Option.fold
+      ~none:[]
+      ~some:(fun str -> parse_str_list str |> int_of_str_lsit)
+      (Sys.getenv_opt "MJ_ENTRIES")
+  in
+  tj_pcs |> jit_apply jit_tracing_gen_trace;
+  ()
 ;;
+
+let register_interp_ir () =
+  interp_ir := Some (Util.gen_ir ())
 
 let callbacks () =
   Callback.register "jit_tracing_entry" jit_tracing_entry;
-  Callback.register "jit_exec" jit_exec;
+  Callback.register "jit_tracing_exec" jit_tracing_exec;
   Callback.register "jit_method_call" jit_method_call;
-  Callback.register "jit_tracing_start" jit_tracing_start;
+  register_interp_ir ();
   ()
 ;;

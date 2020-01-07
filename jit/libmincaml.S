@@ -250,18 +250,6 @@ min_caml_atan:
 .globl min_caml_is_mj
 min_caml_is_mj:
 	ret
-.globl min_caml_jit_tracing_start
-min_caml_jit_tracing_start:
-	pushl	%ebp
-	movl	%esp, %ebp
-	pushl	%edx
-	pushl	%ecx
-	pushl	%ebx
-	pushl	%eax
-	call	call_caml_tj_start
-	movl	%ebp, %esp
-	popl	%ebp
-	ret
 .globl min_caml_can_enter_jit
 min_caml_can_enter_jit:
 	pushl	%ebp
