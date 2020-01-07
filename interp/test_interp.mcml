@@ -191,8 +191,7 @@ let rec interp stack sp bytecode pc =
 
 let rec exec code pc =
   let stk = Array.make 30000 0 in
-  stk.(0) <- (-987);
-  jit_tracing_start stk 1 code 0;
+  (* jit_tracing_start stk 1 code 0; *)
   let s = get_current_millis () in
   let r = interp stk 0 code pc in
   let e = get_current_millis () in
@@ -201,7 +200,6 @@ let rec exec code pc =
 ;;
 
 (* fib *)
-(*
 let code = Array.make 38 0 in
 save_bp ();
 code.(0) <- 22;
@@ -222,12 +220,13 @@ code.(25) <- 7; code.(26) <- 1; code.(27) <- 1;
 code.(28) <- 1;
 code.(29) <- 8; code.(30) <- 1;
 code.(31) <- 14;
-code.(32) <- 5; code.(33) <- 24;
+code.(32) <- 5; code.(33) <- 10;
 code.(34) <- 7; code.(35) <- 1; code.(36) <- 1;
 code.(37) <- 10;
-exec code 32; *)
+exec code 32;
 
 (* sum *)
+(*
 let code = Array.make 32 0 in
 save_bp ();
 code.(0) <- 22;
@@ -242,15 +241,15 @@ code.(14) <- 9; code.(15) <- 3;
 code.(16) <- 5; code.(17) <- 1;
 code.(18) <- 2;
 code.(19) <- 7; code.(20) <- 1; code.(21) <- 1;
+code.(22) <- 1;
+code.(23) <- 8; code.(24) <- 1;
+code.(25) <- 14;
+code.(26) <- 5; code.(27) <- 2000;
+code.(28) <- 7; code.(29) <- 1; code.(30) <- 1;
+code.(31) <- 10;
+exec code 26; *)
 
-(* code.(22) <- 1;
- * code.(23) <- 8; code.(24) <- 1;
- * code.(25) <- 14;
- * code.(26) <- 5; code.(27) <- 2000;
- * code.(28) <- 7; code.(29) <- 1; code.(30) <- 1;
- * code.(31) <- 10;
- * exec code 26; *)
-
+(*
 code.(22) <- 22;
 code.(23) <- 1;
 code.(24) <- 8; code.(25) <- 1;
@@ -259,6 +258,7 @@ code.(27) <- 5; code.(28) <- 2000;
 code.(29) <- 7; code.(30) <- 1; code.(31) <- 1;
 code.(32) <- 10;
 exec code 26;
+*)
 
 
 (* fact *)
