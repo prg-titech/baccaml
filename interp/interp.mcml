@@ -101,7 +101,7 @@ let rec interp stack sp bytecode pc =
       (let n = bytecode.(pc + 1) in
        stack.(sp - n - 3) <- v; (* sp: sp-3-n+1 = sp-2-n *)
        let sp2 = sp - n - 2 in
-       @if addr < pc then (      (* if add = 41 then (fib) *)
+       @if addr < pc then (      (* if add = 40 then (fib) *)
          can_enter_jit stack sp2 bytecode addr;
          interp stack sp2 bytecode addr
        ) else
@@ -179,6 +179,7 @@ let rec read_code i n arr =
  * let arr = Array.make n 0 inn
  * let code = read_code 0 n arr in *)
 let code = Array.make 1000 0 in
+save_bp ();
 (* fib *)
 (*
 code.(0) <- 15; code.(1) <- 30;
