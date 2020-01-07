@@ -179,7 +179,7 @@ let rec read_code i n arr =
  * let arr = Array.make n 0 inn
  * let code = read_code 0 n arr in *)
 let code = Array.make 1000 0 in
-code.(0) <- 15; code.(1) <- 20;
+code.(0) <- 15; code.(1) <- 30;
 code.(2) <- 24;
 code.(3) <- 10; code.(4) <- 11;
 code.(5) <- 1;
@@ -192,7 +192,7 @@ code.(11) <- 13; code.(12) <- 2;
 code.(13) <- 15; code.(14) <- 2;
 code.(15) <- 6;
 code.(16) <- 8; code.(17) <- 22;
-code.(18) <- 13; code.(19) <- 2;
+code.(18) <- 15; code.(19) <- 1;
 code.(20) <- 9; code.(21) <- 49;
 code.(22) <- 13; code.(23) <- 2;
 code.(24) <- 15; code.(25) <- 1;
