@@ -19,13 +19,9 @@ let rec inline_args reg argsr argst funbody =
   | hdr :: tlr, hdt :: tlt when hdr = hdt -> inline_args reg tlr tlt funbody
   | hdr :: tlr, hdt :: tlt ->
     reg.(int_of_id_t hdt) <- reg.(int_of_id_t hdr);
-    begin
-      match reg.(int_of_id_t hdr) with
-      | Red _ ->
-        Let ((hdt, Type.Int), Mov hdr, inline_args reg tlr tlt funbody)
-      | Green _ ->
-        inline_args reg tlr tlt funbody
-    end
+    (match reg.(int_of_id_t hdr) with
+    | Red _ -> Let ((hdt, Type.Int), Mov hdr, inline_args reg tlr tlt funbody)
+    | Green _ -> inline_args reg tlr tlt funbody)
   | _ -> failwith "Un matched pattern."
 ;;
 

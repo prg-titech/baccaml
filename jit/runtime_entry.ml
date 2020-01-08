@@ -55,8 +55,12 @@ module Util = struct
     let ic = file_open () in
     try
       let p = ic |> Lexing.from_channel |> Opt.virtualize in
-      close_in ic; p
-    with e -> close_in ic; raise e
+      close_in ic;
+      p
+    with
+    | e ->
+      close_in ic;
+      raise e
   ;;
 
   let get_ir_addr args name =
@@ -265,25 +269,23 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
       let p = Option.get !interp_ir |> Jit_annot.annotate `Meta_method in
       let bytecode = Compat.of_bytecode bytecode in
       let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-      match p |> jit_method env with
+      (match p |> jit_method env with
       | Ok name ->
         Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
         Method_prof.register (pc, name);
         let s = Sys.time () in
         let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
-        Printf.eprintf
-          "[mj] elapced time: %f us\n"
-          ((Sys.time () -. s) *. 1e6);
+        Printf.eprintf "[mj] elapced time: %f us\n" ((Sys.time () -. s) *. 1e6);
         flush stderr;
         r
-      | Error e -> raise e)
+      | Error e -> raise e))
 ;;
 
 let jit_gen_trace bytecode stack pc sp bc_ptr st_ptr =
   let parse_str_list str = String.split_on_char ',' str in
   let int_of_str_lsit lst = List.map int_of_string lst in
   let jit_apply f pcs =
-    List.iter (fun pc -> f bytecode stack (pc+1) sp bc_ptr st_ptr) pcs
+    List.iter (fun pc -> f bytecode stack (pc + 1) sp bc_ptr st_ptr) pcs
   in
   let tj_pcs = Util.find_tj_entries bytecode in
   let mj_pcs = Util.find_mj_entries in
@@ -291,8 +293,7 @@ let jit_gen_trace bytecode stack pc sp bc_ptr st_ptr =
   ()
 ;;
 
-let register_interp_ir () =
-  interp_ir := Some (Util.gen_ir ())
+let register_interp_ir () = interp_ir := Some (Util.gen_ir ())
 
 let callbacks () =
   Callback.register "jit_tracing_entry" jit_tracing_entry;
