@@ -12,7 +12,7 @@ let rec cast_fAII x = x in
 let rec cast_fIAI x = x in
 
 let rec frame_reset stack old_base new_base ret n i =
-  if n = i then (stack.(old_base + n) <- ret; old_base + n + 1)
+  if n = i then (stack.(old_base + n + 1) <- ret; old_base + n + 2)
   else (stack.(old_base + i) <- stack.(new_base + i);
         frame_reset stack old_base new_base ret n (i + 1)) in
 
