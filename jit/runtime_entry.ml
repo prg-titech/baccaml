@@ -283,20 +283,10 @@ let jit_gen_trace bytecode stack pc sp bc_ptr st_ptr =
   let parse_str_list str = String.split_on_char ',' str in
   let int_of_str_lsit lst = List.map int_of_string lst in
   let jit_apply f pcs =
-    List.iter (fun pc -> f bytecode stack pc sp bc_ptr st_ptr) pcs
+    List.iter (fun pc -> f bytecode stack (pc+1) sp bc_ptr st_ptr) pcs
   in
-  let tj_pcs =
-    Option.fold
-      ~none:[]
-      ~some:(fun str -> parse_str_list str |> int_of_str_lsit)
-      (Sys.getenv_opt "TJ_ENTRIES")
-  in
-  let mj_pcs =
-    Option.fold
-      ~none:[]
-      ~some:(fun str -> parse_str_list str |> int_of_str_lsit)
-      (Sys.getenv_opt "MJ_ENTRIES")
-  in
+  let tj_pcs = Util.find_tj_entries bytecode in
+  let mj_pcs = Util.find_mj_entries in
   tj_pcs |> jit_apply jit_tracing_gen_trace;
   ()
 ;;
@@ -308,6 +298,7 @@ let callbacks () =
   Callback.register "jit_tracing_entry" jit_tracing_entry;
   Callback.register "jit_tracing_exec" jit_tracing_exec;
   Callback.register "jit_method_call" jit_method_call;
+  Callback.register "jit_setup" jit_gen_trace;
   register_interp_ir ();
   ()
 ;;

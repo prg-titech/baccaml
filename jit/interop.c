@@ -65,3 +65,18 @@ int call_caml_mj_call(int *st, int sp, int *bc, int pc) {
   ml_args[5] = Val_hp(st);
   return Int_val(caml_callbackN(*jit_method_call_closure, 6, ml_args));
 }
+
+int call_caml_jit_setup(int *st, int sp, int *bc, int pc) {
+  static value *closure = NULL;
+  value ml_args[6];
+  if (closure == NULL) {
+    closure = caml_named_value("jit_setup");
+  }
+  ml_args[0] = caml_alloc_array(init_f, bc);
+  ml_args[1] = caml_alloc_array(init_f, st);
+  ml_args[2] = Val_int(pc);
+  ml_args[3] = Val_int(sp);
+  ml_args[4] = Val_hp(bc);
+  ml_args[5] = Val_hp(st);
+  return Int_val(caml_callbackN(*closure, 6, ml_args));
+}

@@ -297,6 +297,18 @@ min_caml_mj_call:
 	movl	%ebp, %esp
 	popl	%ebp
 	ret
+.globl min_caml_jit_setup
+min_caml_jit_setup:
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	%edx
+	pushl	%ecx
+	pushl	%ebx
+	pushl	%eax
+	call	call_caml_jit_setup
+	movl	%ebp, %esp
+	popl	%ebp
+	ret
 .globl min_caml_loop_start
 min_caml_loop_start:
 	ret
