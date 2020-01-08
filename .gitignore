@@ -37,4 +37,7 @@ _build/
 *.dSYM/
 
 _static/
+
+# benchmark
 data/
+*.data
