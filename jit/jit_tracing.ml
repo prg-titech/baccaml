@@ -8,7 +8,7 @@ open Printf
 module JO = Jit_optimizer
 
 let sp = sprintf
-let other_deps : string list option ref = ref None
+let other_deps : string list ref = ref []
 let re_entry = ref false
 let interp_fundef p = Fundef.find_fuzzy p "interp"
 
@@ -56,10 +56,16 @@ let rec tj
   =
   match t with
   | Ans (CallDir (id_l, args, fargs)) ->
-    let { name; args = argst; fargs; body; ret } = interp_fundef p in
-    { name; args = argst; fargs; body; ret }
-    |> Inlining.inline_fundef reg args
-    |> tj p reg mem env
+    let pc = Util.get_by_index reg args index_pc in
+    (match Method_prof.find_opt pc with
+    | None ->
+      let { name; args = argst; fargs; body; ret } = interp_fundef p in
+      { name; args = argst; fargs; body; ret }
+      |> Inlining.inline_fundef reg args
+      |> tj p reg mem env
+    | Some tname ->
+      other_deps := !other_deps @ [ tname ];
+      Ans (CallDir (Id.L tname, Util.filter red_names args, [])))
   | Ans exp ->
     (match exp with
     | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ ->
@@ -105,7 +111,7 @@ and tj_exp
     let pc = Util.get_by_index reg args' index_pc in
     (match Method_prof.find_opt pc with
     | Some tname ->
-      other_deps := Option.bind !other_deps (fun x -> Some (x @ [ tname ]));
+      other_deps := !other_deps @ [ tname ];
       Let
         ( (dest, typ)
         , CallDir (Id.L tname, Util.filter ~reds:red_names args', fargs')
@@ -270,6 +276,7 @@ and tj_if p reg mem env exp =
 
 let run p reg mem ({ trace_name; red_names; merge_pc } as env) =
   Renaming.counter := !Id.counter + 1;
+  other_deps := [];
   re_entry := false;
   Log.debug @@ Printf.sprintf "staring trace (merge_pc: %d)" merge_pc;
   let fenv name = Fundef.find_fuzzy p name in
@@ -283,5 +290,5 @@ let run p reg mem ({ trace_name; red_names; merge_pc } as env) =
       ; ret = Type.Int
       ; args = Util.filter ~reds:red_names args'
       }
-    , !other_deps )
+    , Option.some !other_deps )
 ;;
