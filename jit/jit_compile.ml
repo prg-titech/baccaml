@@ -12,10 +12,7 @@ let create_static_dir _ =
   let mkdir () = Unix.system (sp "mkdir %s" static_dir) |> ignore in
   let rmdir () = Unix.system (sp "rm -rf %s" static_dir) |> ignore in
   try
-    if Sys.is_directory static_dir
-    then (
-      rmdir ();
-      mkdir ())
+    Sys.is_directory static_dir |> ignore;
   with
   | Sys_error _ -> mkdir ()
 ;;
