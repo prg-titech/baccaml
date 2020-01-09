@@ -175,6 +175,8 @@ let rec interp stack sp bytecode pc =
   else if instr = 27 then
     (jit_setup stack sp bytecode (pc+1);
      interp stack sp bytecode (pc+1))
+  else if instr = 28 then       (* NOP *)
+    interp stack sp bytecode (pc+1)
   else
     -1000 in
 let stk  = Array.make 2000000 0 in
@@ -485,6 +487,7 @@ code.(85) <- 11; code.(86) <- 2;
 *)
 
 (* tak *)
+(*
 code.(0) <- 15; code.(1) <- 14;
 code.(2) <- 15; code.(3) <- 6;
 code.(4) <- 15; code.(5) <- 4;
@@ -547,7 +550,7 @@ code.(88) <- 9; code.(89) <- 92;
 code.(90) <- 13; code.(91) <- 4;
 code.(92) <- 14;
 code.(93) <- 11; code.(94) <- 3;
-
+*)
 
 (* bubble sort *)
 (*
@@ -694,6 +697,50 @@ code.(210) <- 13; code.(211) <- 5;
 code.(212) <- 14;
 code.(213) <- 11; code.(214) <- 3;
 *)
+(* simple *)
+code.(0) <- 15; code.(1) <- 10;
+code.(2) <- 24;
+code.(3) <- 27;
+code.(4) <- 10; code.(5) <- 28;
+code.(6) <- 1;
+code.(7) <- 24;
+code.(8) <- 20;
+code.(9) <- 14;
+code.(10) <- 14;
+code.(11) <- 12;
+code.(12) <- 25;
+code.(13) <- 13; code.(14) <- 2;
+code.(15) <- 23;
+code.(16) <- 6;
+code.(17) <- 8; code.(18) <- 23;
+code.(19) <- 15; code.(20) <- 1024;
+code.(21) <- 9; code.(22) <- 25;
+code.(23) <- 15; code.(24) <- 2048;
+code.(25) <- 11; code.(26) <- 1;
+code.(27) <- 26;
+code.(28) <- 13; code.(29) <- 2;
+code.(30) <- 10; code.(31) <- 13;
+code.(32) <- 1;
+code.(33) <- 13; code.(34) <- 3;
+code.(35) <- 15; code.(36) <- 1;
+code.(37) <- 6;
+code.(38) <- 8; code.(39) <- 47;
+code.(40) <- 13; code.(41) <- 3;
+code.(42) <- 13; code.(43) <- 1;
+code.(44) <- 1;
+code.(45) <- 9; code.(46) <- 60;
+code.(47) <- 13; code.(48) <- 3;
+code.(49) <- 15; code.(50) <- 1;
+code.(51) <- 2;
+code.(52) <- 24;
+code.(53) <- 19;
+code.(54) <- 2;
+code.(55) <- 2;
+code.(56) <- 1;
+code.(57) <- 9; code.(58) <- 28;
+code.(59) <- 14;
+code.(60) <- 14;
+code.(61) <- 11; code.(62) <- 1;
 let s = get_current_micros () in
 let r = (interp stk 0 code 0) in
 let e = get_current_micros () in
