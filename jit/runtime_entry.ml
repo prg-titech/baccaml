@@ -171,9 +171,13 @@ let jit_method ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env) prog
       ~merge_pc:pc
       ~bytecode
   in
-  let trace = JM.run prog reg mem env in
+  let (`Result (trace, others)) = JM.run prog reg mem env in
   Debug.with_debug (fun _ -> print_fundef trace);
-  emit_and_compile prog `Meta_method trace
+  Option.fold
+    others
+    ~none:(emit_and_compile prog `Meta_method trace)
+    ~some:(fun others ->
+      emit_and_compile_with_so prog `Meta_tracing others trace)
 ;;
 
 let jit_tracing
@@ -198,9 +202,11 @@ let jit_tracing
   in
   let (`Result (trace, others)) = JT.run prog reg mem env in
   Debug.with_debug (fun _ -> print_fundef trace);
-  match others with
-  | None -> emit_and_compile prog `Meta_tracing trace
-  | Some others -> emit_and_compile_with_so prog `Meta_tracing others trace
+  Option.fold
+    others
+    ~none:(emit_and_compile prog `Meta_method trace)
+    ~some:(fun others ->
+      emit_and_compile_with_so prog `Meta_tracing others trace)
 ;;
 
 let jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr =
