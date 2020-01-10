@@ -132,7 +132,6 @@ module Setup = struct
   let env { bytecode; stack; pc; sp; bc_ptr; st_ptr } typ prog =
     let open Asm in
     let open Util in
-    Debug.print_arr string_of_int bytecode;
     let prog = Jit_annot.annotate typ prog
     and { args; body } = Fundef.find_fuzzy prog "interp" in
     let reg = make_reg prog args sp
@@ -244,7 +243,7 @@ let jit_tracing_exec pc st_ptr sp stack =
           let s = Unix.gettimeofday () in
           let _ = exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp in
           let e = Unix.gettimeofday () in
-          Printf.printf "[tj] ellapsed time: %F us\n" ((e -. s) *. 1e6);
+          Printf.printf "[tj] ellapsed time: %f us\n" ((e -. s) *. 1e6);
           flush stdout;
           ()
         | None -> ()))
@@ -265,9 +264,9 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
   Util.(
     match Method_prof.find_opt pc with
     | Some name ->
-      let s = Sys.time () in
+      let s = Unix.gettimeofday () in
       let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
-      let e = Sys.time () in
+      let e = Unix.gettimeofday () in
       Printf.eprintf "[mj] elapced time: %fus\n" ((e -. s) *. 1e6);
       flush stderr;
       r
@@ -279,9 +278,10 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
       | Ok name ->
         (* Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc; *)
         Method_prof.register (pc, name);
-        let s = Sys.time () in
+        let s = Unix.gettimeofday () in
         let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
-        Printf.printf "[mj] elapced time: %f us\n" ((Sys.time () -. s) *. 1e6);
+        let e = Unix.gettimeofday () in
+        Printf.printf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
         flush stderr;
         flush stdout;
         r
