@@ -2,7 +2,7 @@
 (* vim: set syntax=ocaml: *)
 
 let rec frame_reset stack old_base new_base ret n i =
-  if n = i then (stack.(old_base + n) <- ret; old_base + n + 1)
+  if n = i then (stack.(old_base + n + 1) <- ret; old_base + n + 2)
   else (stack.(old_base + i) <- stack.(new_base + i);
         frame_reset stack old_base new_base ret n (i + 1)) in
 
@@ -299,6 +299,42 @@ code.(47) <- 14;
 code.(48) <- 14;
 code.(49) <- 11; code.(50) <- 2;
 *)
+
+(* sum-tail non-framereset *)
+(*
+code.(0) <- 23;
+code.(1) <- 15; code.(2) <- 30000;
+code.(3) <- 13; code.(4) <- 1;
+code.(5) <- 13; code.(6) <- 1;
+code.(7) <- 27;
+code.(8) <- 10; code.(9) <- 17;
+code.(10) <- 2;
+code.(11) <- 24;
+code.(12) <- 20;
+code.(13) <- 14;
+code.(14) <- 14;
+code.(15) <- 14;
+code.(16) <- 12;
+code.(17) <- 13; code.(18) <- 2;
+code.(19) <- 23;
+code.(20) <- 6;
+code.(21) <- 8; code.(22) <- 27;
+code.(23) <- 13; code.(24) <- 3;
+code.(25) <- 9; code.(26) <- 45;
+code.(27) <- 13; code.(28) <- 3;
+code.(29) <- 13; code.(30) <- 3;
+code.(31) <- 1;
+code.(32) <- 13; code.(33) <- 3;
+code.(34) <- 15; code.(35) <- 1;
+code.(36) <- 2;
+code.(37) <- 13; code.(38) <- 1;
+code.(39) <- 13; code.(40) <- 1;
+code.(41) <- 9; code.(42) <- 17;
+code.(43) <- 14;
+code.(44) <- 14;
+code.(45) <- 11; code.(46) <- 2;
+*)
+
 (* square *)
 (*
 code.(0) <- 15; code.(1) <- 10000;
@@ -553,6 +589,7 @@ code.(93) <- 11; code.(94) <- 3;
 *)
 
 (* simple *)
+(*
 code.(0) <- 15; code.(1) <- 10;
 code.(2) <- 24;
 code.(3) <- 27;
@@ -596,8 +633,82 @@ code.(57) <- 9; code.(58) <- 28;
 code.(59) <- 14;
 code.(60) <- 14;
 code.(61) <- 11; code.(62) <- 1;
-let s = get_current_micros () in
-let r = (interp stk 0 code 0) in
-let e = get_current_micros () in
-print_newline (); print_int (e - s);
-print_newline ()
+*)
+(*
+code.(0) <- 15; code.(1) <- 22;
+code.(2) <- 23;
+code.(3) <- 13; code.(4) <- 1;
+code.(5) <- 13; code.(6) <- 1;
+code.(7) <- 27;
+code.(8) <- 10; code.(9) <- 59;
+code.(10) <- 2;
+code.(11) <- 24;
+code.(12) <- 20;
+code.(13) <- 14;
+code.(14) <- 14;
+code.(15) <- 14;
+code.(16) <- 12;
+code.(17) <- 25;
+code.(18) <- 13; code.(19) <- 2;
+code.(20) <- 15; code.(21) <- 2;
+code.(22) <- 6;
+code.(23) <- 8; code.(24) <- 29;
+code.(25) <- 15; code.(26) <- 1;
+code.(27) <- 9; code.(28) <- 56;
+code.(29) <- 13; code.(30) <- 2;
+code.(31) <- 15; code.(32) <- 1;
+code.(33) <- 2;
+code.(34) <- 24;
+code.(35) <- 10; code.(36) <- 18;
+code.(37) <- 1;
+code.(38) <- 13; code.(39) <- 4;
+code.(40) <- 15; code.(41) <- 2;
+code.(42) <- 2;
+code.(43) <- 24;
+code.(44) <- 10; code.(45) <- 18;
+code.(46) <- 1;
+code.(47) <- 13; code.(48) <- 2;
+code.(49) <- 13; code.(50) <- 1;
+code.(51) <- 1;
+code.(52) <- 14;
+code.(53) <- 14;
+code.(54) <- 14;
+code.(55) <- 14;
+code.(56) <- 11; code.(57) <- 1;
+code.(58) <- 26;
+code.(59) <- 13; code.(60) <- 3;
+code.(61) <- 23;
+code.(62) <- 6;
+code.(63) <- 8; code.(64) <- 69;
+code.(65) <- 13; code.(66) <- 2;
+code.(67) <- 9; code.(68) <- 97;
+code.(69) <- 13; code.(70) <- 3;
+code.(71) <- 15; code.(72) <- 1;
+code.(73) <- 2;
+code.(74) <- 13; code.(75) <- 4;
+code.(76) <- 10; code.(77) <- 18;
+code.(78) <- 1;
+code.(79) <- 13; code.(80) <- 4;
+code.(81) <- 13; code.(82) <- 1;
+code.(83) <- 1;
+code.(84) <- 13; code.(85) <- 2;
+code.(86) <- 13; code.(87) <- 1;
+code.(88) <- 19;
+code.(89) <- 3;
+code.(90) <- 3;
+code.(91) <- 2;
+code.(92) <- 9; code.(93) <- 59;
+code.(94) <- 14;
+code.(95) <- 14;
+code.(96) <- 14;
+code.(97) <- 11; code.(98) <- 2;
+*)
+let rec loop i =
+  if i < 0 then ()
+  else
+    let s = get_current_micros () in
+    let r = (interp stk 0 code 0) in
+    let e = get_current_micros () in
+    print_newline (); print_int (e - s);
+    print_newline (); loop (i-1)
+in loop 100
