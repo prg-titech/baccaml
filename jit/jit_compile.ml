@@ -59,11 +59,14 @@ let compile_dyn_with_so tname others =
   let other_archives =
     others |> List.map (fun so -> "-l" ^ so) |> String.concat " "
   in
+  let other_objs =
+    others |> List.map (fun so -> so^".o") |> String.concat " "
+  in
   sp
-    "gcc -m32 -g -o %s %s -shared -fPIC -DRUNTIME -ldl -L./_static %s"
+    "gcc -m32 -g -o %s %s -shared -fPIC -ldl -L./_static %s"
     so
     asm
-    other_archives
+    other_objs
   |> Unix.system
   |> function
   | Unix.WEXITED i when i = 0 -> Ok tname
