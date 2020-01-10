@@ -35,8 +35,7 @@ module Util : sig
 
   val find_by_inst : inst:int -> t -> t
   val filter_by_names : reds:string list -> string list -> string list
-  val find_call_dests : int array -> int -> int list
-  val get_pc : reg -> string -> int
+  val value_of_id_t : reg -> string -> int
   val inline_fun : reg -> string list -> fundef -> (reg -> t -> t) -> t
   val ( <=> ) : exp -> int * int -> bool
   val ( <|> ) : exp -> Id.t * id_or_imm * t * t -> exp
@@ -57,26 +56,7 @@ end = struct
     args |> List.filter (fun arg -> List.mem (String.get_name arg) reds)
   ;;
 
-  let find_call_dests bytecode merge_pc =
-    let bc_with_i =
-      Array.to_list bytecode |> List.mapi (fun i instr -> i, instr)
-    in
-    let ret_pc =
-      bc_with_i
-      |> List.find (fun (i, instr) -> instr = ret_inst && merge_pc < i)
-      |> fst
-    in
-    let call_pcs =
-      bc_with_i
-      |> List.find_all (fun (i, instr) -> instr = call_inst && i < ret_pc)
-      |> List.map fst
-    in
-    call_pcs
-    |> List.map (fun call_pc -> List.assoc (call_pc + 1) bc_with_i)
-    |> List.unique
-  ;;
-
-  let get_pc reg arg = arg |> int_of_id_t |> Array.get reg |> value_of
+  let value_of_id_t reg id_t = id_t |> int_of_id_t |> Array.get reg |> value_of
 
   let rec inline_fun (reg : reg) argr fundef k =
     let { args; body } = fundef in
@@ -137,9 +117,12 @@ let rec mj
       List.nth args index_pc |> int_of_id_t |> Array.get reg |> value_of
     in
     Log.debug ("can_enter_jit: " ^ string_of_int pc);
-    mj p reg mem env fenv body
+    if pc = merge_pc
+    then
+      Ans (CallDir (Id.L trace_name, Util.filter_by_names red_names args, []))
+    else mj p reg mem env fenv body
   | Let ((x, typ), CallDir (Id.L "min_caml_mj_call", args, fargs), body) ->
-    let pc = Util.get_pc reg (List.nth args index_pc) in
+    let pc = Util.value_of_id_t reg (List.nth args index_pc) in
     let reds = Util.filter_by_names red_names args in
     if pc = merge_pc
     then
@@ -148,25 +131,25 @@ let rec mj
         , CallDir (Id.L trace_name, reds, fargs)
         , mj p reg mem env fenv body )
     else
-      Option.fold
-        (Method_prof.find_opt pc)
-        ~some:(fun tname ->
-          other_deps := !other_deps @ [ tname ];
+      (* Option.fold
+       *   (Method_prof.find_opt pc)
+       *   ~some:(fun tname ->
+       *     other_deps := !other_deps @ [ tname ];
+       *     Jit_guard.restore
+       *       reg
+       *       ~args
+       *       (Let
+       *          ( (x, typ)
+       *          , CallDir (Id.L (String.get_name tname), args, fargs)
+       *          , mj p reg mem env fenv body )))
+       *   ~none:( *)
           Jit_guard.restore
             reg
             ~args
             (Let
                ( (x, typ)
-               , CallDir (Id.L (Filename.chop_extension tname), args, fargs)
-               , mj p reg mem env fenv body )))
-        ~none:
-          (Jit_guard.restore
-             reg
-             ~args
-             (Let
-                ( (x, typ)
-                , CallDir (Id.L "interp_no_hints", args, fargs)
-                , mj p reg mem env fenv body )))
+               , CallDir (Id.L "interp_no_hints", args, fargs)
+               , mj p reg mem env fenv body ))
   | Let ((x, typ), CallDir (Id.L "min_caml_gaurd_promote", args, fargs), body)
     ->
     mj p reg mem env fenv body
@@ -227,19 +210,6 @@ and optimize_exp p reg mem (x, typ) env exp fenv body =
 
 and mj_exp p reg mem ({ index_pc; merge_pc; bytecode } as env) fenv = function
   | CallDir (id_l, argsr, fargs) ->
-    (* let rec f argt argr =
-     *   match argt, argr with
-     *   | [], [] -> ()
-     *   | hdt :: tlt, hdr :: tlr ->
-     *     reg.(int_of_id_t hdt) <- reg.(int_of_id_t hdr);
-     *     f tlt tlr
-     *   | _ -> assert false in *)
-    (* let t = Util.find_by_inst next_instr body in *)
-    (* debug *)
-    (* print_string (string_of_int pc ^ ", ");
-     * Asm.print_t t; print_newline (); *)
-    (* if dsable renaming *)
-    (* t |> mj p reg mem env *)
     fenv "interp" |> Inlining.inline_fundef reg argsr |> mj p reg mem env fenv
   | (IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfGE _ | SIfLE _) as exp ->
     mj_if p reg mem env fenv exp
@@ -272,8 +242,8 @@ and mj_if p reg mem ({ index_pc; merge_pc; trace_name; bytecode } as env) fenv =
         match id_or_imm with V x -> reg.(int_of_id_t x) | C n -> Green n
       in
       let n1, n2 = value_of r1, value_of r2 in
-      Log.debug
-      @@ sp "If (%s, %s) ==> %d %d" id_t (string_of_id_or_imm id_or_imm) n1 n2;
+      (* Log.debug
+       * @@ sp "If (%s, %s) ==> %d %d" id_t (string_of_id_or_imm id_or_imm) n1 n2; *)
       if exp <=> (n1, n2)
       then mj p reg mem env fenv t1
       else mj p reg mem env fenv t2)
@@ -305,6 +275,7 @@ and mj_if p reg mem ({ index_pc; merge_pc; trace_name; bytecode } as env) fenv =
       let t2' = mj p reg2 mem2 env fenv t2 in
       Ans (exp <|> (id_t, id_or_imm, t1', t2')))
 ;;
+
 
 let run
     prog
