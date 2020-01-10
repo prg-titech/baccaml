@@ -5,9 +5,10 @@ open Printf
 let emit_mj oc ({ name = Id.L x; args; fargs = _; body = e; ret = _ } as fundef)
   =
   let cname = Filename.chop_extension x in
+  let mj_result = "res." ^ x in
   Printf.fprintf oc ".code32\n";
   Printf.fprintf oc ".data\n";
-  Printf.fprintf oc "mj_result:\n";
+  Printf.fprintf oc "%s:\n" mj_result;
   Printf.fprintf oc "\t.long\t0x0\n";
   Printf.fprintf oc ".balign\t8\n";
   Printf.fprintf oc ".text\n";
@@ -23,7 +24,7 @@ let emit_mj oc ({ name = Id.L x; args; fargs = _; body = e; ret = _ } as fundef)
   Printf.fprintf oc "\tmovl\t32(%%esp),%s\n" regs.(0);
   Printf.fprintf oc "\tmovl\t36(%%esp),%s\n" regs.(1);
   Printf.fprintf oc "\tcall\t%s\n" x;
-  Printf.fprintf oc "\tmovl\t%%eax, mj_result\n";
+  Printf.fprintf oc "\tmovl\t%%eax, %s\n" mj_result;
   Printf.fprintf oc "\tpopl\t%%ebp\n";
   Printf.fprintf oc "\tpopl\t%%edi\n";
   Printf.fprintf oc "\tpopl\t%%esi\n";
@@ -31,7 +32,7 @@ let emit_mj oc ({ name = Id.L x; args; fargs = _; body = e; ret = _ } as fundef)
   Printf.fprintf oc "\tpopl\t%%ecx\n";
   Printf.fprintf oc "\tpopl\t%%ebx\n";
   Printf.fprintf oc "\tpopl\t%%eax\n";
-  Printf.fprintf oc "\tmovl\tmj_result, %%eax\n";
+  Printf.fprintf oc "\tmovl\t%s, %%eax\n" mj_result;
   Printf.fprintf oc "\tret\n";
   Emit.h oc fundef;
   fprintf oc "guard_%s:\n" x;
