@@ -8,6 +8,7 @@ open Printf
 
 let pp = print_endline
 let sp = sprintf
+let other_deps : string list ref = ref []
 
 type mj_env =
   { trace_name : string
@@ -147,13 +148,25 @@ let rec mj
         , CallDir (Id.L trace_name, reds, fargs)
         , mj p reg mem env fenv body )
     else
-      Jit_guard.restore
-        reg
-        ~args
-        (Let
-           ( (x, typ)
-           , CallDir (Id.L "interp_no_hints", args, fargs)
-           , mj p reg mem env fenv body ))
+      Option.fold
+        (Method_prof.find_opt pc)
+        ~some:(fun tname ->
+          other_deps := !other_deps @ [ tname ];
+          Jit_guard.restore
+            reg
+            ~args
+            (Let
+               ( (x, typ)
+               , CallDir (Id.L (Filename.chop_extension tname), args, fargs)
+               , mj p reg mem env fenv body )))
+        ~none:
+          (Jit_guard.restore
+             reg
+             ~args
+             (Let
+                ( (x, typ)
+                , CallDir (Id.L "interp_no_hints", args, fargs)
+                , mj p reg mem env fenv body )))
   | Let ((x, typ), CallDir (Id.L "min_caml_gaurd_promote", args, fargs), body)
     ->
     mj p reg mem env fenv body
@@ -315,10 +328,12 @@ let run
     }
   in
   let trace = mj prog reg mem env fenv body in
-  create_fundef
-    ~name:(Id.L env.trace_name)
-    ~args:reds
-    ~fargs:[]
-    ~body:trace
-    ~ret:Type.Int
+  `Result
+    ( create_fundef
+        ~name:(Id.L env.trace_name)
+        ~args:reds
+        ~fargs:[]
+        ~body:trace
+        ~ret:Type.Int
+    , if List.length !other_deps = 0 then None else Some !other_deps )
 ;;
