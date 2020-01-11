@@ -37,6 +37,7 @@ module Util : sig
   val filter_by_names : reds:string list -> string list -> string list
   val value_of_id_t : reg -> string -> int
   val inline_fun : reg -> string list -> fundef -> (reg -> t -> t) -> t
+  val restore_greens : reg -> string list -> (unit -> t) -> t
   val ( <=> ) : exp -> int * int -> bool
   val ( <|> ) : exp -> Id.t * id_or_imm * t * t -> exp
 end = struct
@@ -73,6 +74,15 @@ end = struct
       | _ -> failwith "Un matched pattern."
     in
     loop reg argr argt
+  ;;
+
+  let rec restore_greens reg vars k =
+    match vars with
+    | hd :: tl ->
+      (match reg.(int_of_id_t hd) with
+      | Green n -> Let ((hd, Type.Int), Set n, restore_greens reg tl k)
+      | Red n -> restore_greens reg tl k)
+    | [] -> k ()
   ;;
 
   let ( <=> ) e (n1, n2) =
@@ -143,16 +153,18 @@ let rec mj
        *          , CallDir (Id.L (String.get_name tname), args, fargs)
        *          , mj p reg mem env fenv body )))
        *   ~none:( *)
-          Jit_guard.restore
-            reg
-            ~args
-            (Let
-               ( (x, typ)
-               , CallDir (Id.L "interp_no_hints", args, fargs)
-               , mj p reg mem env fenv body ))
-  | Let ((x, typ), CallDir (Id.L "min_caml_gaurd_promote", args, fargs), body)
-    ->
-    mj p reg mem env fenv body
+      Jit_guard.restore
+        reg
+        ~args
+        (Let
+           ( (x, typ)
+           , CallDir (Id.L "interp_no_hints", args, fargs)
+           , mj p reg mem env fenv body ))
+  | Let ((x, typ), CallDir (Id.L x', args, fargs), body)
+    when String.starts_with x' "cast_" ->
+    Util.restore_greens reg args (fun _ ->
+        Let
+          ((x, typ), CallDir (Id.L x', args, fargs), mj p reg mem env fenv body))
   | Let ((x, typ), CallDir (id_l, args, fargs), body) ->
     let reds = Util.filter_by_names ~reds:red_names args in
     Jit_guard.restore
@@ -275,7 +287,6 @@ and mj_if p reg mem ({ index_pc; merge_pc; trace_name; bytecode } as env) fenv =
       let t2' = mj p reg2 mem2 env fenv t2 in
       Ans (exp <|> (id_t, id_or_imm, t1', t2')))
 ;;
-
 
 let run
     prog
