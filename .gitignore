@@ -41,3 +41,4 @@ _static/
 # benchmark
 data/
 *.data
+*.data.[1-9]*
