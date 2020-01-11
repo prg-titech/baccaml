@@ -165,6 +165,11 @@ let rec mj
     Util.restore_greens reg args (fun _ ->
         Let
           ((x, typ), CallDir (Id.L x', args, fargs), mj p reg mem env fenv body))
+  | Let ((x, typ), CallDir (Id.L x', args, fargs), body)
+    when String.starts_with x' "frame_reset" ->
+    Util.restore_greens reg args (fun _ ->
+        Let
+          ((x, typ), CallDir (Id.L x', args, fargs), mj p reg mem env fenv body))
   | Let ((x, typ), CallDir (id_l, args, fargs), body) ->
     let reds = Util.filter_by_names ~reds:red_names args in
     Jit_guard.restore
