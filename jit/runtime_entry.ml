@@ -298,7 +298,12 @@ let jit_gen_trace bytecode stack pc sp bc_ptr st_ptr =
     tj_pcs |> jit_apply jit_tracing_gen_trace
   | `Method ->
     let mj_pcs = Util.find_mj_entries bytecode in
-    mj_pcs |> jit_apply jit_method_gen_trace);
+    mj_pcs |> jit_apply jit_method_gen_trace
+  | `All ->
+    let mj_pcs = Util.find_mj_entries bytecode in
+    mj_pcs |> jit_apply jit_method_gen_trace;
+    let tj_pcs = Util.find_tj_entries bytecode in
+    tj_pcs |> jit_apply jit_tracing_gen_trace);
   ()
 ;;
 
