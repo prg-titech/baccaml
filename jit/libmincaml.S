@@ -247,6 +247,28 @@ min_caml_atan:
 	movl	%ebp, %esp
 	popl	%ebp
 	ret
+.globl min_caml_divide
+min_caml_divide:
+	pushl	%ebp
+	movl	%esp, %ebp
+	ALIGNSTACK2
+	pushl	%ebx
+	pushl	%eax
+	call	divide
+	movl	%ebp, %esp
+	popl	%ebp
+	ret
+.globl min_caml_modulo
+min_caml_modulo:
+	pushl	%ebp
+	movl	%esp, %ebp
+	ALIGNSTACK2
+	pushl	%ebx
+	pushl	%eax
+	call	modulo
+	movl	%ebp, %esp
+	popl	%ebp
+	ret
 .globl min_caml_is_mj
 min_caml_is_mj:
 	ret

@@ -81,6 +81,8 @@ rule token = parse
     { REC }
 | "fun"
     { FUN }
+| "mod"
+    { MOD }
 | ";;"
     { SEMISEMI }
 | '['

@@ -11,8 +11,6 @@ extern int get_current_millis(void) asm ("min_caml_get_current_millis");
 
 extern unsigned long get_current_micros(void) asm ("min_caml_get_current_micros");
 
-extern void finish_exec(void) asm ("min_caml_finish_exec");
-
 int get_current_millis() {
   struct timeval tv;
   gettimeofday(&tv, NULL);
@@ -25,6 +23,10 @@ unsigned long get_current_micros() {
   gettimeofday(&current_time, NULL);
   return current_time.tv_sec * (int)1e6 + current_time.tv_usec;
 }
+
+int divide(int rhs, int lhs) { return rhs / lhs; }
+
+int modulo(int rhs, int lhs) { return rhs % lhs; }
 
 /* "stderr" is a macro and cannot be referred to in libmincaml.S, so */
 /*    this "min_caml_stderr" is used (in place of "__iob+32") for better */

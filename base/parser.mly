@@ -18,11 +18,13 @@
 %token PLUS_DOT
 %token AST
 %token AST_DOT
+%token SLASH
 %token SLASH_DOT
 %token EQUAL
 %token LESS_GREATER
 %token LESS_EQUAL
 %token GREATER_EQUAL
+%token MOD
 %token LESS
 %token GREATER
 %token ATIF

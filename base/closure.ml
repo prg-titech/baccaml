@@ -13,6 +13,8 @@ type t =
   | Add of Id.t * Id.t
   | Sub of Id.t * Id.t
   | Mul of Id.t * Id.t
+  | Div of Id.t * Id.t
+  | Mod of Id.t * Id.t
   | FNeg of Id.t
   | FAdd of Id.t * Id.t
   | FSub of Id.t * Id.t
@@ -48,6 +50,8 @@ let rec fv = function
   | Add (x, y)
   | Sub (x, y)
   | Mul (x, y)
+  | Div (x, y)
+  | Mod (x, y)
   | FAdd (x, y)
   | FSub (x, y)
   | FMul (x, y)

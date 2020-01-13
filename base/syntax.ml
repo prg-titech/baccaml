@@ -10,6 +10,8 @@ type t =
   | Add of t * t
   | Sub of t * t
   | Mul of t * t
+  | Div of t * t
+  | Mod of t * t
   | FNeg of t
   | FAdd of t * t
   | FSub of t * t
