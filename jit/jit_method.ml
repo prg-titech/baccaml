@@ -5,6 +5,7 @@ open Jit_env
 open Jit_util
 open Jit_prof
 open Printf
+module Util = Jit_tracer_util
 
 let pp = print_endline
 let sp = sprintf
@@ -29,78 +30,6 @@ let create_mj_env
   =
   { trace_name; red_names; index_pc; merge_pc; function_pcs; bytecode }
 ;;
-
-module Util : sig
-  type args = string list
-
-  val find_by_inst : inst:int -> t -> t
-  val filter_by_names : reds:string list -> string list -> string list
-  val value_of_id_t : reg -> string -> int
-  val inline_fun : reg -> string list -> fundef -> (reg -> t -> t) -> t
-  val restore_greens : reg -> string list -> (unit -> t) -> t
-  val ( <=> ) : exp -> int * int -> bool
-  val ( <|> ) : exp -> Id.t * id_or_imm * t * t -> exp
-end = struct
-  let call_inst, ret_inst = 7, 8
-
-  type args = string list
-
-  let rec find_by_inst ~inst t =
-    match t with
-    | Ans (IfEq (id_t, C n, t1, t2)) ->
-      if inst = n then t1 else find_by_inst inst t2
-    | Ans exp -> raise Not_found
-    | Let (_, _, t) -> find_by_inst inst t
-  ;;
-
-  let filter_by_names ~reds args =
-    args |> List.filter (fun arg -> List.mem (String.get_name arg) reds)
-  ;;
-
-  let value_of_id_t reg id_t = id_t |> int_of_id_t |> Array.get reg |> value_of
-
-  let rec inline_fun (reg : reg) argr fundef k =
-    let { args; body } = fundef in
-    let argt, body = Renaming.rename (args, body) in
-    let rec loop reg argr argt =
-      match argr, argt with
-      | [], [] -> k reg body
-      | hdr :: tlr, hdt :: tlt ->
-        let v = reg.(int_of_id_t hdr) in
-        reg.(int_of_id_t hdt) <- v;
-        (match v with
-        | Green n -> Let ((hdt, Type.Int), Set n, loop reg tlr tlt)
-        | Red n -> Let ((hdt, Type.Int), Mov hdr, loop reg tlr tlt))
-      | _ -> failwith "Un matched pattern."
-    in
-    loop reg argr argt
-  ;;
-
-  let rec restore_greens reg vars k =
-    match vars with
-    | hd :: tl ->
-      (match reg.(int_of_id_t hd) with
-      | Green n -> Let ((hd, Type.Int), Set n, restore_greens reg tl k)
-      | Red n -> restore_greens reg tl k)
-    | [] -> k ()
-  ;;
-
-  let ( <=> ) e (n1, n2) =
-    match e with
-    | SIfEq _ | IfEq _ -> n1 = n2
-    | SIfLE _ | IfLE _ -> n1 <= n2
-    | SIfGE _ | IfGE _ -> n1 >= n2
-    | _ -> assert false
-  ;;
-
-  let ( <|> ) e (id_t, id_or_imm, t1, t2) =
-    match e with
-    | SIfEq _ | IfEq _ -> IfEq (id_t, id_or_imm, t1, t2)
-    | SIfLE _ | IfLE _ -> IfLE (id_t, id_or_imm, t1, t2)
-    | SIfGE _ | IfGE _ -> IfGE (id_t, id_or_imm, t1, t2)
-    | _ -> assert false
-  ;;
-end
 
 let rec mj
     p
@@ -128,12 +57,11 @@ let rec mj
     in
     Log.debug ("can_enter_jit: " ^ string_of_int pc);
     if pc = merge_pc
-    then
-      Ans (CallDir (Id.L trace_name, Util.filter_by_names red_names args, []))
+    then Ans (CallDir (Id.L trace_name, Util.filter ~reds:red_names args, []))
     else mj p reg mem env fenv body
   | Let ((x, typ), CallDir (Id.L "min_caml_mj_call", args, fargs), body) ->
     let pc = Util.value_of_id_t reg (List.nth args index_pc) in
-    let reds = Util.filter_by_names red_names args in
+    let reds = Util.filter red_names args in
     if pc = merge_pc
     then
       Let
@@ -161,12 +89,15 @@ let rec mj
            , CallDir (Id.L "interp_no_hints", args, fargs)
            , mj p reg mem env fenv body ))
   | Let ((x, typ), CallDir (Id.L x', args, fargs), body)
-    when String.(starts_with x' "cast_" or starts_with x' "frame_reset" or starts_with x' "min_caml_") ->
+    when String.(
+           starts_with x' "cast_"
+           || starts_with x' "frame_reset"
+           || starts_with x' "min_caml_") ->
     Util.restore_greens reg args (fun _ ->
         Let
           ((x, typ), CallDir (Id.L x', args, fargs), mj p reg mem env fenv body))
   | Let ((x, typ), CallDir (id_l, args, fargs), body) ->
-    let reds = Util.filter_by_names ~reds:red_names args in
+    let reds = Util.filter ~reds:red_names args in
     Jit_guard.restore
       reg
       ~args

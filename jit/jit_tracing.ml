@@ -6,46 +6,12 @@ open Jit_util
 open Jit_prof
 open Printf
 module JO = Jit_optimizer
+module Util = Jit_tracer_util
 
 let sp = sprintf
 let other_deps : string list ref = ref []
 let re_entry = ref false
 let interp_fundef p = Fundef.find_fuzzy p "interp"
-
-module Util = struct
-  let rec find_by_inst inst = function
-    | Ans (IfEq (id_t, C n, t1, t2)) ->
-      if inst = n then t1 else find_by_inst inst t2
-    | Ans exp -> raise Not_found
-    | Let (_, _, t) -> find_by_inst inst t
-  ;;
-
-  let filter ~reds args =
-    List.filter (fun arg -> List.mem (String.get_name arg) reds) args
-  ;;
-
-  let get_by_index ~reg ~args ~index =
-    List.nth args index |> int_of_id_t |> Array.get reg |> value_of
-  ;;
-
-  let rec restore_greens reg vars k =
-    match vars with
-    | hd :: tl ->
-      (match reg.(int_of_id_t hd) with
-      | Green n -> Let ((hd, Type.Int), Set n, restore_greens reg tl k)
-      | Red n -> restore_greens reg tl k)
-    | [] -> k ()
-  ;;
-
-  let rec setup_reg reg argt argr =
-    match argt, argr with
-    | [], [] -> ()
-    | hdt :: tlt, hdr :: tlr ->
-      reg.(int_of_id_t hdt) <- reg.(int_of_id_t hdr);
-      setup_reg reg tlt tlr
-    | _ -> assert false
-  ;;
-end
 
 let rec tj
     p
@@ -56,7 +22,7 @@ let rec tj
   =
   match t with
   | Ans (CallDir (id_l, args, fargs)) ->
-    let pc = Util.get_by_index reg args index_pc in
+    let pc = Util.value_of_id_t reg (List.nth args index_pc) in
     (match Method_prof.find_opt pc with
     | None ->
       let { name; args = argst; fargs; body; ret } = interp_fundef p in
@@ -108,7 +74,7 @@ and tj_exp
     then Ans (CallDir (Id.L trace_name, Util.filter red_names args, []))
     else tj p reg mem env body
   | CallDir (Id.L "min_caml_mj_call", args', fargs') ->
-    let pc = Util.get_by_index reg args' index_pc in
+    let pc = Util.value_of_id_t reg (List.nth args' index_pc) in
     (match Method_prof.find_opt pc with
     | Some tname ->
       other_deps := !other_deps @ [ tname ];
@@ -122,19 +88,17 @@ and tj_exp
             ( (dest, typ)
             , CallDir (Id.L "interp_no_hints", args', fargs')
             , tj p reg mem env body )))
-  | CallDir (Id.L x, args, fargs) when String.starts_with x "min_caml" ->
+  | CallDir (Id.L x, args, fargs)
+    when String.(
+           starts_with x "min_caml"
+           || starts_with x "cast_"
+           || starts_with x "frame_reset") ->
     (* foreign functions *)
     Util.restore_greens reg args (fun () ->
         Let
           ( (dest, typ)
           , CallDir (Id.L x, Util.filter ~reds:red_names args, fargs)
           , tj p reg mem env body ))
-  | CallDir (Id.L x, args', fargs') when String.starts_with x "cast_" ->
-    Util.restore_greens reg args' (fun () ->
-        Let ((dest, typ), CallDir (Id.L x, args', fargs'), tj p reg mem env body))
-  | CallDir (Id.L x, args', fargs') when String.starts_with x "frame_reset" ->
-    Util.restore_greens reg args' (fun () ->
-        Let ((dest, typ), CallDir (Id.L x, args', fargs'), tj p reg mem env body))
   | CallDir (Id.L x, argsr, fargsr) ->
     (* inline function call *)
     let inlined_fun =
