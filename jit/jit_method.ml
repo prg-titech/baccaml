@@ -69,25 +69,25 @@ let rec mj
         , CallDir (Id.L trace_name, reds, fargs)
         , mj p reg mem env fenv body )
     else
-      (* Option.fold
-       *   (Method_prof.find_opt pc)
-       *   ~some:(fun tname ->
-       *     other_deps := !other_deps @ [ tname ];
-       *     Jit_guard.restore
-       *       reg
-       *       ~args
-       *       (Let
-       *          ( (x, typ)
-       *          , CallDir (Id.L (String.get_name tname), args, fargs)
-       *          , mj p reg mem env fenv body )))
-       *   ~none:( *)
-      Jit_guard.restore
-        reg
-        ~args
-        (Let
-           ( (x, typ)
-           , CallDir (Id.L "interp_no_hints", args, fargs)
-           , mj p reg mem env fenv body ))
+      Option.fold
+        (Trace_prof.find_opt pc)
+        ~some:(fun tname ->
+            other_deps := !other_deps @ [ tname ];
+            Jit_guard.restore
+              reg
+              ~args
+              (Let
+                 ( (x, typ)
+                 , CallDir (Id.L (tname), args, fargs)
+                 , mj p reg mem env fenv body )))
+        ~none:(
+          Jit_guard.restore
+            reg
+            ~args
+            (Let
+               ( (x, typ)
+               , CallDir (Id.L "interp_no_hints", args, fargs)
+               , mj p reg mem env fenv body )))
   | Let ((x, typ), CallDir (Id.L x', args, fargs), body)
     when String.(
            starts_with x' "cast_"

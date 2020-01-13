@@ -227,7 +227,9 @@ let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
           match Trace_prof.find_opt pc with
           | Some _ -> ()
           | None -> jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr)
-        else Trace_prof.count_up pc))
+        else
+          Trace_prof.count_up pc;
+          ()))
 ;;
 
 let jit_tracing_exec pc st_ptr sp stack =
@@ -238,13 +240,13 @@ let jit_tracing_exec pc st_ptr sp stack =
         match Trace_prof.find_opt pc with
         | Some tname ->
           (* Debug.print_int_arr stack; Printf.printf "[sp] %d\n" sp; *)
-          (* Printf.printf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc
-             sp; *)
-          let s = Unix.gettimeofday () in
+          (* Printf.eprintf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc
+           *    sp; *)
+          let s = Sys.time () in
           let _ = exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp in
-          let e = Unix.gettimeofday () in
-          Printf.printf "[tj] ellapsed time: %f us\n" ((e -. s) *. 1e6);
-          flush stdout;
+          let e = Sys.time () in
+          Printf.eprintf "[tj] elapsed time: %f us\n" ((e -. s) *. 1e6);
+          flush stderr;
           ()
         | None -> ()))
 ;;
@@ -278,11 +280,10 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
       | Ok name ->
         (* Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc; *)
         Method_prof.register (pc, name);
-        let s = Unix.gettimeofday () in
+        let s = Sys.time () in
         let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
-        let e = Unix.gettimeofday () in
+        let e = Sys.time () in
         Printf.printf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
-        flush stderr;
         flush stdout;
         r
       | Error e -> raise e))
@@ -294,8 +295,8 @@ let jit_gen_trace bytecode stack pc sp bc_ptr st_ptr =
   in
   let tj_pcs = Util.find_tj_entries bytecode in
   let mj_pcs = Util.find_mj_entries bytecode in
-  mj_pcs |> jit_apply jit_method_gen_trace;
   tj_pcs |> jit_apply jit_tracing_gen_trace;
+  mj_pcs |> jit_apply jit_method_gen_trace;
   ()
 ;;
 
