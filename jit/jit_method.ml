@@ -161,12 +161,7 @@ let rec mj
            , CallDir (Id.L "interp_no_hints", args, fargs)
            , mj p reg mem env fenv body ))
   | Let ((x, typ), CallDir (Id.L x', args, fargs), body)
-    when String.starts_with x' "cast_" ->
-    Util.restore_greens reg args (fun _ ->
-        Let
-          ((x, typ), CallDir (Id.L x', args, fargs), mj p reg mem env fenv body))
-  | Let ((x, typ), CallDir (Id.L x', args, fargs), body)
-    when String.starts_with x' "frame_reset" ->
+    when String.(starts_with x' "cast_" or starts_with x' "frame_reset" or starts_with x' "min_caml_") ->
     Util.restore_greens reg args (fun _ ->
         Let
           ((x, typ), CallDir (Id.L x', args, fargs), mj p reg mem env fenv body))
