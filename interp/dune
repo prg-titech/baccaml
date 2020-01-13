@@ -33,32 +33,32 @@
 
 (rule
  (targets test_interp_tj.exe)
- (deps jit_entry.exe%{ext_obj} ../jit/stub.c ../jit/interop.c
-   ../jit/libmincaml.S test_interp_tj.s)
+ (deps jit_entry.exe%{ext_obj} ../stub/stub.c ../jit/interop.c
+   ../stub/libmincaml.S test_interp_tj.s)
  (action
   (run %{cc} -g -m32 -rdynamic -o %{targets} -I %{ocaml_where} -L
     %{ocaml_where} -I . %{deps} %{ocaml-config:native_c_libraries})))
 
 (rule
  (targets test_interp_mj.exe)
- (deps jit_entry.exe%{ext_obj} ../jit/stub.c ../jit/interop.c
-   ../jit/libmincaml.S test_interp_mj.s)
+ (deps jit_entry.exe%{ext_obj} ../stub/stub.c ../jit/interop.c
+   ../stub/libmincaml.S test_interp_mj.s)
  (action
   (run %{cc} -g -m32 -rdynamic -o %{targets} -I %{ocaml_where} -L
     %{ocaml_where} -I . %{deps} %{ocaml-config:native_c_libraries})))
 
 (rule
  (targets interp_tj.exe)
- (deps jit_entry.exe%{ext_obj} ../jit/stub.c ../jit/interop.c
-   ../jit/libmincaml.S interp_tj.s)
+ (deps jit_entry.exe%{ext_obj} ../stub/stub.c ../jit/interop.c
+   ../stub/libmincaml.S interp_tj.s)
  (action
   (run %{cc} -g -m32 -rdynamic -o %{targets} -I %{ocaml_where} -L
     %{ocaml_where} -I . %{deps} %{ocaml-config:native_c_libraries})))
 
 (rule
  (targets interp_mj.exe)
- (deps jit_entry.exe%{ext_obj} ../jit/stub.c ../jit/interop.c
-   ../jit/libmincaml.S interp_mj.s)
+ (deps jit_entry.exe%{ext_obj} ../stub/stub.c ../jit/interop.c
+   ../stub/libmincaml.S interp_mj.s)
  (action
   (run %{cc} -g -m32 -rdynamic -o %{targets} -I %{ocaml_where} -L
     %{ocaml_where} -I . %{deps} %{ocaml-config:native_c_libraries})))

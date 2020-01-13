@@ -247,6 +247,102 @@ min_caml_atan:
 	movl	%ebp, %esp
 	popl	%ebp
 	ret
+.globl min_caml_divide
+min_caml_divide:
+	pushl	%ebp
+	movl	%esp, %ebp
+	ALIGNSTACK2
+	pushl	%ebx
+	pushl	%eax
+	call	divide
+	movl	%ebp, %esp
+	popl	%ebp
+	ret
+.globl min_caml_modulo
+min_caml_modulo:
+	pushl	%ebp
+	movl	%esp, %ebp
+	ALIGNSTACK2
+	pushl	%ebx
+	pushl	%eax
+	call	modulo
+	movl	%ebp, %esp
+	popl	%ebp
+	ret
+.globl min_caml_is_mj
+min_caml_is_mj:
+	ret
+.globl min_caml_can_enter_jit
+min_caml_can_enter_jit:
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	%edx
+	pushl	%ecx
+	pushl	%ebx
+	pushl	%eax
+	call	call_caml_jit_entry
+	movl	%ebp, %esp
+	popl	%ebp
+	ret
+.globl min_caml_jit_merge_point
+min_caml_jit_merge_point:
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	%ecx
+	pushl	%ebx
+	pushl	%eax
+	call	call_caml_jit_exec
+	movl	%ebp, %esp
+	popl	%ebp
+	movl	min_caml_guard_fail_flg, %esi
+	cmpl	$0, %esi
+	jg	.L3
+	jmp	.L2
+.L2:
+	jmp	min_caml_jit_merge_point_cont
+.L3:
+	movl	min_caml_guard_stack, %eax
+	movl	min_caml_guard_sp, %ebx
+	movl	min_caml_guard_bytecode, %ecx
+	movl	min_caml_guard_pc, %edx
+	movl	$0, min_caml_guard_fail_flg
+	jmp	interp
+.globl min_caml_mj_call
+min_caml_mj_call:
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	%edx
+	pushl	%ecx
+	pushl	%ebx
+	pushl	%eax
+	call	call_caml_mj_call
+	movl	%ebp, %esp
+	popl	%ebp
+	ret
+.globl min_caml_jit_setup
+min_caml_jit_setup:
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	%edx
+	pushl	%ecx
+	pushl	%ebx
+	pushl	%eax
+	call	call_caml_jit_setup
+	movl	%ebp, %esp
+	popl	%ebp
+	ret
+.globl min_caml_loop_start
+min_caml_loop_start:
+	ret
+.globl min_caml_loop_end
+min_caml_loop_end:
+	ret
+.globl min_caml_method_entry
+min_caml_method_entry:
+	ret
+.globl min_caml_guard_promote
+min_caml_guard_promote:
+	ret
 .data
 format_int:
 	.asciz	"%d"
@@ -269,3 +365,21 @@ min_caml_fnegd:
 .globl min_caml_hp
 min_caml_hp:
 	.long	0x0
+.globl min_caml_bp
+min_caml_bp:
+	.long	0x0
+.globl min_caml_guard_stack
+min_caml_guard_stack:
+	.long 0
+.globl min_caml_guard_sp
+min_caml_guard_sp:
+	.long 0
+.globl min_caml_guard_bytecode
+min_caml_guard_bytecode:
+	.long 0
+.globl min_caml_guard_pc
+min_caml_guard_pc:
+	.long 0
+.globl	min_caml_guard_fail_flg
+min_caml_guard_fail_flg:
+	.long 0
