@@ -86,6 +86,8 @@ let rec g env known = function
   | KNormal.Add (x, y) -> Add (x, y)
   | KNormal.Sub (x, y) -> Sub (x, y)
   | KNormal.Mul (x, y) -> Mul (x, y)
+  | KNormal.Div (x, y) -> Div (x, y)
+  | KNormal.Mod (x, y) -> Mod (x, y)
   | KNormal.FNeg x -> FNeg x
   | KNormal.FAdd (x, y) -> FAdd (x, y)
   | KNormal.FSub (x, y) -> FSub (x, y)
