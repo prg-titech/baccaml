@@ -292,7 +292,7 @@ let jit_gen_trace bytecode stack pc sp bc_ptr st_ptr =
   let jit_apply f pcs =
     List.iter (fun pc -> f bytecode stack (pc + 1) sp bc_ptr st_ptr) pcs
   in
-  (match Config.jit_mode with
+  (match !Config.jit_setup_mode with
   | `Tracing ->
     let tj_pcs = Util.find_tj_entries bytecode in
     tj_pcs |> jit_apply jit_tracing_gen_trace
@@ -303,7 +303,8 @@ let jit_gen_trace bytecode stack pc sp bc_ptr st_ptr =
     let mj_pcs = Util.find_mj_entries bytecode in
     mj_pcs |> jit_apply jit_method_gen_trace;
     let tj_pcs = Util.find_tj_entries bytecode in
-    tj_pcs |> jit_apply jit_tracing_gen_trace);
+    tj_pcs |> jit_apply jit_tracing_gen_trace
+  | `Nothing -> ());
   ()
 ;;
 
