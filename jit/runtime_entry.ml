@@ -106,6 +106,23 @@ module Util = struct
       ~arg2
   ;;
 
+  let exec_dyn_arg2_with_elapsed_time ?(notation = None) ~name ~arg1 ~arg2 =
+    if Debug.is_debug ()
+    then (
+      let s = Sys.time () in
+      let v = exec_dyn_arg2 name arg1 arg2 in
+      let e = Sys.time () in
+      (match notation with
+      | Some `Tracing ->
+        Printf.eprintf "[tj] elapsed time %fus\n" ((e -. s) *. 1e6)
+      | Some `Method ->
+        Printf.eprintf "[mj] elapsed time %fus\n" ((e -. s) *. 1e6)
+      | None -> ());
+      flush stderr;
+      v)
+    else exec_dyn_arg2 name arg1 arg2
+  ;;
+
   let exec_dyn_arg3 ~name ~arg1 ~arg2 ~arg3 =
     Dynload_stub.call_arg3
       ~lib:("./" ^ get_so_name name)
@@ -218,36 +235,41 @@ let jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr =
 ;;
 
 let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
-  Util.(
-    with_jit_flg
-      ~off:(fun _ -> ())
-      ~on:(fun _ ->
-        if Trace_prof.over_threshold pc
-        then (
-          match Trace_prof.find_opt pc with
-          | Some _ -> ()
-          | None -> jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr)
-        else Trace_prof.count_up pc;
-        ()))
+  let open Util in
+  with_jit_flg
+    ~off:(fun _ -> ())
+    ~on:(fun _ ->
+      if Trace_prof.over_threshold pc
+      then (
+        match Trace_prof.find_opt pc with
+        | Some _ -> ()
+        | None -> jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr)
+      else Trace_prof.count_up pc;
+      ())
 ;;
 
 let jit_tracing_exec pc st_ptr sp stack =
-  Util.(
-    with_jit_flg
-      ~off:(fun _ -> ())
-      ~on:(fun _ ->
-        match Trace_prof.find_opt pc with
-        | Some tname ->
-          (* Debug.print_int_arr stack; Printf.printf "[sp] %d\n" sp; *)
-          (* Printf.eprintf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc
-           *    sp; *)
-          let s = Sys.time () in
-          let _ = exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp in
-          let e = Sys.time () in
-          Printf.eprintf "[tj] elapsed time: %f us\n" ((e -. s) *. 1e6);
-          flush stderr;
-          ()
-        | None -> ()))
+  let open Util in
+  with_jit_flg
+    ~off:(fun _ -> ())
+    ~on:(fun _ ->
+      match Trace_prof.find_opt pc with
+      | Some tname ->
+        (* Debug.with_debug (fun _ ->
+         *     Printf.eprintf
+         *       "[tj] executing %s at pc: %d sp: %d ...\n"
+         *       tname
+         *       pc
+         *       sp); *)
+        let _ =
+          exec_dyn_arg2_with_elapsed_time
+            ~notation:(Some `Tracing)
+            ~name:tname
+            ~arg1:st_ptr
+            ~arg2:sp
+        in
+        ()
+      | None -> ())
 ;;
 
 let jit_method_gen_trace bytecode stack pc sp bc_ptr st_ptr =
@@ -256,55 +278,57 @@ let jit_method_gen_trace bytecode stack pc sp bc_ptr st_ptr =
   let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
   match p |> jit_method env with
   | Ok name ->
-    Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
+    Debug.with_debug (fun _ ->
+        Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc);
     Method_prof.register (pc, name)
   | Error e -> raise e
 ;;
 
 let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
-  Util.(
-    match Method_prof.find_opt pc with
-    | Some name ->
-      let s = Unix.gettimeofday () in
+  let open Util in
+  match Method_prof.find_opt pc with
+  | Some name ->
+    let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
+    r
+  | None ->
+    let p = Option.get !interp_ir |> Jit_annot.annotate `Meta_method in
+    let bytecode = Compat.of_bytecode bytecode in
+    let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+    (match p |> jit_method env with
+    | Ok name ->
+      (* Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc; *)
+      Method_prof.register (pc, name);
+      let s = Sys.time () in
       let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
-      let e = Unix.gettimeofday () in
-      Printf.eprintf "[mj] elapced time: %fus\n" ((e -. s) *. 1e6);
-      flush stderr;
+      let e = Sys.time () in
+      Printf.printf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
+      flush stdout;
       r
-    | None ->
-      let p = Option.get !interp_ir |> Jit_annot.annotate `Meta_method in
-      let bytecode = Compat.of_bytecode bytecode in
-      let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-      (match p |> jit_method env with
-      | Ok name ->
-        (* Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc; *)
-        Method_prof.register (pc, name);
-        let s = Sys.time () in
-        let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
-        let e = Sys.time () in
-        Printf.printf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
-        flush stdout;
-        r
-      | Error e -> raise e))
+    | Error e -> raise e)
 ;;
+
+let jit_setup_run_once_flg = ref false
 
 let jit_gen_trace bytecode stack pc sp bc_ptr st_ptr =
   let jit_apply f pcs =
     List.iter (fun pc -> f bytecode stack (pc + 1) sp bc_ptr st_ptr) pcs
   in
-  (match !Config.jit_setup_mode with
-  | `Tracing ->
-    let tj_pcs = Util.find_tj_entries bytecode in
-    tj_pcs |> jit_apply jit_tracing_gen_trace
-  | `Method ->
-    let mj_pcs = Util.find_mj_entries bytecode in
-    mj_pcs |> jit_apply jit_method_gen_trace
-  | `All ->
-    let mj_pcs = Util.find_mj_entries bytecode in
-    mj_pcs |> jit_apply jit_method_gen_trace;
-    let tj_pcs = Util.find_tj_entries bytecode in
-    tj_pcs |> jit_apply jit_tracing_gen_trace
-  | `Nothing -> ());
+  if not !jit_setup_run_once_flg
+  then (
+    (match !Config.jit_setup_mode with
+    | `Tracing ->
+      let tj_pcs = Util.find_tj_entries bytecode |> List.rev in
+      tj_pcs |> jit_apply jit_tracing_gen_trace
+    | `Method ->
+      let mj_pcs = Util.find_mj_entries bytecode in
+      mj_pcs |> jit_apply jit_method_gen_trace
+    | `All ->
+      let mj_pcs = Util.find_mj_entries bytecode in
+      mj_pcs |> jit_apply jit_method_gen_trace;
+      let tj_pcs = Util.find_tj_entries bytecode |> List.rev in
+      tj_pcs |> jit_apply jit_tracing_gen_trace
+    | `Nothing -> ());
+    jit_setup_run_once_flg := true);
   ()
 ;;
 

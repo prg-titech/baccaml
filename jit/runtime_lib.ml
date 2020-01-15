@@ -29,12 +29,7 @@ module Debug = struct
     else ()
   ;;
 
-  let print_int_arr stk =
-    let str = Array.string_of_array string_of_int stk in
-    print_string "[stack] ";
-    print_endline str
-  ;;
-
+  let is_debug () = match !Config.log_level with `Debug -> true | _ -> false
   let with_debug f = match !Config.log_level with `Debug -> f () | _ -> ()
 end
 
