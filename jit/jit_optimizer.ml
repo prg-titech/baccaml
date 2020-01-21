@@ -121,7 +121,8 @@ let run p e reg mem =
         mem.(n1 + n2) <- Red (value_of src');
         Not_specialized (St (src, dest, C (n1 + n2), x), Red 0)
       | Red n ->
-        mem.(n1 + n2) <- src';
+        (* [XXX]: PUT isn't worked well *)
+        (* mem.(n1 + n2) <- src'; *)
         Not_specialized (St (src, dest, offset, x), Red 0)))
   | _ ->
     Asm.print_exp e;
