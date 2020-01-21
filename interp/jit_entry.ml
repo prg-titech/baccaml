@@ -16,6 +16,9 @@ let () =
     ; ( "-mj"
       , Arg.Unit (fun _ -> set jit_setup_mode `Tracing)
       , "run under a method-based interpreter, and comile other functions by tracing compilation" )
+    ; ( "-all"
+      , Arg.Unit (fun _ -> set jit_setup_mode `All)
+      , "comile other functions by tracing and method compilation" )
     ; ( "-comp-only"
       , Arg.Unit (fun _ -> set comp_only_flag `Off)
       , "only compiling, not executing a resulting trace" )
