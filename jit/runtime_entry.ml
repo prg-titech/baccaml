@@ -282,7 +282,7 @@ let jit_gen_trace bytecode stack pc sp bc_ptr st_ptr =
   let jit_apply f pcs =
     List.iter (fun pc -> f bytecode stack (pc + 1) sp bc_ptr st_ptr) pcs
   in
-  let tj_pcs = Util.find_tj_entries bytecode in
+  let tj_pcs = Util.find_tj_entries bytecode |> List.rev in
   let mj_pcs = Util.find_mj_entries bytecode in
   if not !jit_setup_run_once_flg
   then (
