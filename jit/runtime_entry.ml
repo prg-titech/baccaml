@@ -230,15 +230,12 @@ let jit_tracing_exec pc st_ptr sp stack =
     ~on:(fun _ ->
       match Trace_prof.find_opt pc with
       | Some tname ->
-        Debug.with_debug (fun _ ->
-            eprintf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc sp);
-        ignore
-          (exec_dyn_arg2_with_elapsed_time
-             ~notation:(Some `Tracing)
-             ~name:tname
-             ~arg1:st_ptr
-              ~arg2:sp)
-      | None -> ())
+        (* eprintf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc sp; *)
+        let _ = exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp in
+        flush_all ();
+        ()
+      | None -> ();
+      ())
 ;;
 
 let jit_method_gen_trace bytecode stack pc sp bc_ptr st_ptr =
@@ -256,8 +253,11 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
   let open Util in
   match Method_prof.find_opt pc with
   | Some name ->
-    Debug.with_debug (fun _ -> eprintf "[mj] executing %s at pc: %d\n" name pc);
+    let s = Sys.time () in
     let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
+    let e = Sys.time () in
+    printf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
+    flush stdout;
     r
   | None ->
     let p = Option.get !interp_ir |> Jit_annot.annotate `Meta_method in
@@ -271,7 +271,7 @@ let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
        let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
        let e = Sys.time () in
        Printf.printf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
-       flush stdout;
+       flush stderr; flush stdout;
        r
     | Error e -> raise e)
 ;;
@@ -291,8 +291,8 @@ let jit_gen_trace bytecode stack pc sp bc_ptr st_ptr =
     | `Tracing -> tj_pcs |> jit_apply jit_tracing_gen_trace
     | `Method -> mj_pcs |> jit_apply jit_method_gen_trace
     | `All ->
-      mj_pcs |> jit_apply jit_method_gen_trace;
       tj_pcs |> jit_apply jit_tracing_gen_trace;
+      mj_pcs |> jit_apply jit_method_gen_trace;
     | `Nothing -> ()))
 ;;
 
