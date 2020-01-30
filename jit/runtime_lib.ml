@@ -35,6 +35,6 @@ end
 
 module Compat = struct
   let of_bytecode bytecode =
-    Array.map (fun x -> if x = -1024 then 0 else x) bytecode
+    Array.map (fun x -> if x = -2048 then 0 else x) bytecode
   ;;
 end

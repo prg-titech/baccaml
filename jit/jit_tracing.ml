@@ -35,9 +35,10 @@ let rec tj
     | None, Some tname ->
       other_deps := !other_deps @ [ tname ];
       Ans (CallDir (Id.L tname, Util.filter red_names args, []))
-    | _, Some tname ->
+    | Some tname, _ ->
       other_deps := !other_deps @ [ tname ];
-      Ans (CallDir (Id.L tname, Util.filter red_names args, [])))
+      Ans (CallDir (Id.L tname, Util.filter red_names args, []))
+    )
   | Ans exp ->
     (match exp with
     | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ ->
