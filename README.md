@@ -2,19 +2,11 @@
 
 # BacCaml: The Meta-Hybrid Just-In-Time Compiler
 
-Meta-interpreter-based just-in-time compiler frameworks (RPython, Truffle/Graal) are useful
-to build a performant language runtime.
-RPython and Truffle/Graal, two most successfully implemented frameworks, employ
-different compilation strategies.
-RPython's strategy is based on a tracing, but Truffle is based on a method invocation.
-There are pros and cons between their compilation strategies, therefore we have to take advantages of
-them.
+Trace-based compilation and method-based compilation are two major compilation strategies in JIT compilers. In general, the former excels in compiling programs with deeper method calls and more dynamic branches, while the latter is suitable wide range of programs.
 
-We propose a _meta-hybrid JIT compiler framework_, and its experimental implementation called BacCaml.
-The main features of BacCaml are:
+This project aims at developing fundamental mechanism for compiling with both trace-based and method-based strategies. Instead of developing a compiler for one particular language, we provide such a mechanism in a meta-compilation framework, which generates a virtual machine with a JIT compiler from an interpreter definition of a programming language.
 
-- applying both method- and tracing-based compilation for different program parts
-- realiizing a hybrid JIT compiler with a single interpreter definition
+We are developing the BacCamel meta-compiler framework as a proof-of-concept, which is based on the MinCaml compiler.
 
 This project is forked from <a href="https://github.com/esumii/min-caml">MinCaml</a>.
 
