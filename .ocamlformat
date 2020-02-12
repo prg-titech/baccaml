@@ -1,5 +1,5 @@
 profile = janestreet
 break-cases = fit
-margin = 80
+margin = 90
 parse-docstrings = true
 wrap-comments = true

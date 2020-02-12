@@ -23,15 +23,22 @@ let rec tj
   match t with
   | Ans (CallDir (id_l, args, fargs)) ->
     let pc = Util.value_of_id_t reg (List.nth args index_pc) in
-    (match Method_prof.find_opt pc with
-    | None ->
+    (match Method_prof.find_opt pc, Trace_prof.find_opt pc with
+    | None, None ->
       let { name; args = argst; fargs; body; ret } = interp_fundef p in
       { name; args = argst; fargs; body; ret }
       |> Inlining.inline_fundef reg args
       |> tj p reg mem env
-    | Some tname ->
+    | Some tname, None ->
       other_deps := !other_deps @ [ tname ];
-      Ans (CallDir (Id.L tname, Util.filter red_names args, [])))
+      Ans (CallDir (Id.L tname, Util.filter red_names args, []))
+    | None, Some tname ->
+      other_deps := !other_deps @ [ tname ];
+      Ans (CallDir (Id.L tname, Util.filter red_names args, []))
+    | Some tname, _ ->
+      other_deps := !other_deps @ [ tname ];
+      Ans (CallDir (Id.L tname, Util.filter red_names args, []))
+    )
   | Ans exp ->
     (match exp with
     | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ ->
@@ -88,11 +95,10 @@ and tj_exp
             ( (dest, typ)
             , CallDir (Id.L "interp_no_hints", args', fargs')
             , tj p reg mem env body )))
+  | CallDir (Id.L x, args, fargs) when String.starts_with x "cast_" ->
+    Let ((dest, typ), CallDir (Id.L x, args, fargs), tj p reg mem env body)
   | CallDir (Id.L x, args, fargs)
-    when String.(
-           starts_with x "min_caml"
-           || starts_with x "cast_"
-           || starts_with x "frame_reset") ->
+    when String.(starts_with x "min_caml" || starts_with x "frame_reset") ->
     (* foreign functions *)
     Util.restore_greens reg args (fun () ->
         Let
@@ -236,6 +242,7 @@ and tj_if p reg mem env exp =
       if n1 >= n2
       then Ans (IfGE (id_t, id_or_imm, trace t1, guard t2))
       else Ans (IfGE (id_t, id_or_imm, guard t1, trace t2)))
+  | _ -> failwith "tj_if: unmatched pattern."
 ;;
 
 let run p reg mem ({ trace_name; red_names; merge_pc } as env) =

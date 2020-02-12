@@ -4,6 +4,7 @@ open Jit_env
 open Jit_prof
 open Jit_compile
 open Runtime_lib
+open Printf
 
 type runtime_env =
   { bytecode : int array
@@ -21,14 +22,12 @@ module Util = struct
 
   let filter typ =
     match typ with
-    | `Red ->
-      List.filter (fun a -> List.mem (String.get_name a) Internal_conf.reds)
-    | `Green ->
-      List.filter (fun a -> List.mem (String.get_name a) Internal_conf.greens)
+    | `Red -> List.filter (fun a -> List.mem (String.get_name a) Internal_conf.reds)
+    | `Green -> List.filter (fun a -> List.mem (String.get_name a) Internal_conf.greens)
   ;;
 
   let find_mj_entries bytecode =
-    let annot_mj_comp = 25 in
+    let annot_mj_comp = -1024 in
     List.map
       fst
       (List.find_all
@@ -37,7 +36,7 @@ module Util = struct
   ;;
 
   let find_tj_entries bytecode =
-    let annot_tj_comp = 26 in
+    let annot_tj_comp = -1048 in
     List.map
       fst
       (List.find_all
@@ -84,15 +83,12 @@ module Util = struct
   let make_mem ~bc_addr ~st_addr bytecode stack =
     let open Jit_env in
     let mem = Array.make Internal_conf.size (Green 0) in
-    bytecode
-    |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Jit_env.Green a);
+    bytecode |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Jit_env.Green a);
     stack |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Jit_env.Red a);
     mem
   ;;
 
-  let with_jit_flg ~on:f ~off:g =
-    match !Config.jit_flag with `On -> f () | `Off -> g ()
-  ;;
+  let with_jit_flg ~on:f ~off:g = match !Config.jit_flag with `On -> f () | `Off -> g ()
 
   let with_comp_flg ~on:f ~off:g =
     match !Config.comp_only_flag with `On -> f () | `Off -> g ()
@@ -106,6 +102,21 @@ module Util = struct
       ~arg2
   ;;
 
+  let exec_dyn_arg2_with_elapsed_time ?(notation = None) ~name ~arg1 ~arg2 =
+    if Debug.is_debug ()
+    then (
+      let s = Sys.time () in
+      let v = exec_dyn_arg2 name arg1 arg2 in
+      let e = Sys.time () in
+      (match notation with
+      | Some `Tracing -> Printf.eprintf "[tj] elapsed time %fus\n" ((e -. s) *. 1e6)
+      | Some `Method -> Printf.eprintf "[mj] elapsed time %fus\n" ((e -. s) *. 1e6)
+      | None -> ());
+      flush stderr;
+      v)
+    else exec_dyn_arg2 name arg1 arg2
+  ;;
+
   let exec_dyn_arg3 ~name ~arg1 ~arg2 ~arg3 =
     Dynload_stub.call_arg3
       ~lib:("./" ^ get_so_name name)
@@ -113,18 +124,6 @@ module Util = struct
       ~arg1
       ~arg2
       ~arg3
-  ;;
-
-  let%test "find_mj_entries test" =
-    let bytecode = Array.init 100 (fun i -> if i mod 42 = 0 then 25 else i) in
-    let expected =
-      bytecode
-      |> Array.to_list
-      |> List.mapi (fun i x -> i, x)
-      |> List.find_all (fun (i, x) -> x = 25)
-      |> List.map fst
-    in
-    find_mj_entries bytecode = expected
   ;;
 end
 
@@ -136,8 +135,7 @@ module Setup = struct
     and { args; body } = Fundef.find_fuzzy prog "interp" in
     let reg = make_reg prog args sp
     and mem =
-      Internal_conf.(
-        make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack)
+      Internal_conf.(make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack)
     and pc_method_entry = pc
     and pc_ir_addr = get_ir_addr args "pc"
     and sp_ir_addr = get_ir_addr args "sp"
@@ -154,8 +152,7 @@ end
 
 let interp_ir : Asm.prog option ref = ref None
 
-let jit_method ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env) prog
-  =
+let jit_method ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env) prog =
   let open Asm in
   let open Jit_env in
   let module JM = Jit_method in
@@ -175,14 +172,10 @@ let jit_method ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env) prog
   Option.fold
     others
     ~none:(emit_and_compile prog `Meta_method trace)
-    ~some:(fun others ->
-      emit_and_compile_with_so prog `Meta_tracing others trace)
+    ~some:(fun others -> emit_and_compile_with_so prog `Meta_tracing others trace)
 ;;
 
-let jit_tracing
-    ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env)
-    prog
-  =
+let jit_tracing ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env) prog =
   let open Asm in
   let open Jit_env in
   let module JT = Jit_tracing in
@@ -204,8 +197,7 @@ let jit_tracing
   Option.fold
     others
     ~none:(emit_and_compile prog `Meta_method trace)
-    ~some:(fun others ->
-      emit_and_compile_with_so prog `Meta_tracing others trace)
+    ~some:(fun others -> emit_and_compile_with_so prog `Meta_tracing others trace)
 ;;
 
 let jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr =
@@ -218,37 +210,32 @@ let jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr =
 ;;
 
 let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
-  Util.(
-    with_jit_flg
-      ~off:(fun _ -> ())
-      ~on:(fun _ ->
-        if Trace_prof.over_threshold pc
-        then (
-          match Trace_prof.find_opt pc with
-          | Some _ -> ()
-          | None -> jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr)
-        else
-          Trace_prof.count_up pc;
-          ()))
+  let open Util in
+  with_jit_flg
+    ~off:(fun _ -> ())
+    ~on:(fun _ ->
+      if Trace_prof.over_threshold pc
+      then (
+        match Trace_prof.find_opt pc with
+        | Some _ -> ()
+        | None -> jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr)
+      else Trace_prof.count_up pc;
+      ())
 ;;
 
 let jit_tracing_exec pc st_ptr sp stack =
-  Util.(
-    with_jit_flg
-      ~off:(fun _ -> ())
-      ~on:(fun _ ->
-        match Trace_prof.find_opt pc with
-        | Some tname ->
-          (* Debug.print_int_arr stack; Printf.printf "[sp] %d\n" sp; *)
-          (* Printf.eprintf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc
-           *    sp; *)
-          let s = Sys.time () in
-          let _ = exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp in
-          let e = Sys.time () in
-          Printf.eprintf "[tj] elapsed time: %f us\n" ((e -. s) *. 1e6);
-          flush stderr;
-          ()
-        | None -> ()))
+  let open Util in
+  with_jit_flg
+    ~off:(fun _ -> ())
+    ~on:(fun _ ->
+      match Trace_prof.find_opt pc with
+      | Some tname ->
+        (* eprintf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc sp; *)
+        let _ = exec_dyn_arg2 ~name:tname ~arg1:st_ptr ~arg2:sp in
+        flush_all ();
+        ()
+      | None -> ();
+      ())
 ;;
 
 let jit_method_gen_trace bytecode stack pc sp bc_ptr st_ptr =
@@ -257,47 +244,56 @@ let jit_method_gen_trace bytecode stack pc sp bc_ptr st_ptr =
   let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
   match p |> jit_method env with
   | Ok name ->
-    Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
+    Debug.with_debug (fun _ -> eprintf "[mj] compiled %s at pc: %d\n" name pc);
     Method_prof.register (pc, name)
   | Error e -> raise e
 ;;
 
 let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
-  Util.(
-    match Method_prof.find_opt pc with
-    | Some name ->
-      let s = Unix.gettimeofday () in
-      let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
-      let e = Unix.gettimeofday () in
-      Printf.eprintf "[mj] elapced time: %fus\n" ((e -. s) *. 1e6);
-      flush stderr;
-      r
-    | None ->
-      let p = Option.get !interp_ir |> Jit_annot.annotate `Meta_method in
-      let bytecode = Compat.of_bytecode bytecode in
-      let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-      (match p |> jit_method env with
-      | Ok name ->
-        (* Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc; *)
-        Method_prof.register (pc, name);
-        let s = Sys.time () in
-        let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
-        let e = Sys.time () in
-        Printf.printf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
-        flush stdout;
-        r
-      | Error e -> raise e))
+  let open Util in
+  match Method_prof.find_opt pc with
+  | Some name ->
+    let s = Sys.time () in
+    let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
+    let e = Sys.time () in
+    printf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
+    flush stdout;
+    r
+  | None ->
+    let p = Option.get !interp_ir |> Jit_annot.annotate `Meta_method in
+    let bytecode = Compat.of_bytecode bytecode in
+    let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+    (match p |> jit_method env with
+     | Ok name ->
+       Method_prof.register (pc, name);
+       Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
+       let s = Sys.time () in
+       let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
+       let e = Sys.time () in
+       Printf.printf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
+       flush stderr; flush stdout;
+       r
+    | Error e -> raise e)
 ;;
+
+let jit_setup_run_once_flg = ref false
 
 let jit_gen_trace bytecode stack pc sp bc_ptr st_ptr =
   let jit_apply f pcs =
     List.iter (fun pc -> f bytecode stack (pc + 1) sp bc_ptr st_ptr) pcs
   in
-  let tj_pcs = Util.find_tj_entries bytecode in
+  let tj_pcs = Util.find_tj_entries bytecode |> List.rev in
   let mj_pcs = Util.find_mj_entries bytecode in
-  tj_pcs |> jit_apply jit_tracing_gen_trace;
-  mj_pcs |> jit_apply jit_method_gen_trace;
-  ()
+  if not !jit_setup_run_once_flg
+  then (
+    jit_setup_run_once_flg := true;
+    (match !Config.jit_setup_mode with
+    | `Tracing -> tj_pcs |> jit_apply jit_tracing_gen_trace
+    | `Method -> mj_pcs |> jit_apply jit_method_gen_trace
+    | `All ->
+      tj_pcs |> jit_apply jit_tracing_gen_trace;
+      mj_pcs |> jit_apply jit_method_gen_trace;
+    | `Nothing -> ()))
 ;;
 
 let register_interp_ir () = interp_ir := Some (Util.gen_ir ())

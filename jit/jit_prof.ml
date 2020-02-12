@@ -49,7 +49,7 @@ module Make_prof (M_prof : Prof) = struct
    fun pc ->
     match Hashtbl.find_opt count_tbl pc with
     | Some count -> Hashtbl.replace count_tbl pc (count + 1)
-    | None -> Hashtbl.add count_tbl pc 1
+    | None -> if pc <> 18 then Hashtbl.add count_tbl pc 1
  ;;
 
   let find : pc -> name =
@@ -84,6 +84,6 @@ module Method_prof = Make_prof (struct
 end)
 
 module Trace_prof = Make_prof (struct
-  let threshold = 2000
+  let threshold = 10
   let typ = `Meta_tracing
 end)
