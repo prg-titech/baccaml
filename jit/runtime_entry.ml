@@ -193,6 +193,7 @@ let jit_tracing ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env) pro
       ~bytecode
   in
   let (`Result (trace, others)) = JT.run prog reg mem env in
+  let trace = Simm.h trace in
   Debug.with_debug (fun _ -> print_fundef trace);
   Option.fold
     others
