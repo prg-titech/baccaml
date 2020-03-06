@@ -15,7 +15,9 @@ let rec replace var t =
 and replace_exp var exp =
   match exp with
   | Nop | Set _ | SetL _ -> Some exp
-  | Mov id | SMov id | Neg id -> if id |=| var then None else Some exp
+  | Mov id -> if id |=| var then None else Some exp
+  | SMov id -> if id |=| var then None else Some exp
+  | Neg id -> if id |=| var then Some (Neg var) else Some exp
   | Add (x, V y) ->
     Some
       (match x |=| var, y |=| var with
@@ -109,8 +111,19 @@ and replace_exp var exp =
       (if x |=| var
       then IfGE (var, C y, replace var t1, replace var t2)
       else IfGE (x, C y, replace var t1, replace var t2))
-  | _ -> failwith "un matched pattern."
+  | CallDir (id_l, args, fargs) ->
+    Some (CallDir (id_l,
+                   args |> List.map (fun x -> if x |=| var then var else x),
+                   fargs |> List.map (fun x -> if x |=| var then var else x)))
+  | _ ->
+    Asm.print_exp exp;
+    failwith "un matched pattern."
 ;;
+
+let h {name; args; fargs; body; ret} =
+  let var = List.hd args in
+  {name; args; fargs; body= replace var body; ret}
+
 
 let%test _ =
   let open Type in
