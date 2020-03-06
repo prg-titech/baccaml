@@ -168,6 +168,7 @@ let jit_method ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env) prog
       ~bytecode
   in
   let (`Result (trace, others)) = JM.run prog reg mem env in
+  let trace = Jit_constfold.h trace in
   Debug.with_debug (fun _ -> print_fundef trace);
   Option.fold
     others
@@ -193,7 +194,7 @@ let jit_tracing ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env) pro
       ~bytecode
   in
   let (`Result (trace, others)) = JT.run prog reg mem env in
-  let trace = Simm.h trace in
+  let trace = trace |> Jit_constfold.h in
   Debug.with_debug (fun _ -> print_fundef trace);
   Option.fold
     others
