@@ -9,14 +9,19 @@
 
 (rule
  (deps interp.mcml)
- (targets interp_tj.s interp_mj.s test_interp_tj.s test_interp_mj.s)
+ (targets interp_tj.s interp_mj.s)
  (action
   (progn
    (run ../bin/min_caml.exe -o interp_mj.s %{deps} -type mjit -no-hint)
-   (run ../bin/min_caml.exe -o interp_tj.s %{deps} -type tjit -no-hint)
-   (run ../bin/min_caml.exe -o test_interp_mj.s %{deps} -type mjit -no-hint)
-   (run ../bin/min_caml.exe -o test_interp_tj.s %{deps} -type tjit -no-hint)
-  )))
+   (run ../bin/min_caml.exe -o interp_tj.s %{deps} -type tjit -no-hint))))
+
+(rule
+ (deps test_interp.mcml)
+ (targets test_interp_tj.s test_interp_mj.s)
+ (action
+  (progn
+    (run ../bin/min_caml.exe -o test_interp_mj.s %{deps} -type mjit -no-hint)
+    (run ../bin/min_caml.exe -o test_interp_tj.s %{deps} -type tjit -no-hint))))
 
 (rule (targets test_interp_tj.exe)
  (deps jit_entry.exe%{ext_obj} ../stub/stub.c ../jit/interop.c ../stub/libmincaml.S test_interp_tj.s)
