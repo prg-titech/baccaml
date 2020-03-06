@@ -97,8 +97,13 @@ and tj_exp
             , tj p reg mem env body )))
   | CallDir (Id.L x, args, fargs) when String.starts_with x "cast_" ->
     Let ((dest, typ), CallDir (Id.L x, args, fargs), tj p reg mem env body)
-  | CallDir (Id.L x, args, fargs)
-    when String.(starts_with x "min_caml" || starts_with x "frame_reset") ->
+  | CallDir (Id.L x, args, fargs) when String.(starts_with x "frame_reset") ->
+    Util.restore_greens reg args (fun () ->
+        Let
+          ( (dest, typ)
+          , CallDir (Id.L x, args, fargs)
+          , tj p reg mem env body ))
+  | CallDir (Id.L x, args, fargs) when String.(starts_with x "min_caml") ->
     (* foreign functions *)
     Util.restore_greens reg args (fun () ->
         Let
