@@ -1,7 +1,7 @@
 (executable
  (name jit_entry)
  (modules jit_entry)
- (libraries jit)
+ (libraries runtime)
  (modes
   (native exe)
   (native object)

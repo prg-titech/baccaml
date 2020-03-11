@@ -1,5 +1,6 @@
 open Std
 open MinCaml
+open Jit
 open Jit_env
 open Jit_prof
 open Jit_compile
