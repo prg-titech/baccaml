@@ -46,14 +46,12 @@ end = struct
 
   let starts_with s1 s2 =
     let re = Str.regexp_string s2 in
-    try if Str.search_forward re s1 0 = 0 then true else false with
-    | Not_found -> false
+    try if Str.search_forward re s1 0 = 0 then true else false with Not_found -> false
   ;;
 
-  let _ =
-    assert (starts_with "min_caml_print_int" "min_caml");
-    assert (not (starts_with "__min_caml_print_int" "min_caml"))
-  ;;
+  let%test "get_name test" = get_name "Ti23.55" = "Ti23"
+  let%test "starts_with test 1" = (starts_with "min_caml_print_int") "min_caml"
+  let%test "starts_with test 2" = not (starts_with "__min_caml_print_int" "min_caml")
 end
 
 module String = struct
@@ -79,18 +77,12 @@ end = struct
       match l with
       | [] -> s
       | first :: rest ->
-        if List.exists (fun e -> e = first) s
-        then go rest s
-        else go rest (s @ [ first ])
+        if List.exists (fun e -> e = first) s then go rest s else go rest (s @ [ first ])
     in
     go list []
   ;;
 
-  let rec last = function
-    | [] -> failwith "last"
-    | [ x ] -> x
-    | hd :: tl -> last tl
-  ;;
+  let rec last = function [] -> failwith "last" | [ x ] -> x | hd :: tl -> last tl
 
   let index elem lst =
     let rec go elem lst i =
