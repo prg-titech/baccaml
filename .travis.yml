@@ -19,4 +19,4 @@ install:
   - opam update --upgrade
   - opam install -y dune oUnit ppx_deriving ppx_inline_test alcotest
 script:
-  - dune runtest -f jit
+  - dune runtest -f jit opt
