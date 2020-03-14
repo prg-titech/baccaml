@@ -53,7 +53,11 @@ let%test "t_opt_of_t_asm test1" =
               , Let
                   ( ("Tu24.613", Unit)
                   , St ("v.612", "stack.399", V "sp.400", 4)
-                  , Let (("Ti246.615", Int), Add ("sp.400", C 1), Ans (Set 100)) ) ) ) )
+                  , Let
+                      ( ("Ti246.615", Int)
+                      , Add ("sp.400", C 1)
+                      , Ans (IfEq ("Ti246.615", C 100, Ans (Set 100), Ans (Set (-200))))
+                      ) ) ) ) )
   in
   let expected =
     [ L (("Ti242.609", Int), E (Sub ("sp.400", C 2)))
@@ -61,7 +65,8 @@ let%test "t_opt_of_t_asm test1" =
     ; L (("v.612", Int), E (Ld ("stack.399", V "Ti244.611", 4)))
     ; L (("Tu24.613", Unit), E (St ("v.612", "stack.399", V "sp.400", 4)))
     ; L (("Ti246.615", Int), E (Add ("sp.400", C 1)))
-    ; A (E (Set 100))
+    ; A
+        (If (Eq ("Ti246.615", C 100), IfBody ([ A (E (Set 100)) ], [ A (E (Set (-200))) ])))
     ]
   in
   t_opt_of_t_asm t = expected
