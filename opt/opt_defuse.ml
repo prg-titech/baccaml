@@ -72,6 +72,36 @@ let%test "t_opt_of_t_asm test1" =
   t_opt_of_t_asm t = expected
 ;;
 
+let rec specialize_arith exp1 exp2 =
+  match exp1, exp2 with
+  | Add (x, C n), Add (y, C m) -> `Specialized (Add (x, C (n + m)))
+  | Sub (x, C n), Sub (y, C m) -> `Specialized (Sub (x, C (n + m)))
+  | Add (x, C n), Sub (y, C m) -> `Specialized (Add (x, C (n - m)))
+  | Sub (x, C n), Add (y, C m) -> `Specialized (Sub (x, C (n - m)))
+  | _ -> `Not_specialized (exp1, exp2)
+;;
+
+(* 途中の状態をaccに保存しておく？ *)
+let rec constfold_arith env (t_opt : t_opt list) =
+  match t_opt with
+  | [] -> []
+  | L ((var, typ), E exp') :: tl ->
+    (match exp' with
+    | Add (x, C n) | Sub (x, C n) ->
+      if M.mem x env
+      then (
+        let exp = M.find x env in
+        match specialize_arith exp exp' with
+        | `Specialized exp -> L ((x, typ), E exp) :: constfold_arith env tl
+        | `Not_specialized _ -> L ((x, typ), E exp') :: constfold_arith env tl)
+      else (
+        let env = M.add var exp' env in
+        L ((var, typ), E exp') :: constfold_arith env tl)
+    | _ ->
+      let env = M.add var exp' env in
+      L ((var, typ), E exp') :: constfold_arith env tl)
+;;
+
 let contains2 var (id_t, id_or_imm) =
   let open Asm in
   var = id_t || match id_or_imm with C n -> false | V x -> var = x
