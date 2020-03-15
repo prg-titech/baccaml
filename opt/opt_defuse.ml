@@ -81,25 +81,42 @@ let rec specialize_arith exp1 exp2 =
   | _ -> `Not_specialized (exp1, exp2)
 ;;
 
-(* 途中の状態をaccに保存しておく？ *)
-let rec constfold_arith env (t_opt : t_opt list) =
-  match t_opt with
+(* remove an expression 'exp' from 'acc' *)
+let rec remove_from_acc exp = function
   | [] -> []
-  | L ((var, typ), E exp') :: tl ->
-    (match exp' with
-    | Add (x, C n) | Sub (x, C n) ->
-      if M.mem x env
-      then (
+  | L (x, E exp') :: tl ->
+    if exp' = exp then tl else L (x, E exp') :: remove_from_acc exp tl
+  | L (x, If (cond, IfBody (t1, t2))) :: tl ->
+    L (x, If (cond, IfBody (remove_from_acc exp t1, remove_from_acc exp t2)))
+    :: remove_from_acc exp tl
+  | A (If (cond, IfBody (t1, t2))) :: tl ->
+    A (If (cond, IfBody (remove_from_acc exp t1, remove_from_acc exp t2)))
+    :: remove_from_acc exp tl
+  | A (E exp') :: tl ->
+    if exp' = exp then remove_from_acc exp tl else A (E exp') :: remove_from_acc exp tl
+;;
+
+(* 途中の状態をaccに保存しておく -> specialize できたら該当の命令を acc から消す *)
+let rec constfold_arith (t_opt : t_opt list) =
+  let rec constfold_arith' env t_opt_idx acc = function
+    | [] -> acc
+    | L ((var, typ), E exp') :: tl ->
+      (match exp' with
+      | (Add (x, C n) | Sub (x, C n)) when M.mem x env ->
         let exp = M.find x env in
-        match specialize_arith exp exp' with
-        | `Specialized exp -> L ((x, typ), E exp) :: constfold_arith env tl
-        | `Not_specialized _ -> L ((x, typ), E exp') :: constfold_arith env tl)
-      else (
+        (match specialize_arith exp exp' with
+        | `Specialized exp ->
+          let acc = L ((x, typ), E exp) :: acc in
+          constfold_arith' env t_opt_idx acc tl
+        | `Not_specialized _ ->
+          L ((x, typ), E exp') :: constfold_arith' env t_opt_idx acc tl)
+      | _ ->
         let env = M.add var exp' env in
-        L ((var, typ), E exp') :: constfold_arith env tl)
-    | _ ->
-      let env = M.add var exp' env in
-      L ((var, typ), E exp') :: constfold_arith env tl)
+        L ((var, typ), E exp') :: constfold_arith' env t_opt_idx acc tl)
+  in
+  let env = M.empty in
+  let t_opt_idx = List.mapi (fun i x -> i, x) t_opt in
+  ()
 ;;
 
 let contains2 var (id_t, id_or_imm) =
