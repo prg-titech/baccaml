@@ -96,7 +96,8 @@ let rec remove_from_acc exp = function
     if exp' = exp then remove_from_acc exp tl else A (E exp') :: remove_from_acc exp tl
 ;;
 
-(* 途中の状態をaccに保存しておく -> specialize できたら該当の命令を acc から消す *)
+(* store in-progress states in "acc" *)
+(* if it can be specialized, remove the "exp" from "acc" *)
 let rec constfold_arith (t_opt : t_opt list) =
   let rec constfold_arith' env t_opt_idx acc = function
     | [] -> acc
