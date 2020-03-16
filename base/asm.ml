@@ -9,11 +9,14 @@ let string_of_id_or_imm = function
   | C n -> "C " ^ string_of_int n
 ;;
 
-let rec print_id_or_imm = function
+let print_dquote _ = print_string "\""
+
+let print_id_t id_t = print_dquote (); print_string id_t; print_dquote ()
+
+let print_id_or_imm = function
   | V id_t ->
-    print_string "V (";
-    print_string id_t;
-    print_string ")"
+    print_string "V "; print_dquote ();
+    print_string id_t; print_dquote ();
   | C n ->
     print_string "C ";
     print_int n;
@@ -79,7 +82,7 @@ let rec print_t = function
   | Let ((id, typ), exp, t) ->
     print_string "Let (";
     print_string "(";
-    print_string id;
+    print_id_t id;
     print_string ", ";
     Type.print_type typ;
     print_string ")";
@@ -99,42 +102,42 @@ and print_exp = function
     print_int n;
     print_string ")"
   | SetL id_l ->
-    print_string "SetL (";
-    Id.print_id_l id_l;
+    print_string "SetL ("; print_dquote ();
+    Id.print_id_l id_l; print_dquote ();
     print_string ")"
   | Mov id ->
     print_string "Mov (";
-    print_string id;
+    print_id_t id;
     print_string ")"
   | SMov id ->
     print_string "SMov (";
-    print_string id;
+    print_id_t id;
     print_string ")"
   | Neg id ->
     print_string "Neg (";
-    print_string id;
+    print_id_t id;
     print_string ")"
   | Add (x, y) ->
     print_string "Add (";
-    print_string x;
+    print_id_t x;
     print_semi_colon ();
     print_id_or_imm y;
     print_string ")"
   | Sub (x, y) ->
     print_string "Sub (";
-    print_string x;
+    print_id_t x;
     print_semi_colon ();
     print_id_or_imm y;
     print_string ")"
   | Mul (x, y) ->
     print_string "Mul (";
-    print_string x;
+    print_id_t x;
     print_semi_colon ();
     print_id_or_imm y;
     print_string ")"
   | Ld (x, y, n) ->
     print_string "Ld (";
-    print_string x;
+    print_id_t x;
     print_semi_colon ();
     print_id_or_imm y;
     print_semi_colon ();
@@ -142,9 +145,9 @@ and print_exp = function
     print_string ")"
   | St (x, y, z, n) ->
     print_string "St (";
-    print_string x;
+    print_id_t x;
     print_semi_colon ();
-    print_string y;
+    print_id_t y;
     print_semi_colon ();
     print_id_or_imm z;
     print_semi_colon ();
@@ -152,97 +155,103 @@ and print_exp = function
     print_string ")"
   | IfEq (x, y, t1, t2) ->
     print_string "IfEq (";
-    print_string x;
+    print_id_t x;
     print_semi_colon ();
     print_id_or_imm y;
     print_semi_colon ();
     print_newline ();
     print_tab ();
     print_t t1;
+    print_semi_colon ();
     print_newline ();
     print_tab ();
     print_t t2;
     print_string ")"
   | IfLE (x, y, t1, t2) ->
     print_string "IfLE (";
-    print_string x;
+    print_id_t x;
     print_semi_colon ();
     print_id_or_imm y;
     print_semi_colon ();
     print_newline ();
     print_tab ();
     print_t t1;
+    print_semi_colon ();
     print_newline ();
     print_tab ();
     print_t t2;
     print_string ")"
   | IfGE (x, y, t1, t2) ->
     print_string "IfGE (";
-    print_string x;
+    print_id_t x;
     print_semi_colon ();
     print_id_or_imm y;
     print_semi_colon ();
     print_newline ();
     print_tab ();
     print_t t1;
+    print_semi_colon ();
     print_newline ();
     print_tab ();
     print_t t2;
     print_string ")"
   | SIfEq (x, y, t1, t2) ->
     print_string "SIfEq (";
-    print_string x;
+    print_id_t x;
     print_semi_colon ();
     print_id_or_imm y;
     print_semi_colon ();
     print_newline ();
     print_tab ();
     print_t t1;
+    print_semi_colon ();
     print_newline ();
     print_tab ();
     print_t t2;
     print_string ")"
   | SIfLE (x, y, t1, t2) ->
     print_string "SIfLE (";
-    print_string x;
+    print_id_t x;
     print_semi_colon ();
     print_id_or_imm y;
     print_semi_colon ();
     print_newline ();
     print_tab ();
     print_t t1;
+    print_semi_colon ();
     print_newline ();
     print_tab ();
     print_t t2;
     print_string ")"
   | SIfGE (x, y, t1, t2) ->
     print_string "SIfGE (";
-    print_string x;
+    print_id_t x;
     print_semi_colon ();
     print_id_or_imm y;
     print_semi_colon ();
     print_newline ();
     print_tab ();
     print_t t1;
+    print_semi_colon ();
     print_newline ();
     print_tab ();
     print_t t2;
     print_string ")"
   | CallCls (x, ys, zs) ->
     print_string "CallCls (";
-    print_string x;
+    print_id_t x;
     print_semi_colon ();
     print_string "[";
     ys
     |> List.iter (fun y ->
-           print_string y;
+           print_id_t y;
            print_string "; ");
     print_string "]";
     print_string ",";
     print_string "[";
     zs
     |> List.iter (fun z ->
-           print_string z;
+           print_id_t z;
            print_string "; ");
     print_string "]";
     print_string ")"
@@ -253,14 +262,14 @@ and print_exp = function
     print_string "[";
     ys
     |> List.iter (fun y ->
-           print_string y;
+           print_id_t y;
            print_string "; ");
     print_string "]";
     print_semi_colon ();
     print_string "[";
     zs
     |> List.iter (fun z ->
-           print_string z;
+           print_id_t z;
            print_string "; ");
     print_string "]";
     print_string ")"
