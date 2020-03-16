@@ -50,6 +50,9 @@ and exp =
 
 (* スタック変数から値を復元 (caml2html: sparcasm_restore) *)
 
+val pp_id_or_imm : Ppx_deriving_runtime.Format.formatter -> id_or_imm -> Ppx_deriving_runtime.unit
+val pp_exp : Ppx_deriving_runtime.Format.formatter -> exp -> Ppx_deriving_runtime.unit
+val show_id_or_imm : id_or_imm -> string
 val show : t -> string
 val show_exp : exp -> string
 
