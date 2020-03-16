@@ -19,16 +19,3 @@ You need the OCaml 4.07.0+ configured with 32bit mode. This is run only on Linux
 - MoveVMs'19 workshop: Yusuke Izawa, Hidehiko Masuhara, Tomoyuki Aotani, "Extending a Meta-tracing Compiler to Mix Method and Tracing Compilation". [[url]](https://3tty0n.github.io/baccaml-programming-morevms-2019.pdf)
 
 - Student Research Competition at &lt;Programming&gt; 2019: Yusuke Izawa, "BacCaml: The Meta-hybrid Just-In-Time Compiler". [[url]](https://3tty0n.github.io/baccaml-programming-src-2019.pdf)
-
-## Usage
-
-To run the interpreter already defined, execute following commands.
-
-```bash
-$ dune build interp/test_interp_{mj,tj}.exe
-# debug
-# execute as tracing jit
-$ dune exec interp/test_interp_tj.exe -- interp/test_interp.mcml
-# execute as method jit
-$ dune exec interp/test_interp_mj.exe -- interp/test_interp.mcml
-```
