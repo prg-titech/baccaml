@@ -21,31 +21,41 @@ let rec specialize_arith lhs rhs =
   | _ -> None
 ;;
 
-let exists e_lhs e = match e_lhs, e with
+let exists e_lhs e =
+  match e_lhs, e with
   | Add (x_lhs, y_lhs), Add (x, y)
   | Add (x_lhs, y_lhs), Sub (x, y)
   | Sub (x_lhs, y_lhs), Add (x, y)
-  | Sub (x_lhs, y_lhs), Sub (x, y) -> x_lhs = x || y_lhs = y
+  | Sub (x_lhs, y_lhs), Sub (x, y) ->
+    x_lhs = x || y_lhs = y
   | _ -> false
 ;;
 
 (* remove e_lhs *)
 (* specialize e_rhs *)
 let rec remove_and_specialize e_lhs e_rhs = function
-  | Let ((var, typ), e, t) when e = e_lhs ->
-    remove_and_specialize e_lhs e_rhs t
+  | Let ((var, typ), e, t) when e = e_lhs -> remove_and_specialize e_lhs e_rhs t
   | Let ((var, typ), e, t) when e = e_rhs ->
     Printf.eprintf "e_lhs, e: %s, %s\n" (show_exp e_lhs) (show_exp e);
     let e_opt = specialize_arith e_lhs e_rhs in
-    begin
-      match e_opt with
-      | Some v ->
-        Printf.eprintf "Specialized: %s\n" (Asm.show_exp v);
-        Let ((var, typ), v, remove_and_specialize e_lhs e_rhs t)
-      | None -> Let ((var, typ), e, remove_and_specialize e_lhs e_rhs t)
-    end
-  | Let ((var, typ), e, t) ->
-    Let ((var, typ), e, remove_and_specialize e_lhs e_rhs t)
+    (match e_opt with
+    | Some v ->
+      Printf.eprintf "Specialized: %s\n" (Asm.show_exp v);
+      Let ((var, typ), v, remove_and_specialize e_lhs e_rhs t)
+    | None -> Let ((var, typ), e, remove_and_specialize e_lhs e_rhs t))
+  | Let ((var, typ), e, t) -> Let ((var, typ), e, remove_and_specialize e_lhs e_rhs t)
+  | Ans (IfEq (x, y, t1, t2)) ->
+    let t1 = remove_and_specialize e_lhs e_rhs t1 in
+    let t2 = remove_and_specialize e_lhs e_rhs t2 in
+    Ans (IfEq (x, y, t1, t2))
+  | Ans (IfLE (x, y, t1, t2)) ->
+    let t1 = remove_and_specialize e_lhs e_rhs t1 in
+    let t2 = remove_and_specialize e_lhs e_rhs t2 in
+    Ans (IfLE (x, y, t1, t2))
+  | Ans (IfGE (x, y, t1, t2)) ->
+    let t1 = remove_and_specialize e_lhs e_rhs t1 in
+    let t2 = remove_and_specialize e_lhs e_rhs t2 in
+    Ans (IfGE (x, y, t1, t2))
   | Ans e -> Ans e
 ;;
 
@@ -54,27 +64,23 @@ let rec remove_and_specialize e_lhs e_rhs = function
 let constfold_arith t =
   let rec constfold_arith' env acc = function
     | Let ((var, typ), e, t) ->
-      begin
-        match e with
-          Add (x, y) | Sub (x, y) ->
-          begin
-            match M.find_opt x env with
-            | Some e_lhs ->
-              Printf.eprintf "e_trg: %s\n" (show_exp e_lhs);
-              let acc = remove_and_specialize e_lhs e acc in
-              Printf.eprintf "acc: %s\n" (show acc);
-              constfold_arith' env acc t
-            | None ->
-              let env = M.add var e env in
-              constfold_arith' env acc t
-          end
-        | _ ->
-          let env = M.add var e env in
+      (match e with
+      | Add (x, y) | Sub (x, y) ->
+        (match M.find_opt x env with
+        | Some e_lhs ->
+          Printf.eprintf "e_trg: %s\n" (show_exp e_lhs);
+          let acc = remove_and_specialize e_lhs e acc in
+          Printf.eprintf "acc: %s\n" (show acc);
           constfold_arith' env acc t
-      end
+        | None ->
+          let env = M.add var e env in
+          constfold_arith' env acc t)
+      | _ ->
+        let env = M.add var e env in
+        constfold_arith' env acc t)
     | Ans e -> acc
   in
-  constfold_arith' (M.empty) t t
+  constfold_arith' M.empty t t
 ;;
 
 let%test "constfold_arith test1" =
