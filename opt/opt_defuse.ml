@@ -2,6 +2,12 @@ open Std
 open MinCaml
 open Asm
 
+open Printf
+
+let ep = eprintf
+let sp = sprintf
+let pp = printf
+
 let contains2 var (id_t, id_or_imm) =
   let open Asm in
   var = id_t || match id_or_imm with C n -> false | V x -> var = x
@@ -10,6 +16,16 @@ let contains2 var (id_t, id_or_imm) =
 let contains3 var (id_t1, id_t2, id_or_imm) =
   let open Asm in
   var = id_t1 || var = id_t2 || match id_or_imm with C n -> false | V x -> var = x
+;;
+
+let exists e_lhs e =
+  match e_lhs, e with
+  | Add (x_lhs, y_lhs), Add (x, y)
+  | Add (x_lhs, y_lhs), Sub (x, y)
+  | Sub (x_lhs, y_lhs), Add (x, y)
+  | Sub (x_lhs, y_lhs), Sub (x, y) ->
+    x_lhs = x || y_lhs = y
+  | _ -> false
 ;;
 
 (* rhs appears after lhs *)
@@ -29,16 +45,6 @@ let rec specialize_arith lhs rhs =
     Some (Sub (x, C (n - m)))
   | e, Mov x -> Some e
   | _ -> None
-;;
-
-let exists e_lhs e =
-  match e_lhs, e with
-  | Add (x_lhs, y_lhs), Add (x, y)
-  | Add (x_lhs, y_lhs), Sub (x, y)
-  | Sub (x_lhs, y_lhs), Add (x, y)
-  | Sub (x_lhs, y_lhs), Sub (x, y) ->
-    x_lhs = x || y_lhs = y
-  | _ -> false
 ;;
 
 (* for tracing *)
@@ -66,13 +72,12 @@ let%test "is_guard_path test" =
 let rec remove_and_specialize e_lhs e_rhs = function
   | Let ((var, typ), e, t) when e = e_lhs -> remove_and_specialize e_lhs e_rhs t
   | Let ((var, typ), e, t) when e = e_rhs ->
-    Printf.eprintf "e_lhs, e: %s, %s\n" (show_exp e_lhs) (show_exp e);
     let e_opt = specialize_arith e_lhs e_rhs in
     (match e_opt with
     | Some v ->
-      Printf.eprintf "Specialized: %s\n" (Asm.show_exp v);
       Let ((var, typ), v, remove_and_specialize e_lhs e_rhs t)
-    | None -> Let ((var, typ), e, remove_and_specialize e_lhs e_rhs t))
+    | None ->
+      Let ((var, typ), e, remove_and_specialize e_lhs e_rhs t))
   | Let ((var, typ), e, t) -> Let ((var, typ), e, remove_and_specialize e_lhs e_rhs t)
   | Ans (IfEq (x, y, t1, t2)) ->
     let t1 = remove_and_specialize e_lhs e_rhs t1 in
@@ -93,27 +98,33 @@ let rec remove_and_specialize e_lhs e_rhs = function
 (* if it can be specialized, remove the "exp" from "acc" *)
 (* TODO: how to handle if expression *)
 let constfold t =
+  let extend_env var exp env = M.add var exp env in
   let rec constfold_arith env acc = function
     | Let ((var, typ), e, t) ->
       (match e with
        | Mov x ->
          (match M.find_opt x env with
           | Some e_lhs ->
+            (* ep "e_lhs: %s, x: %s\n" (show_exp e_lhs) x; *)
             let acc = remove_and_specialize e_lhs e acc in
+            let env = extend_env var e_lhs env in
             constfold_arith env acc t
           | None ->
-            let env = M.add var e env in
+            let env = extend_env var e env in
             constfold_arith env acc t)
        | Add (x, y) | Sub (x, y) ->
+         (* ep "finding x: %s\n" x; *)
          (match M.find_opt x env with
           | Some e_lhs ->
+            (* ep "e_lhs: %s\n" (show_exp e_lhs); *)
             let acc = remove_and_specialize e_lhs e acc in
+            let env = extend_env var e_lhs env in
             constfold_arith env acc t
           | None ->
-            let env = M.add var e env in
+            let env = extend_env var e env in
             constfold_arith env acc t)
        | _ ->
-         let env = M.add var e env in
+         let env = extend_env var e env in
          constfold_arith env acc t)
     | Ans e -> acc, env
   in
@@ -218,7 +229,9 @@ let%test_module "constfold test" = (module struct
       Let (("Ti195.686.1424", Int),  Add ("pc.402.1292",C 2 ),
       Ans (CallDir (L "guard_tracetj0.844",["stack.399"; "sp2.683.1423"; "bytecode.401.1293"; "Ti195.686.1424"; ],[])))))))))))))))))))))))))))))
     in
-    constfold_iter 10 t_trace1 |>  print_t;
+    constfold_iter 1 t_trace1
+    |> print_t;
+    print_newline ();
     true
   ;;
 end)
