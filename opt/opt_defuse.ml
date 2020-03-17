@@ -122,8 +122,8 @@ module Opt = struct
     | Ans e -> Ans e
   ;;
 
-  let rec constfold_if env = function
-    | Let (x, e, t) -> Let (x, e, constfold_if env t)
+  let rec const_fold_if env = function
+    | Let (x, e, t) -> Let (x, e, const_fold_if env t)
     | Ans (IfLE (x, y, t1, t2)) ->
       if is_guard_path t2 then
         let t = const_fold env t1 in
@@ -276,8 +276,9 @@ let%test_module "constfold test" = (module struct
   let%test "const_fold test1" =
     let r1 = Opt.(const_fold empty_env t_trace1) in
     let r2 = Opt.elim_dead_exp r1 in
+    pp "[TEST] Applying const_fold\n";
     r1 |> print_t; print_newline ();
-    print_newline ();
+    pp "\n[TEST] Applying elim_dead_exp\n";
     r2 |> print_t; print_newline ();
     true
   ;;
