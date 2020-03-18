@@ -281,12 +281,22 @@ module Opt = struct
                match M.find_opt z env with
                | Some var2 -> Let ((var, typ), St (x, y, V var2, w), const_fold_mov env t)
                | None -> Let ((var, typ), e, const_fold_mov env t))
+        | CallCls (x, args, fargs) ->
+          Let (
+            (var, typ)
+          , CallCls (
+              (if M.mem x env then M.find x env else x)
+            , args |> List.map (fun x -> if M.mem x env then M.find x env else x)
+            , fargs |> List.map (fun x -> if M.mem x env then M.find x env else x))
+          , const_fold_mov env t)
         | CallDir (id_l, args, fargs) ->
-          Let ((var, typ),
-               CallDir (id_l,
-                        args |> List.map (fun x -> if M.mem x env then M.find x env else x),
-                        fargs |> List.map (fun x -> if M.mem x env then M.find x env else x)),
-               const_fold_mov env t)
+          Let (
+            (var, typ)
+          , CallDir (
+              id_l
+            , args |> List.map (fun x -> if M.mem x env then M.find x env else x)
+            , fargs |> List.map (fun x -> if M.mem x env then M.find x env else x))
+          , const_fold_mov env t)
         | _ -> Let ((var, typ), e, const_fold_mov env t)
       end
     | Ans e -> Ans e
