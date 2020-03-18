@@ -8,6 +8,13 @@ let ep = eprintf
 let sp = sprintf
 let pp = printf
 
+let (<=>) e (x, y, t1, t2) =
+  match e with
+  | IfEq _ -> IfEq (x, y, t1, t2)
+  | IfLE _ -> IfLE (x, y, t1, t2)
+  | IfGE _ -> IfGE (x, y, t1, t2)
+  | _ -> failwith "unexpected expression."
+
 let contains2 var (id_t, id_or_imm) =
   let open Asm in
   var = id_t || match id_or_imm with C n -> false | V x -> var = x
@@ -81,6 +88,48 @@ module Opt = struct
     in is_guard_path t = true
   ;;
 
+  let rec is_occur var = function
+    | Let (_, e, t) -> is_occur_exp var e || is_occur var t
+    | Ans (e) ->
+      (match e with
+       | IfEq (x, V y, t1, t2) | IfLE (x, V y, t1, t2) | IfGE (x, V y, t1, t2) ->
+         var = x || var = y || (is_occur var t1 || is_occur var t2)
+       | IfEq (x, C _, t1, t2) | IfLE (x, C _, t1, t2) | IfGE (x, C _, t1, t2) ->
+         var = x || (is_occur var t1 || is_occur var t2)
+       | _ -> is_occur_exp var e)
+
+  and is_occur_exp (var : Id.t) (e : Asm.exp) : bool =
+    match e with
+    | Nop -> false
+    | Mov x -> (x = var)
+    | Add (x, V y) | Sub (x, V y) | Mul (x, V y) | Div (x, V y) | Mod (x, V y) -> (x = var || y = var)
+    | Add (x, C _) | Sub (x, C _) | Mul (x, C _) | Div (x, C _) | Mod (x, C _) -> (x = var)
+    | Ld (x, V y, _) -> (x = var || y = var)
+    | Ld (x, C _, _) -> (x = var)
+    | St (x, y, V z, _) -> (x = var || y = var || z = var)
+    | St (x, y, C _, _) -> (x = var || y = var)
+    | IfEq (x, V y, _, _) | IfLE (x, V y, _, _) | IfGE (x, V y, _, _) -> (x = var || y = var)
+    | IfEq (x, C _, _, _) | IfLE (x, C _, _, _) | IfGE (x, C _, _, _) -> (x = var)
+    | CallCls (x, args, fargs) -> x = var || List.mem var args || List.mem var fargs
+    | CallDir (Id.L x, args, fargs) -> x = var || List.mem var args || List.mem var fargs
+    | _ -> false
+  ;;
+
+  let%test_module "is_occur test" = (module struct
+    let t =
+      Let (("Ti242.609", Int),  Sub ("sp.400",C 2 ),
+           Let (("Ti244.611", Int),  Sub ("sp.400",C 3 ),
+                Let (("v.612", Int),  Ld ("stack.399",V "Ti244.611",4),
+                     Let (("Tu24.613", Unit),  St ("v.612","stack.399",V "sp.400",4),
+                          Let (("Ti246.615", Int),  Add ("sp.400",C 1 ),
+                               Let (("sp.400.848", Int),  Add ("sp.400",C 1 ),
+                                    Let (("Ti333.507.868", Int),  Set (0),
+                                         Ans (Mov "Ti333.507.868"))))))))
+
+    let%test _ = is_occur "Ti242.609" t = false
+    let%test _ = is_occur "Ti333.507.868" t = true
+  end)
+
   let specialize lhs rhs =
     Option.(
       match lhs, rhs with
@@ -89,6 +138,22 @@ module Opt = struct
       | Sub (x, C n), Add (y, C m) -> Sub (x, C (n - m)) |> some
       | Sub (x, C n), Sub (y, C m) -> Sub (x, C (n + m)) |> some
       | _ -> none)
+  ;;
+
+  let rec elim_dead_exp = function
+    | Let ((var, Type.Unit), e, t) -> (* side effect *)
+      Let ((var, Type.Unit), e, elim_dead_exp t)
+    | Let ((var, typ), e, t) ->
+      if is_occur var t
+      then Let ((var, typ), e, elim_dead_exp t)
+      else elim_dead_exp t
+    | Ans (IfEq (x, y, t1, t2)) ->
+      Ans (IfEq (x, y, elim_dead_exp t1, elim_dead_exp t2))
+    | Ans (IfLE (x, y, t1, t2)) ->
+      Ans (IfLE (x, y, elim_dead_exp t1, elim_dead_exp t2))
+    | Ans (IfGE (x, y, t1, t2)) ->
+      Ans (IfGE (x, y, elim_dead_exp t1, elim_dead_exp t2))
+    | Ans e -> Ans e
   ;;
 
   let rec const_fold env = function
@@ -124,85 +189,17 @@ module Opt = struct
 
   let rec const_fold_if env = function
     | Let (x, e, t) -> Let (x, e, const_fold_if env t)
-    | Ans (IfLE (x, y, t1, t2)) ->
-      if is_guard_path t2 then
-        let t = const_fold env t1 in
-        Ans (IfLE (x, y, t, t2))
-      else
-        let t = const_fold env t1 in
-        Ans (IfLE (x, y, t1, t))
-    | Ans (IfGE (x, y, t1, t2)) ->
-      if is_guard_path t2 then
-        let t = const_fold env t1 in
-        Ans (IfGE (x, y, t, t2))
-      else
-        let t = const_fold env t1 in
-        Ans (IfGE (x, y, t1, t))
-    | Ans (IfEq (x, y, t1, t2)) ->
-      if is_guard_path t2 then
-        let t = const_fold env t1 in
-        Ans (IfEq (x, y, t, t2))
-      else
-        let t = const_fold env t1 in
-        Ans (IfEq (x, y, t1, t))
-    | Ans e -> Ans e
-  ;;
-
-  let rec is_occur var = function
-    | Let (_, e, t) -> is_occur_exp var e || is_occur var t
-    | Ans (e) ->
-      (match e with
-       | IfEq (x, V y, t1, t2) | IfLE (x, V y, t1, t2) | IfGE (x, V y, t1, t2) ->
-         var = x || var = y || (is_occur var t1 || is_occur var t2)
-       | IfEq (x, C _, t1, t2) | IfLE (x, C _, t1, t2) | IfGE (x, C _, t1, t2) ->
-         var = x || (is_occur var t1 || is_occur var t2)
-       | _ -> is_occur_exp var e)
-
-  and is_occur_exp (var : Id.t) (e : Asm.exp) : bool =
-    match e with
-    | Nop -> false
-    | Mov x -> (x = var)
-    | Add (x, V y) | Sub (x, V y) | Mul (x, V y) | Div (x, V y) | Mod (x, V y) -> (x = var || y = var)
-    | Add (x, C _) | Sub (x, C _) | Mul (x, C _) | Div (x, C _) | Mod (x, C _) -> (x = var)
-    | Ld (x, V y, _) -> (x = var || y = var)
-    | Ld (x, C _, _) -> (x = var)
-    | St (x, y, V z, _) -> (x = var || y = var || z = var)
-    | St (x, y, C _, _) -> (x = var || y = var)
-    | IfEq (x, V y, _, _) | IfLE (x, V y, _, _) | IfGE (x, V y, _, _) -> (x = var || y = var)
-    | IfEq (x, C _, _, _) | IfLE (x, C _, _, _) | IfGE (x, C _, _, _) -> (x = var)
-    | CallCls (x, args, fargs) -> x = var || List.mem var args || List.mem var fargs
-    | CallDir (Id.L x, args, fargs) -> x = var || List.mem var args || List.mem var fargs
-    | _ -> false
-  ;;
-
-  let%test "is_occur test" =
-    let t =
-      Let (("Ti242.609", Int),  Sub ("sp.400",C 2 ),
-           Let (("Ti244.611", Int),  Sub ("sp.400",C 3 ),
-                Let (("v.612", Int),  Ld ("stack.399",V "Ti244.611",4),
-                     Let (("Tu24.613", Unit),  St ("v.612","stack.399",V "sp.400",4),
-                          Let (("Ti246.615", Int),  Add ("sp.400",C 1 ),
-                               Let (("sp.400.848", Int),  Add ("sp.400",C 1 ),
-                                    Let (("Ti333.507.868", Int),  Set (0),
-                                         Ans (Mov "Ti333.507.868")))))))) in
-    assert (is_occur "Ti242.609" t = false);
-    is_occur "Ti333.507.868" t = true
-  ;;
-
-  let rec elim_dead_exp = function
-    | Let ((var, Type.Unit), e, t) -> (* side effect *)
-      Let ((var, Type.Unit), e, elim_dead_exp t)
-    | Let ((var, typ), e, t) ->
-      if is_occur var t
-      then Let ((var, typ), e, elim_dead_exp t)
-      else elim_dead_exp t
-    | Ans (IfEq (x, y, t1, t2)) ->
-      Ans (IfEq (x, y, elim_dead_exp t1, elim_dead_exp t2))
-    | Ans (IfLE (x, y, t1, t2)) ->
-      Ans (IfLE (x, y, elim_dead_exp t1, elim_dead_exp t2))
-    | Ans (IfGE (x, y, t1, t2)) ->
-      Ans (IfGE (x, y, elim_dead_exp t1, elim_dead_exp t2))
-    | Ans e -> Ans e
+    | Ans (e) -> begin
+        match e with
+        | IfLE (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfEq (x, y, t1, t2) ->
+          if is_guard_path t2 then
+            let t = const_fold env t1 |> elim_dead_exp in
+            Ans (e <=> (x, y, t, t2))
+          else
+            let t = const_fold env t2 |> elim_dead_exp in
+            Ans (e <=> (x, y, t1, t))
+        | _ -> Ans (e)
+      end
   ;;
 
 end
@@ -276,10 +273,13 @@ let%test_module "constfold test" = (module struct
   let%test "const_fold test1" =
     let r1 = Opt.(const_fold empty_env t_trace1) in
     let r2 = Opt.elim_dead_exp r1 in
+    let r3 = Opt.(const_fold_if empty_env r2) in
     pp "[TEST] Applying const_fold\n";
     r1 |> print_t; print_newline ();
     pp "\n[TEST] Applying elim_dead_exp\n";
     r2 |> print_t; print_newline ();
+    pp "\n[TEST] Applying const_fold_if\n";
+    r3 |> print_t; print_newline ();
     true
   ;;
 end)
