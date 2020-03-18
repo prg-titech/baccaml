@@ -288,7 +288,19 @@ module Opt = struct
     | Let ((var, typ), e, t) ->
       let env = extend_env var e env in
       Let ((var, typ), e, const_fold env t)
-    | Ans e -> Ans e
+    | Ans e ->
+      begin
+        match e with
+        | IfEq (x, y, t1, t2)
+        | IfGE (x, y, t1, t2)
+        | IfLE (x, y, t1, t2) ->
+          if is_guard_path t2 then
+            Ans (e <=> (x, y, const_fold env t1, t2))
+          else
+            Ans (e <=> (x, y, t1, const_fold env t2))
+        | _ -> Ans e
+      end
+
   ;;
 
   let rec const_fold_if env = function
@@ -409,27 +421,20 @@ let%test_module "constfold test" = (module struct
          Ans (CallDir (L "tracetj0.844",["stack.399"; "sp2.670.2529"; ],[])))))))))))))))))))))))))))))))))
   ;;
 
-  let%test "const_fold test1" =
-    let r1 = Opt.(const_fold empty_env t_trace1) in
-    let r2 = Opt.(elim_dead_exp r1 |> const_fold_mov empty_env) in
-    let r3 = Opt.(const_fold_if empty_env r2) in
-    pp "[TEST] Applying const_fold\n";
-    r1 |> print_t; print_newline ();
-    pp "\n[TEST] Applying elim_dead_exp\n";
-    r2 |> print_t; print_newline ();
-    pp "\n[TEST] Applying const_fold_if\n";
-    r3 |> print_t; print_newline (); print_newline ();
+  let%test "const_fold_mov test1" =
+    pp "\n[TEST] cnost_fold_mov test1\n";
+    let r1 = Opt.(const_fold empty_env t_straight_trace2 |> elim_dead_exp) in
+    print_t r1; print_newline (); print_newline ();
     true
   ;;
 
-  let%test "const_fold_mov test1" =
-    (* pp "[TEST] cnost_fold_mov test1\n";
-     * let r1 = Opt.(const_fold empty_env t_straight_trace2 |> elim_dead_exp) in
-     * let r2 = Opt.(r1 |> const_fold_mov empty_env) in
-     * let r3 = Opt.(const_fold empty_env r2 |> elim_dead_exp) in
-     * print_t r1; print_newline (); print_newline ();
-     * print_t r2; print_newline (); print_newline ();
-     * print_t r3; print_newline (); print_newline (); *)
+  let%test "const_fold test1" =
+    pp "[TEST] Applying const_fold\n";
+    let r1 = Opt.(const_fold empty_env t_trace1
+                  |> elim_dead_exp
+                  |> const_fold_mov empty_env
+                  |> const_fold_if empty_env) in
+    r1 |> print_t; print_newline ();
     true
   ;;
 
