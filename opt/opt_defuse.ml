@@ -140,62 +140,6 @@ module Opt = struct
       | _ -> none)
   ;;
 
-  let rec elim_dead_exp = function
-    | Let ((var, Type.Unit), e, t) -> (* side effect *)
-      Let ((var, Type.Unit), e, elim_dead_exp t)
-    | Let ((var, typ), e, t) ->
-      if is_occur var t
-      then Let ((var, typ), e, elim_dead_exp t)
-      else elim_dead_exp t
-    | Ans (IfEq (x, y, t1, t2)) ->
-      Ans (IfEq (x, y, elim_dead_exp t1, elim_dead_exp t2))
-    | Ans (IfLE (x, y, t1, t2)) ->
-      Ans (IfLE (x, y, elim_dead_exp t1, elim_dead_exp t2))
-    | Ans (IfGE (x, y, t1, t2)) ->
-      Ans (IfGE (x, y, elim_dead_exp t1, elim_dead_exp t2))
-    | Ans e -> Ans e
-  ;;
-
-  let rec const_fold env = function
-    | Let ((var, typ), Add (x, y), t) when exists_var x env ->
-      let lhs = M.find x env in
-      (match specialize lhs (Add (x, y)) with
-      | Some e_res ->
-        let env = extend_env var e_res env in
-        Let ((var, typ), e_res, const_fold env t)
-      | None ->
-        let env = extend_env var (Add (x, y)) env in
-        Let ((var, typ), Add (x, y), const_fold env t))
-    | Let ((var, typ), Sub (x, y), t) when exists_var x env ->
-      let lhs = M.find x env in
-      (match specialize lhs (Sub (x, y)) with
-      | Some e_res ->
-        let env = extend_env var e_res env in
-        Let ((var, typ), e_res, const_fold env t)
-      | None ->
-        let env = extend_env var (Sub (x, y)) env in
-        Let ((var, typ), Sub (x, y), const_fold env t))
-    | Let ((var, typ), e, t) ->
-      let env = extend_env var e env in
-      Let ((var, typ), e, const_fold env t)
-    | Ans e -> Ans e
-  ;;
-
-  let rec const_fold_if env = function
-    | Let (x, e, t) -> Let (x, e, const_fold_if env t)
-    | Ans (e) -> begin
-        match e with
-        | IfLE (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfEq (x, y, t1, t2) ->
-          if is_guard_path t2 then
-            let t = const_fold env t1 |> elim_dead_exp in
-            Ans (e <=> (x, y, t, t2))
-          else
-            let t = const_fold env t2 |> elim_dead_exp in
-            Ans (e <=> (x, y, t1, t))
-        | _ -> Ans (e)
-      end
-  ;;
-
   let rec replace_var var1 e_mov e =
     match e_mov with
     | Mov var2 -> (
@@ -301,6 +245,67 @@ module Opt = struct
       end
     | Ans e -> Ans e
   ;;
+
+  let rec elim_dead_exp = function
+    | Let ((var, Type.Unit), e, t) -> (* side effect *)
+      Let ((var, Type.Unit), e, elim_dead_exp t)
+    | Let ((var, typ), e, t) ->
+      if is_occur var t
+      then Let ((var, typ), e, elim_dead_exp t)
+      else elim_dead_exp t
+    | Ans (IfEq (x, y, t1, t2)) ->
+      Ans (IfEq (x, y, elim_dead_exp t1, elim_dead_exp t2))
+    | Ans (IfLE (x, y, t1, t2)) ->
+      Ans (IfLE (x, y, elim_dead_exp t1, elim_dead_exp t2))
+    | Ans (IfGE (x, y, t1, t2)) ->
+      Ans (IfGE (x, y, elim_dead_exp t1, elim_dead_exp t2))
+    | Ans e -> Ans e
+  ;;
+
+  let rec const_fold env = function
+    | Let ((var, typ), Mov (x), t) when exists_var x env ->
+      let exp' = M.find x env in
+      let env = extend_env var exp' env in
+      Let ((var, typ), exp', const_fold env t)
+    | Let ((var, typ), Add (x, y), t) when exists_var x env ->
+      let lhs = M.find x env in
+      (match specialize lhs (Add (x, y)) with
+      | Some e_res ->
+        let env = extend_env var e_res env in
+        Let ((var, typ), e_res, const_fold env t)
+      | None ->
+        let env = extend_env var (Add (x, y)) env in
+        Let ((var, typ), Add (x, y), const_fold env t))
+    | Let ((var, typ), Sub (x, y), t) when exists_var x env ->
+      let lhs = M.find x env in
+      (match specialize lhs (Sub (x, y)) with
+      | Some e_res ->
+        let env = extend_env var e_res env in
+        Let ((var, typ), e_res, const_fold env t)
+      | None ->
+        let env = extend_env var (Sub (x, y)) env in
+        Let ((var, typ), Sub (x, y), const_fold env t))
+    | Let ((var, typ), e, t) ->
+      let env = extend_env var e env in
+      Let ((var, typ), e, const_fold env t)
+    | Ans e -> Ans e
+  ;;
+
+  let rec const_fold_if env = function
+    | Let (x, e, t) -> Let (x, e, const_fold_if env t)
+    | Ans (e) -> begin
+        match e with
+        | IfLE (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfEq (x, y, t1, t2) ->
+          if is_guard_path t2 then
+            let t = const_fold env t1 |> elim_dead_exp |> const_fold_mov empty_env in
+            Ans (e <=> (x, y, t, t2))
+          else
+            let t = const_fold env t2 |> elim_dead_exp |> const_fold_mov empty_env in
+            Ans (e <=> (x, y, t1, t))
+        | _ -> Ans (e)
+      end
+  ;;
+
 end
 
 
@@ -406,7 +411,7 @@ let%test_module "constfold test" = (module struct
 
   let%test "const_fold test1" =
     let r1 = Opt.(const_fold empty_env t_trace1) in
-    let r2 = Opt.elim_dead_exp r1 in
+    let r2 = Opt.(elim_dead_exp r1 |> const_fold_mov empty_env) in
     let r3 = Opt.(const_fold_if empty_env r2) in
     pp "[TEST] Applying const_fold\n";
     r1 |> print_t; print_newline ();
@@ -418,13 +423,13 @@ let%test_module "constfold test" = (module struct
   ;;
 
   let%test "const_fold_mov test1" =
-    pp "[TEST] cnost_fold_mov test1\n";
-    let r1 = Opt.(const_fold empty_env t_straight_trace2 |> elim_dead_exp) in
-    let r2 = Opt.(r1 |> const_fold_mov empty_env) in
-    let r3 = Opt.(const_fold empty_env r2 |> elim_dead_exp) in
-    print_t r1; print_newline (); print_newline ();
-    print_t r2; print_newline (); print_newline ();
-    print_t r3; print_newline (); print_newline ();
+    (* pp "[TEST] cnost_fold_mov test1\n";
+     * let r1 = Opt.(const_fold empty_env t_straight_trace2 |> elim_dead_exp) in
+     * let r2 = Opt.(r1 |> const_fold_mov empty_env) in
+     * let r3 = Opt.(const_fold empty_env r2 |> elim_dead_exp) in
+     * print_t r1; print_newline (); print_newline ();
+     * print_t r2; print_newline (); print_newline ();
+     * print_t r3; print_newline (); print_newline (); *)
     true
   ;;
 
