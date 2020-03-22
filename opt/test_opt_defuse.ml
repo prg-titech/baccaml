@@ -102,6 +102,61 @@ let%test_module "constfold test" = (module struct
          Ans (CallDir (L "tracetj0.844",["stack.399"; "sp2.670.2529"; ],[])))))))))))))))))))))))))))))))))
   ;;
 
+  let t_straight_trace3 =
+    Let (("Ti242.609", Int),  Sub ("sp.400",C 4 ),
+    Let (("Ti244.611", Int),  Sub ("Ti242.609",C 1 ),
+    Let (("v.612", Int),  Ld ("stack.399",V "Ti244.611",4),
+    Let (("Tu24.613", Unit),  St ("v.612","stack.399",V "sp.400",4),
+    Let (("Ti246.615", Int),  Add ("sp.400",C 1 ),
+    Let (("sp.400.861", Int),  Mov ("Ti246.615"),
+    Let (("Ti242.609.950", Int),  Sub ("sp.400.861",C 1 ),
+    Let (("Ti244.611.951", Int),  Sub ("Ti242.609.950",C 1 ),
+    Let (("v.612.952", Int),  Ld ("stack.399",V "Ti244.611.951",4),
+    Let (("Tu24.613.953", Unit),  St ("v.612.952","stack.399",V "sp.400.861",4),
+    Let (("Ti246.615.954", Int),  Add ("sp.400.861",C 1 ),
+    Let (("sp.400.1084", Int),  Mov ("Ti246.615.954"),
+    Let (("Ti73.813.1295", Int),  Sub ("sp.400.1084",C 1 ),
+    Let (("v2.814.1296", Int),  Ld ("stack.399",V "Ti73.813.1295",4),
+    Let (("Ti75.816.1297", Int),  Sub ("sp.400.1084",C 2 ),
+    Let (("v1.817.1298", Int),  Ld ("stack.399",V "Ti75.816.1297",4),
+    Let (("Ti77.819.1299", Int),  Sub ("sp.400.1084",C 2 ),
+    Let (("Ti78.820.1300", Int),  Add ("v1.817.1298",V "v2.814.1296"),
+    Let (("Tu5.821.1301", Unit),  St ("Ti78.820.1300","stack.399",V "Ti77.819.1299",4),
+    Let (("Ti80.823.1302", Int),  Sub ("sp.400.1084",C 1 ),
+    Let (("sp.400.1307", Int),  Mov ("Ti80.823.1302"),
+    Let (("Ti251.597.1388", Int),  Sub ("sp.400.1307",C 1 ),
+    Let (("v.598.1389", Int),  Ld ("stack.399",V "Ti251.597.1388",4),
+    Let (("Ti255.600.1390", Int),  Sub ("sp.400.1307",C 2 ),
+    Let (("Tu26.601.1391", Unit),  St ("v.598.1389","stack.399",V "Ti255.600.1390",4),
+    Let (("Ti257.603.1392", Int),  Sub ("sp.400.1307",C 1 ),
+    Let (("sp.400.1530", Int),  Mov ("Ti257.603.1392"),
+    Let (("Ti251.597.1611", Int),  Sub ("sp.400.1530",C 1 ),
+    Let (("v.598.1612", Int),  Ld ("stack.399",V "Ti251.597.1611",4),
+    Let (("Ti255.600.1613", Int),  Sub ("sp.400.1530",C 2 ),
+    Let (("Tu26.601.1614", Unit),  St ("v.598.1612","stack.399",V "Ti255.600.1613",4),
+    Let (("Ti257.603.1615", Int),  Sub ("sp.400.1530",C 1 ),
+    Let (("sp.400.1753", Int),  Mov ("Ti257.603.1615"),
+    Let (("Ti223.621.1849", Int),  Sub ("sp.400.1753",C 1 ),
+    Let (("v.622.1850", Int),  Ld ("stack.399",V "Ti223.621.1849",4),
+    Let (("Ti225.624.1851", Int),  Sub ("sp.400.1753",C 2 ),
+    Let (("mode.625.1852", Int),  Ld ("stack.399",V "Ti225.624.1851",4),
+    Let (("Ti227.627.1853", Int),  Sub ("sp.400.1753",C 3 ),
+    Let (("addr.628.1854", Int),  Ld ("stack.399",V "Ti227.627.1853",4),
+    Ans (IfEq ("mode.625.1852",C 200 ,
+    Let (("Ti231.633.1857", Int),  Sub ("sp.400.1753",C 1 ),
+    Let (("Ti233.635.1858", Int),  Sub ("Ti231.633.1857",C 3 ),
+    Let (("Tu23.636.1859", Unit),  St ("v.622.1850","stack.399",V "Ti233.635.1858",4),
+    Let (("Ti234.637.1860", Int),  Sub ("sp.400.1753",C 1 ),
+    Let (("sp2.639.1861", Int),  Sub ("Ti234.637.1860",C 2 ),
+    Ans (IfGE ("addr.628.1854",C 38 ,
+    Let (("bytecode.401.1752", Int),  CallDir (L "restore_min_caml_bp",[],[]),
+    Ans (CallDir (L "guard_tracetj1.857",["stack.399"; "sp2.639.1861"; "bytecode.401.1752"; "addr.628.1854"; ],[]))),
+    Let (("sp.400.1976", Int),  Mov ("sp2.639.1861"),
+    Let (("pc.402.1974", Int),  Mov ("addr.628.1854"),
+    Ans (CallDir (L "tracetj1.857",["stack.399"; "sp.400.1976"; ],[]))))))))))),
+    Ans (Mov ("v.622.1850")))))))))))))))))))))))))))))))))))))))))))
+  ;;
+
   let%test "const_fold_mov test1" =
     pp "\n[TEST] cnost_fold_mov test1\n";
     let r1 = Const_fold.(const_fold M_string.empty_env t_straight_trace2 |> elim_dead_exp) in
@@ -114,8 +169,18 @@ let%test_module "constfold test" = (module struct
         const_fold M_string.empty_env t_trace1
         |> elim_dead_exp
         |> const_fold_mov M_string.empty_env
-        |> const_fold_if M_string.empty_env) in
+        |> const_fold_if M_string.empty_env
+        |> const_fold_stld' (Array.make 20 None, 10) M.empty
+        |> elim_dead_exp |> const_fold_mov M.empty) in
     r1 |> print_t; print_newline ();
+    let r2 = Const_fold.(
+        const_fold M_string.empty_env t_straight_trace3
+        |> elim_dead_exp
+        |> const_fold_mov M_string.empty_env
+        |> const_fold_if M_string.empty_env
+        |> const_fold_stld' (Array.make 20 None, 10) M.empty
+        |> elim_dead_exp |> const_fold_mov M.empty) in
+    r2 |> print_t; print_newline ();
     true
   ;;
 
@@ -126,7 +191,8 @@ let%test_module "constfold test" = (module struct
         |> elim_dead_exp
         |> const_fold_mov M_string.empty_env
         |> const_fold_if M_string.empty_env
-        |> const_fold_stld' (Array.make 20 None, 10) M.empty) in
+        |> const_fold_stld' (Array.make 20 None, 10) M.empty
+        |> elim_dead_exp |> const_fold_mov M.empty) in
     r1 |> print_t; print_newline ();
     true;;
 
