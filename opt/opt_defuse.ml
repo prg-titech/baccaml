@@ -63,6 +63,7 @@ module Const_fold = struct
   let empty_env = M.empty
   let extend_env var exp env = M.add var exp env
   let exists_var var env = M.mem var env
+  let lookup key env = M.find key env
 
   (* for tracing *)
   let rec is_guard_path = function
@@ -281,5 +282,27 @@ module Const_fold = struct
           let t = const_fold env t2 |> const_fold_mov empty_env |> elim_dead_exp in
           Ans (e <=> (x, y, t1, t)))
       | _ -> Ans e)
+  ;;
+
+  type offset = int
+  type sp = Sp of string * offset
+
+  module M_int = Map.Make(struct type t = offset;; let compare = compare;; end)
+
+  let rec const_fold_stld (offset_env : sp M.t) (stld_env : Id.t M_int.t) = function
+    | Let ((var, typ), e, t) ->
+      (match e with
+      | Add (x, C n) ->
+        let offset_env = extend_env var (Sp (x, n)) offset_env in
+        Let ((var, typ), e, const_fold_stld offset_env stld_env t)
+      | Sub (x, C n) ->
+        let offset_env = extend_env var (Sp (x, -n)) offset_env in
+        Let ((var, typ), e, const_fold_stld offset_env stld_env t)
+      | St (x, y, V z, w) ->
+        let Sp (_, offset) = lookup z offset_env in
+        let stld_env = M_int.add offset x stld_env in
+        Let ((var, typ), e, const_fold_stld offset_env stld_env t)
+      | _ -> Let ((var, typ), e, const_fold_stld offset_env stld_env t))
+    | Ans e -> Ans e
   ;;
 end
