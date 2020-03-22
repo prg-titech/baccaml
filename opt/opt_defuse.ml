@@ -60,10 +60,31 @@ let%test "find test" =
 ;;
 
 module Const_fold = struct
-  let empty_env = M.empty
-  let extend_env var exp env = M.add var exp env
-  let exists_var var env = M.mem var env
-  let lookup key env = M.find key env
+  module M_string = struct
+    include MinCaml.M
+
+    let empty_env = M.empty
+    let extend_env var exp env = M.add var exp env
+    let mem var env = M.mem var env
+
+    let lookup x env =
+      try M.find x env with Not_found -> failwith @@ sp "offset %s is not found.\n" x
+    ;;
+  end
+
+  module M_int = struct
+    module M = Map.Make (Int)
+    include M
+
+    let empty_env = M.empty
+    let extend_env x y env = M.add x y env
+
+    let lookup x env =
+      try M.find x env with Not_found -> failwith @@ sp "offset %d is not found.\n" x
+    ;;
+
+    let mem x env = M.mem x env
+  end
 
   (* for tracing *)
   let rec is_guard_path = function
@@ -173,7 +194,7 @@ module Const_fold = struct
   let rec const_fold_mov env = function
     | Let ((var, typ), Mov x, t) ->
       ep "var: %s, x: %s\n" var x;
-      let env = extend_env var x env in
+      let env = M_string.extend_env var x env in
       const_fold_mov env t
     | Let ((var, typ), e, t) ->
       (match e with
@@ -234,39 +255,41 @@ module Const_fold = struct
     | Ans e -> Ans e
   ;;
 
-  let rec const_fold env = function
-    | Let ((var, typ), Mov x, t) when exists_var x env ->
-      let exp' = M.find x env in
-      let env = extend_env var exp' env in
-      Let ((var, typ), exp', const_fold env t)
-    | Let ((var, typ), Add (x, y), t) when exists_var x env ->
-      let lhs = M.find x env in
-      (match specialize lhs (Add (x, y)) with
-      | Some e_res ->
-        let env = extend_env var e_res env in
-        Let ((var, typ), e_res, const_fold env t)
-      | None ->
-        let env = extend_env var (Add (x, y)) env in
-        Let ((var, typ), Add (x, y), const_fold env t))
-    | Let ((var, typ), Sub (x, y), t) when exists_var x env ->
-      let lhs = M.find x env in
-      (match specialize lhs (Sub (x, y)) with
-      | Some e_res ->
-        let env = extend_env var e_res env in
-        Let ((var, typ), e_res, const_fold env t)
-      | None ->
-        let env = extend_env var (Sub (x, y)) env in
-        Let ((var, typ), Sub (x, y), const_fold env t))
-    | Let ((var, typ), e, t) ->
-      let env = extend_env var e env in
-      Let ((var, typ), e, const_fold env t)
-    | Ans e ->
-      (match e with
-      | IfEq (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfLE (x, y, t1, t2) ->
-        if is_guard_path t2
-        then Ans (e <=> (x, y, const_fold env t1, t2))
-        else Ans (e <=> (x, y, t1, const_fold env t2))
-      | _ -> Ans e)
+  let rec const_fold env =
+    M_string.(
+      function
+      | Let ((var, typ), Mov x, t) when mem x env ->
+        let exp' = M.find x env in
+        let env = extend_env var exp' env in
+        Let ((var, typ), exp', const_fold env t)
+      | Let ((var, typ), Add (x, y), t) when mem x env ->
+        let lhs = M.find x env in
+        (match specialize lhs (Add (x, y)) with
+        | Some e_res ->
+          let env = extend_env var e_res env in
+          Let ((var, typ), e_res, const_fold env t)
+        | None ->
+          let env = extend_env var (Add (x, y)) env in
+          Let ((var, typ), Add (x, y), const_fold env t))
+      | Let ((var, typ), Sub (x, y), t) when mem x env ->
+        let lhs = M.find x env in
+        (match specialize lhs (Sub (x, y)) with
+        | Some e_res ->
+          let env = extend_env var e_res env in
+          Let ((var, typ), e_res, const_fold env t)
+        | None ->
+          let env = extend_env var (Sub (x, y)) env in
+          Let ((var, typ), Sub (x, y), const_fold env t))
+      | Let ((var, typ), e, t) ->
+        let env = extend_env var e env in
+        Let ((var, typ), e, const_fold env t)
+      | Ans e ->
+        (match e with
+        | IfEq (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfLE (x, y, t1, t2) ->
+          if is_guard_path t2
+          then Ans (e <=> (x, y, const_fold env t1, t2))
+          else Ans (e <=> (x, y, t1, const_fold env t2))
+        | _ -> Ans e))
   ;;
 
   let rec const_fold_if env = function
@@ -276,33 +299,68 @@ module Const_fold = struct
       | IfLE (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfEq (x, y, t1, t2) ->
         if is_guard_path t2
         then (
-          let t = const_fold env t1 |> const_fold_mov empty_env |> elim_dead_exp in
+          let t =
+            const_fold env t1 |> const_fold_mov M_string.empty_env |> elim_dead_exp
+          in
           Ans (e <=> (x, y, t, t2)))
         else (
-          let t = const_fold env t2 |> const_fold_mov empty_env |> elim_dead_exp in
+          let t =
+            const_fold env t2 |> const_fold_mov M_string.empty_env |> elim_dead_exp
+          in
           Ans (e <=> (x, y, t1, t)))
       | _ -> Ans e)
   ;;
 
-  type offset = int
-  type sp = Sp of string * offset
+  type stack = int array * int
 
-  module M_int = Map.Make(struct type t = offset;; let compare = compare;; end)
+  let check_sp sp =
+    let sp_strs = String.split_on_char '.' sp in
+    List.hd sp_strs = "sp" && List.length sp_strs = 2
+  ;;
 
-  let rec const_fold_stld (offset_env : sp M.t) (stld_env : Id.t M_int.t) = function
+  let rec const_fold_stld' (stack, sp) env = function
     | Let ((var, typ), e, t) ->
       (match e with
-      | Add (x, C n) ->
-        let offset_env = extend_env var (Sp (x, n)) offset_env in
-        Let ((var, typ), e, const_fold_stld offset_env stld_env t)
-      | Sub (x, C n) ->
-        let offset_env = extend_env var (Sp (x, -n)) offset_env in
-        Let ((var, typ), e, const_fold_stld offset_env stld_env t)
+      | Add (x, C n) when check_sp x ->
+        let env = M.add var n env in
+        Let ((var, typ), e, const_fold_stld' (stack, sp) env t)
+      | Sub (x, C n) when check_sp x ->
+        let env = M.add var (-n) env in
+        Let ((var, typ), e, const_fold_stld' (stack, sp) env t)
+      | St (x, y, V z, w) when check_sp z ->
+        stack.(sp) <- Some x;
+        Let ((var, typ), e, const_fold_stld' (stack, sp) env t)
       | St (x, y, V z, w) ->
-        let Sp (_, offset) = lookup z offset_env in
-        let stld_env = M_int.add offset x stld_env in
-        Let ((var, typ), e, const_fold_stld offset_env stld_env t)
-      | _ -> Let ((var, typ), e, const_fold_stld offset_env stld_env t))
-    | Ans e -> Ans e
+        let sp' = M.find_opt z env in
+        (match sp' with
+        | Some sp' ->
+          stack.(sp + sp') <- Some x;
+          Let ((var, typ), e, const_fold_stld' (stack, sp) env t)
+        | None -> Let ((var, typ), e, const_fold_stld' (stack, sp) env t))
+      | Ld (x, V y, z) when check_sp y ->
+        let v = stack.(sp) in
+        (match v with
+        | Some v -> Let ((var, typ), Mov v, const_fold_stld' (stack, sp) env t)
+        | None -> Let ((var, typ), e, const_fold_stld' (stack, sp) env t))
+      | Ld (x, V y, z) ->
+        let sp' = M.find y env in
+        pp "Found %d by %s\n" sp' y;
+        let v' = stack.(sp + sp') in
+        (match v' with
+        | Some v ->
+          pp "Found v: %s by %d\n" v sp';
+          Let ((var, typ), Mov v, const_fold_stld' (stack, sp) env t)
+        | None -> Let ((var, typ), e, const_fold_stld' (stack, sp) env t))
+      | _ -> Let ((var, typ), e, const_fold_stld' (stack, sp) env t))
+    | Ans e ->
+      (match e with
+      | IfEq (x, y, t1, t2) | IfLE (x, y, t1, t2) | IfGE (x, y, t1, t2) ->
+        Ans
+          (e
+          <=> ( x
+              , y
+              , const_fold_stld' (stack, sp) env t1
+              , const_fold_stld' (stack, sp) env t2 ))
+      | _ -> Ans e)
   ;;
 end
