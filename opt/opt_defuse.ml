@@ -335,8 +335,7 @@ module Const_fold = struct
         (match sp' with
         | Some sp' ->
           stack.(sp + sp') <- Some x;
-          (* Let ((var, typ), e, const_fold_stld' (stack, sp) env t) *)
-          const_fold_stld' (stack, sp) env t
+          Let ((var, typ), e, const_fold_stld' (stack, sp) env t)
         | None -> Let ((var, typ), e, const_fold_stld' (stack, sp) env t))
       | Ld (x, V y, z) when check_sp y ->
         let v = stack.(sp) in
