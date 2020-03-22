@@ -104,20 +104,30 @@ let%test_module "constfold test" = (module struct
 
   let%test "const_fold_mov test1" =
     pp "\n[TEST] cnost_fold_mov test1\n";
-    let r1 = Const_fold.(const_fold empty_env t_straight_trace2 |> elim_dead_exp) in
-    print_t r1; print_newline (); print_newline ();
+    let r1 = Const_fold.(const_fold M_string.empty_env t_straight_trace2 |> elim_dead_exp) in
     true
   ;;
 
   let%test "const_fold test1" =
     pp "[TEST] Applying const_fold\n";
     let r1 = Const_fold.(
-        const_fold empty_env t_trace1
+        const_fold M_string.empty_env t_trace1
         |> elim_dead_exp
-        |> const_fold_mov empty_env
-        |> const_fold_if empty_env) in
+        |> const_fold_mov M_string.empty_env
+        |> const_fold_if M_string.empty_env) in
     r1 |> print_t; print_newline ();
     true
   ;;
+
+  let%test "const_fold test2 (applying const_fold_stld)" =
+    pp "[TEST] Applying const_fold + const_fold_stld\n";
+    let r1 = Const_fold.(
+        const_fold M_string.empty_env t_trace1
+        |> elim_dead_exp
+        |> const_fold_mov M_string.empty_env
+        |> const_fold_if M_string.empty_env
+        |> const_fold_stld' (Array.make 20 None, 10) M.empty) in
+    r1 |> print_t; print_newline ();
+    true;;
 
 end)
