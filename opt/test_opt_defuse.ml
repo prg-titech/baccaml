@@ -111,10 +111,11 @@ let%test_module "constfold test" = (module struct
 
   let%test "const_fold test1" =
     pp "[TEST] Applying const_fold\n";
-    let r1 = Const_fold.(const_fold empty_env t_trace1
-                  |> elim_dead_exp
-                  |> const_fold_mov empty_env
-                  |> const_fold_if empty_env) in
+    let r1 = Const_fold.(
+        const_fold empty_env t_trace1
+        |> elim_dead_exp
+        |> const_fold_mov empty_env
+        |> const_fold_if empty_env) in
     r1 |> print_t; print_newline ();
     true
   ;;
