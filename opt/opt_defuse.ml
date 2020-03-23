@@ -243,6 +243,23 @@ module Const_fold = struct
     | Ans e -> Ans e
   ;;
 
+  (* remove Add (x, C 0), Sub (x, C 0), etc. *)
+  let rec const_fold_identity t =
+    match t with
+    | Let ((var, typ), e, t) ->
+      (match const_fold_identity_exp e with
+      | `Identity x -> Let ((var, typ), Mov x, const_fold_identity t)
+      | `Not_identity -> Let ((var, typ), e, const_fold_identity t))
+    | Ans e ->
+      (match e with
+      | IfEq (x, y, t1, t2) | IfLE (x, y, t1, t2) | IfGE (x, y, t1, t2) ->
+        Ans (e <=> (x, y, const_fold_identity t1, const_fold_identity t2))
+      | _ -> Ans e)
+
+  and const_fold_identity_exp e =
+    match e with Add (x, C 0) | Sub (x, C 0) -> `Identity x | _ -> `Not_identity
+  ;;
+
   let rec elim_dead_exp = function
     | Let ((var, Type.Unit), e, t) ->
       (* side effect *)
