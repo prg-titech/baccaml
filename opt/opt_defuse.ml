@@ -194,7 +194,7 @@ module Const_fold = struct
   let rec const_fold_mov env = function
     | Let ((var, typ), Mov x, t) ->
       ep "var: %s, x: %s\n" var x;
-      let env = M_string.extend_env var x env in
+      let env = M.add var x env in
       const_fold_mov env t
     | Let ((var, typ), e, t) ->
       (match e with
@@ -240,24 +240,21 @@ module Const_fold = struct
               , fargs |> List.map (fun x -> if M.mem x env then M.find x env else x) )
           , const_fold_mov env t )
       | _ -> Let ((var, typ), e, const_fold_mov env t))
-    | Ans e -> Ans e
-  ;;
-
-  (* remove Add (x, C 0), Sub (x, C 0), etc. *)
-  let rec const_fold_identity t =
-    match t with
-    | Let ((var, typ), e, t) ->
-      (match const_fold_identity_exp e with
-      | `Identity x -> Let ((var, typ), Mov x, const_fold_identity t)
-      | `Not_identity -> Let ((var, typ), e, const_fold_identity t))
     | Ans e ->
-      (match e with
-      | IfEq (x, y, t1, t2) | IfLE (x, y, t1, t2) | IfGE (x, y, t1, t2) ->
-        Ans (e <=> (x, y, const_fold_identity t1, const_fold_identity t2))
-      | _ -> Ans e)
-
-  and const_fold_identity_exp e =
-    match e with Add (x, C 0) | Sub (x, C 0) -> `Identity x | _ -> `Not_identity
+      Ans
+        (match e with
+         | IfEq (x, V y, t1, t2) | IfLE (x, V y, t1, t2) | IfGE (x, V y, t1, t2) ->
+           let x_opt, y_opt = M.find_opt x env, M.find_opt y env in
+           (match x_opt, y_opt with
+           | Some x', None -> e <=> (x', V y, const_fold_mov env t1, const_fold_mov env t2)
+           | None, Some y' -> e <=> (x, V y', const_fold_mov env t1, const_fold_mov env t2)
+           | _ -> e <=> (x, V y, const_fold_mov env t1, const_fold_mov env t2))
+         | IfEq (x, C n, t1, t2) | IfLE (x, C n, t1, t2) | IfGE (x, C n, t1, t2) ->
+           let x_opt = M.find_opt x env in
+           (match x_opt with
+            | Some x' -> e <=> (x', C n, const_fold_mov env t1, const_fold_mov env t2)
+            | None -> e <=> (x, C n, const_fold_mov env t1, const_fold_mov env t2))
+         | _ -> e)
   ;;
 
   let rec elim_dead_exp = function
