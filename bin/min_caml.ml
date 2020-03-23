@@ -20,7 +20,7 @@ let emit_interp_wo_hints p =
   | `No -> p
 ;;
 
-let virtualize l = Opt.virtualize l |> emit_interp_wo_hints
+let virtualize l = Util.virtualize l |> emit_interp_wo_hints
 
 let open_out_file f =
   match !output_file with
@@ -112,7 +112,7 @@ let spec_list =
     , Arg.Int (fun i -> Inline.threshold := i)
     , "maximum size of functions inlined" )
   ; ( "-iter"
-    , Arg.Int (fun i -> Opt.limit := i)
+    , Arg.Int (fun i -> Util.limit := i)
     , "maximum number of optimizations iterated" )
   ; "-type", Arg.String set_jittyp, "specify jit type"
   ; ( "-err"

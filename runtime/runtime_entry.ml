@@ -54,7 +54,7 @@ module Util = struct
   let gen_ir () =
     let ic = file_open () in
     try
-      let p = ic |> Lexing.from_channel |> Opt.virtualize in
+      let p = ic |> Lexing.from_channel |> Util.virtualize in
       close_in ic;
       p
     with
