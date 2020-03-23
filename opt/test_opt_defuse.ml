@@ -188,11 +188,11 @@ let%test_module "constfold test" = (module struct
     pp "[TEST] Applying const_fold + const_fold_stld\n";
     let r1 = Const_fold.(
         const_fold M_string.empty_env t_trace1
-        |> elim_dead_exp
         |> const_fold_mov M_string.empty_env
         |> const_fold_if M_string.empty_env
-        |> const_fold_stld' (Array.make 20 None, 10) M.empty
-        |> elim_dead_exp |> const_fold_mov M.empty) in
+        |> elim_dead_exp
+        |> const_fold_identity
+        |> const_fold_mov M.empty) in
     r1 |> print_t; print_newline ();
     true;;
 
