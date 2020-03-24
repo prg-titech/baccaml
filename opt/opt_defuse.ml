@@ -243,18 +243,18 @@ module Const_fold = struct
     | Ans e ->
       Ans
         (match e with
-         | IfEq (x, V y, t1, t2) | IfLE (x, V y, t1, t2) | IfGE (x, V y, t1, t2) ->
-           let x_opt, y_opt = M.find_opt x env, M.find_opt y env in
-           (match x_opt, y_opt with
-           | Some x', None -> e <=> (x', V y, const_fold_mov env t1, const_fold_mov env t2)
-           | None, Some y' -> e <=> (x, V y', const_fold_mov env t1, const_fold_mov env t2)
-           | _ -> e <=> (x, V y, const_fold_mov env t1, const_fold_mov env t2))
-         | IfEq (x, C n, t1, t2) | IfLE (x, C n, t1, t2) | IfGE (x, C n, t1, t2) ->
-           let x_opt = M.find_opt x env in
-           (match x_opt with
-            | Some x' -> e <=> (x', C n, const_fold_mov env t1, const_fold_mov env t2)
-            | None -> e <=> (x, C n, const_fold_mov env t1, const_fold_mov env t2))
-         | _ -> e)
+        | IfEq (x, V y, t1, t2) | IfLE (x, V y, t1, t2) | IfGE (x, V y, t1, t2) ->
+          let x_opt, y_opt = M.find_opt x env, M.find_opt y env in
+          (match x_opt, y_opt with
+          | Some x', None -> e <=> (x', V y, const_fold_mov env t1, const_fold_mov env t2)
+          | None, Some y' -> e <=> (x, V y', const_fold_mov env t1, const_fold_mov env t2)
+          | _ -> e <=> (x, V y, const_fold_mov env t1, const_fold_mov env t2))
+        | IfEq (x, C n, t1, t2) | IfLE (x, C n, t1, t2) | IfGE (x, C n, t1, t2) ->
+          let x_opt = M.find_opt x env in
+          (match x_opt with
+          | Some x' -> e <=> (x', C n, const_fold_mov env t1, const_fold_mov env t2)
+          | None -> e <=> (x, C n, const_fold_mov env t1, const_fold_mov env t2))
+        | _ -> e)
   ;;
 
   let rec elim_dead_exp = function
@@ -351,49 +351,82 @@ module Const_fold = struct
     List.hd sp_strs = "sp" && List.length sp_strs = 2
   ;;
 
-  let rec const_fold_stld' (stack, sp) env = function
-    | Let ((var, typ), e, t) ->
-      (match e with
-      | Add (x, C n) when check_sp x ->
-        let env = M.add var n env in
-        Let ((var, typ), e, const_fold_stld' (stack, sp) env t)
-      | Sub (x, C n) when check_sp x ->
-        let env = M.add var (-n) env in
-        Let ((var, typ), e, const_fold_stld' (stack, sp) env t)
-      | St (x, y, V z, w) when check_sp z ->
-        stack.(sp) <- Some x;
-        Let ((var, typ), e, const_fold_stld' (stack, sp) env t)
-      | St (x, y, V z, w) ->
-        let sp' = M.find_opt z env in
-        (match sp' with
-        | Some sp' ->
-          stack.(sp + sp') <- Some x;
-          Let ((var, typ), e, const_fold_stld' (stack, sp) env t)
-        | None -> Let ((var, typ), e, const_fold_stld' (stack, sp) env t))
-      | Ld (x, V y, z) when check_sp y ->
-        let v = stack.(sp) in
-        (match v with
-        | Some v -> Let ((var, typ), Mov v, const_fold_stld' (stack, sp) env t)
-        | None -> Let ((var, typ), e, const_fold_stld' (stack, sp) env t))
-      | Ld (x, V y, z) ->
-        let sp' = M.find y env in
-        pp "Found %d by %s\n" sp' y;
-        let v' = stack.(sp + sp') in
-        (match v' with
-        | Some v ->
-          pp "Found v: %s by %d\n" v sp';
-          Let ((var, typ), Mov v, const_fold_stld' (stack, sp) env t)
-        | None -> Let ((var, typ), e, const_fold_stld' (stack, sp) env t))
-      | _ -> Let ((var, typ), e, const_fold_stld' (stack, sp) env t))
+  let check_stack id =
+    let stk_strs = String.split_on_char '.' id in
+    List.hd stk_strs = "stack" && List.length stk_strs = 2
+  ;;
+
+  let rec can_read_later (stack,sp) env = function
+    | Let ((var, typ), Add (x, C n), t) when check_sp x ->
+      let env = M.add x n env in
+      can_read_later (stack,sp) env t
+    | Let ((var, typ), Sub (x, C n), t) when check_sp x ->
+      let env = M.add x (-n) env in
+      can_read_later (stack,sp) env t
+    | Let ((var, typ), Ld (x, V y, z), t) when check_stack x ->
+      (try
+         let sp = M.find y env in
+         pp "Ld (%s, %s, %d), sp: %d by %s\n" x y z sp y;
+         true
+       with
+      | Not_found -> can_read_later (stack,sp) env t)
+    | Let ((var, typ), e, t) -> can_read_later (stack,sp) env t
     | Ans e ->
       (match e with
       | IfEq (x, y, t1, t2) | IfLE (x, y, t1, t2) | IfGE (x, y, t1, t2) ->
-        Ans
-          (e
-          <=> ( x
-              , y
-              , const_fold_stld' (stack, sp) env t1
-              , const_fold_stld' (stack, sp) env t2 ))
-      | _ -> Ans e)
+        can_read_later (stack,sp) env t1 || can_read_later (stack,sp) env t2
+      | _ -> false)
   ;;
+
+  let rec const_fold_mem t =
+    let rec const_fold_mem' (stack, sp) env = function
+      | Let ((var, typ), e, t) ->
+        (match e with
+         | Add (x, C n) when check_sp x ->
+           let env = M.add var n env in
+           Let ((var, typ), e, const_fold_mem' (stack, sp) env t)
+         | Sub (x, C n) when check_sp x ->
+           let env = M.add var (-n) env in
+           Let ((var, typ), e, const_fold_mem' (stack, sp) env t)
+         | St (x, y, V z, w) when check_sp z ->
+           stack.(sp) <- Some x;
+           Let ((var, typ), e, const_fold_mem' (stack, sp) env t)
+         | St (x, y, V z, w) ->
+           let sp' = M.find_opt z env in
+           (match sp' with
+            | Some sp' ->
+              stack.(sp + sp') <- Some x;
+              if can_read_later (stack, sp) env t then
+                const_fold_mem' (stack, sp) env t
+              else
+                Let ((var, typ), e, const_fold_mem' (stack, sp) env t)
+            | None -> Let ((var, typ), e, const_fold_mem' (stack, sp) env t))
+         | Ld (x, V y, z) when check_sp y ->
+           let v = stack.(sp) in
+           (match v with
+            | Some v -> Let ((var, typ), Mov v, const_fold_mem' (stack, sp) env t)
+            | None -> Let ((var, typ), e, const_fold_mem' (stack, sp) env t))
+         | Ld (x, V y, z) ->
+           let sp' = M.find y env in
+           pp "Found %d by %s\n" sp' y;
+           let v' = stack.(sp + sp') in
+           (match v' with
+            | Some v ->
+              pp "Found v: %s by %d\n" v sp';
+              Let ((var, typ), Mov v, const_fold_mem' (stack, sp) env t)
+            | None -> Let ((var, typ), e, const_fold_mem' (stack, sp) env t))
+         | _ -> Let ((var, typ), e, const_fold_mem' (stack, sp) env t))
+      | Ans e ->
+        (match e with
+         | IfEq (x, y, t1, t2) | IfLE (x, y, t1, t2) | IfGE (x, y, t1, t2) ->
+           Ans
+             (e
+              <=> ( x
+                  , y
+                  , const_fold_mem' (stack, sp) env t1
+                  , const_fold_mem' (stack, sp) env t2 ))
+         | _ -> Ans e)
+    in const_fold_mem' (Array.make 100 None, 50) M.empty t
+  ;;
+
 end

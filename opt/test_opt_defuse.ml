@@ -170,7 +170,6 @@ let%test_module "constfold test" = (module struct
         |> elim_dead_exp
         |> const_fold_mov M_string.empty_env
         |> const_fold_if M_string.empty_env
-        |> const_fold_stld' (Array.make 20 None, 10) M.empty
         |> elim_dead_exp |> const_fold_mov M.empty) in
     r1 |> print_t; print_newline ();
     let r2 = Const_fold.(
@@ -178,7 +177,6 @@ let%test_module "constfold test" = (module struct
         |> elim_dead_exp
         |> const_fold_mov M_string.empty_env
         |> const_fold_if M_string.empty_env
-        |> const_fold_stld' (Array.make 20 None, 10) M.empty
         |> elim_dead_exp |> const_fold_mov M.empty) in
     r2 |> print_t; print_newline ();
     true
@@ -191,7 +189,8 @@ let%test_module "constfold test" = (module struct
         |> const_fold_mov M_string.empty_env
         |> const_fold_if M_string.empty_env
         |> elim_dead_exp
-        |> const_fold_identity) in
+        |> const_fold_identity
+        |> const_fold_mem) in
     r1 |> print_t; print_newline ();
     true;;
 
