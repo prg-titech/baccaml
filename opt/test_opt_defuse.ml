@@ -190,7 +190,7 @@ let%test_module "constfold test" = (module struct
         |> const_fold_if M_string.empty_env
         |> elim_dead_exp
         |> const_fold_identity
-        |> const_fold_mem) in
+      ) |> Mem_opt.const_fold_mem in
     r1 |> print_t; print_newline ();
     true;;
 
