@@ -285,8 +285,6 @@ end
 module Mem_opt = struct
   module M' = Map.Make (Int)
 
-  type stack = int array * int
-
   let check_sp sp =
     let sp_strs = String.split_on_char '.' sp in
     List.hd sp_strs = "sp" && List.length sp_strs = 2
