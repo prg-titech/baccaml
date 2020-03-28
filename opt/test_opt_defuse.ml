@@ -192,6 +192,22 @@ let%test_module "constfold test" = (module struct
         |> const_fold_identity
       ) |> Mem_opt.const_fold_mem in
     r1 |> print_t; print_newline ();
-    true;;
+    true
+  ;;
 
+  let%test "mem_opt test" =
+    let r1 = Const_fold.(
+        const_fold M.empty t_trace1
+        |> const_fold_mov M.empty
+        |> const_fold_if M.empty
+        |> elim_dead_exp
+        |> const_fold_identity
+      ) |> Mem_opt.const_fold_mem in
+    let remove_cand = Mem_opt.(
+        find_remove_candidate M.empty M'.empty M.empty r1) in
+    M.iter (fun key e ->
+        print_string key; print_string " ";
+        print_exp e; print_newline ()) remove_cand;
+    true
+  ;;
 end)
