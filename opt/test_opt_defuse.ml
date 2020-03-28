@@ -163,7 +163,7 @@ let%test_module "constfold test" = (module struct
   ;;
 
   let%test "const_fold test1" =
-    pp "[TEST] Applying const_fold\n";
+    print_endline "[TEST] Applying const_fold";
     let r1 = Const_fold.(
         const_fold M.empty t_trace1
         |> elim_dead_exp
@@ -183,7 +183,7 @@ let%test_module "constfold test" = (module struct
   ;;
 
   let%test "const_fold test2 (applying const_fold_stld)" =
-    pp "[TEST] Applying const_fold + const_fold_stld\n";
+    print_endline "[TEST] Applying const_fold + const_fold_stld";
     let r1 =
       Const_fold.(
         const_fold M.empty t_trace1
@@ -199,6 +199,7 @@ let%test_module "constfold test" = (module struct
   ;;
 
   let%test "mem_opt test" =
+    print_endline "[TEST] Applying const_fold + mem_opt";
     let r1 =
       Const_fold.(
         const_fold M.empty t_trace1
@@ -207,11 +208,13 @@ let%test_module "constfold test" = (module struct
         |> elim_dead_exp
         |> const_fold_identity)
       |> Mem_opt.(remove_rw M.empty M'.empty) in
-    let remove_cand = Mem_opt.(
-        find_remove_candidate M.empty M'.empty M.empty r1) in
-    M.iter (fun key e ->
-        print_string key; print_string " ";
-        print_exp e; print_newline ()) remove_cand;
+    let remove_cand = Mem_opt.(find_remove_candidate M.empty M'.empty M.empty r1) in
+    remove_cand
+    |> M.iter (fun key e ->
+           print_string key; print_string " "; print_exp e; print_newline ());
+    print_endline "Applying remove_unused_write";
+    let r2 = Mem_opt.remove_unread_write remove_cand r1 in
+    print_t r2; print_newline ();
     true
   ;;
 end)
