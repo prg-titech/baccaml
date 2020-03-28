@@ -402,5 +402,9 @@ module Mem_opt = struct
         Let ((var, typ), e, t |> remove_unused_write sp_env mem_env remove_cand))
     | Let ((var, typ), e, t) ->
       Let ((var, typ), e, t |> remove_unused_write sp_env mem_env remove_cand)
+    | Ans (IfEq (x, y, t1, t2) as e) | Ans (IfLE (x, y, t1, t2) as e) | Ans (IfGE (x, y, t1, t2) as e) ->
+      let f = remove_unused_write sp_env mem_env remove_cand in
+      Ans (e <=> (x, y, f t1, f t2))
+    | Ans e -> Ans e
   ;;
 end
