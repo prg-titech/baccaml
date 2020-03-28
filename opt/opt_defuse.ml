@@ -368,5 +368,39 @@ module Mem_opt = struct
     const_fold_mem' (Array.make 100 None, 50) M.empty t
   ;;
 
+  module M' = Map.Make (Int)
 
+  let rec remove_unused_write sp_env mem_env remove_cand = function
+    | Let ((var, typ), Add (x, C n), t) when check_sp x ->
+      let sp_env = M.add var n sp_env in
+      Let ((var, typ), Add (x, C n), remove_unused_write sp_env mem_env remove_cand t)
+    | Let ((var, typ), Sub (x, C n), t) when check_sp x ->
+      let sp_env = M.add var (-n) sp_env in
+      Let ((var, typ), Add (x, C n), remove_unused_write sp_env mem_env remove_cand t)
+    | Let ((var, typ), (St (x, y, V z, w) as e), t) when check_stack y && check_sp z ->
+      (match M'.find_opt 0 mem_env with
+      | Some e' ->
+        let remove_cand = M.add var e' remove_cand in
+        let mem_env = M'.add 0 e' mem_env in
+        Let ((var, typ), e, t |> remove_unused_write sp_env mem_env remove_cand)
+      | None ->
+        let mem_env = M'.add 0 e mem_env in
+        Let ((var, typ), e, t |> remove_unused_write sp_env mem_env remove_cand))
+    | Let ((var, typ), (St (x, y, V z, w) as e), t) when check_stack y ->
+      (try
+         let sp = M.find z sp_env in
+         match M'.find_opt sp mem_env with
+         | Some e' ->
+           let remove_cand = M.add var e' remove_cand in
+           let mem_env = M'.add sp e mem_env in
+           Let ((var, typ), e, t |> remove_unused_write sp_env mem_env remove_cand)
+         | None ->
+           let mem_env = M'.add sp e mem_env in
+           Let ((var, typ), e, t |> remove_unused_write sp_env mem_env remove_cand)
+       with
+      | Not_found ->
+        Let ((var, typ), e, t |> remove_unused_write sp_env mem_env remove_cand))
+    | Let ((var, typ), e, t) ->
+      Let ((var, typ), e, t |> remove_unused_write sp_env mem_env remove_cand)
+  ;;
 end
