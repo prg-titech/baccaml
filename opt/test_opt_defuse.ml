@@ -158,8 +158,7 @@ let%test_module "constfold test" = (module struct
   ;;
 
   let%test "const_fold_mov test1" =
-    pp "\n[TEST] cnost_fold_mov test1\n";
-    let r1 = Const_fold.(const_fold M.empty t_straight_trace2 |> elim_dead_exp) in
+    let _ = Const_fold.(const_fold M.empty t_straight_trace2 |> elim_dead_exp) in
     true
   ;;
 
@@ -179,30 +178,35 @@ let%test_module "constfold test" = (module struct
         |> const_fold_if M.empty
         |> elim_dead_exp |> const_fold_mov M.empty) in
     r2 |> print_t; print_newline ();
+    flush_all ();
     true
   ;;
 
   let%test "const_fold test2 (applying const_fold_stld)" =
     pp "[TEST] Applying const_fold + const_fold_stld\n";
-    let r1 = Const_fold.(
+    let r1 =
+      Const_fold.(
         const_fold M.empty t_trace1
         |> const_fold_mov M.empty
         |> const_fold_if M.empty
         |> elim_dead_exp
-        |> const_fold_identity
-      ) |> Mem_opt.const_fold_mem in
+        |> const_fold_identity)
+      |>  Mem_opt.(remove_rw M.empty M'.empty)
+    in
     r1 |> print_t; print_newline ();
+    flush_all ();
     true
   ;;
 
   let%test "mem_opt test" =
-    let r1 = Const_fold.(
+    let r1 =
+      Const_fold.(
         const_fold M.empty t_trace1
         |> const_fold_mov M.empty
         |> const_fold_if M.empty
         |> elim_dead_exp
-        |> const_fold_identity
-      ) |> Mem_opt.const_fold_mem in
+        |> const_fold_identity)
+      |> Mem_opt.(remove_rw M.empty M'.empty) in
     let remove_cand = Mem_opt.(
         find_remove_candidate M.empty M'.empty M.empty r1) in
     M.iter (fun key e ->
