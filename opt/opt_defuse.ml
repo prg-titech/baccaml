@@ -370,4 +370,14 @@ module Mem_opt = struct
       if is_guard_path t1 then f t2 else f t1
     | Ans e -> remove_cand
   ;;
+
+  let rec remove_unread_write cand = function
+    | Let ((var, typ), e, t) when M.mem var cand -> remove_unread_write cand t
+    | Let ((var, typ), e, t) -> Let ((var, typ), e, remove_unread_write cand t)
+    | Ans (IfEq (x, y, t1, t2) as e)
+    | Ans (IfLE (x, y, t1, t2) as e)
+    | Ans (IfGE (x, y, t1, t2) as e) ->
+      Ans (e <=> (x, y, remove_unread_write cand t1, remove_unread_write cand t2))
+    | Ans e -> Ans e
+  ;;
 end
