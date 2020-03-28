@@ -344,23 +344,23 @@ module Mem_opt = struct
       find_remove_candidate sp_env mem_env remove_cand t
     | Let ((var, typ), (St (x, y, V z, w) as e), t) when check_stack y && check_sp z ->
       (match M'.find_opt 0 mem_env with
-      | Some e' ->
-        let remove_cand = M.add var e' remove_cand in
-        let mem_env = M'.add 0 e' mem_env in
+      | Some (var', e') ->
+        let remove_cand = M.add var' e' remove_cand in
+        let mem_env = M'.add 0 (var, e) mem_env in
         t |> find_remove_candidate sp_env mem_env remove_cand
       | None ->
-        let mem_env = M'.add 0 e mem_env in
+        let mem_env = M'.add 0 (var, e) mem_env in
         t |> find_remove_candidate sp_env mem_env remove_cand)
     | Let ((var, typ), (St (x, y, V z, w) as e), t) when check_stack y ->
       (try
          let sp = M.find z sp_env in
          match M'.find_opt sp mem_env with
-         | Some e' ->
-           let remove_cand = M.add var e' remove_cand in
-           let mem_env = M'.add sp e mem_env in
+         | Some (var', e') ->
+           let remove_cand = M.add var' e' remove_cand in
+           let mem_env = M'.add sp (var, e) mem_env in
            t |> find_remove_candidate sp_env mem_env remove_cand
          | None ->
-           let mem_env = M'.add sp e mem_env in
+           let mem_env = M'.add sp (var, e) mem_env in
            t |> find_remove_candidate sp_env mem_env remove_cand
        with
       | Not_found -> t |> find_remove_candidate sp_env mem_env remove_cand)
