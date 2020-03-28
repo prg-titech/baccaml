@@ -370,22 +370,22 @@ module Mem_opt = struct
 
   module M' = Map.Make (Int)
 
-  let rec remove_unused_write sp_env mem_env remove_cand = function
+  let rec find_remove_candidate sp_env mem_env remove_cand = function
     | Let ((var, typ), Add (x, C n), t) when check_sp x ->
       let sp_env = M.add var n sp_env in
-      Let ((var, typ), Add (x, C n), remove_unused_write sp_env mem_env remove_cand t)
+      find_remove_candidate sp_env mem_env remove_cand t
     | Let ((var, typ), Sub (x, C n), t) when check_sp x ->
       let sp_env = M.add var (-n) sp_env in
-      Let ((var, typ), Add (x, C n), remove_unused_write sp_env mem_env remove_cand t)
+      find_remove_candidate sp_env mem_env remove_cand t
     | Let ((var, typ), (St (x, y, V z, w) as e), t) when check_stack y && check_sp z ->
       (match M'.find_opt 0 mem_env with
       | Some e' ->
         let remove_cand = M.add var e' remove_cand in
         let mem_env = M'.add 0 e' mem_env in
-        Let ((var, typ), e, t |> remove_unused_write sp_env mem_env remove_cand)
+        t |> find_remove_candidate sp_env mem_env remove_cand
       | None ->
         let mem_env = M'.add 0 e mem_env in
-        Let ((var, typ), e, t |> remove_unused_write sp_env mem_env remove_cand))
+        t |> find_remove_candidate sp_env mem_env remove_cand)
     | Let ((var, typ), (St (x, y, V z, w) as e), t) when check_stack y ->
       (try
          let sp = M.find z sp_env in
@@ -393,18 +393,24 @@ module Mem_opt = struct
          | Some e' ->
            let remove_cand = M.add var e' remove_cand in
            let mem_env = M'.add sp e mem_env in
-           Let ((var, typ), e, t |> remove_unused_write sp_env mem_env remove_cand)
+           t |> find_remove_candidate sp_env mem_env remove_cand
          | None ->
            let mem_env = M'.add sp e mem_env in
-           Let ((var, typ), e, t |> remove_unused_write sp_env mem_env remove_cand)
+           t |> find_remove_candidate sp_env mem_env remove_cand
        with
-      | Not_found ->
-        Let ((var, typ), e, t |> remove_unused_write sp_env mem_env remove_cand))
-    | Let ((var, typ), e, t) ->
-      Let ((var, typ), e, t |> remove_unused_write sp_env mem_env remove_cand)
-    | Ans (IfEq (x, y, t1, t2) as e) | Ans (IfLE (x, y, t1, t2) as e) | Ans (IfGE (x, y, t1, t2) as e) ->
-      let f = remove_unused_write sp_env mem_env remove_cand in
-      Ans (e <=> (x, y, f t1, f t2))
-    | Ans e -> Ans e
+      | Not_found -> t |> find_remove_candidate sp_env mem_env remove_cand)
+    | Let ((var, typ), e, t) -> t |> find_remove_candidate sp_env mem_env remove_cand
+    | Ans (IfEq (x, y, t1, t2)) | Ans (IfLE (x, y, t1, t2)) | Ans (IfGE (x, y, t1, t2)) ->
+      let f = find_remove_candidate sp_env mem_env remove_cand in
+      M.merge
+        (fun key v1_opt v2_opt ->
+          match v1_opt, v2_opt with
+          | None, None -> None
+          | Some v1, None -> Some v1
+          | None, Some v2 -> Some v2
+          | Some v1, Some v2 -> failwith (sp "duplicated key: %s" key))
+        (f t1)
+        (f t2)
+    | Ans e -> remove_cand
   ;;
 end
