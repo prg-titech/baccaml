@@ -159,24 +159,24 @@ let%test_module "constfold test" = (module struct
 
   let%test "const_fold_mov test1" =
     pp "\n[TEST] cnost_fold_mov test1\n";
-    let r1 = Const_fold.(const_fold M_string.empty_env t_straight_trace2 |> elim_dead_exp) in
+    let r1 = Const_fold.(const_fold M.empty t_straight_trace2 |> elim_dead_exp) in
     true
   ;;
 
   let%test "const_fold test1" =
     pp "[TEST] Applying const_fold\n";
     let r1 = Const_fold.(
-        const_fold M_string.empty_env t_trace1
+        const_fold M.empty t_trace1
         |> elim_dead_exp
-        |> const_fold_mov M_string.empty_env
-        |> const_fold_if M_string.empty_env
+        |> const_fold_mov M.empty
+        |> const_fold_if M.empty
         |> elim_dead_exp |> const_fold_mov M.empty) in
     r1 |> print_t; print_newline ();
     let r2 = Const_fold.(
-        const_fold M_string.empty_env t_straight_trace3
+        const_fold M.empty t_straight_trace3
         |> elim_dead_exp
-        |> const_fold_mov M_string.empty_env
-        |> const_fold_if M_string.empty_env
+        |> const_fold_mov M.empty
+        |> const_fold_if M.empty
         |> elim_dead_exp |> const_fold_mov M.empty) in
     r2 |> print_t; print_newline ();
     true
@@ -185,9 +185,9 @@ let%test_module "constfold test" = (module struct
   let%test "const_fold test2 (applying const_fold_stld)" =
     pp "[TEST] Applying const_fold + const_fold_stld\n";
     let r1 = Const_fold.(
-        const_fold M_string.empty_env t_trace1
-        |> const_fold_mov M_string.empty_env
-        |> const_fold_if M_string.empty_env
+        const_fold M.empty t_trace1
+        |> const_fold_mov M.empty
+        |> const_fold_if M.empty
         |> elim_dead_exp
         |> const_fold_identity
       ) |> Mem_opt.const_fold_mem in
