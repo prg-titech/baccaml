@@ -25,41 +25,41 @@ let contains3 var (id_t1, id_t2, id_or_imm) =
   var = id_t1 || var = id_t2 || match id_or_imm with C n -> false | V x -> var = x
 ;;
 
+(* for tracing *)
+let rec is_guard_path = function
+  | Let (_, e, t) -> is_guard_path_exp e || is_guard_path t
+  | Ans e -> is_guard_path_exp e
+
+and is_guard_path_exp = function
+  | CallDir (Id.L x, _, _) -> String.starts_with x "guard_"
+  | _ -> false
+;;
+
+let%test "is_guard_path test" =
+  let t =
+    Let
+      ( ("pc.402.1292", Int)
+      , Set 16
+      , Let
+          ( ("bytecode.401.1293", Int)
+          , CallDir (L "restore_min_caml_bp", [], [])
+          , Let
+              ( ("Ti195.686.1424", Int)
+              , Add ("pc.402.1292", C 2)
+              , Ans
+                  (CallDir
+                     ( L "guard_tracetj0.844"
+                     , [ "stack.399"
+                       ; "sp2.683.1423"
+                       ; "bytecode.401.1293"
+                       ; "Ti195.686.1424"
+                       ]
+                     , [] )) ) ) )
+  in
+  is_guard_path t = true
+;;
+
 module Const_fold = struct
-  (* for tracing *)
-  let rec is_guard_path = function
-    | Let (_, e, t) -> is_guard_path_exp e || is_guard_path t
-    | Ans e -> is_guard_path_exp e
-
-  and is_guard_path_exp = function
-    | CallDir (Id.L x, _, _) -> String.starts_with x "guard_"
-    | _ -> false
-  ;;
-
-  let%test "is_guard_path test" =
-    let t =
-      Let
-        ( ("pc.402.1292", Int)
-        , Set 16
-        , Let
-            ( ("bytecode.401.1293", Int)
-            , CallDir (L "restore_min_caml_bp", [], [])
-            , Let
-                ( ("Ti195.686.1424", Int)
-                , Add ("pc.402.1292", C 2)
-                , Ans
-                    (CallDir
-                       ( L "guard_tracetj0.844"
-                       , [ "stack.399"
-                         ; "sp2.683.1423"
-                         ; "bytecode.401.1293"
-                         ; "Ti195.686.1424"
-                         ]
-                       , [] )) ) ) )
-    in
-    is_guard_path t = true
-  ;;
-
   let rec is_occur var = function
     | Let (_, e, t) -> is_occur_exp var e || is_occur var t
     | Ans e ->
@@ -402,15 +402,7 @@ module Mem_opt = struct
     | Let ((var, typ), e, t) -> t |> find_remove_candidate sp_env mem_env remove_cand
     | Ans (IfEq (x, y, t1, t2)) | Ans (IfLE (x, y, t1, t2)) | Ans (IfGE (x, y, t1, t2)) ->
       let f = find_remove_candidate sp_env mem_env remove_cand in
-      M.merge
-        (fun key v1_opt v2_opt ->
-          match v1_opt, v2_opt with
-          | None, None -> None
-          | Some v1, None -> Some v1
-          | None, Some v2 -> Some v2
-          | Some v1, Some v2 -> failwith (sp "duplicated key: %s" key))
-        (f t1)
-        (f t2)
+      if is_guard_path t1 then f t2 else f t1
     | Ans e -> remove_cand
   ;;
 end
