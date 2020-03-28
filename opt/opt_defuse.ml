@@ -133,7 +133,7 @@ module Const_fold = struct
 
   let rec const_fold_mov env = function
     | Let ((var, typ), Mov x, t) ->
-      ep "var: %s, x: %s\n" var x;
+      pp "var: %s, x: %s\n" var x;
       let env = M.add var x env in
       const_fold_mov env t
     | Let ((var, typ), e, t) ->
@@ -283,6 +283,8 @@ module Const_fold = struct
 end
 
 module Mem_opt = struct
+  module M' = Map.Make (Int)
+
   type stack = int array * int
 
   let check_sp sp =
@@ -368,7 +370,43 @@ module Mem_opt = struct
     const_fold_mem' (Array.make 100 None, 50) M.empty t
   ;;
 
-  module M' = Map.Make (Int)
+  let rec remove_rw sp_env mem_env = function
+    | Let ((var, typ), (Add (x, C n) as e), t) when check_sp x ->
+      let sp_env = M.add var n sp_env in
+      Let ((var, typ), e, remove_rw sp_env mem_env t)
+    | Let ((var, typ), (Sub (x, C n) as e), t) when check_sp x ->
+      let sp_env = M.add var (-n) sp_env in
+      Let ((var, typ), e, remove_rw sp_env mem_env t)
+    | Let ((var, typ), (St (x, y, V z, w) as e), t) when check_stack y && check_sp z ->
+      let mem_env = M'.add 0 x mem_env in
+      Let ((var, typ), e, t |> remove_rw sp_env mem_env)
+    | Let ((var, typ), (St (x, y, V z, w) as e), t) when check_stack y ->
+      (try
+         let sp = M.find z sp_env in
+         let mem_env = M'.add sp x mem_env in
+         Let ((var, typ), e, t |> remove_rw sp_env mem_env)
+       with
+      | Not_found -> Let ((var, typ), e, t |> remove_rw sp_env mem_env))
+    | Let ((var, typ), (Ld (x, V y, z) as e), t) when check_stack x && check_sp y ->
+      (try
+         let addr = M'.find 0 mem_env in
+         Let ((var, typ), Mov addr, t |> remove_rw sp_env mem_env)
+       with
+      | Not_found -> Let ((var, typ), e, t |> remove_rw sp_env mem_env))
+    | Let ((var, typ), (Ld (x, V y, z) as e), t) when check_stack x ->
+      (try
+         let sp = M.find y sp_env in
+         let addr = M'.find sp mem_env in
+         Let ((var, typ), Mov addr, t |> remove_rw sp_env mem_env)
+       with
+      | Not_found -> Let ((var, typ), e, t |> remove_rw sp_env mem_env))
+    | Let ((var, typ), e, t) -> Let ((var, typ), e, t |> remove_rw sp_env mem_env)
+    | Ans (IfEq (x, y, t1, t2) as e)
+    | Ans (IfLE (x, y, t1, t2) as e)
+    | Ans (IfGE (x, y, t1, t2) as e) ->
+      Ans (e <=> (x, y, remove_rw sp_env mem_env t1, remove_rw sp_env mem_env t2))
+    | Ans e -> Ans e
+  ;;
 
   let rec find_remove_candidate sp_env mem_env remove_cand = function
     | Let ((var, typ), Add (x, C n), t) when check_sp x ->
