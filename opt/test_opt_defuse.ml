@@ -171,13 +171,6 @@ let%test_module "constfold test" = (module struct
         |> const_fold_if M.empty
         |> elim_dead_exp |> const_fold_mov M.empty) in
     r1 |> print_t; print_newline ();
-    let r2 = Const_fold.(
-        const_fold M.empty t_straight_trace3
-        |> elim_dead_exp
-        |> const_fold_mov M.empty
-        |> const_fold_if M.empty
-        |> elim_dead_exp |> const_fold_mov M.empty) in
-    r2 |> print_t; print_newline ();
     flush_all ();
     true
   ;;
@@ -215,6 +208,8 @@ let%test_module "constfold test" = (module struct
     print_endline "Applying remove_unused_write";
     let r2 = Mem_opt.remove_unread_write remove_cand r1 in
     print_t r2; print_newline ();
+    let r3 = Const_fold.elim_dead_exp r2 in
+    print_t r3; print_newline ();
     true
   ;;
 end)
