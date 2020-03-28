@@ -295,7 +295,7 @@ module Mem_opt = struct
     List.hd stk_strs = "stack" && List.length stk_strs = 2
   ;;
 
-  let rec remove_rw sp_env mem_env = function
+  let rec remove_rw (sp_env : int M.t) (mem_env : string M'.t) = function
     | Let ((var, typ), (Add (x, C n) as e), t) when check_sp x ->
       let sp_env = M.add var n sp_env in
       Let ((var, typ), e, remove_rw sp_env mem_env t)
@@ -333,7 +333,11 @@ module Mem_opt = struct
     | Ans e -> Ans e
   ;;
 
-  let rec find_remove_candidate sp_env mem_env remove_cand = function
+  let rec find_remove_candidate
+      (sp_env : int M.t)
+      (mem_env : (string * exp) M'.t)
+      (remove_cand : exp M.t)
+    = function
     | Let ((var, typ), Add (x, C n), t) when check_sp x ->
       let sp_env = M.add var n sp_env in
       find_remove_candidate sp_env mem_env remove_cand t
@@ -377,5 +381,11 @@ module Mem_opt = struct
     | Ans (IfGE (x, y, t1, t2) as e) ->
       Ans (e <=> (x, y, remove_unread_write cand t1, remove_unread_write cand t2))
     | Ans e -> Ans e
+  ;;
+
+  let const_fold_rw t =
+    let t1 = remove_rw M.empty M'.empty t in
+    let cand = find_remove_candidate M.empty M'.empty M.empty t1 in
+    remove_unread_write cand t1
   ;;
 end
