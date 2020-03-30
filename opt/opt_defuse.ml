@@ -207,7 +207,7 @@ module Const_fold = struct
 
   let rec const_fold_mov env = function
     | Let ((var, typ), Mov x, t) ->
-      pp "var: %s, x: %s\n" var x;
+      (* pp "var: %s, x: %s\n" var x; *)
       let env = M.add var x env in
       const_fold_mov env t
     | Let ((var, typ), e, t) ->
@@ -284,6 +284,7 @@ module Const_fold = struct
   ;;
 
   (* remove Add (x, C 0), Sub (x, C 0), etc. *)
+  (* TODO: move expressions related to guard operation *)
   let rec const_fold_identity t =
     let rec const_fold_identity' t =
       match t with
