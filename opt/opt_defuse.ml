@@ -26,39 +26,112 @@ let contains3 var (id_t1, id_t2, id_or_imm) =
   var = id_t1 || var = id_t2 || match id_or_imm with C n -> false | V x -> var = x
 ;;
 
-(* for tracing *)
-let rec is_guard_path = function
-  | Let (_, e, t) -> is_guard_path_exp e || is_guard_path t
-  | Ans e -> is_guard_path_exp e
-
-and is_guard_path_exp = function
-  | CallDir (Id.L x, _, _) -> String.starts_with x "guard_"
+let contains var e =
+  match e with
+  | Nop -> false
+  | Set _ -> false
+  | SetL (Id.L x) -> x = var
+  | Mov x -> x = var
+  | Add (x, y) | Sub (x, y) | Mul (x, y) | Div (x, y) | Mod (x, y) -> contains2 var (x, y)
+  | Ld (x, y, z) -> contains2 var (x, y)
+  | St (x, y, z, w) -> contains3 var (x, y, z)
+  | IfEq (x, y, _, _) | IfGE (x, y, _, _) | IfLE (x, y, _, _) -> contains2 var (x, y)
+  | CallCls (x, args, fargs) -> var = x || List.mem var args || List.mem var fargs
+  | CallDir (Id.L x, args, fargs) -> var = x || List.mem var args || List.mem var fargs
   | _ -> false
 ;;
 
-let%test "is_guard_path test" =
-  let t =
-    Let
-      ( ("pc.402.1292", Int)
-      , Set 16
-      , Let
-          ( ("bytecode.401.1293", Int)
-          , CallDir (L "restore_min_caml_bp", [], [])
-          , Let
-              ( ("Ti195.686.1424", Int)
-              , Add ("pc.402.1292", C 2)
-              , Ans
-                  (CallDir
-                     ( L "guard_tracetj0.844"
-                     , [ "stack.399"
-                       ; "sp2.683.1423"
-                       ; "bytecode.401.1293"
-                       ; "Ti195.686.1424"
-                       ]
-                     , [] )) ) ) )
-  in
-  is_guard_path t = true
-;;
+module Guard_opt : sig
+  val is_guard_path : t -> bool
+end = struct
+  (* for tracing *)
+  let rec is_guard_path = function
+    | Let (_, e, t) -> is_guard_path_exp e || is_guard_path t
+    | Ans e -> is_guard_path_exp e
+
+  and is_guard_path_exp = function
+    | CallDir (Id.L x, _, _) -> String.starts_with x "guard_"
+    | _ -> false
+  ;;
+
+  let%test "is_guard_path test" =
+    let t =
+      Let
+        ( ("pc.402.1292", Int)
+        , Set 16
+        , Let
+            ( ("bytecode.401.1293", Int)
+            , CallDir (L "restore_min_caml_bp", [], [])
+            , Let
+                ( ("Ti195.686.1424", Int)
+                , Add ("pc.402.1292", C 2)
+                , Ans
+                    (CallDir
+                       ( L "guard_tracetj0.844"
+                       , [ "stack.399"
+                         ; "sp2.683.1423"
+                         ; "bytecode.401.1293"
+                         ; "Ti195.686.1424"
+                         ]
+                       , [] )) ) ) )
+    in
+    is_guard_path t = true
+  ;;
+
+  let rec get_insts_inside_guard = function
+    | Let ((var, typ), e, t) -> get_insts_inside_guard t
+    | Ans (IfEq (x, y, t1, t2)) | Ans (IfLE (x, y, t1, t2)) | Ans (IfGE (x, y, t1, t2)) ->
+      if is_guard_path t2
+      then t2 :: get_insts_inside_guard t1
+      else if is_guard_path t1
+      then t1 :: get_insts_inside_guard t2
+      else failwith "impossible application."
+    | Ans e -> [ Ans e ]
+  ;;
+
+  let get_vars_of_guard_insts t =
+    let insts_in_guard = get_insts_inside_guard t in
+    insts_in_guard |> List.map Asm.fv |> List.flatten
+  ;;
+
+  let move_guard_insts t =
+    let vars_of_guard_ints = get_vars_of_guard_insts t in
+    let rec exists e = function
+      | Let (_, e', t) -> e = e' || exists e t
+      | Ans e' -> e = e'
+    in
+    let rec get_insts_outside acc t =
+      match t with
+      | Let ((var, typ), e, t) ->
+        if List.exists (fun var -> contains var e) vars_of_guard_ints
+        then (
+          let acc = Asm.concat (Ans (e)) (var, typ) acc in
+          get_insts_outside acc t)
+        else get_insts_outside acc t
+      | Ans e -> acc
+    in
+    let rec move_in_to_the_guard cand t =
+      match t with
+      | Let ((var, typ), e, t) ->
+        if exists e cand then
+          move_in_to_the_guard cand t
+        else
+          Let ((var, typ), e, move_in_to_the_guard cand t)
+      | Ans (IfEq (x, y, t1, t2) as e)
+      | Ans (IfLE (x, y, t1, t2) as e)
+      | Ans (IfGE (x, y, t1, t2) as e) ->
+        if is_guard_path t1 then
+          let t1' = Asm.concat cand (Id.gentmp Type.Unit, Type.Unit) t1 in
+          Ans (e <=> (x, y, t1', t2))
+        else
+          let t2' = Asm.concat cand (Id.gentmp Type.Unit, Type.Unit) t2 in
+          Ans (e <=> (x, y, t1, t2'))
+      | Ans e -> Ans e
+    in
+    let insts_outside = get_insts_outside (Ans (Nop)) t in
+    move_in_to_the_guard insts_outside t
+  ;;
+end
 
 module Const_fold = struct
   let rec is_occur var = function
@@ -261,7 +334,7 @@ module Const_fold = struct
     | Ans e ->
       (match e with
       | IfEq (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfLE (x, y, t1, t2) ->
-        if is_guard_path t2
+        if Guard_opt.is_guard_path t2
         then Ans (e <=> (x, y, const_fold env t1, t2))
         else Ans (e <=> (x, y, t1, const_fold env t2))
       | _ -> Ans e)
@@ -272,7 +345,7 @@ module Const_fold = struct
     | Ans e ->
       (match e with
       | IfLE (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfEq (x, y, t1, t2) ->
-        if is_guard_path t2
+        if Guard_opt.is_guard_path t2
         then (
           let t = const_fold env t1 |> const_fold_mov M.empty |> elim_dead_exp in
           Ans (e <=> (x, y, t, t2)))
@@ -373,7 +446,7 @@ end = struct
     | Let ((var, typ), e, t) -> t |> find_remove_candidate sp_env mem_env remove_cand
     | Ans (IfEq (x, y, t1, t2)) | Ans (IfLE (x, y, t1, t2)) | Ans (IfGE (x, y, t1, t2)) ->
       let f = find_remove_candidate sp_env mem_env remove_cand in
-      if is_guard_path t1 then f t2 else f t1
+      if Guard_opt.is_guard_path t1 then f t2 else f t1
     | Ans e -> remove_cand
   ;;
 
