@@ -82,20 +82,22 @@ end = struct
     | Let ((var, typ), e, t) -> get_insts_inside_guard t
     | Ans (IfEq (x, y, t1, t2)) | Ans (IfLE (x, y, t1, t2)) | Ans (IfGE (x, y, t1, t2)) ->
       if is_guard_path t2
-      then t2 :: get_insts_inside_guard t1
+      then t2
       else if is_guard_path t1
-      then t1 :: get_insts_inside_guard t2
+      then t1
       else failwith "impossible application."
-    | Ans e -> [ Ans e ]
+    | Ans e -> Ans e
   ;;
 
-  let get_vars_of_guard_insts t =
-    let insts_in_guard = get_insts_inside_guard t in
-    insts_in_guard |> List.map Asm.fv |> List.flatten
+  let get_vars_inside_guard t =
+    Asm.fv (get_insts_inside_guard t)
+    |> List.filter (fun var ->
+           let re = Str.regexp "stack.\\([a-zA-Z0-9]+\\)\\(\\.[a-ZA-Z0-9]*\\)*" in
+           not (Str.string_match re var 0))
   ;;
 
-  let move_guard_insts t =
-    let vars_of_guard_ints = get_vars_of_guard_insts t in
+  let move_into_guard t =
+    let vars_inside_guard = get_vars_inside_guard t in
     let rec exists e = function
       | Let (_, e', t) -> e = e' || exists e t
       | Ans e' -> e = e'
@@ -103,33 +105,130 @@ end = struct
     let rec get_insts_outside acc t =
       match t with
       | Let ((var, typ), e, t) ->
-        if List.exists (fun var -> contains var e) vars_of_guard_ints
+        if List.exists (fun var -> contains var e) vars_inside_guard
+           || List.mem var vars_inside_guard
         then (
-          let acc = Asm.concat (Ans (e)) (var, typ) acc in
+          let acc = Asm.concat (Ans e) (var, typ) acc in
           get_insts_outside acc t)
         else get_insts_outside acc t
       | Ans e -> acc
     in
-    let rec move_in_to_the_guard cand t =
+    let rec move_into_the_guard cand t =
       match t with
       | Let ((var, typ), e, t) ->
-        if exists e cand then
-          move_in_to_the_guard cand t
-        else
-          Let ((var, typ), e, move_in_to_the_guard cand t)
+        if exists e cand
+        then move_into_the_guard cand t
+        else Let ((var, typ), e, move_into_the_guard cand t)
       | Ans (IfEq (x, y, t1, t2) as e)
       | Ans (IfLE (x, y, t1, t2) as e)
       | Ans (IfGE (x, y, t1, t2) as e) ->
-        if is_guard_path t1 then
+        if is_guard_path t1
+        then (
           let t1' = Asm.concat cand (Id.gentmp Type.Unit, Type.Unit) t1 in
-          Ans (e <=> (x, y, t1', t2))
-        else
+          Ans (e <=> (x, y, t1', t2)))
+        else (
           let t2' = Asm.concat cand (Id.gentmp Type.Unit, Type.Unit) t2 in
-          Ans (e <=> (x, y, t1, t2'))
+          Ans (e <=> (x, y, t1, t2')))
       | Ans e -> Ans e
     in
-    let insts_outside = get_insts_outside (Ans (Nop)) t in
-    move_in_to_the_guard insts_outside t
+    let insts_outside = get_insts_outside (Ans Nop) t in
+    move_into_the_guard insts_outside t
+  ;;
+
+  let%test_module "move guard insts test" =
+    (module struct
+      let t1 =
+        Let (("Ti242.609", Int),  Sub ("sp.400",C 2 ),
+        Let (("Ti244.611", Int),  Sub ("Ti242.609",C 1 ),
+        Let (("v.612", Int),  Ld ("stack.399",V "Ti244.611",4),
+        Let (("Tu24.613", Unit),  St ("v.612","stack.399",V "sp.400",4),
+        Let (("Ti246.615", Int),  Add ("sp.400",C 1 ),
+        Let (("sp.400.848", Int),  Mov ("Ti246.615"),
+        Let (("Ti333.507.868", Int),  Set (0),
+        Let (("Tu32.508.869", Unit),  St ("Ti333.507.868","stack.399",V "sp.400.848",4),
+        Let (("Ti335.510.870", Int),  Add ("sp.400.848",C 1 ),
+        Let (("sp.400.1071", Int),  Mov ("Ti335.510.870"),
+        Let (("Ti149.724.1225", Int),  Sub ("sp.400.1071",C 1 ),
+        Let (("v2.725.1226", Int),  Ld ("stack.399",V "Ti149.724.1225",4),
+        Let (("Ti151.727.1227", Int),  Sub ("sp.400.1071",C 2 ),
+        Let (("v1.728.1228", Int),  Ld ("stack.399",V "Ti151.727.1227",4),
+        Let (("n.729.1229", Int),  IfLE ("v1.728.1228",V "v2.725.1226",
+        Ans (Set (1)),
+        Ans (Set (0))),
+        Let (("Ti153.731.1230", Int),  Sub ("sp.400.1071",C 2 ),
+        Let (("Tu12.732.1231", Unit),  St ("n.729.1229","stack.399",V "Ti153.731.1230",4),
+        Let (("Ti155.734.1232", Int),  Sub ("sp.400.1071",C 1 ),
+        Let (("sp.400.1294", Int),  Mov ("Ti155.734.1232"),
+        Let (("Ti191.680.1421", Int),  Sub ("sp.400.1294",C 1 ),
+        Let (("v.681.1422", Int),  Ld ("stack.399",V "Ti191.680.1421",4),
+        Let (("sp2.683.1423", Int),  Sub ("sp.400.1294",C 1 ),
+        Ans (IfEq ("v.681.1422",C 0 ,
+        Let (("sp.400.1517", Int),  Mov ("sp2.683.1423"),
+        Ans (Mov "sp.400.1517")),
+        Let (("pc.402.1292", Int),  Set (16),
+        Let (("bytecode.401.1293", Int),  CallDir (L "restore_min_caml_bp",[],[]),
+        Let (("Ti195.686.1424", Int),  Add ("pc.402.1292",C 2 ),
+        Ans (CallDir (L "guard_tracetj0.844",["stack.399"; "sp2.683.1423"; "bytecode.401.1293"; "Ti195.686.1424"; ],[])))))))))))))))))))))))))))))
+      [@@ocamlformat "disable"]
+
+      let t1_moved =
+        Let (("Ti242.609", Int),  Sub ("sp.400",C 2 ),
+        Let (("Ti244.611", Int),  Sub ("Ti242.609",C 1 ),
+        Let (("v.612", Int),  Ld ("stack.399",V "Ti244.611",4),
+        Let (("Tu24.613", Unit),  St ("v.612","stack.399",V "sp.400",4),
+        Let (("Ti246.615", Int),  Add ("sp.400",C 1 ),
+        Let (("sp.400.848", Int),  Mov ("Ti246.615"),
+        Let (("Ti333.507.868", Int),  Set (0),
+        Let (("Tu32.508.869", Unit),  St ("Ti333.507.868","stack.399",V "sp.400.848",4),
+        Let (("Ti335.510.870", Int),  Add ("sp.400.848",C 1 ),
+        Let (("sp.400.1071", Int),  Mov ("Ti335.510.870"),
+        Let (("Ti149.724.1225", Int),  Sub ("sp.400.1071",C 1 ),
+        Let (("v2.725.1226", Int),  Ld ("stack.399",V "Ti149.724.1225",4),
+        Let (("Ti151.727.1227", Int),  Sub ("sp.400.1071",C 2 ),
+        Let (("v1.728.1228", Int),  Ld ("stack.399",V "Ti151.727.1227",4),
+        Let (("n.729.1229", Int),  IfLE ("v1.728.1228",V "v2.725.1226",
+        Ans (Set (1)),
+        Ans (Set (0))),
+        Let (("Ti153.731.1230", Int),  Sub ("sp.400.1071",C 2 ),
+        Let (("Tu12.732.1231", Unit),  St ("n.729.1229","stack.399",V "Ti153.731.1230",4),
+        Let (("Ti155.734.1232", Int),  Sub ("sp.400.1071",C 1 ),
+        Let (("sp.400.1294", Int),  Mov ("Ti155.734.1232"),
+        Let (("v.681.1422", Int),  Ld ("stack.399",V "Ti191.680.1421",4),
+        Ans (IfEq ("v.681.1422",C 0 ,
+        Let (("sp.400.1517", Int),  Mov ("sp2.683.1423"),
+        Ans (Mov ("sp.400.1517"))),
+        Let (("sp2.683.1423", Int),  Sub ("sp.400.1294",C 1 ),
+        Let (("Tu1", Unit),  Nop,
+        Let (("pc.402.1292", Int),  Set (16),
+        Let (("bytecode.401.1293", Int),  CallDir (L "restore_min_caml_bp",[],[]),
+        Let (("Ti195.686.1424", Int),  Add ("pc.402.1292",C 2 ),
+        Ans (CallDir (L "guard_tracetj0.844",["stack.399"; "sp2.683.1423"; "bytecode.401.1293"; "Ti195.686.1424"; ],[]))
+            )))))))))))))))))))))))))))
+      [@@ocamlformat "disabled"]
+
+      let%test "get_insts_inside_guard test" =
+        print_endline "";
+        let r1 = get_insts_inside_guard t1 in
+        let guard_branch =
+          Let (("pc.402.1292", Int),  Set (16),
+               Let (("bytecode.401.1293", Int),  CallDir (L "restore_min_caml_bp",[],[]),
+                    Let (("Ti195.686.1424", Int),  Add ("pc.402.1292",C 2 ),
+                         Ans (CallDir (L "guard_tracetj0.844",["stack.399"; "sp2.683.1423"; "bytecode.401.1293"; "Ti195.686.1424"; ],[])))))
+          [@ocamlformat "disable"]
+        in
+        r1 = guard_branch
+      ;;
+
+      let%test "get_vars_inside_guard test" =
+        let r1 = get_vars_inside_guard t1 in
+        r1 = [ "sp2.683.1423" ]
+      ;;
+
+      let%test "move_into_guard test" =
+        let r1 = move_into_guard t1 in
+        r1 = t1_moved
+      ;;
+    end)
   ;;
 end
 
