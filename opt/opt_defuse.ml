@@ -2,6 +2,7 @@ open Std
 open MinCaml
 open Asm
 open Printf
+module M' = Map.Make (Int)
 
 let ep = eprintf
 let sp = sprintf
@@ -282,15 +283,12 @@ module Const_fold = struct
   ;;
 end
 
-module M' = Map.Make (Int)
-
 module Mem_opt : sig
   val remove_rw : int M.t -> string M'.t -> t -> t
   val find_remove_candidate : int M.t -> (string * exp) M'.t -> exp M.t -> t -> exp M.t
   val remove_unread_write : exp M.t -> t -> t
   val const_fold_rw : t -> t
 end = struct
-
   let check_sp sp =
     let sp_strs = String.split_on_char '.' sp in
     List.hd sp_strs = "sp" && List.length sp_strs = 2
