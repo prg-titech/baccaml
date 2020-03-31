@@ -43,6 +43,7 @@ let contains var e =
 
 module Guard_opt : sig
   val is_guard_path : t -> bool
+  val move_into_guard : t -> t
 end = struct
   (* for tracing *)
   let rec is_guard_path = function
@@ -336,8 +337,12 @@ module Const_fold = struct
     Option.(
       match lhs, rhs with
       | Add (x, C n), Add (y, C m) -> Add (x, C (n + m)) |> some
-      | Add (x, C n), Sub (y, C m) -> Add (x, C (n - m)) |> some
-      | Sub (x, C n), Add (y, C m) -> Sub (x, C (n - m)) |> some
+      | Add (x, C n), Sub (y, C m) ->
+        let v = n - m in
+        (if v >= 0 then Add (x, C v) else Sub (x, C (-v))) |> some
+      | Sub (x, C n), Add (y, C m) ->
+        let v = n - m in
+        (if v >= 0 then Add (x, C v) else Sub (x, C (-v))) |> some
       | Sub (x, C n), Sub (y, C m) -> Sub (x, C (n + m)) |> some
       | _ -> none)
   ;;
