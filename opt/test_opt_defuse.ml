@@ -184,8 +184,9 @@ let%test_module "constfold test" =
       let r1 =
         Const_fold.(
           const_fold M.empty t_trace1
-          |> const_fold_mov M.empty
           |> const_fold_if M.empty
+          |> const_fold_mov M.empty
+          |> Guard_opt.move_into_guard
           |> elim_dead_exp)
         |> Mem_opt.(remove_rw M.empty M'.empty)
       in
@@ -202,23 +203,15 @@ let%test_module "constfold test" =
           const_fold M.empty t_trace1
           |> const_fold_mov M.empty
           |> const_fold_if M.empty
-          |> elim_dead_exp
-          |> const_fold_identity)
-        |> Mem_opt.(remove_rw M.empty M'.empty)
+          |> Guard_opt.move_into_guard
+          |> elim_dead_exp)
       in
-      let remove_cand = Mem_opt.(find_remove_candidate M.empty M'.empty M.empty r1) in
-      remove_cand
-      |> M.iter (fun key e ->
-             print_string key;
-             print_string " ";
-             print_exp e;
-             print_newline ());
-      print_endline "[TEST] Applying remove_unused_write";
-      let r2 = Mem_opt.remove_unread_write remove_cand r1 in
+      let r2 =
+        Mem_opt.const_fold_rw r1
+        |> Const_fold.elim_dead_exp
+        |> Const_fold.const_fold_mov M.empty
+      in
       print_t r2;
-      print_newline ();
-      let r3 = Const_fold.elim_dead_exp r2 in
-      print_t r3;
       print_newline ();
       true
     ;;
