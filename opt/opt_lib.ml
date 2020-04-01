@@ -2,6 +2,7 @@ open MinCaml
 open Asm
 open Printf
 
+module M = Map.Make (String)
 module M' = Map.Make (Int)
 
 let ep = eprintf
