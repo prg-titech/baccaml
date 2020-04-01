@@ -1,6 +1,7 @@
 open MinCaml
 open Asm
 open Opt_defuse
+open Opt_lib
 
 let%test_module "constfold test" =
   (module struct
@@ -159,20 +160,20 @@ let%test_module "constfold test" =
     [@@ocamlformat "disable"]
 
     let%test "const_fold_mov test1" =
-      let _ = Const_fold.(const_fold M.empty t_straight_trace2 |> elim_dead_exp) in
+      let _ = Opt_const_fold.(const_fold t_straight_trace2 |> elim_dead_exp) in
       true
     ;;
 
     let%test "const_fold test1" =
       print_endline "[TEST] Applying const_fold";
       let r1 =
-        Const_fold.(
-          const_fold M.empty t_trace1
+        Opt_const_fold.(
+          const_fold t_trace1
           |> elim_dead_exp
-          |> const_fold_mov M.empty
-          |> const_fold_if M.empty
+          |> const_fold_mov
+          |> const_fold_if
           |> elim_dead_exp
-          |> const_fold_mov M.empty)
+          |> const_fold_mov)
       in
       (* r1 |> print_t; print_newline (); *)
       (* flush_all (); *)
@@ -182,13 +183,13 @@ let%test_module "constfold test" =
     let%test "const_fold test2 (applying const_fold_stld)" =
       print_endline "[TEST] Applying const_fold + const_fold_stld";
       let r1 =
-        Const_fold.(
-          const_fold M.empty t_trace1
-          |> const_fold_if M.empty
-          |> const_fold_mov M.empty
-          |> Guard_opt.move_into_guard
+        Opt_const_fold.(
+          const_fold t_trace1
+          |> const_fold_if
+          |> const_fold_mov
+          |> Opt_guard.move_into_guard
           |> elim_dead_exp)
-        |> Mem_opt.(remove_rw M.empty M'.empty)
+        |> Opt_mem.(remove_rw M.empty M'.empty)
       in
       r1 |> print_t;
       print_newline ();
@@ -199,17 +200,17 @@ let%test_module "constfold test" =
     let%test "mem_opt test" =
       print_endline "[TEST] Applying const_fold + mem_opt";
       let r1 =
-        Const_fold.(
-          const_fold M.empty t_trace1
-          |> const_fold_mov M.empty
-          |> const_fold_if M.empty
-          |> Guard_opt.move_into_guard
+        Opt_const_fold.(
+          const_fold t_trace1
+          |> const_fold_mov
+          |> const_fold_if
+          |> Opt_guard.move_into_guard
           |> elim_dead_exp)
       in
       let r2 =
-        Mem_opt.const_fold_rw r1
-        |> Const_fold.elim_dead_exp
-        |> Const_fold.const_fold_mov M.empty
+        Opt_mem.const_fold_rw r1
+        |> Opt_const_fold.elim_dead_exp
+        |> Opt_const_fold.const_fold_mov
       in
       print_t r2;
       print_newline ();
