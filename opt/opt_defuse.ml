@@ -349,19 +349,33 @@ module Const_fold = struct
 
   let rec const_fold_mov env = function
     | Let ((var, typ), Mov x, t) ->
-      (* pp "var: %s, x: %s\n" var x; *)
+      pp "var: %s, x: %s\n" var x;
       let env = M.add var x env in
       const_fold_mov env t
     | Let ((var, typ), e, t) ->
       (match e with
-      | Add (x, y) ->
+      | Add (x, C y) ->
         (match M.find_opt x env with
-        | Some var2 -> Let ((var, typ), Add (var2, y), const_fold_mov env t)
+        | Some var2 -> Let ((var, typ), Add (var2, C y), const_fold_mov env t)
         | None -> Let ((var, typ), e, const_fold_mov env t))
-      | Sub (x, y) ->
+      | Add (x, V y) ->
+        (match M.find_opt x env, M.find_opt y env with
+        | Some var1, Some var2 ->
+          Let ((var, typ), Add (var1, V var2), const_fold_mov env t)
+        | Some var1, None -> Let ((var, typ), Add (var1, V y), const_fold_mov env t)
+        | None, Some var2 -> Let ((var, typ), Add (x, V var2), const_fold_mov env t)
+        | None, None -> Let ((var, typ), Add (x, V y), const_fold_mov env t))
+      | Sub (x, C y) ->
         (match M.find_opt x env with
-        | Some var2 -> Let ((var, typ), Sub (var2, y), const_fold_mov env t)
+        | Some var2 -> Let ((var, typ), Sub (var2, C y), const_fold_mov env t)
         | None -> Let ((var, typ), e, const_fold_mov env t))
+      | Sub (x, V y) ->
+        (match M.find_opt x env, M.find_opt y env with
+        | Some var1, Some var2 ->
+          Let ((var, typ), Sub (var1, V var2), const_fold_mov env t)
+        | Some var1, None -> Let ((var, typ), Sub (var1, V y), const_fold_mov env t)
+        | None, Some var2 -> Let ((var, typ), Sub (x, V var2), const_fold_mov env t)
+        | None, None -> Let ((var, typ), Sub (x, V y), const_fold_mov env t))
       | Ld (x, V y, z) ->
         (match M.find_opt x env with
         | Some var2 -> Let ((var, typ), Ld (var2, V y, z), const_fold_mov env t)
@@ -379,6 +393,27 @@ module Const_fold = struct
             (match M.find_opt z env with
             | Some var2 -> Let ((var, typ), St (x, y, V var2, w), const_fold_mov env t)
             | None -> Let ((var, typ), e, const_fold_mov env t))))
+      | IfEq (x, C y, t1, t2) | IfLE (x, C y, t1, t2) | IfGE (x, C y, t1, t2) ->
+        let x_opt = M.find_opt x env in
+        Let
+          ( (var, typ)
+          , (match x_opt with
+            | Some x' -> e <=> (x', C y, const_fold_mov env t1, const_fold_mov env t2)
+            | None -> e <=> (x, C y, const_fold_mov env t1, const_fold_mov env t2))
+          , const_fold_mov env t )
+      | IfEq (x, V y, t1, t2) | IfLE (x, V y, t1, t2) | IfGE (x, V y, t1, t2) ->
+        let x_opt, y_opt = M.find_opt x env, M.find_opt y env in
+        Let
+          ( (var, typ)
+          , (match x_opt, y_opt with
+            | Some x', Some y' ->
+              e <=> (x', V y', const_fold_mov env t1, const_fold_mov env t2)
+            | Some x', None ->
+              e <=> (x', V y, const_fold_mov env t1, const_fold_mov env t2)
+            | None, Some y' ->
+              e <=> (x, V y', const_fold_mov env t1, const_fold_mov env t2)
+            | _ -> e <=> (x, V y, const_fold_mov env t1, const_fold_mov env t2))
+          , const_fold_mov env t )
       | CallCls (x, args, fargs) ->
         Let
           ( (var, typ)
@@ -402,6 +437,8 @@ module Const_fold = struct
         | IfEq (x, V y, t1, t2) | IfLE (x, V y, t1, t2) | IfGE (x, V y, t1, t2) ->
           let x_opt, y_opt = M.find_opt x env, M.find_opt y env in
           (match x_opt, y_opt with
+          | Some x', Some y' ->
+            e <=> (x', V y', const_fold_mov env t1, const_fold_mov env t2)
           | Some x', None -> e <=> (x', V y, const_fold_mov env t1, const_fold_mov env t2)
           | None, Some y' -> e <=> (x, V y', const_fold_mov env t1, const_fold_mov env t2)
           | _ -> e <=> (x, V y, const_fold_mov env t1, const_fold_mov env t2))
