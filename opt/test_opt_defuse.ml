@@ -160,21 +160,13 @@ let%test_module "constfold test" =
     [@@ocamlformat "disable"]
 
     let%test "const_fold_mov test1" =
-      let _ = Opt_const_fold.(const_fold t_straight_trace2 |> elim_dead_exp) in
+      let _ = Opt_const_fold.(const_fold_exp t_straight_trace2 |> elim_dead_exp) in
       true
     ;;
 
     let%test "const_fold test1" =
       print_endline "[TEST] Applying const_fold";
-      let r1 =
-        Opt_const_fold.(
-          const_fold t_trace1
-          |> elim_dead_exp
-          |> const_fold_mov
-          |> const_fold_if
-          |> elim_dead_exp
-          |> const_fold_mov)
-      in
+      let r1 = Opt_const_fold.(const_fold_exp t_trace1 |> const_fold_if) in
       (* r1 |> print_t; print_newline (); *)
       (* flush_all (); *)
       true
@@ -184,7 +176,7 @@ let%test_module "constfold test" =
       print_endline "[TEST] Applying const_fold + const_fold_stld";
       let r1 =
         Opt_const_fold.(
-          const_fold t_trace1
+          const_fold_exp t_trace1
           |> const_fold_if
           |> const_fold_mov
           |> Opt_guard.move_into_guard
@@ -201,10 +193,11 @@ let%test_module "constfold test" =
       print_endline "[TEST] Applying const_fold + mem_opt";
       let r1 =
         Opt_const_fold.(
-          const_fold t_trace1
+          const_fold_exp t_trace1
           |> const_fold_mov
           |> const_fold_if
           |> Opt_guard.move_into_guard
+          |> const_fold_id
           |> elim_dead_exp)
       in
       let r2 =
