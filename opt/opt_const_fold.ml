@@ -76,7 +76,7 @@ let specialize lhs rhs =
     | _ -> none)
 ;;
 
-let rec const_fold_mov ?(env=M.empty) = function
+let rec const_fold_mov ?(env = M.empty) = function
   | Let ((var, typ), Mov x, t) ->
     pp "var: %s, x: %s\n" var x;
     let env = M.add var x env in
@@ -135,8 +135,10 @@ let rec const_fold_mov ?(env=M.empty) = function
         , (match x_opt, y_opt with
           | Some x', Some y' ->
             e <=> (x', V y', const_fold_mov ~env t1, const_fold_mov ~env t2)
-          | Some x', None -> e <=> (x', V y, const_fold_mov ~env t1, const_fold_mov ~env t2)
-          | None, Some y' -> e <=> (x, V y', const_fold_mov ~env t1, const_fold_mov ~env t2)
+          | Some x', None ->
+            e <=> (x', V y, const_fold_mov ~env t1, const_fold_mov ~env t2)
+          | None, Some y' ->
+            e <=> (x, V y', const_fold_mov ~env t1, const_fold_mov ~env t2)
           | _ -> e <=> (x, V y, const_fold_mov ~env t1, const_fold_mov ~env t2))
         , const_fold_mov ~env t )
     | CallCls (x, args, fargs) ->
@@ -172,6 +174,11 @@ let rec const_fold_mov ?(env=M.empty) = function
         (match x_opt with
         | Some x' -> e <=> (x', C n, const_fold_mov ~env t1, const_fold_mov ~env t2)
         | None -> e <=> (x, C n, const_fold_mov ~env t1, const_fold_mov ~env t2))
+      | CallDir (id_l, args, fargs) ->
+        CallDir
+          ( id_l
+          , args |> List.map (fun x -> if M.mem x env then M.find x env else x)
+          , fargs |> List.map (fun x -> if M.mem x env then M.find x env else x) )
       | _ -> e)
 ;;
 
