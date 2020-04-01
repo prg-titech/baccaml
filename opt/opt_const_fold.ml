@@ -214,55 +214,123 @@ let rec const_fold_identity t =
   const_fold_identity' t |> const_fold_mov
 ;;
 
-let rec const_fold ?(env=M.empty) =
+let rec const_fold_id ?(env = M.empty) = function
+  | Let ((var, typ), e, t) ->
+    (match const_fold_id' env e with
+    | `Folded x ->
+      let env = M.add var x env in
+      const_fold_id ~env t
+    | `Not_folded e -> Let ((var, typ), e, const_fold_id ~env t))
+  | Ans (IfEq (x, y, t1, t2) as e)
+  | Ans (IfLE (x, y, t1, t2) as e)
+  | Ans (IfGE (x, y, t1, t2) as e) ->
+    Ans (e <=> (x, y, const_fold_id ~env t1, const_fold_id ~env t2))
+  | Ans e ->
+    (match const_fold_id' env e with `Folded x -> Ans (Mov x) | `Not_folded e -> Ans e)
+
+and const_fold_id' env = function
+  | Add (x, V y) ->
+    `Not_folded
+      (match M.find_opt x env, M.find_opt y env with
+      | Some x', Some y' -> Add (x', V y')
+      | Some x', None -> Add (x', V y)
+      | None, Some y' -> Add (x, V y')
+      | None, None -> Add (x, V y))
+  | Add (x, C y) when y = 0 -> `Folded x
+  | Add (x, C y) ->
+    `Not_folded
+      (match M.find_opt x env with Some x' -> Add (x', C y) | None -> Add (x, C y))
+  | Sub (x, V y) ->
+    `Not_folded
+      (match M.find_opt x env, M.find_opt y env with
+      | Some x', Some y' -> Add (x', V y')
+      | Some x', None -> Add (x', V y)
+      | None, Some y' -> Add (x, V y')
+      | None, None -> Add (x, V y))
+  | Sub (x, C y) when y = 0 -> `Folded x
+  | Sub (x, C y) ->
+    `Not_folded
+      (match M.find_opt x env with Some x' -> Sub (x', C y) | None -> Sub (x, C y))
+  | Ld (x, V y, z) ->
+    `Not_folded
+      (match M.find_opt x env, M.find_opt y env with
+      | Some x', Some y' -> Ld (x', V y', z)
+      | Some x', None -> Ld (x', V y, z)
+      | None, Some y' -> Ld (x, V y', z)
+      | None, None -> Ld (x, V y, z))
+  | Ld (x, C y, z) ->
+    `Not_folded
+      (match M.find_opt x env with Some x' -> Ld (x', C y, z) | None -> Ld (x, C y, z))
+  | St (x, y, V z, w) ->
+    `Not_folded
+      (match M.find_opt x env, M.find_opt y env, M.find_opt z env with
+      | Some x', Some y', Some z' -> St (x', y', V z', w)
+      | Some x', Some y', None -> St (x', y', V z, w)
+      | Some x', None, Some z' -> St (x', y, V z', w)
+      | None, Some y', Some z' -> St (x, y', V z', w)
+      | Some x', None, None -> St (x', y, V z, w)
+      | None, Some y', None -> St (x, y', V z, w)
+      | None, None, Some z' -> St (x, y, V z', w)
+      | None, None, None -> St (x, y, V z, w))
+  | CallDir (id_l, args, fargs) ->
+    let f = List.map (fun arg -> if M.mem arg env then M.find arg env else arg) in
+    `Not_folded (CallDir (id_l, f args, f fargs))
+  | CallCls (x, args, fargs) ->
+    let f = List.map (fun arg -> if M.mem arg env then M.find arg env else arg) in
+    let x = if M.mem x env then M.find x env else x in
+    `Not_folded (CallCls (x, f args, f fargs))
+  | e -> `Not_folded e
+;;
+
+let rec const_fold_exp ?(env = M.empty) =
   let extend_env x e env = M.add x e env in
   let mem x env = M.mem x env in
   function
   | Let ((var, typ), Mov x, t) when mem x env ->
     let exp' = M.find x env in
     let env = extend_env var exp' env in
-    Let ((var, typ), exp', const_fold ~env t)
+    Let ((var, typ), exp', const_fold_exp ~env t)
   | Let ((var, typ), Add (x, y), t) when mem x env ->
     let lhs = M.find x env in
     (match specialize lhs (Add (x, y)) with
     | Some e_res ->
       let env = extend_env var e_res env in
-      Let ((var, typ), e_res, const_fold ~env t)
+      Let ((var, typ), e_res, const_fold_exp ~env t)
     | None ->
       let env = extend_env var (Add (x, y)) env in
-      Let ((var, typ), Add (x, y), const_fold ~env t))
+      Let ((var, typ), Add (x, y), const_fold_exp ~env t))
   | Let ((var, typ), Sub (x, y), t) when mem x env ->
     let lhs = M.find x env in
     (match specialize lhs (Sub (x, y)) with
     | Some e_res ->
       let env = extend_env var e_res env in
-      Let ((var, typ), e_res, const_fold ~env t)
+      Let ((var, typ), e_res, const_fold_exp ~env t)
     | None ->
       let env = extend_env var (Sub (x, y)) env in
-      Let ((var, typ), Sub (x, y), const_fold ~env t))
+      Let ((var, typ), Sub (x, y), const_fold_exp ~env t))
   | Let ((var, typ), e, t) ->
     let env = extend_env var e env in
-    Let ((var, typ), e, const_fold ~env t)
+    Let ((var, typ), e, const_fold_exp ~env t)
   | Ans e ->
     (match e with
     | IfEq (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfLE (x, y, t1, t2) ->
       if Opt_guard.is_guard_path t2
-      then Ans (e <=> (x, y, const_fold ~env t1, t2))
-      else Ans (e <=> (x, y, t1, const_fold ~env t2))
+      then Ans (e <=> (x, y, const_fold_exp ~env t1, t2))
+      else Ans (e <=> (x, y, t1, const_fold_exp ~env t2))
     | _ -> Ans e)
 ;;
 
-let rec const_fold_if ?(env=M.empty) = function
+let rec const_fold_if ?(env = M.empty) = function
   | Let (x, e, t) -> Let (x, e, const_fold_if ~env t)
   | Ans e ->
     (match e with
     | IfLE (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfEq (x, y, t1, t2) ->
       if Opt_guard.is_guard_path t2
       then (
-        let t = const_fold ~env t1 |> const_fold_mov |> elim_dead_exp in
+        let t = const_fold_exp ~env t1 |> const_fold_mov |> elim_dead_exp in
         Ans (e <=> (x, y, t, t2)))
       else (
-        let t = const_fold ~env t2 |> const_fold_mov |> elim_dead_exp in
+        let t = const_fold_exp ~env t2 |> const_fold_mov |> elim_dead_exp in
         Ans (e <=> (x, y, t1, t)))
     | _ -> Ans e)
 ;;
