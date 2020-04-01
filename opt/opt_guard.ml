@@ -6,6 +6,10 @@ open Opt_lib
 (* for tracing *)
 let rec is_guard_path = function
   | Let (_, e, t) -> is_guard_path_exp e || is_guard_path t
+  | Ans (IfEq (x, y, t1, t2))
+  | Ans (IfGE (x, y, t1, t2))
+  | Ans (IfLE (x, y, t1, t2)) ->
+    is_guard_path t1 || is_guard_path t2
   | Ans e -> is_guard_path_exp e
 
 and is_guard_path_exp = function
