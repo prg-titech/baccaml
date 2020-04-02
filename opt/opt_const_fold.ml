@@ -83,6 +83,18 @@ let specialize lhs rhs =
     | _ -> none)
 ;;
 
+let rec find_greedy key env =
+  let open Option in
+  let rec find_greedy' key env =
+    match M.find_opt key env with
+    | Some v' -> find_greedy' v' env
+    | None -> some key
+  in
+  match M.find_opt key env with
+  | Some v' -> find_greedy' v' env
+  | None -> none
+;;
+
 let rec const_fold_mov ?(env = M.empty) = function
   | Let ((var, typ), Mov x, t) ->
     pp "var: %s, x: %s\n" var x;
@@ -111,22 +123,27 @@ let rec const_fold_mov ?(env = M.empty) = function
       | None, Some var2 -> Let ((var, typ), Sub (x, V var2), const_fold_mov ~env t)
       | None, None -> Let ((var, typ), Sub (x, V y), const_fold_mov ~env t))
     | Ld (x, V y, z) ->
-      (match M.find_opt x env with
-      | Some var2 -> Let ((var, typ), Ld (var2, V y, z), const_fold_mov ~env t)
-      | None ->
-        (match M.find_opt y env with
-        | Some var2 -> Let ((var, typ), Ld (x, V var2, z), const_fold_mov ~env t)
-        | None -> Let ((var, typ), e, const_fold_mov ~env t)))
+      let e =
+        match find_greedy x env, find_greedy y env with
+        | Some x', Some y' -> Ld (x', V y', z)
+        | Some x', None -> Ld (x', V y, z)
+        | None, Some y' -> Ld (x, V y', z)
+        | None, None -> Ld (x, V y, z)
+      in
+      Let ((var, typ), e, const_fold_mov ~env t)
     | St (x, y, V z, w) ->
-      (match M.find_opt x env with
-      | Some var2 -> Let ((var, typ), St (var2, y, V z, w), const_fold_mov ~env t)
-      | None ->
-        (match M.find_opt y env with
-        | Some var2 -> Let ((var, typ), St (x, var2, V z, w), const_fold_mov ~env t)
-        | None ->
-          (match M.find_opt z env with
-          | Some var2 -> Let ((var, typ), St (x, y, V var2, w), const_fold_mov ~env t)
-          | None -> Let ((var, typ), e, const_fold_mov ~env t))))
+      let e =
+        match find_greedy x env, find_greedy y env, find_greedy z env with
+        | Some x', Some y', Some z' -> St (x', y', V z', w)
+        | Some x', Some y', None -> St (x', y', V z, w)
+        | Some x', None, Some z' -> St (x', y, V z', w)
+        | None, Some y', Some z' -> St (x, y', V z', w)
+        | Some x', None, None -> St (x', y, V z, w)
+        | None, Some y', None -> St (x, y', V z, w)
+        | None, None, Some z' -> St (x, y, V z', w)
+        | None, None, None -> St (x, y, V z, w)
+      in
+      Let ((var, typ), e, const_fold_mov ~env t)
     | IfEq (x, C y, t1, t2) | IfLE (x, C y, t1, t2) | IfGE (x, C y, t1, t2) ->
       let x_opt = M.find_opt x env in
       Let
