@@ -159,19 +159,6 @@ let%test_module "constfold test" =
       Ans (Mov ("v.622.1850")))))))))))))))))))))))))))))))))))))))))))
     [@@ocamlformat "disable"]
 
-    let%test "const_fold_mov test1" =
-      let _ = Opt_const_fold.(const_fold_exp t_straight_trace2 |> elim_dead_exp) in
-      true
-    ;;
-
-    let%test "const_fold test1" =
-      print_endline "[TEST] Applying const_fold";
-      let r1 = Opt_const_fold.(const_fold_exp t_trace1 |> const_fold_if) in
-      (* r1 |> print_t; print_newline (); *)
-      (* flush_all (); *)
-      true
-    ;;
-
     let%test "const_fold test2 (applying const_fold_stld)" =
       print_endline "[TEST] Applying const_fold + const_fold_stld";
       let r1 =
@@ -212,12 +199,13 @@ let%test_module "constfold test" =
 
     let%test "integration test" =
       print_endline "[TEST] integration test";
-      let r1 = Opt_defuse.f t_trace1 in
-      let r2 = Opt_defuse.f t_straight_trace3 in
+      let r1 = Opt_defuse.f t_trace1 |> Simm.t in
       print_t r1;
       print_newline ();
+      let r2 = Opt_defuse.f t_straight_trace3 in
       print_t r2;
       print_newline ();
       true
+    ;;
   end)
 ;;
