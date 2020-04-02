@@ -194,26 +194,6 @@ let rec elim_dead_exp = function
   | Ans e -> Ans e
 ;;
 
-(* remove Add (x, C 0), Sub (x, C 0), etc. *)
-(* TODO: move expressions related to guard operation *)
-let rec const_fold_identity t =
-  let rec const_fold_identity' t =
-    match t with
-    | Let ((var, typ), e, t) ->
-      (match const_fold_identity_exp' e with
-      | `Identity x -> Let ((var, typ), Mov x, const_fold_identity' t)
-      | `Not_identity -> Let ((var, typ), e, const_fold_identity' t))
-    | Ans e ->
-      (match e with
-      | IfEq (x, y, t1, t2) | IfLE (x, y, t1, t2) | IfGE (x, y, t1, t2) ->
-        Ans (e <=> (x, y, const_fold_identity' t1, const_fold_identity' t2))
-      | _ -> Ans e)
-  and const_fold_identity_exp' e =
-    match e with Add (x, C 0) | Sub (x, C 0) -> `Identity x | _ -> `Not_identity
-  in
-  const_fold_identity' t |> const_fold_mov
-;;
-
 let rec const_fold_id ?(env = M.empty) = function
   | Let ((var, typ), e, t) ->
     (match const_fold_id' env e with
