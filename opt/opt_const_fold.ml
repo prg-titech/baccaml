@@ -31,6 +31,13 @@ and is_occur_exp (var : Id.t) (e : Asm.exp) : bool =
   | _ -> false
 ;;
 
+let is_mode_checking = function
+  | IfEq (x, _, _, _) | IfGE (x, _, _, _) | IfLE (x, _, _, _) ->
+    let re = Str.regexp "mode\\.[a-zA-Z0-9]*" in
+    Str.string_match re x 0
+  | _ -> false
+;;
+
 let%test_module "is_occur test" =
   (module struct
     let t =
@@ -291,13 +298,15 @@ let rec const_fold_exp ?(env = M.empty) =
   | Let ((var, typ), e, t) ->
     let env = extend_env var e env in
     Let ((var, typ), e, const_fold_exp ~env t)
-  | Ans e ->
-    (match e with
-    | IfEq (x, y, t1, t2) | IfGE (x, y, t1, t2) | IfLE (x, y, t1, t2) ->
-      if Opt_guard.is_guard_path t2
-      then Ans (e <=> (x, y, const_fold_exp ~env t1, t2))
-      else Ans (e <=> (x, y, t1, const_fold_exp ~env t2))
-    | _ -> Ans e)
+  | Ans (IfEq (x, y, t1, t2) as e)
+  | Ans (IfLE (x, y, t1, t2) as e)
+  | Ans (IfGE (x, y, t1, t2) as e) ->
+    if is_mode_checking e
+    then Ans (e <=> (x, y, const_fold_exp ~env t1, const_fold_exp ~env t2))
+    else if Opt_guard.is_guard_path t2
+    then Ans (e <=> (x, y, const_fold_exp ~env t1, t2))
+    else Ans (e <=> (x, y, t1, const_fold_exp ~env t2))
+  | Ans e -> Ans e
 ;;
 
 let rec const_fold_if ?(env = M.empty) = function
