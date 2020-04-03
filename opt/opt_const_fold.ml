@@ -97,7 +97,7 @@ let rec find_greedy key env =
 
 let rec const_fold_mov ?(env = M.empty) = function
   | Let ((var, typ), Mov x, t) ->
-    pp "var: %s, x: %s\n" var x;
+    ep "Folding Mov inst. var: %s, x: %s\n" var x;
     let env = M.add var x env in
     const_fold_mov ~env t
   | Let ((var, typ), e, t) ->
