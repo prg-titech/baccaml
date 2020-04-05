@@ -247,10 +247,10 @@ and const_fold_id' env = function
   | Sub (x, V y) ->
     `Not_folded
       (match M.find_opt x env, M.find_opt y env with
-      | Some x', Some y' -> Add (x', V y')
-      | Some x', None -> Add (x', V y)
-      | None, Some y' -> Add (x, V y')
-      | None, None -> Add (x, V y))
+      | Some x', Some y' -> Sub (x', V y')
+      | Some x', None -> Sub (x', V y)
+      | None, Some y' -> Sub (x, V y')
+      | None, None -> Sub (x, V y))
   | Sub (x, C y) when y = 0 -> `Folded x
   | Sub (x, C y) ->
     `Not_folded
