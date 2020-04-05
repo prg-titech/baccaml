@@ -93,11 +93,11 @@ let rec find_greedy key env =
   match M.find_opt key env with
   | Some v' -> find_greedy' v' env
   | None -> none
-;;
+[@@ocamlformat "disable"]
 
 let rec const_fold_mov ?(env = M.empty) = function
   | Let ((var, typ), Mov x, t) ->
-    ep "Folding Mov inst. var: %s, x: %s\n" var x;
+    pp "Folding: %s = Mov (%s)\n" var x;
     let env = M.add var x env in
     const_fold_mov ~env t
   | Let ((var, typ), e, t) ->
