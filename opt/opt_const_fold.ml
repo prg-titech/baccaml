@@ -185,6 +185,10 @@ let rec const_fold_mov ?(env = M.empty) = function
   | Ans e ->
     Ans
       (match e with
+       | Mov x ->
+         (match find_greedy x env with
+          | Some x' -> Mov x'
+          | None -> e)
       | IfEq (x, V y, t1, t2) | IfLE (x, V y, t1, t2) | IfGE (x, V y, t1, t2) ->
         let x_opt, y_opt = M.find_opt x env, M.find_opt y env in
         (match x_opt, y_opt with
@@ -233,6 +237,10 @@ let rec const_fold_id ?(env = M.empty) = function
     (match const_fold_id' env e with `Folded x -> Ans (Mov x) | `Not_folded e -> Ans e)
 
 and const_fold_id' env = function
+  | Mov x ->
+    (match M.find_opt x env with
+     | Some x' -> `Folded x
+     | None -> `Not_folded (Mov x))
   | Add (x, V y) ->
     `Not_folded
       (match M.find_opt x env, M.find_opt y env with
