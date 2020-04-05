@@ -18,3 +18,6 @@ let f t =
     |> Opt_const_fold.const_fold_mov
   in
   const_fold t |> opt_mem
+
+let h { name; args; fargs; body; ret } =
+  { name; args; fargs; body = f body; ret }
