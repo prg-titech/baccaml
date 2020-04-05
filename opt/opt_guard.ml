@@ -64,10 +64,15 @@ let rec get_insts_outside acc vars t =
   | Let ((var, typ), e, t) ->
     if List.exists (fun var -> contains var e) vars || List.mem var vars
     then (
-      let acc = Asm.concat (Ans e) (var, typ) acc in
+      let acc = acc @ [((var, typ), e)] in
       get_insts_outside acc vars t)
     else get_insts_outside acc vars t
   | Ans e -> acc
+;;
+
+let rec tree_of_list lst = match lst with
+  | (x, e) :: tl -> Let (x, e, tree_of_list tl)
+  | [] -> Ans (Nop)
 ;;
 
 let move_into_guard t =
@@ -90,7 +95,8 @@ let move_into_guard t =
         Ans (e <=> (x, y, t1, t2')))
     | Ans e -> Ans e
   in
-  let insts_outside = get_insts_outside (Ans Nop) vars_inside_guard t in
+  let insts_outside = get_insts_outside [] vars_inside_guard t
+                      |> tree_of_list in
   move_into_the_guard insts_outside t
 ;;
 
@@ -221,7 +227,7 @@ let%test_module "move guard insts test" =
 
     let%test "get_insts_outside test" =
       let vars = get_vars_inside_guard t1 in
-      let r1 = get_insts_outside (Ans Nop) vars t1 in
+      let r1 = get_insts_outside [] vars t1 |> tree_of_list in
       r1 = Let (("sp2.683.1423", Type.Int), Add ("sp.400", C 0), Ans Nop)
     ;;
 
