@@ -4,6 +4,7 @@ open Jit
 open Jit_env
 open Jit_prof
 open Jit_compile
+open Opt
 open Runtime_lib
 open Printf
 
@@ -195,7 +196,7 @@ let jit_tracing ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env) pro
       ~bytecode
   in
   let (`Result (trace, others)) = JT.run prog reg mem env in
-  let trace = trace |> Jit_constfold.h in
+  let trace = trace |> Jit_constfold.h |> Opt_defuse.h in
   Debug.with_debug (fun _ -> print_fundef trace);
   Option.fold
     others
