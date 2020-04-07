@@ -331,6 +331,9 @@ let rec const_fold_exp ?(env = M.empty) =
     else if Opt_guard.is_guard_path t2
     then Ans (e <=> (x, y, const_fold_exp ~env t1, t2))
     else Ans (e <=> (x, y, t1, const_fold_exp ~env t2))
+  | Ans (Mov x) when mem x env ->
+    let exp' = M.find x env in
+    Ans (exp')
   | Ans e -> Ans e
 ;;
 
