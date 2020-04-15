@@ -107,6 +107,7 @@ let rec const_fold_mov ?(env = M.empty) = function
       | Some var2 -> Let ((var, typ), Add (var2, C y), const_fold_mov ~env t)
       | None -> Let ((var, typ), e, const_fold_mov ~env t))
     | Add (x, V y) ->
+      pp "Folding: Add (%s, %s)\n" x y;
       (match M.find_opt x env, M.find_opt y env with
       | Some var1, Some var2 -> Let ((var, typ), Add (var1, V var2), const_fold_mov ~env t)
       | Some var1, None -> Let ((var, typ), Add (var1, V y), const_fold_mov ~env t)
