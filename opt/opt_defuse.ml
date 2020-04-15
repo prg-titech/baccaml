@@ -3,7 +3,7 @@ open MinCaml
 open Asm
 open Opt_lib
 
-let f t =
+let exec t =
   let rec const_fold t =
     let open Opt_const_fold in
     let open Opt_guard in
@@ -20,4 +20,4 @@ let f t =
   const_fold t |> opt_mem
 
 let h { name; args; fargs; body; ret } =
-  { name; args; fargs; body = f body; ret }
+  { name; args; fargs; body = exec body; ret }

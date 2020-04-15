@@ -199,10 +199,10 @@ let%test_module "constfold test" =
 
     let%test "integration test" =
       print_endline "[TEST] integration test";
-      let r1 = Opt_defuse.f t_trace1 |> Simm.t in
+      let r1 = Opt_defuse.exec t_trace1 |> Simm.t in
       print_t r1;
       print_newline ();
-      let r2 = Opt_defuse.f t_straight_trace3 in
+      let r2 = Opt_defuse.exec t_straight_trace3 in
       print_t r2;
       print_newline ();
       true
