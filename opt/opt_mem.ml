@@ -43,6 +43,19 @@ let rec remove_rw (sp_env : int M.t) (mem_env : string M'.t) = function
      with
     | Not_found -> Let ((var, typ), e, t |> remove_rw sp_env mem_env))
   | Let ((var, typ), e, t) -> Let ((var, typ), e, t |> remove_rw sp_env mem_env)
+  | Ans (Ld (x, V y, z) as e) when check_stack x && check_sp y ->
+    (try
+       let addr = M'.find 0 mem_env in
+       Ans (Mov addr)
+     with
+    | Not_found -> Ans e)
+  | Ans (Ld (x, V y, z) as e) when check_stack x ->
+    (try
+       let sp = M.find y sp_env in
+       let addr = M'.find sp mem_env in
+       Ans (Mov addr)
+     with
+    | Not_found -> Ans e)
   | Ans (IfEq (x, y, t1, t2) as e)
   | Ans (IfLE (x, y, t1, t2) as e)
   | Ans (IfGE (x, y, t1, t2) as e) ->
