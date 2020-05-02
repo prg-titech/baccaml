@@ -126,10 +126,17 @@ let rec const_fold_mov ?(env = M.empty) = function
     | Ld (x, V y, z) ->
       let e =
         match find_greedy x env, find_greedy y env with
-        | Some x', Some y' -> Ld (x', V y', z)
-        | Some x', None -> Ld (x', V y, z)
-        | None, Some y' -> Ld (x, V y', z)
-        | None, None -> Ld (x, V y, z)
+        | Some x', Some y' ->
+          pp "Folding: Ld (%s, %s, %d) => Ld (%s, %s, %d)\n" x y z x' y' z;
+          Ld (x', V y', z)
+        | Some x', None ->
+          pp "Folding: Ld (%s, %s, %d) => Ld (%s, %s, %d)\n" x y z x' y z;
+          Ld (x', V y, z)
+        | None, Some y' ->
+          pp "Folding: Ld (%s, %s, %d) => Ld (%s, %s, %d)\n" x y z x y' z;
+          Ld (x, V y', z)
+        | None, None ->
+          Ld (x, V y, z)
       in
       Let ((var, typ), e, const_fold_mov ~env t)
     | St (x, y, V z, w) ->

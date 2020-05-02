@@ -39,6 +39,7 @@ let rec remove_rw (sp_env : int M.t) (mem_env : string M'.t) = function
     (try
        let sp = M.find y sp_env in
        let addr = M'.find sp mem_env in
+       pp "Removing: Ld (%s, %s, %d) => Mov (%s)\n" x y z addr;
        Let ((var, typ), Mov addr, t |> remove_rw sp_env mem_env)
      with
     | Not_found -> Let ((var, typ), e, t |> remove_rw sp_env mem_env))
