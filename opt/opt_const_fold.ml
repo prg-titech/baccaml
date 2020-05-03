@@ -103,22 +103,22 @@ let rec const_fold_mov ?(env = M.empty) = function
   | Let ((var, typ), e, t) ->
     (match e with
     | Add (x, C y) ->
-      (match M.find_opt x env with
+      (match find_greedy x env with
       | Some var2 -> Let ((var, typ), Add (var2, C y), const_fold_mov ~env t)
       | None -> Let ((var, typ), e, const_fold_mov ~env t))
     | Add (x, V y) ->
       pp "Folding: Add (%s, %s)\n" x y;
-      (match M.find_opt x env, M.find_opt y env with
+      (match find_greedy x env, find_greedy y env with
       | Some var1, Some var2 -> Let ((var, typ), Add (var1, V var2), const_fold_mov ~env t)
       | Some var1, None -> Let ((var, typ), Add (var1, V y), const_fold_mov ~env t)
       | None, Some var2 -> Let ((var, typ), Add (x, V var2), const_fold_mov ~env t)
       | None, None -> Let ((var, typ), Add (x, V y), const_fold_mov ~env t))
     | Sub (x, C y) ->
-      (match M.find_opt x env with
+      (match find_greedy x env with
       | Some var2 -> Let ((var, typ), Sub (var2, C y), const_fold_mov ~env t)
       | None -> Let ((var, typ), e, const_fold_mov ~env t))
     | Sub (x, V y) ->
-      (match M.find_opt x env, M.find_opt y env with
+      (match find_greedy x env, find_greedy y env with
       | Some var1, Some var2 -> Let ((var, typ), Sub (var1, V var2), const_fold_mov ~env t)
       | Some var1, None -> Let ((var, typ), Sub (var1, V y), const_fold_mov ~env t)
       | None, Some var2 -> Let ((var, typ), Sub (x, V var2), const_fold_mov ~env t)
@@ -153,7 +153,7 @@ let rec const_fold_mov ?(env = M.empty) = function
       in
       Let ((var, typ), e, const_fold_mov ~env t)
     | IfEq (x, C y, t1, t2) | IfLE (x, C y, t1, t2) | IfGE (x, C y, t1, t2) ->
-      let x_opt = M.find_opt x env in
+      let x_opt = find_greedy x env in
       Let
         ( (var, typ)
         , (match x_opt with
@@ -161,7 +161,9 @@ let rec const_fold_mov ?(env = M.empty) = function
           | None -> e <=> (x, C y, const_fold_mov ~env t1, const_fold_mov ~env t2))
         , const_fold_mov ~env t )
     | IfEq (x, V y, t1, t2) | IfLE (x, V y, t1, t2) | IfGE (x, V y, t1, t2) ->
-      let x_opt, y_opt = M.find_opt x env, M.find_opt y env in
+      let x_opt,
+          y_opt = find_greedy x env,
+                  find_greedy y env in
       Let
         ( (var, typ)
         , (match x_opt, y_opt with
@@ -198,7 +200,7 @@ let rec const_fold_mov ?(env = M.empty) = function
           | Some x' -> Mov x'
           | None -> e)
       | IfEq (x, V y, t1, t2) | IfLE (x, V y, t1, t2) | IfGE (x, V y, t1, t2) ->
-        let x_opt, y_opt = M.find_opt x env, M.find_opt y env in
+        let x_opt, y_opt = find_greedy x env, find_greedy y env in
         (match x_opt, y_opt with
         | Some x', Some y' ->
           e <=> (x', V y', const_fold_mov ~env t1, const_fold_mov ~env t2)
