@@ -123,6 +123,16 @@ let rec const_fold_mov ?(env = M.empty) = function
       | Some var1, None -> Let ((var, typ), Sub (var1, V y), const_fold_mov ~env t)
       | None, Some var2 -> Let ((var, typ), Sub (x, V var2), const_fold_mov ~env t)
       | None, None -> Let ((var, typ), Sub (x, V y), const_fold_mov ~env t))
+    | Mul (x, C y) ->
+      (match find_greedy x env with
+      | Some var2 -> Let ((var, typ), Mul (var2, C y), const_fold_mov ~env t)
+      | None -> Let ((var, typ), e, const_fold_mov ~env t))
+    | Mul (x, V y) ->
+      (match find_greedy x env, find_greedy y env with
+      | Some var1, Some var2 -> Let ((var, typ), Mul (var1, V var2), const_fold_mov ~env t)
+      | Some var1, None -> Let ((var, typ), Mul (var1, V y), const_fold_mov ~env t)
+      | None, Some var2 -> Let ((var, typ), Mul (x, V var2), const_fold_mov ~env t)
+      | None, None -> Let ((var, typ), Mul (x, V y), const_fold_mov ~env t))
     | Ld (x, V y, z) ->
       let e =
         match find_greedy x env, find_greedy y env with
