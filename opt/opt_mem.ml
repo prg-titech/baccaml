@@ -7,6 +7,11 @@ let check_sp sp =
   List.hd sp_strs = "sp" && List.length sp_strs = 2
 ;;
 
+let check_sp2 sp =
+  let sp_strs = String.split_on_char '.' sp in
+  List.hd sp_strs = "sp2"
+;;
+
 let check_stack id =
   let stk_strs = String.split_on_char '.' id in
   List.hd stk_strs = "stack" && List.length stk_strs = 2
@@ -39,7 +44,7 @@ let rec remove_rw (sp_env : int M.t) (mem_env : string M'.t) = function
     (try
        let sp = M.find y sp_env in
        let addr = M'.find sp mem_env in
-       pp "Removing: %s = Ld (%s, %s, %d) => %s = Mov (%s)\n" var x y z var addr;
+       ep "Removing: %s = Ld (%s, %s, %d) => %s = Mov (%s)\n" var x y z var addr;
        Let ((var, typ), Mov addr, t |> remove_rw sp_env mem_env)
      with
     | Not_found -> Let ((var, typ), e, t |> remove_rw sp_env mem_env))
@@ -70,6 +75,7 @@ let rec find_remove_candidate
     (remove_cand : exp M.t)
   = function
   | Let ((var, typ), Add (x, C n), t) when check_sp x ->
+    ep "Removing: %s = Add (%s, %d)\n" var x n;
     let sp_env = M.add var n sp_env in
     find_remove_candidate sp_env mem_env remove_cand t
   | Let ((var, typ), Sub (x, C n), t) when check_sp x ->

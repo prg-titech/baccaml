@@ -97,7 +97,7 @@ let specialize lhs rhs =
 
 let rec const_fold_mov ?(env = M.empty) = function
   | Let ((var, typ), Mov x, t) ->
-    pp "Folding: %s = Mov (%s)\n" var x;
+    ep "Folding: %s = Mov (%s)\n" var x;
     let env = M.add var x env in
     const_fold_mov ~env t
   | Let ((var, typ), e, t) ->
@@ -107,7 +107,7 @@ let rec const_fold_mov ?(env = M.empty) = function
       | Some var2 -> Let ((var, typ), Add (var2, C y), const_fold_mov ~env t)
       | None -> Let ((var, typ), e, const_fold_mov ~env t))
     | Add (x, V y) ->
-      pp "Folding: Add (%s, %s)\n" x y;
+      ep "Folding: Add (%s, %s)\n" x y;
       (match find_greedy x env, find_greedy y env with
       | Some var1, Some var2 -> Let ((var, typ), Add (var1, V var2), const_fold_mov ~env t)
       | Some var1, None -> Let ((var, typ), Add (var1, V y), const_fold_mov ~env t)
@@ -229,8 +229,8 @@ let rec const_fold_mov ?(env = M.empty) = function
       | CallDir (id_l, args, fargs) ->
         CallDir
           ( id_l
-          , args |> List.map (fun x -> if M.mem x env then M.find x env else x)
-          , fargs |> List.map (fun x -> if M.mem x env then M.find x env else x) )
+          , args |> List.map (fun x -> Option.value (find_greedy x env) ~default:x)
+          , fargs |> List.map (fun x -> Option.value (find_greedy x env) ~default:x) )
       | _ -> e)
 ;;
 
@@ -307,7 +307,9 @@ and const_fold_id' env = function
       | None, None, Some z' -> St (x, y, V z', w)
       | None, None, None -> St (x, y, V z, w))
   | CallDir (id_l, args, fargs) ->
-    let f = List.map (fun arg -> if M.mem arg env then M.find arg env else arg) in
+    let f =
+      List.map (fun arg -> match find_greedy arg env with Some v -> v | None -> arg)
+    in
     `Not_folded (CallDir (id_l, f args, f fargs))
   | CallCls (x, args, fargs) ->
     let f = List.map (fun arg -> if M.mem arg env then M.find arg env else arg) in
