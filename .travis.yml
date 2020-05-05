@@ -4,6 +4,9 @@ env:
 cache:
   directories:
     - ${HOME}/.opam
+# Handle git submodules yourself
+git:
+    submodules: false
 before_install:
   - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
   - git submodule update --init --recursive
