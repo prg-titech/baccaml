@@ -31,15 +31,19 @@ and is_occur_exp (var : Id.t) (e : Asm.exp) : bool =
   | Mov x -> x = var
   | Add (x, V y) | Sub (x, V y) | Mul (x, V y) | Div (x, V y) | Mod (x, V y) ->
     x = var || y = var
-  | Add (x, C _) | Sub (x, C _) | Mul (x, C _) | Div (x, C _) | Mod (x, C _) -> x = var
+  | Add (x, C _) | Sub (x, C _) | Mul (x, C _) | Div (x, C _) | Mod (x, C _) ->
+    x = var
   | Ld (x, V y, _) -> x = var || y = var
   | Ld (x, C _, _) -> x = var
   | St (x, y, V z, _) -> x = var || y = var || z = var
   | St (x, y, C _, _) -> x = var || y = var
-  | IfEq (x, V y, _, _) | IfLE (x, V y, _, _) | IfGE (x, V y, _, _) -> x = var || y = var
+  | IfEq (x, V y, _, _) | IfLE (x, V y, _, _) | IfGE (x, V y, _, _) ->
+    x = var || y = var
   | IfEq (x, C _, _, _) | IfLE (x, C _, _, _) | IfGE (x, C _, _, _) -> x = var
-  | CallCls (x, args, fargs) -> x = var || List.mem var args || List.mem var fargs
-  | CallDir (Id.L x, args, fargs) -> x = var || List.mem var args || List.mem var fargs
+  | CallCls (x, args, fargs) ->
+    x = var || List.mem var args || List.mem var fargs
+  | CallDir (Id.L x, args, fargs) ->
+    x = var || List.mem var args || List.mem var fargs
   | _ -> false
 ;;
 
@@ -72,8 +76,9 @@ let%test_module "is_occur test" =
                             ( ("sp.400.848", Int)
                             , Add ("sp.400", C 1)
                             , Let
-                                (("Ti333.507.868", Int), Set 0, Ans (Mov "Ti333.507.868"))
-                            ) ) ) ) ) )
+                                ( ("Ti333.507.868", Int)
+                                , Set 0
+                                , Ans (Mov "Ti333.507.868") ) ) ) ) ) ) )
     ;;
 
     let%test _ = is_occur "Ti242.609" t = false
@@ -109,9 +114,12 @@ let rec const_fold_mov ?(env = M.empty) = function
     | Add (x, V y) ->
       ep "Folding: Add (%s, %s)\n" x y;
       (match find_greedy x env, find_greedy y env with
-      | Some var1, Some var2 -> Let ((var, typ), Add (var1, V var2), const_fold_mov ~env t)
-      | Some var1, None -> Let ((var, typ), Add (var1, V y), const_fold_mov ~env t)
-      | None, Some var2 -> Let ((var, typ), Add (x, V var2), const_fold_mov ~env t)
+      | Some var1, Some var2 ->
+        Let ((var, typ), Add (var1, V var2), const_fold_mov ~env t)
+      | Some var1, None ->
+        Let ((var, typ), Add (var1, V y), const_fold_mov ~env t)
+      | None, Some var2 ->
+        Let ((var, typ), Add (x, V var2), const_fold_mov ~env t)
       | None, None -> Let ((var, typ), Add (x, V y), const_fold_mov ~env t))
     | Sub (x, C y) ->
       (match find_greedy x env with
@@ -119,9 +127,12 @@ let rec const_fold_mov ?(env = M.empty) = function
       | None -> Let ((var, typ), e, const_fold_mov ~env t))
     | Sub (x, V y) ->
       (match find_greedy x env, find_greedy y env with
-      | Some var1, Some var2 -> Let ((var, typ), Sub (var1, V var2), const_fold_mov ~env t)
-      | Some var1, None -> Let ((var, typ), Sub (var1, V y), const_fold_mov ~env t)
-      | None, Some var2 -> Let ((var, typ), Sub (x, V var2), const_fold_mov ~env t)
+      | Some var1, Some var2 ->
+        Let ((var, typ), Sub (var1, V var2), const_fold_mov ~env t)
+      | Some var1, None ->
+        Let ((var, typ), Sub (var1, V y), const_fold_mov ~env t)
+      | None, Some var2 ->
+        Let ((var, typ), Sub (x, V var2), const_fold_mov ~env t)
       | None, None -> Let ((var, typ), Sub (x, V y), const_fold_mov ~env t))
     | Mul (x, C y) ->
       (match find_greedy x env with
@@ -129,9 +140,12 @@ let rec const_fold_mov ?(env = M.empty) = function
       | None -> Let ((var, typ), e, const_fold_mov ~env t))
     | Mul (x, V y) ->
       (match find_greedy x env, find_greedy y env with
-      | Some var1, Some var2 -> Let ((var, typ), Mul (var1, V var2), const_fold_mov ~env t)
-      | Some var1, None -> Let ((var, typ), Mul (var1, V y), const_fold_mov ~env t)
-      | None, Some var2 -> Let ((var, typ), Mul (x, V var2), const_fold_mov ~env t)
+      | Some var1, Some var2 ->
+        Let ((var, typ), Mul (var1, V var2), const_fold_mov ~env t)
+      | Some var1, None ->
+        Let ((var, typ), Mul (var1, V y), const_fold_mov ~env t)
+      | None, Some var2 ->
+        Let ((var, typ), Mul (x, V var2), const_fold_mov ~env t)
       | None, None -> Let ((var, typ), Mul (x, V y), const_fold_mov ~env t))
     | Div (x, C y) ->
       (match find_greedy x env with
@@ -139,9 +153,12 @@ let rec const_fold_mov ?(env = M.empty) = function
       | None -> Let ((var, typ), e, const_fold_mov ~env t))
     | Div (x, V y) ->
       (match find_greedy x env, find_greedy y env with
-      | Some var1, Some var2 -> Let ((var, typ), Div (var1, V var2), const_fold_mov ~env t)
-      | Some var1, None -> Let ((var, typ), Div (var1, V y), const_fold_mov ~env t)
-      | None, Some var2 -> Let ((var, typ), Div (x, V var2), const_fold_mov ~env t)
+      | Some var1, Some var2 ->
+        Let ((var, typ), Div (var1, V var2), const_fold_mov ~env t)
+      | Some var1, None ->
+        Let ((var, typ), Div (var1, V y), const_fold_mov ~env t)
+      | None, Some var2 ->
+        Let ((var, typ), Div (x, V var2), const_fold_mov ~env t)
       | None, None -> Let ((var, typ), Div (x, V y), const_fold_mov ~env t))
     | Ld (x, V y, z) ->
       let e =
@@ -176,8 +193,10 @@ let rec const_fold_mov ?(env = M.empty) = function
       Let
         ( (var, typ)
         , (match x_opt with
-          | Some x' -> e <=> (x', C y, const_fold_mov ~env t1, const_fold_mov ~env t2)
-          | None -> e <=> (x, C y, const_fold_mov ~env t1, const_fold_mov ~env t2))
+          | Some x' ->
+            e <=> (x', C y, const_fold_mov ~env t1, const_fold_mov ~env t2)
+          | None ->
+            e <=> (x, C y, const_fold_mov ~env t1, const_fold_mov ~env t2))
         , const_fold_mov ~env t )
     | IfEq (x, V y, t1, t2) | IfLE (x, V y, t1, t2) | IfGE (x, V y, t1, t2) ->
       let x_opt, y_opt = find_greedy x env, find_greedy y env in
@@ -197,16 +216,20 @@ let rec const_fold_mov ?(env = M.empty) = function
         ( (var, typ)
         , CallCls
             ( (if M.mem x env then M.find x env else x)
-            , args |> List.map (fun x -> if M.mem x env then M.find x env else x)
-            , fargs |> List.map (fun x -> if M.mem x env then M.find x env else x) )
+            , args
+              |> List.map (fun x -> if M.mem x env then M.find x env else x)
+            , fargs
+              |> List.map (fun x -> if M.mem x env then M.find x env else x) )
         , const_fold_mov ~env t )
     | CallDir (id_l, args, fargs) ->
       Let
         ( (var, typ)
         , CallDir
             ( id_l
-            , args |> List.map (fun x -> if M.mem x env then M.find x env else x)
-            , fargs |> List.map (fun x -> if M.mem x env then M.find x env else x) )
+            , args
+              |> List.map (fun x -> if M.mem x env then M.find x env else x)
+            , fargs
+              |> List.map (fun x -> if M.mem x env then M.find x env else x) )
         , const_fold_mov ~env t )
     | _ -> Let ((var, typ), e, const_fold_mov ~env t))
   | Ans e ->
@@ -218,19 +241,25 @@ let rec const_fold_mov ?(env = M.empty) = function
         (match x_opt, y_opt with
         | Some x', Some y' ->
           e <=> (x', V y', const_fold_mov ~env t1, const_fold_mov ~env t2)
-        | Some x', None -> e <=> (x', V y, const_fold_mov ~env t1, const_fold_mov ~env t2)
-        | None, Some y' -> e <=> (x, V y', const_fold_mov ~env t1, const_fold_mov ~env t2)
+        | Some x', None ->
+          e <=> (x', V y, const_fold_mov ~env t1, const_fold_mov ~env t2)
+        | None, Some y' ->
+          e <=> (x, V y', const_fold_mov ~env t1, const_fold_mov ~env t2)
         | _ -> e <=> (x, V y, const_fold_mov ~env t1, const_fold_mov ~env t2))
       | IfEq (x, C n, t1, t2) | IfLE (x, C n, t1, t2) | IfGE (x, C n, t1, t2) ->
         let x_opt = M.find_opt x env in
         (match x_opt with
-        | Some x' -> e <=> (x', C n, const_fold_mov ~env t1, const_fold_mov ~env t2)
+        | Some x' ->
+          e <=> (x', C n, const_fold_mov ~env t1, const_fold_mov ~env t2)
         | None -> e <=> (x, C n, const_fold_mov ~env t1, const_fold_mov ~env t2))
       | CallDir (id_l, args, fargs) ->
         CallDir
           ( id_l
-          , args |> List.map (fun x -> Option.value (find_greedy x env) ~default:x)
-          , fargs |> List.map (fun x -> Option.value (find_greedy x env) ~default:x) )
+          , args
+            |> List.map (fun x -> Option.value (find_greedy x env) ~default:x)
+          , fargs
+            |> List.map (fun x -> Option.value (find_greedy x env) ~default:x)
+          )
       | _ -> e)
 ;;
 
@@ -239,10 +268,15 @@ let rec elim_dead_exp = function
     (* side effect *)
     Let ((var, Type.Unit), e, elim_dead_exp t)
   | Let ((var, typ), e, t) ->
-    if is_occur var t then Let ((var, typ), e, elim_dead_exp t) else elim_dead_exp t
-  | Ans (IfEq (x, y, t1, t2)) -> Ans (IfEq (x, y, elim_dead_exp t1, elim_dead_exp t2))
-  | Ans (IfLE (x, y, t1, t2)) -> Ans (IfLE (x, y, elim_dead_exp t1, elim_dead_exp t2))
-  | Ans (IfGE (x, y, t1, t2)) -> Ans (IfGE (x, y, elim_dead_exp t1, elim_dead_exp t2))
+    if is_occur var t
+    then Let ((var, typ), e, elim_dead_exp t)
+    else elim_dead_exp t
+  | Ans (IfEq (x, y, t1, t2)) ->
+    Ans (IfEq (x, y, elim_dead_exp t1, elim_dead_exp t2))
+  | Ans (IfLE (x, y, t1, t2)) ->
+    Ans (IfLE (x, y, elim_dead_exp t1, elim_dead_exp t2))
+  | Ans (IfGE (x, y, t1, t2)) ->
+    Ans (IfGE (x, y, elim_dead_exp t1, elim_dead_exp t2))
   | Ans e -> Ans e
 ;;
 
@@ -258,11 +292,15 @@ let rec const_fold_id ?(env = M.empty) = function
   | Ans (IfGE (x, y, t1, t2) as e) ->
     Ans (e <=> (x, y, const_fold_id ~env t1, const_fold_id ~env t2))
   | Ans e ->
-    (match const_fold_id' env e with `Folded x -> Ans (Mov x) | `Not_folded e -> Ans e)
+    (match const_fold_id' env e with
+    | `Folded x -> Ans (Mov x)
+    | `Not_folded e -> Ans e)
 
 and const_fold_id' env = function
   | Mov x ->
-    (match M.find_opt x env with Some x' -> `Folded x | None -> `Not_folded (Mov x))
+    (match M.find_opt x env with
+    | Some x' -> `Folded x
+    | None -> `Not_folded (Mov x))
   | Add (x, V y) ->
     `Not_folded
       (match M.find_opt x env, M.find_opt y env with
@@ -273,7 +311,9 @@ and const_fold_id' env = function
   | Add (x, C y) when y = 0 -> `Folded x
   | Add (x, C y) ->
     `Not_folded
-      (match M.find_opt x env with Some x' -> Add (x', C y) | None -> Add (x, C y))
+      (match M.find_opt x env with
+      | Some x' -> Add (x', C y)
+      | None -> Add (x, C y))
   | Sub (x, V y) ->
     `Not_folded
       (match M.find_opt x env, M.find_opt y env with
@@ -284,7 +324,9 @@ and const_fold_id' env = function
   | Sub (x, C y) when y = 0 -> `Folded x
   | Sub (x, C y) ->
     `Not_folded
-      (match M.find_opt x env with Some x' -> Sub (x', C y) | None -> Sub (x, C y))
+      (match M.find_opt x env with
+      | Some x' -> Sub (x', C y)
+      | None -> Sub (x, C y))
   | Ld (x, V y, z) ->
     `Not_folded
       (match M.find_opt x env, M.find_opt y env with
@@ -294,7 +336,9 @@ and const_fold_id' env = function
       | None, None -> Ld (x, V y, z))
   | Ld (x, C y, z) ->
     `Not_folded
-      (match M.find_opt x env with Some x' -> Ld (x', C y, z) | None -> Ld (x, C y, z))
+      (match M.find_opt x env with
+      | Some x' -> Ld (x', C y, z)
+      | None -> Ld (x, C y, z))
   | St (x, y, V z, w) ->
     `Not_folded
       (match M.find_opt x env, M.find_opt y env, M.find_opt z env with
@@ -308,11 +352,14 @@ and const_fold_id' env = function
       | None, None, None -> St (x, y, V z, w))
   | CallDir (id_l, args, fargs) ->
     let f =
-      List.map (fun arg -> match find_greedy arg env with Some v -> v | None -> arg)
+      List.map (fun arg ->
+          match find_greedy arg env with Some v -> v | None -> arg)
     in
     `Not_folded (CallDir (id_l, f args, f fargs))
   | CallCls (x, args, fargs) ->
-    let f = List.map (fun arg -> if M.mem arg env then M.find arg env else arg) in
+    let f =
+      List.map (fun arg -> if M.mem arg env then M.find arg env else arg)
+    in
     let x = if M.mem x env then M.find x env else x in
     `Not_folded (CallCls (x, f args, f fargs))
   | e -> `Not_folded e
