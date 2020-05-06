@@ -77,6 +77,7 @@ let rec tree_of_list lst = match lst with
 
 let move_into_guard t =
   let vars_inside_guard = get_vars_inside_guard t in
+  ep "Vars inside guard: %s\n" (List.string_of (fun x -> x) vars_inside_guard);
   let rec move_into_the_guard cand t =
     match t with
     | Let ((var, typ), e, t') ->
@@ -208,7 +209,7 @@ let%test_module "move guard insts test" =
     [@@ocamlformat "disable"]
 
     let%test "get_insts_inside_guard test" =
-      print_endline "";
+      print_newline ();
       let r1 = get_insts_inside_guard t1 in
       let guard_branch =
         Let (("pc.402.1292", Int),  Set (16),
