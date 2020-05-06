@@ -170,7 +170,7 @@ let jit_method ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env) prog
       ~bytecode
   in
   let (`Result (trace, others)) = JM.run prog reg mem env in
-  let trace = Jit_constfold.h trace in
+  let trace = trace |> Jit_constfold.h |> Opt_defuse.h in
   Debug.with_debug (fun _ -> print_fundef trace);
   Option.fold
     others
