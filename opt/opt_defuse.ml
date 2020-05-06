@@ -5,12 +5,10 @@ open Opt_lib
 
 let exec t =
   let rec const_fold t =
-    let open Opt_const_fold in
-    let open Opt_guard in
-    const_fold_exp t
-    |> const_fold_mov
-    |> move_into_guard
-    |> const_fold_id
+    Opt_const_fold.const_fold_exp t
+    |> Opt_const_fold.const_fold_mov
+    (* |> Opt_guard.move_into_guard *)
+    |> Opt_const_fold.const_fold_id
   in
   let rec opt_mem t =
     Opt_mem.const_fold_rw t
