@@ -8,11 +8,11 @@ module M = struct
   let rec find_greedy key env =
     let open Option in
     let rec find_greedy' key env =
-      match M.find_opt key env with
+      match find_opt key env with
       | Some v' -> find_greedy' v' env
       | None -> some key
     in
-    match M.find_opt key env with
+    match find_opt key env with
     | Some v' -> find_greedy' v' env
     | None -> none
   [@@ocamlformat "disable"]
