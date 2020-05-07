@@ -9,8 +9,17 @@ module JO = Jit_optimizer
 module Util = Jit_tracer_util
 
 let sp = sprintf
+
+let stored_traces : t list ref = ref []
 let other_deps : string list ref = ref []
 let re_entry = ref false
+
+let reset () =
+  Renaming.counter := !Id.counter + 1;
+  other_deps := [];
+  re_entry := false;
+  ()
+
 let interp_fundef p = Fundef.find_fuzzy p "interp"
 
 let rec tj
@@ -251,14 +260,13 @@ and tj_if p reg mem env exp =
 ;;
 
 let run p reg mem ({ trace_name; red_names; merge_pc } as env) =
-  Renaming.counter := !Id.counter + 1;
-  other_deps := [];
-  re_entry := false;
+  reset ();
   Log.debug @@ Printf.sprintf "staring trace (merge_pc: %d)" merge_pc;
   let fenv name = Fundef.find_fuzzy p name in
   let (Prog (tbl, _, fundefs, m)) = p in
   let { body = body'; args = args' } = fenv "interp" in
   let trace = body' |> tj p reg mem env in
+  stored_traces := !stored_traces @ [trace];
   `Result
     ( { name = Id.L trace_name
       ; fargs = []
