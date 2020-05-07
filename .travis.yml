@@ -1,6 +1,6 @@
 language: c
 env:
-  - OCAML_VERSION=4.08.1+32bit
+  - OCAML_VERSION=4.09.1+32bit
 cache:
   directories:
     - ${HOME}/.opam
@@ -21,7 +21,7 @@ before_install:
   - eval `opam config env`
   - export OPAMVERBOSE=1
 install:
-  - opam update --upgrade
+# - opam update --upgrade
   - opam install -y dune oUnit ppx_deriving ppx_inline_test alcotest
 script:
   - dune runtest -f jit opt
