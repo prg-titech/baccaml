@@ -3,18 +3,6 @@ open MinCaml
 open Asm
 open Opt_lib
 
-let rec find_greedy key env =
-  let open Option in
-  let rec find_greedy' key env =
-    match M.find_opt key env with
-    | Some v' -> find_greedy' v' env
-    | None -> some key
-  in
-  match M.find_opt key env with
-  | Some v' -> find_greedy' v' env
-  | None -> none
-[@@ocamlformat "disable"]
-
 let rec is_occur var = function
   | Let (_, e, t) -> is_occur_exp var e || is_occur var t
   | Ans e ->
@@ -108,12 +96,12 @@ let rec const_fold_mov ?(env = M.empty) = function
   | Let ((var, typ), e, t) ->
     (match e with
     | Add (x, C y) ->
-      (match find_greedy x env with
+      (match M.find_greedy x env with
       | Some var2 -> Let ((var, typ), Add (var2, C y), const_fold_mov ~env t)
       | None -> Let ((var, typ), e, const_fold_mov ~env t))
     | Add (x, V y) ->
       ep "Folding: Add (%s, %s)\n" x y;
-      (match find_greedy x env, find_greedy y env with
+      (match M.find_greedy x env, M.find_greedy y env with
       | Some var1, Some var2 ->
         Let ((var, typ), Add (var1, V var2), const_fold_mov ~env t)
       | Some var1, None ->
@@ -122,11 +110,11 @@ let rec const_fold_mov ?(env = M.empty) = function
         Let ((var, typ), Add (x, V var2), const_fold_mov ~env t)
       | None, None -> Let ((var, typ), Add (x, V y), const_fold_mov ~env t))
     | Sub (x, C y) ->
-      (match find_greedy x env with
+      (match M.find_greedy x env with
       | Some var2 -> Let ((var, typ), Sub (var2, C y), const_fold_mov ~env t)
       | None -> Let ((var, typ), e, const_fold_mov ~env t))
     | Sub (x, V y) ->
-      (match find_greedy x env, find_greedy y env with
+      (match M.find_greedy x env, M.find_greedy y env with
       | Some var1, Some var2 ->
         Let ((var, typ), Sub (var1, V var2), const_fold_mov ~env t)
       | Some var1, None ->
@@ -135,11 +123,11 @@ let rec const_fold_mov ?(env = M.empty) = function
         Let ((var, typ), Sub (x, V var2), const_fold_mov ~env t)
       | None, None -> Let ((var, typ), Sub (x, V y), const_fold_mov ~env t))
     | Mul (x, C y) ->
-      (match find_greedy x env with
+      (match M.find_greedy x env with
       | Some var2 -> Let ((var, typ), Mul (var2, C y), const_fold_mov ~env t)
       | None -> Let ((var, typ), e, const_fold_mov ~env t))
     | Mul (x, V y) ->
-      (match find_greedy x env, find_greedy y env with
+      (match M.find_greedy x env, M.find_greedy y env with
       | Some var1, Some var2 ->
         Let ((var, typ), Mul (var1, V var2), const_fold_mov ~env t)
       | Some var1, None ->
@@ -148,11 +136,11 @@ let rec const_fold_mov ?(env = M.empty) = function
         Let ((var, typ), Mul (x, V var2), const_fold_mov ~env t)
       | None, None -> Let ((var, typ), Mul (x, V y), const_fold_mov ~env t))
     | Div (x, C y) ->
-      (match find_greedy x env with
+      (match M.find_greedy x env with
       | Some var2 -> Let ((var, typ), Div (var2, C y), const_fold_mov ~env t)
       | None -> Let ((var, typ), e, const_fold_mov ~env t))
     | Div (x, V y) ->
-      (match find_greedy x env, find_greedy y env with
+      (match M.find_greedy x env, M.find_greedy y env with
       | Some var1, Some var2 ->
         Let ((var, typ), Div (var1, V var2), const_fold_mov ~env t)
       | Some var1, None ->
@@ -162,7 +150,7 @@ let rec const_fold_mov ?(env = M.empty) = function
       | None, None -> Let ((var, typ), Div (x, V y), const_fold_mov ~env t))
     | Ld (x, V y, z) ->
       let e =
-        match find_greedy x env, find_greedy y env with
+        match M.find_greedy x env, M.find_greedy y env with
         | Some x', Some y' ->
           ep "Folding: Ld (%s, %s, %d) => Ld (%s, %s, %d)\n" x y z x' y' z;
           Ld (x', V y', z)
@@ -177,7 +165,7 @@ let rec const_fold_mov ?(env = M.empty) = function
       Let ((var, typ), e, const_fold_mov ~env t)
     | St (x, y, V z, w) ->
       let e =
-        match find_greedy x env, find_greedy y env, find_greedy z env with
+        match M.find_greedy x env, M.find_greedy y env, M.find_greedy z env with
         | Some x', Some y', Some z' -> St (x', y', V z', w)
         | Some x', Some y', None -> St (x', y', V z, w)
         | Some x', None, Some z' -> St (x', y, V z', w)
@@ -189,7 +177,7 @@ let rec const_fold_mov ?(env = M.empty) = function
       in
       Let ((var, typ), e, const_fold_mov ~env t)
     | IfEq (x, C y, t1, t2) | IfLE (x, C y, t1, t2) | IfGE (x, C y, t1, t2) ->
-      let x_opt = find_greedy x env in
+      let x_opt = M.find_greedy x env in
       Let
         ( (var, typ)
         , (match x_opt with
@@ -199,7 +187,7 @@ let rec const_fold_mov ?(env = M.empty) = function
             e <=> (x, C y, const_fold_mov ~env t1, const_fold_mov ~env t2))
         , const_fold_mov ~env t )
     | IfEq (x, V y, t1, t2) | IfLE (x, V y, t1, t2) | IfGE (x, V y, t1, t2) ->
-      let x_opt, y_opt = find_greedy x env, find_greedy y env in
+      let x_opt, y_opt = M.find_greedy x env, M.find_greedy y env in
       Let
         ( (var, typ)
         , (match x_opt, y_opt with
@@ -235,9 +223,10 @@ let rec const_fold_mov ?(env = M.empty) = function
   | Ans e ->
     Ans
       (match e with
-      | Mov x -> (match find_greedy x env with Some x' -> Mov x' | None -> e)
+      | Mov x ->
+        (match M.find_greedy x env with Some x' -> Mov x' | None -> e)
       | IfEq (x, V y, t1, t2) | IfLE (x, V y, t1, t2) | IfGE (x, V y, t1, t2) ->
-        let x_opt, y_opt = find_greedy x env, find_greedy y env in
+        let x_opt, y_opt = M.find_greedy x env, M.find_greedy y env in
         (match x_opt, y_opt with
         | Some x', Some y' ->
           e <=> (x', V y', const_fold_mov ~env t1, const_fold_mov ~env t2)
@@ -256,9 +245,9 @@ let rec const_fold_mov ?(env = M.empty) = function
         CallDir
           ( id_l
           , args
-            |> List.map (fun x -> Option.value (find_greedy x env) ~default:x)
+            |> List.map (fun x -> Option.value (M.find_greedy x env) ~default:x)
           , fargs
-            |> List.map (fun x -> Option.value (find_greedy x env) ~default:x)
+            |> List.map (fun x -> Option.value (M.find_greedy x env) ~default:x)
           )
       | _ -> e)
 ;;
@@ -353,7 +342,7 @@ and const_fold_id' env = function
   | CallDir (id_l, args, fargs) ->
     let f =
       List.map (fun arg ->
-          match find_greedy arg env with Some v -> v | None -> arg)
+          match M.find_greedy arg env with Some v -> v | None -> arg)
     in
     `Not_folded (CallDir (id_l, f args, f fargs))
   | CallCls (x, args, fargs) ->
