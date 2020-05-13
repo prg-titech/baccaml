@@ -8,9 +8,6 @@ open Printf
 module JO = Jit_optimizer
 module Util = Jit_tracer_util
 
-let sp = sprintf
-
-let stored_traces : t list ref = ref []
 let other_deps : string list ref = ref []
 let re_entry = ref false
 
@@ -266,7 +263,6 @@ let run p reg mem ({ trace_name; red_names; merge_pc } as env) =
   let (Prog (tbl, _, fundefs, m)) = p in
   let { body = body'; args = args' } = fenv "interp" in
   let trace = body' |> tj p reg mem env in
-  stored_traces := !stored_traces @ [trace];
   `Result
     ( { name = Id.L trace_name
       ; fargs = []

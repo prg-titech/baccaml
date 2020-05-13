@@ -160,6 +160,10 @@ module Setup = struct
   ;;
 end
 
+module Retry = struct
+  let traces_tj : Asm.fundef list ref = ref []
+end
+
 let interp_ir : Asm.prog option ref = ref None
 
 let jit_method ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env) prog
@@ -210,6 +214,7 @@ let jit_tracing
   in
   let (`Result (trace, others)) = JT.run prog reg mem env in
   let trace = trace |> Jit_constfold.h |> Opt_defuse.h in
+  Retry.traces_tj := !Retry.traces_tj @ [trace];
   Debug.with_debug (fun _ -> print_fundef trace);
   Option.fold
     others
