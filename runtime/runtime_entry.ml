@@ -165,13 +165,16 @@ let interp_ir : Asm.prog option ref = ref None
 module TJ = struct
   let traces : Asm.fundef list ref = ref []
 
+  module Retry = struct
+    open Asm
+  end
+
   let jit_tracing
       ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env)
       prog
     =
     let open Asm in
     let open Jit_env in
-    let module JT = Jit_tracing in
     let reg, mem = Setup.env runtime_env `Meta_tracing prog in
     let { args } = Fundef.find_fuzzy prog "interp" in
     let trace_name = Trace_name.gen `Meta_tracing in
@@ -185,7 +188,7 @@ module TJ = struct
         ~red_names:!Config.reds
         ~bytecode
     in
-    let (`Result (trace, others)) = JT.run prog reg mem env in
+    let (`Result (trace, others)) = Jit_tracing.run prog reg mem env in
     let trace = trace |> Jit_constfold.h |> Opt_defuse.h in
     traces := !traces @ [ trace ];
     Debug.with_debug (fun _ -> print_fundef trace);
@@ -194,6 +197,13 @@ module TJ = struct
       ~none:(emit_and_compile prog `Meta_method trace)
       ~some:(fun others ->
         emit_and_compile_with_so prog `Meta_tracing others trace)
+  ;;
+
+  let jit_tracing_retry
+    ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env)
+    prog
+    =
+    ()
   ;;
 
   let jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr =
@@ -246,7 +256,6 @@ module MJ = struct
     =
     let open Asm in
     let open Jit_env in
-    let module JM = Jit_method in
     let reg, mem = Setup.env runtime_env `Meta_method prog in
     let { args } = Fundef.find_fuzzy prog "interp" in
     let trace_name = Trace_name.gen `Meta_method in
@@ -258,7 +267,7 @@ module MJ = struct
         ~merge_pc:pc
         ~bytecode
     in
-    let (`Result (trace, others)) = JM.run prog reg mem env in
+    let (`Result (trace, others)) = Jit_method.run prog reg mem env in
     let trace = trace |> Jit_constfold.h |> Opt_defuse.h in
     Debug.with_debug (fun _ -> print_fundef trace);
     Option.fold
