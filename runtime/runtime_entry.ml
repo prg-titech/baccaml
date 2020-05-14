@@ -160,150 +160,153 @@ module Setup = struct
   ;;
 end
 
-module Retry = struct
-  let traces_tj : Asm.fundef list ref = ref []
-end
-
 let interp_ir : Asm.prog option ref = ref None
 
-let jit_method ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env) prog
-  =
-  let open Asm in
-  let open Jit_env in
-  let module JM = Jit_method in
-  let reg, mem = Setup.env runtime_env `Meta_method prog in
-  let { args } = Fundef.find_fuzzy prog "interp" in
-  let trace_name = Trace_name.gen `Meta_method in
-  let env =
-    create_env
-      ~trace_name:(Trace_name.value trace_name)
-      ~red_names:!Config.reds
-      ~index_pc:(List.index (Util.get_id "pc" args) args)
-      ~merge_pc:pc
-      ~bytecode
-  in
-  let (`Result (trace, others)) = JM.run prog reg mem env in
-  let trace = trace |> Jit_constfold.h |> Opt_defuse.h in
-  Debug.with_debug (fun _ -> print_fundef trace);
-  Option.fold
-    others
-    ~none:(emit_and_compile prog `Meta_method trace)
-    ~some:(fun others ->
-      emit_and_compile_with_so prog `Meta_tracing others trace)
-;;
+module TJ = struct
+  let traces : Asm.fundef list ref = ref []
 
-let jit_tracing
-    ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env)
-    prog
-  =
-  let open Asm in
-  let open Jit_env in
-  let module JT = Jit_tracing in
-  let reg, mem = Setup.env runtime_env `Meta_tracing prog in
-  let { args } = Fundef.find_fuzzy prog "interp" in
-  let trace_name = Trace_name.gen `Meta_tracing in
-  let env =
-    create_env
-      ~index_pc:
-        (let pc_id = List.find (fun arg -> String.get_name arg = "pc") args in
-         List.index pc_id args)
-      ~merge_pc:pc
-      ~trace_name:(Trace_name.value trace_name)
-      ~red_names:!Config.reds
-      ~bytecode
-  in
-  let (`Result (trace, others)) = JT.run prog reg mem env in
-  let trace = trace |> Jit_constfold.h |> Opt_defuse.h in
-  Retry.traces_tj := !Retry.traces_tj @ [trace];
-  Debug.with_debug (fun _ -> print_fundef trace);
-  Option.fold
-    others
-    ~none:(emit_and_compile prog `Meta_method trace)
-    ~some:(fun others ->
-      emit_and_compile_with_so prog `Meta_tracing others trace)
-;;
+  let jit_tracing
+      ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env)
+      prog
+    =
+    let open Asm in
+    let open Jit_env in
+    let module JT = Jit_tracing in
+    let reg, mem = Setup.env runtime_env `Meta_tracing prog in
+    let { args } = Fundef.find_fuzzy prog "interp" in
+    let trace_name = Trace_name.gen `Meta_tracing in
+    let env =
+      create_env
+        ~index_pc:
+          (let pc_id = List.find (fun arg -> String.get_name arg = "pc") args in
+           List.index pc_id args)
+        ~merge_pc:pc
+        ~trace_name:(Trace_name.value trace_name)
+        ~red_names:!Config.reds
+        ~bytecode
+    in
+    let (`Result (trace, others)) = JT.run prog reg mem env in
+    let trace = trace |> Jit_constfold.h |> Opt_defuse.h in
+    traces := !traces @ [ trace ];
+    Debug.with_debug (fun _ -> print_fundef trace);
+    Option.fold
+      others
+      ~none:(emit_and_compile prog `Meta_method trace)
+      ~some:(fun others ->
+        emit_and_compile_with_so prog `Meta_tracing others trace)
+  ;;
 
-let jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr =
-  let open Util in
-  let prog = Option.get !interp_ir |> Jit_annot.annotate `Meta_tracing in
-  let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-  match prog |> jit_tracing env with
-  | Ok name -> Trace_prof.register (pc, name)
-  | Error e -> ()
-;;
+  let jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr =
+    let open Util in
+    let prog = Option.get !interp_ir |> Jit_annot.annotate `Meta_tracing in
+    let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+    match prog |> jit_tracing env with
+    | Ok name -> Trace_prof.register (pc, name)
+    | Error e -> ()
+  ;;
 
-let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
-  let open Util in
-  with_jit_flg
-    ~off:(fun _ -> ())
-    ~on:(fun _ ->
-      if Trace_prof.over_threshold pc
-      then (
-        match Trace_prof.find_opt pc with
-        | Some _ -> ()
-        | None -> jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr)
-      else Trace_prof.count_up pc;
-      ())
-;;
-
-let jit_tracing_exec pc st_ptr sp stack =
-  let open Util in
-  with_jit_flg
-    ~off:(fun _ -> ())
-    ~on:(fun _ ->
-      match Trace_prof.find_opt pc with
-      | Some tname ->
-        eprintf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc sp;
-        let _ =
-          exec_dyn_arg2_with_elapsed_time
-            ~notation:(Some `Tracing)
-            ~name:tname
-            ~arg1:st_ptr
-            ~arg2:sp
-        in
-        flush_all ()
-      | None ->
+  let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
+    let open Util in
+    with_jit_flg
+      ~off:(fun _ -> ())
+      ~on:(fun _ ->
+        if Trace_prof.over_threshold pc
+        then (
+          match Trace_prof.find_opt pc with
+          | Some _ -> ()
+          | None -> jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr)
+        else Trace_prof.count_up pc;
         ())
-;;
+  ;;
 
-let jit_method_gen_trace bytecode stack pc sp bc_ptr st_ptr =
-  let p = Option.get !interp_ir |> Jit_annot.annotate `Meta_method in
-  let bytecode = Compat.of_bytecode bytecode in
-  let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-  match p |> jit_method env with
-  | Ok name ->
-    Debug.with_debug (fun _ -> eprintf "[mj] compiled %s at pc: %d\n" name pc);
-    Method_prof.register (pc, name)
-  | Error e -> raise e
-;;
+  let jit_tracing_exec pc st_ptr sp stack =
+    let open Util in
+    with_jit_flg
+      ~off:(fun _ -> ())
+      ~on:(fun _ ->
+        match Trace_prof.find_opt pc with
+        | Some tname ->
+          eprintf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc sp;
+          let _ =
+            exec_dyn_arg2_with_elapsed_time
+              ~notation:(Some `Tracing)
+              ~name:tname
+              ~arg1:st_ptr
+              ~arg2:sp
+          in
+          flush_all ()
+        | None -> ())
+  ;;
+end
 
-let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
-  let open Util in
-  match Method_prof.find_opt pc with
-  | Some name ->
-    let s = Sys.time () in
-    let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
-    let e = Sys.time () in
-    printf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
-    flush stdout;
-    r
-  | None ->
+module MJ = struct
+  let jit_method
+      ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env)
+      prog
+    =
+    let open Asm in
+    let open Jit_env in
+    let module JM = Jit_method in
+    let reg, mem = Setup.env runtime_env `Meta_method prog in
+    let { args } = Fundef.find_fuzzy prog "interp" in
+    let trace_name = Trace_name.gen `Meta_method in
+    let env =
+      create_env
+        ~trace_name:(Trace_name.value trace_name)
+        ~red_names:!Config.reds
+        ~index_pc:(List.index (Util.get_id "pc" args) args)
+        ~merge_pc:pc
+        ~bytecode
+    in
+    let (`Result (trace, others)) = JM.run prog reg mem env in
+    let trace = trace |> Jit_constfold.h |> Opt_defuse.h in
+    Debug.with_debug (fun _ -> print_fundef trace);
+    Option.fold
+      others
+      ~none:(emit_and_compile prog `Meta_method trace)
+      ~some:(fun others ->
+        emit_and_compile_with_so prog `Meta_tracing others trace)
+  ;;
+
+  let jit_method_gen_trace bytecode stack pc sp bc_ptr st_ptr =
     let p = Option.get !interp_ir |> Jit_annot.annotate `Meta_method in
     let bytecode = Compat.of_bytecode bytecode in
     let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-    (match p |> jit_method env with
+    match p |> jit_method env with
     | Ok name ->
-      Method_prof.register (pc, name);
-      Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
+      Debug.with_debug (fun _ -> eprintf "[mj] compiled %s at pc: %d\n" name pc);
+      Method_prof.register (pc, name)
+    | Error e -> raise e
+  ;;
+
+  let jit_method_call bytecode stack pc sp bc_ptr st_ptr =
+    let open Util in
+    match Method_prof.find_opt pc with
+    | Some name ->
       let s = Sys.time () in
       let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
       let e = Sys.time () in
-      Printf.printf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
-      flush stderr;
+      printf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
       flush stdout;
       r
-    | Error e -> raise e)
-;;
+    | None ->
+      let p = Option.get !interp_ir |> Jit_annot.annotate `Meta_method in
+      let bytecode = Compat.of_bytecode bytecode in
+      let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+      (match p |> jit_method env with
+      | Ok name ->
+        Method_prof.register (pc, name);
+        Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
+        let s = Sys.time () in
+        let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
+        let e = Sys.time () in
+        Printf.printf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
+        flush stderr;
+        flush stdout;
+        r
+      | Error e -> raise e)
+  ;;
+end
 
 let jit_setup_run_once_flg = ref false
 
@@ -317,20 +320,20 @@ let jit_gen_trace bytecode stack pc sp bc_ptr st_ptr =
   then (
     jit_setup_run_once_flg := true;
     match !Config.jit_setup_mode with
-    | `Tracing -> tj_pcs |> jit_apply jit_tracing_gen_trace
-    | `Method -> mj_pcs |> jit_apply jit_method_gen_trace
+    | `Tracing -> tj_pcs |> jit_apply TJ.jit_tracing_gen_trace
+    | `Method -> mj_pcs |> jit_apply MJ.jit_method_gen_trace
     | `All ->
-      tj_pcs |> jit_apply jit_tracing_gen_trace;
-      mj_pcs |> jit_apply jit_method_gen_trace
+      tj_pcs |> jit_apply TJ.jit_tracing_gen_trace;
+      mj_pcs |> jit_apply MJ.jit_method_gen_trace
     | `Nothing -> ())
 ;;
 
 let register_interp_ir () = interp_ir := Some (Util.gen_ir ())
 
 let callbacks () =
-  Callback.register "jit_tracing_entry" jit_tracing_entry;
-  Callback.register "jit_tracing_exec" jit_tracing_exec;
-  Callback.register "jit_method_call" jit_method_call;
+  Callback.register "jit_tracing_entry" TJ.jit_tracing_entry;
+  Callback.register "jit_tracing_exec" TJ.jit_tracing_exec;
+  Callback.register "jit_method_call" MJ.jit_method_call;
   Callback.register "jit_setup" jit_gen_trace;
   register_interp_ir ();
   ()
