@@ -1,10 +1,23 @@
 (* customized version of Map *)
 
-module M = Map.Make (struct
-  type t = Id.t
+module M = struct
+  include Map.Make (struct
+    type t = Id.t
+    let compare = compare
+  end)
 
-  let compare = compare
-end)
+  let rec find_greedy key env =
+    let open Option in
+    let rec find_greedy' key env =
+      match find_opt key env with
+      | Some v' -> find_greedy' v' env
+      | None -> some key
+    in
+    match find_opt key env with
+    | Some v' -> find_greedy' v' env
+    | None -> none
+  [@@ocamlformat "disable"]
+end
 
 include M
 

@@ -2,22 +2,6 @@ open MinCaml
 open Asm
 open Printf
 
-module M = struct
-  include MinCaml.M
-
-  let rec find_greedy key env =
-    let open Option in
-    let rec find_greedy' key env =
-      match find_opt key env with
-      | Some v' -> find_greedy' v' env
-      | None -> some key
-    in
-    match find_opt key env with
-    | Some v' -> find_greedy' v' env
-    | None -> none
-  [@@ocamlformat "disable"]
-end
-
 module M' = struct
   include Map.Make (Int)
 
