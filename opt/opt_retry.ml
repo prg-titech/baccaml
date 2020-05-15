@@ -37,7 +37,7 @@ let rec rename_guard { pc; tname } env =
   | Ans e -> Ans e
 ;;
 
-(** * TODO: Check the value of pc that a guard instruction has, * and exec
+(** TODO: Check the value of pc that a guard instruction has, and exec
     `rename_guard' at that point **)
 let rec rename rg_env =
   let open Asm in
@@ -46,9 +46,9 @@ let rec rename rg_env =
   | Ans (IfEq (x, y, t1, t2) as e)
   | Ans (IfLE (x, y, t1, t2) as e)
   | Ans (IfGE (x, y, t1, t2) as e) ->
-    if Opt_guard.is_guard_path t1
-    then Ans (e <=> (x, y, rename_guard rg_env M.empty t1, t2))
-    else Ans (e <=> (x, y, t1, rename_guard rg_env M.empty t2))
+    if Opt_guard.is_guard_path t2
+    then Ans (e <=> (x, y, t1, rename_guard rg_env M.empty t2))
+    else Ans (e <=> (x, y, rename_guard rg_env M.empty t1, t2))
   | Ans e -> Ans e
 ;;
 
@@ -106,7 +106,10 @@ let%test_module _ =
       let rg_env = { pc = 18; tname = "renamed_tracetj1.999" } in
       let res = rename rg_env trace_sum.body in
       List.mem
-        (CallDir (L "renamed_tracetj1.999",["stack.399"; "sp.400"; "bytecode.401.1293"; "Ti195.686.1424"; ],[]))
+        (CallDir
+           ( L "renamed_tracetj1.999"
+           , [ "stack.399"; "sp.400"; "bytecode.401.1293"; "Ti195.686.1424" ]
+           , [] ))
         (extract_calldirs res)
     ;;
   end)
