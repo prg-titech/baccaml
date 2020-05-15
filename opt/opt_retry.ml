@@ -96,6 +96,7 @@ let%test_module _ =
       | Ans (IfLE (_, _, t1, t2))
       | Ans (IfGE (_, _, t1, t2)) ->
         extract_calldirs t1 @ extract_calldirs t2
+      | Ans e -> []
       | Let (_, CallDir (id_l, args, fargs), t) ->
         [ CallDir (id_l, args, fargs) ] @ extract_calldirs t
       | Let (_, _, t) -> extract_calldirs t
