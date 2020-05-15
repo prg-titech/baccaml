@@ -1,6 +1,5 @@
 open Std
 open MinCaml
-open Asm
 open Opt_lib
 
 type rename_guard_env =
@@ -13,19 +12,22 @@ let is_pc x =
   Str.string_match re x 0
 ;;
 
-let rec rename_guard { pc; tname } env = function
+let rec rename_guard { pc; tname } env =
+  let open Asm in
+  function
   | Let ((var, typ), Set n, t) when is_pc var ->
     let env = M.add var n env in
-    Let ((var, typ), Set n, rename_guard {pc; tname} env t)
+    Let ((var, typ), Set n, rename_guard { pc; tname } env t)
   | Let ((var, typ), Add (x, C y), t) when is_pc x ->
     let pc_v = M.find x env in
     let env = M.add var (pc_v + y) env in
-    Let ((var, typ), Add (x, C y), rename_guard {pc; tname} env t)
+    Let ((var, typ), Add (x, C y), rename_guard { pc; tname } env t)
   | Let ((var, typ), Sub (x, C y), t) when is_pc x ->
     let pc_v = M.find x env in
     let env = M.add var (pc_v - y) env in
-    Let ((var, typ), Add (x, C y), rename_guard {pc; tname} env t)
-  | Let ((var, typ), e, t) -> Let ((var, typ), e, rename_guard {pc; tname} env t)
+    Let ((var, typ), Add (x, C y), rename_guard { pc; tname } env t)
+  | Let ((var, typ), e, t) ->
+    Let ((var, typ), e, rename_guard { pc; tname } env t)
   | Ans (CallDir (Id.L name, args, fargs) as e) ->
     let pc_arg = List.find (fun arg -> M.mem arg env) args in
     Ans
@@ -35,21 +37,20 @@ let rec rename_guard { pc; tname } env = function
   | Ans e -> Ans e
 ;;
 
-(** TODO: Check the value of pc that a guard instruction has,
- *  and exec `rename_guard' at that point
- **)
-let rec rename rg_env = function
+(** * TODO: Check the value of pc that a guard instruction has, * and exec
+    `rename_guard' at that point **)
+let rec rename rg_env =
+  let open Asm in
+  function
   | Let (x, e, t) -> Let (x, e, rename rg_env t)
   | Ans (IfEq (x, y, t1, t2) as e)
   | Ans (IfLE (x, y, t1, t2) as e)
   | Ans (IfGE (x, y, t1, t2) as e) ->
-    if Opt_guard.is_guard_path t1 then
-      Ans (e <=> (x, y, rename_guard rg_env M.empty t1, t2))
-    else
-      Ans (e <=> (x, y, t1, rename_guard rg_env M.empty t2))
+    if Opt_guard.is_guard_path t1
+    then Ans (e <=> (x, y, rename_guard rg_env M.empty t1, t2))
+    else Ans (e <=> (x, y, t1, rename_guard rg_env M.empty t2))
   | Ans e -> Ans e
 ;;
-
 
 let%test_module _ =
   (module struct
@@ -88,5 +89,24 @@ let%test_module _ =
        Ans (CallDir (L "guard_tracetj0.844",["stack.399"; "sp.400"; "bytecode.401.1293"; "Ti195.686.1424"; ],[])))))))))))
       ; ret= Type.Int; }
     [@@ocamlformat "disable"]
+
+    let rec extract_calldirs = function
+      | Ans (CallDir (id_l, args, fargs)) -> [ CallDir (id_l, args, fargs) ]
+      | Ans (IfEq (_, _, t1, t2))
+      | Ans (IfLE (_, _, t1, t2))
+      | Ans (IfGE (_, _, t1, t2)) ->
+        extract_calldirs t1 @ extract_calldirs t2
+      | Let (_, CallDir (id_l, args, fargs), t) ->
+        [ CallDir (id_l, args, fargs) ] @ extract_calldirs t
+      | Let (_, _, t) -> extract_calldirs t
+    ;;
+
+    let%test _ =
+      let rg_env = { pc = 18; tname = "renamed_tracetj1.999" } in
+      let res = rename rg_env trace_sum.body in
+      List.mem
+        (CallDir (L "renamed_tracetj1.999",["stack.399"; "sp.400"; "bytecode.401.1293"; "Ti195.686.1424"; ],[]))
+        (extract_calldirs res)
+    ;;
   end)
 ;;
