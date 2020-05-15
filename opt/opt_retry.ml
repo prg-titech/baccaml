@@ -1,5 +1,6 @@
 open Std
 open MinCaml
+open Jit
 open Opt_lib
 
 type rename_guard_env =
@@ -104,13 +105,19 @@ let%test_module _ =
 
     let%test _ =
       let rg_env = { pc = 18; tname = "renamed_tracetj1.999" } in
-      let res = rename rg_env trace_sum.body in
-      List.mem
-        (CallDir
-           ( L "renamed_tracetj1.999"
-           , [ "stack.399"; "sp.400"; "bytecode.401.1293"; "Ti195.686.1424" ]
-           , [] ))
-        (extract_calldirs res)
+      let res =
+        create_fundef
+          ~name:trace_sum.name
+          ~args:trace_sum.args
+          ~fargs:trace_sum.fargs
+          ~body:(rename rg_env trace_sum.body)
+          ~ret:trace_sum.ret
+      in
+      List.exists (function
+          | CallDir (Id.L x, args, fargs) -> x = "renamed_tracetj1.999"
+          | _ -> false)
+        (extract_calldirs
+           (Renaming.rename_fundef res).body)
     ;;
   end)
 ;;
