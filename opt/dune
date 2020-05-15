@@ -1,7 +1,7 @@
 (library
  (name opt)
  (public_name baccaml.opt)
- (libraries str unix minCaml log std)
+ (libraries ANSITerminal str unix minCaml log std)
  (inline_tests)
  (preprocess
   (pps ppx_inline_test ppx_deriving.show)))
