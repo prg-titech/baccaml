@@ -222,6 +222,10 @@ let trace_loop1 =
 [@@ocamlformat "disable"]
 
 let%test _ =
-  pp "[TEST] Applying const_fold a straight trace\n";
+  print_newline ();
+  print_string "\027[32m";
+  print_string "[TEST] Applying const_fold a straight trace\n";
+  print_string "\027[0m";
   Opt_defuse.exec trace_loop1 |> Asm.print_t;
   true
+;;

@@ -160,7 +160,10 @@ let%test_module "constfold test" =
     [@@ocamlformat "disable"]
 
     let%test "const_fold test2 (applying const_fold_stld)" =
-      print_endline "[TEST] Applying const_fold + const_fold_stld";
+      print_newline ();
+      print_string "\027[32m";
+      print_string "[TEST] Applying const_fold + const_fold_stld\n";
+      print_string "\027[0m";
       let r1 =
         Opt_const_fold.(
           const_fold_exp t_trace1
@@ -177,7 +180,10 @@ let%test_module "constfold test" =
     ;;
 
     let%test "mem_opt test" =
-      print_endline "[TEST] Applying const_fold + mem_opt";
+      print_newline ();
+      print_string "\027[32m";
+      print_string "[TEST] Applying const_fold + mem_opt\n";
+      print_string "\027[0m";
       let r1 =
         Opt_const_fold.(
           const_fold_exp t_trace1
@@ -198,7 +204,10 @@ let%test_module "constfold test" =
     ;;
 
     let%test "integration test" =
-      print_endline "[TEST] integration test";
+      print_newline ();
+      print_string "\027[32m";
+      print_string "[TEST] integration test\n";
+      print_string "\027[0m";
       let r1 = Opt_defuse.exec t_trace1 |> Simm.t in
       print_t r1;
       print_newline ();
