@@ -67,6 +67,10 @@ module Make_prof (M_prof : Prof) = struct
     | None -> false
  ;;
 
+  let update : pc -> name -> unit =
+   fun pc name -> Hashtbl.replace compiled_tbl pc name
+ ;;
+
   let gen_name _ = Trace_name.(gen typ |> value)
 
   let%test _ =
