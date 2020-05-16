@@ -40,17 +40,23 @@ let rec rename_guard { pc; tname } env =
 
 (** TODO: Check the value of pc that a guard instruction has, and exec
     `rename_guard' at that point **)
-let rec rename rg_env =
+let rename rg_env trace_fundef =
   let open Asm in
-  function
-  | Let (x, e, t) -> Let (x, e, rename rg_env t)
-  | Ans (IfEq (x, y, t1, t2) as e)
-  | Ans (IfLE (x, y, t1, t2) as e)
-  | Ans (IfGE (x, y, t1, t2) as e) ->
-    if Opt_guard.is_guard_path t2
-    then Ans (e <=> (x, y, t1, rename_guard rg_env M.empty t2))
-    else Ans (e <=> (x, y, rename_guard rg_env M.empty t1, t2))
-  | Ans e -> Ans e
+  let rec aux rg_env =
+    function
+    | Let (x, e, t) -> Let (x, e, aux rg_env t)
+    | Ans (IfEq (x, y, t1, t2) as e)
+    | Ans (IfLE (x, y, t1, t2) as e)
+    | Ans (IfGE (x, y, t1, t2) as e) ->
+      if Opt_guard.is_guard_path t2
+      then Ans (e <=> (x, y, t1, rename_guard rg_env M.empty t2))
+      else Ans (e <=> (x, y, rename_guard rg_env M.empty t1, t2))
+    | Ans e -> Ans e
+  in
+  let {name; args; fargs; body; ret} = trace_fundef in
+  let renamed_body = aux rg_env body in
+  create_fundef ~name ~args ~fargs ~body:renamed_body ~ret
+  |> Renaming.rename_fundef
 ;;
 
 let%test_module _ =
@@ -105,19 +111,12 @@ let%test_module _ =
 
     let%test _ =
       let rg_env = { pc = 18; tname = "renamed_tracetj1.999" } in
-      let res =
-        create_fundef
-          ~name:trace_sum.name
-          ~args:trace_sum.args
-          ~fargs:trace_sum.fargs
-          ~body:(rename rg_env trace_sum.body)
-          ~ret:trace_sum.ret
-      in
-      List.exists (function
+      let res = (rename rg_env trace_sum) in
+      List.exists
+        (function
           | CallDir (Id.L x, args, fargs) -> x = "renamed_tracetj1.999"
           | _ -> false)
-        (extract_calldirs
-           (Renaming.rename_fundef res).body)
+        (extract_calldirs res.body)
     ;;
   end)
 ;;
