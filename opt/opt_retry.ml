@@ -112,11 +112,14 @@ let%test_module _ =
     let%test _ =
       let rg_env = { pc = 18; tname = "renamed_tracetj1.999" } in
       let res = (rename rg_env trace_sum) in
-      List.exists
-        (function
-          | CallDir (Id.L x, args, fargs) -> x = "renamed_tracetj1.999"
-          | _ -> false)
-        (extract_calldirs res.body)
+      let _ =
+        assert(
+          List.exists
+            (function
+              | CallDir (Id.L x, args, fargs) -> x = "renamed_tracetj1.999"
+              | _ -> false)
+            (extract_calldirs res.body)) in
+      res != trace_sum
     ;;
   end)
 ;;
