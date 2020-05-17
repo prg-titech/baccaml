@@ -60,16 +60,45 @@ let rec promote reg ~trace_name:tname = function
   | Let (x, e, body) -> promote reg tname body
   | Ans (CallDir (Id.L "min_caml_guard_promote", args, fargs)) ->
     restore reg ~args (Ans (CallDir (Id.L ("guard_" ^ tname), args, [])))
-  | Ans _ -> failwith "Jit_guard.promote cannot find min_caml_guard_promote."
+  | Ans _ -> failwith "Jit_guard.promote could not find min_caml_guard_promote."
 ;;
 
 module TJ : sig
   val create : reg -> string -> ?wlist:'a list -> t -> t
 end = struct
+  let is_pc x =
+    let re = Str.regexp "^pc\\.[a-zA-Z0-9\\.]*" in
+    Str.string_match re x 0
+  ;;
+
+  let rec insert_guard_pc env = function
+    | Let ((var, typ), (Set (n) as e), t) when is_pc var ->
+      let env = M.add var n env in
+      Let ((var, typ), e, insert_guard_pc env t)
+    | Let ((var, typ), (Add (x, C y) as e), t) when is_pc x ->
+      let pc_v = M.find x env in
+      let env = M.add var (pc_v + y) env in
+      Let ((var, typ), e, insert_guard_pc env t)
+    | Let ((var, typ), (Sub (x, C y) as e), t) when is_pc x ->
+      let pc_v = M.find x env in
+      let env = M.add var (pc_v - y) env in
+      Let ((var, typ), e, insert_guard_pc env t)
+    | Let ((var, typ), e, t) -> Let ((var, typ), e, insert_guard_pc env t)
+    | Ans (CallDir (Id.L (x), args, fargs) as e) ->
+      (match List.find_opt (fun arg -> M.mem arg env) args with
+      | Some pc_arg ->
+        let pc_v = M.find pc_arg env in
+        Let ((Id.gentmp Type.Unit, Type.Unit),
+             Comment ("guard_pc." ^ (string_of_int pc_v)), Ans (e))
+      | None -> Ans e)
+    | Ans e -> Ans e
+  ;;
+
   let create reg trace_name ?wlist:(ws = []) cont =
     let free_vars = List.unique (fv cont) in
-    let t = restore reg free_vars cont in
-    promote_interp trace_name t
+    restore reg free_vars cont
+    |> insert_guard_pc M.empty
+    |> promote_interp trace_name
   ;;
 end
 
