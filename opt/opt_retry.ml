@@ -30,22 +30,27 @@ let rec rename_guard { pc; tname } env =
   | Let ((var, typ), e, t) ->
     Let ((var, typ), e, rename_guard { pc; tname } env t)
   | Ans (CallDir (Id.L name, args, fargs) as e) ->
-    let pc_arg = List.find (fun arg -> M.mem arg env) args in
-      (match M.find_opt pc_arg env with
-       | Some pc_v when pc_v = pc ->
-         Let ((Id.gentmp Type.Unit, Type.Unit),
-              Comment ("guard_pc." ^ (string_of_int pc_v)),
-              Ans (CallDir (Id.L tname, args, fargs)))
-       | Some _ | None -> Ans e)
-  | Ans e -> Ans e
+    Option.(
+      bind
+        (List.find_opt (fun arg -> M.mem arg env) args)
+        (fun pc_arg ->
+          bind (M.find_opt pc_arg env) (fun pc_v ->
+              if pc_v = pc
+              then
+                Let
+                  ( (Id.gentmp Type.Unit, Type.Unit)
+                  , Comment ("guard_pc." ^ string_of_int pc_v)
+                  , Ans (CallDir (Id.L tname, args, fargs)) )
+                |> some
+              else none))
+      |> value ~default:(Ans e))
 ;;
 
 (** TODO: Check the value of pc that a guard instruction has, and exec
     `rename_guard' at that point **)
 let rename rg_env trace_fundef =
   let open Asm in
-  let rec aux rg_env =
-    function
+  let rec aux rg_env = function
     | Let (x, e, t) -> Let (x, e, aux rg_env t)
     | Ans (IfEq (x, y, t1, t2) as e)
     | Ans (IfLE (x, y, t1, t2) as e)
@@ -55,7 +60,7 @@ let rename rg_env trace_fundef =
       else Ans (e <=> (x, y, rename_guard rg_env M.empty t1, t2))
     | Ans e -> Ans e
   in
-  let {name; args; fargs; body; ret} = trace_fundef in
+  let { name; args; fargs; body; ret } = trace_fundef in
   let renamed_body = aux rg_env body in
   create_fundef ~name ~args ~fargs ~body:renamed_body ~ret
   |> Renaming.rename_fundef
@@ -112,15 +117,19 @@ let%test_module _ =
     ;;
 
     let%test _ =
+      print_endline "\027[32m[TEST] rename_guard test\027[0m";
       let rg_env = { pc = 18; tname = "renamed_tracetj1.999" } in
-      let res = (rename rg_env trace_sum) in
+      let res = rename rg_env trace_sum in
+      print_t res.body;
+      print_newline ();
       let _ =
-        assert(
+        assert (
           List.exists
             (function
               | CallDir (Id.L x, args, fargs) -> x = "renamed_tracetj1.999"
               | _ -> false)
-            (extract_calldirs res.body)) in
+            (extract_calldirs res.body))
+      in
       res != trace_sum
     ;;
   end)
