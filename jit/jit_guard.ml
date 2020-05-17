@@ -72,7 +72,7 @@ end = struct
   ;;
 
   let rec insert_guard_pc env = function
-    | Let ((var, typ), (Set (n) as e), t) when is_pc var ->
+    | Let ((var, typ), (Set n as e), t) when is_pc var ->
       let env = M.add var n env in
       Let ((var, typ), e, insert_guard_pc env t)
     | Let ((var, typ), (Add (x, C y) as e), t) when is_pc x ->
@@ -84,13 +84,21 @@ end = struct
       let env = M.add var (pc_v - y) env in
       Let ((var, typ), e, insert_guard_pc env t)
     | Let ((var, typ), e, t) -> Let ((var, typ), e, insert_guard_pc env t)
-    | Ans (CallDir (Id.L (x), args, fargs) as e) ->
-      (match List.find_opt (fun arg -> M.mem arg env) args with
-      | Some pc_arg ->
-        let pc_v = M.find pc_arg env in
-        Let ((Id.gentmp Type.Unit, Type.Unit),
-             Comment ("guard_pc." ^ (string_of_int pc_v)), Ans (e))
-      | None -> Ans e)
+    | Ans (CallDir (Id.L x, args, fargs) as e) ->
+      Option.(
+        bind
+          (List.find_opt (fun arg -> M.mem arg env) args)
+          (fun pc_arg ->
+            bind (M.find_opt pc_arg env) (fun pc_v ->
+                Let
+                  ( (Id.gentmp Type.Unit, Type.Unit)
+                  , Comment ("guard_pc." ^ string_of_int pc_v)
+                  , Let
+                      ( (Id.gentmp Type.Unit, Type.Unit)
+                      , CallDir (Id.L "min_caml_guard_occur_at", args, [])
+                      , Ans e ) )
+                |> some))
+        |> value ~default:(Ans e))
     | Ans e -> Ans e
   ;;
 

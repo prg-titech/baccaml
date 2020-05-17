@@ -343,6 +343,9 @@ min_caml_method_entry:
 .globl min_caml_guard_promote
 min_caml_guard_promote:
 	ret
+.globl min_caml_guard_occur_at
+min_caml_guard_occur_at:
+	ret
 .data
 format_int:
 	.asciz	"%d"
