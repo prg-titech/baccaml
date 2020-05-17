@@ -14,7 +14,7 @@ let rec replace var t =
 
 and replace_exp var exp =
   match exp with
-  | Nop | Set _ | SetL _ -> Some exp
+  | Nop | Set _ | SetL _ | Comment _ -> Some exp
   | Mov id -> if id |=| var then None else Some exp
   | SMov id -> if id |=| var then None else Some exp
   | Neg id -> if id |=| var then Some (Neg var) else Some exp

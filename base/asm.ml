@@ -97,6 +97,7 @@ let rec print_t = function
 
 and print_exp = function
   | Nop -> print_string "Nop"
+  | Comment str -> print_string ("Comment (" ^ str ^ ")")
   | Set n ->
     print_string "Set (";
     print_int n;

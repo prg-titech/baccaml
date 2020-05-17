@@ -165,10 +165,6 @@ let interp_ir : Asm.prog option ref = ref None
 module TJ = struct
   let traces : Asm.fundef list ref = ref []
 
-  module Retry = struct
-    open Asm
-  end
-
   let jit_tracing
       ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env)
       prog
@@ -184,6 +180,7 @@ module TJ = struct
           (let pc_id = List.find (fun arg -> String.get_name arg = "pc") args in
            List.index pc_id args)
         ~merge_pc:pc
+        ~current_pc:pc
         ~trace_name:(Trace_name.value trace_name)
         ~red_names:!Config.reds
         ~bytecode
@@ -265,6 +262,7 @@ module MJ = struct
         ~red_names:!Config.reds
         ~index_pc:(List.index (Util.get_id "pc" args) args)
         ~merge_pc:pc
+        ~current_pc:pc
         ~bytecode
     in
     let (`Result (trace, others)) = Jit_method.run prog reg mem env in
