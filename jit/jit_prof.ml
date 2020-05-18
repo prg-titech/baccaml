@@ -92,7 +92,7 @@ module Guard_prof = struct
     Option.(
       bind (Sys.getenv_opt "THOLD_GUARD") (fun th_grd_str ->
           int_of_string_opt th_grd_str)
-      |> value ~default:100)
+      |> value ~default:2)
   ;;
 
   let count_up pc =
