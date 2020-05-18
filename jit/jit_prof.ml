@@ -86,7 +86,7 @@ module Guard_prof = struct
   type pc = int
   type count = Count of int
 
-  let count_tbl = Hashtbl.create 100
+  let count_tbl : (pc, count) Hashtbl.t = Hashtbl.create 100
 
   let threshold =
     Option.(
