@@ -197,13 +197,9 @@ module TJ = struct
   ;;
 
   let jit_tracing_retry
-    ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env)
-    prog
+      ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env)
+      prog
     =
-    ()
-  ;;
-
-  let jit_guard_occur_at bytecode stack pc sp bc_ptr st_ptr =
     ()
   ;;
 
@@ -230,6 +226,12 @@ module TJ = struct
         ())
   ;;
 
+  let jit_guard_occur_at bytecode stack pc sp bc_ptr st_ptr =
+    if pc <> 63 then Guard_prof.count_up pc (* UGLY, FIX IT *);
+    if Guard_prof.over_threshold pc
+    then jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr
+  ;;
+
   let jit_tracing_exec pc st_ptr sp stack =
     let open Util in
     with_jit_flg
@@ -237,7 +239,8 @@ module TJ = struct
       ~on:(fun _ ->
         match Trace_prof.find_opt pc with
         | Some tname ->
-          eprintf "[tj] executing %s at pc: %d sp: %d ...\n" tname pc sp;
+          (* Log.debug (sprintf "executing %s at pc: %d sp: %d ..." tname pc
+             sp); *)
           let _ =
             exec_dyn_arg2_with_elapsed_time
               ~notation:(Some `Tracing)
