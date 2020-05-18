@@ -82,6 +82,32 @@ module Make_prof (M_prof : Prof) = struct
   ;;
 end
 
+module Guard_prof = struct
+  type pc = int
+  type count = Count of int
+
+  let count_tbl = Hashtbl.create 100
+
+  let threshold =
+    Option.(
+      bind (Sys.getenv_opt "THOLD_GUARD") (fun th_grd_str ->
+          int_of_string_opt th_grd_str)
+      |> value ~default:100)
+  ;;
+
+  let count_up pc =
+    match Hashtbl.find_opt count_tbl pc with
+    | Some (Count v) -> Hashtbl.replace count_tbl pc (Count (v + 1))
+    | None -> Hashtbl.add count_tbl pc (Count 1)
+  ;;
+
+  let over_threshold pc =
+    match Hashtbl.find_opt count_tbl pc with
+    | Some (Count v) -> v > threshold
+    | None -> false
+  ;;
+end
+
 module Method_prof = Make_prof (struct
   let threshold = 0
   let typ = `Meta_method
@@ -89,6 +115,11 @@ end)
 
 module Trace_prof = Make_prof (struct
   (* fib: let threshold = 1 *)
-  let threshold = 10
+  let threshold =
+    Option.(
+      bind (Sys.getenv_opt "THOLD_TJ") (fun pc_str -> int_of_string_opt pc_str)
+      |> value ~default:10)
+  ;;
+
   let typ = `Meta_tracing
 end)
