@@ -165,7 +165,7 @@ and tj_if p reg mem env exp =
   let trace = tj p reg mem env in
   let open Jit_guard in
   let guard t =
-    let pc_guard = Ans (Comment ("guard_pc." ^ string_of_int env.current_pc)) in
+    let pc_guard = Ans (BranchingAt (env.current_pc)) in
     Asm.concat pc_guard (Id.gentmp Type.Unit, Type.Unit)
       (TJ.create reg env.trace_name t)
   in

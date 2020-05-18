@@ -67,8 +67,9 @@ module TJ : sig
   val create : reg -> string -> ?wlist:'a list -> t -> t
 end = struct
   let is_pc x =
-    let re = Str.regexp "^pc\\.[a-zA-Z0-9\\.]*" in
-    Str.string_match re x 0
+    let re_pc = Str.regexp "^pc\\.[a-zA-Z0-9\\.]*" in
+    let re_addr = Str.regexp "^addr\\.[a-zA-Z0-9\\.]*" in
+    Str.string_match re_pc x 0 || Str.string_match re_addr x 0
   ;;
 
   let rec insert_guard_occur_at env = function
@@ -92,7 +93,7 @@ end = struct
             bind (M.find_opt pc_arg env) (fun pc_v ->
                 Let
                   ( (Id.gentmp Type.Unit, Type.Unit)
-                  , Comment ("guard_pc." ^ string_of_int pc_v)
+                  , GuardAt (pc_v)
                   , Let
                       ( (Id.gentmp Type.Unit, Type.Unit)
                       , CallDir (Id.L "min_caml_guard_occur_at", args, [])
@@ -106,7 +107,7 @@ end = struct
     let free_vars = List.unique (fv cont) in
     restore reg free_vars cont
     (* too slow *)
-    (* |> insert_guard_occur_at M.empty *)
+    |> insert_guard_occur_at M.empty
     |> promote_interp trace_name
   ;;
 end
