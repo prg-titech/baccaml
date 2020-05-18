@@ -90,7 +90,7 @@ let specialize lhs rhs =
 
 let rec const_fold_mov ?(env = M.empty) = function
   | Let ((var, typ), Mov x, t) ->
-    ep "Folding: %s = Mov (%s)\n" var x;
+    fp "Folding: %s = Mov (%s)\n" var x;
     let env = M.add var x env in
     const_fold_mov ~env t
   | Let ((var, typ), e, t) ->
@@ -100,7 +100,7 @@ let rec const_fold_mov ?(env = M.empty) = function
       | Some var2 -> Let ((var, typ), Add (var2, C y), const_fold_mov ~env t)
       | None -> Let ((var, typ), e, const_fold_mov ~env t))
     | Add (x, V y) ->
-      ep "Folding: Add (%s, %s)\n" x y;
+      fp "Folding: Add (%s, %s)\n" x y;
       (match M.find_greedy x env, M.find_greedy y env with
       | Some var1, Some var2 ->
         Let ((var, typ), Add (var1, V var2), const_fold_mov ~env t)
@@ -152,13 +152,13 @@ let rec const_fold_mov ?(env = M.empty) = function
       let e =
         match M.find_greedy x env, M.find_greedy y env with
         | Some x', Some y' ->
-          ep "Folding: Ld (%s, %s, %d) => Ld (%s, %s, %d)\n" x y z x' y' z;
+          fp "Folding: Ld (%s, %s, %d) => Ld (%s, %s, %d)\n" x y z x' y' z;
           Ld (x', V y', z)
         | Some x', None ->
-          ep "Folding: Ld (%s, %s, %d) => Ld (%s, %s, %d)\n" x y z x' y z;
+          fp "Folding: Ld (%s, %s, %d) => Ld (%s, %s, %d)\n" x y z x' y z;
           Ld (x', V y, z)
         | None, Some y' ->
-          ep "Folding: Ld (%s, %s, %d) => Ld (%s, %s, %d)\n" x y z x y' z;
+          fp "Folding: Ld (%s, %s, %d) => Ld (%s, %s, %d)\n" x y z x y' z;
           Ld (x, V y', z)
         | None, None -> Ld (x, V y, z)
       in

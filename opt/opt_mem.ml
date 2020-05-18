@@ -44,7 +44,7 @@ let rec remove_rw (sp_env : int M.t) (mem_env : string M'.t) = function
     (try
        let sp = M.find y sp_env in
        let addr = M'.find sp mem_env in
-       ep "Removing: %s = Ld (%s, %s, %d) => %s = Mov (%s)\n" var x y z var addr;
+       fp "Removing: %s = Ld (%s, %s, %d) => %s = Mov (%s)\n" var x y z var addr;
        Let ((var, typ), Mov addr, t |> remove_rw sp_env mem_env)
      with
     | Not_found -> Let ((var, typ), e, t |> remove_rw sp_env mem_env))
@@ -75,7 +75,7 @@ let rec find_remove_candidate
     (remove_cand : exp M.t)
   = function
   | Let ((var, typ), Add (x, C n), t) when check_sp x ->
-    ep "Removing: %s = Add (%s, %d)\n" var x n;
+    fp "Removing: %s = Add (%s, %d)\n" var x n;
     let sp_env = M.add var n sp_env in
     find_remove_candidate sp_env mem_env remove_cand t
   | Let ((var, typ), Sub (x, C n), t) when check_sp x ->

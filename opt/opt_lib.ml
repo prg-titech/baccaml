@@ -18,9 +18,11 @@ module M' = struct
   [@@ocamlformat "disable"]
 end
 
+let oc_opt_debug = open_out "opt.log"
 let ep = eprintf
 let sp = sprintf
 let pp = printf
+let fp fmt = fprintf oc_opt_debug fmt
 
 let ( <=> ) e (x, y, t1, t2) =
   match e with
