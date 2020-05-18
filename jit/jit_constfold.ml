@@ -14,7 +14,7 @@ let rec replace var t =
 
 and replace_exp var exp =
   match exp with
-  | Nop | Set _ | SetL _ | Comment _ -> Some exp
+  | Nop | Set _ | SetL _ | Comment _ | GuardAt _ | BranchingAt _ -> Some exp
   | Mov id -> if id |=| var then None else Some exp
   | SMov id -> if id |=| var then None else Some exp
   | Neg id -> if id |=| var then Some (Neg var) else Some exp
@@ -116,8 +116,7 @@ and replace_exp var exp =
                    args |> List.map (fun x -> if x |=| var then var else x),
                    fargs |> List.map (fun x -> if x |=| var then var else x)))
   | _ ->
-    Asm.print_exp exp;
-    failwith "un matched pattern."
+    failwith (Printf.sprintf "un matched pattern: %s" (show_exp exp))
 ;;
 
 let h {name; args; fargs; body; ret} =

@@ -185,7 +185,7 @@ and g'_and_restore dest cont regenv exp =
 
 and g' dest cont regenv = function
   (* 各命令のレジスタ割り当て (caml2html: regalloc_gprime) *)
-  | (Nop | Set _ | SetL _ | Comment _ | Restore _) as exp -> Ans exp, regenv
+  | (Nop | Set _ | SetL _ | Comment _ | BranchingAt _ | GuardAt _ | Restore _) as exp -> Ans exp, regenv
   | Mov x -> Ans (Mov (find x Type.Int regenv)), regenv
   | SMov x -> Ans (SMov x), regenv (* not allocate string *)
   | Neg x -> Ans (Neg (find x Type.Int regenv)), regenv

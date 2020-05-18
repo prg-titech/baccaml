@@ -53,6 +53,8 @@ and exp =
   | LdDF of Id.t * id_or_imm * int
   | StDF of Id.t * Id.t * id_or_imm * int
   | Comment of string
+  | GuardAt of int
+  | BranchingAt of int
   (* virtual instructions *)
   | IfEq of Id.t * id_or_imm * t * t
   | IfLE of Id.t * id_or_imm * t * t
@@ -98,6 +100,8 @@ let rec print_t = function
 and print_exp = function
   | Nop -> print_string "Nop"
   | Comment str -> print_string ("Comment (" ^ str ^ ")")
+  | GuardAt n -> print_string "GuardAt ("; print_int n; print_string ")"
+  | BranchingAt n -> print_string "BranchingAt ("; print_int n; print_string ")"
   | Set n ->
     print_string "Set (";
     print_int n;
@@ -383,7 +387,7 @@ let rec remove_and_uniq xs = function
 let fv_id_or_imm = function V x -> [ x ] | _ -> []
 
 let rec fv_exp = function
-  | Nop | Set _ | SetL _ | Comment _ | Restore _ | SMov _ -> []
+  | Nop | Set _ | SetL _ | Comment _ | GuardAt _ | BranchingAt _ | Restore _ | SMov _ -> []
   | Mov x | Neg x | FMovD x | FNegD x | Save (x, _) -> [ x ]
   | Add (x, y') | Sub (x, y') | Mul (x, y') | Div (x, y') | Mod (x, y') | Ld (x, y', _) | LdDF (x, y', _) ->
     x :: fv_id_or_imm y'

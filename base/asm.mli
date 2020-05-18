@@ -31,6 +31,8 @@ and exp =
   | LdDF of Id.t * id_or_imm * int
   | StDF of Id.t * Id.t * id_or_imm * int
   | Comment of string
+  | GuardAt of int
+  | BranchingAt of int
   (* virtual instructions *)
   | IfEq of Id.t * id_or_imm * t * t
   | IfLE of Id.t * id_or_imm * t * t
