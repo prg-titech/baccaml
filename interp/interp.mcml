@@ -218,4 +218,4 @@ let rec loop i =
     prerr_int r; print_newline ();
     print_int (e - s); print_newline ();
     loop (i-1)
-in loop 10
+in loop 2
