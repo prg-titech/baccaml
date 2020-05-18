@@ -71,19 +71,19 @@ end = struct
     Str.string_match re x 0
   ;;
 
-  let rec insert_guard_pc env = function
+  let rec insert_guard_occur_at env = function
     | Let ((var, typ), (Set n as e), t) when is_pc var ->
       let env = M.add var n env in
-      Let ((var, typ), e, insert_guard_pc env t)
+      Let ((var, typ), e, insert_guard_occur_at env t)
     | Let ((var, typ), (Add (x, C y) as e), t) when is_pc x ->
       let pc_v = M.find x env in
       let env = M.add var (pc_v + y) env in
-      Let ((var, typ), e, insert_guard_pc env t)
+      Let ((var, typ), e, insert_guard_occur_at env t)
     | Let ((var, typ), (Sub (x, C y) as e), t) when is_pc x ->
       let pc_v = M.find x env in
       let env = M.add var (pc_v - y) env in
-      Let ((var, typ), e, insert_guard_pc env t)
-    | Let ((var, typ), e, t) -> Let ((var, typ), e, insert_guard_pc env t)
+      Let ((var, typ), e, insert_guard_occur_at env t)
+    | Let ((var, typ), e, t) -> Let ((var, typ), e, insert_guard_occur_at env t)
     | Ans (CallDir (Id.L x, args, fargs) as e) ->
       Option.(
         bind
@@ -105,7 +105,8 @@ end = struct
   let create reg trace_name ?wlist:(ws = []) cont =
     let free_vars = List.unique (fv cont) in
     restore reg free_vars cont
-    |> insert_guard_pc M.empty
+    (* too slow *)
+    (* |> insert_guard_occur_at M.empty *)
     |> promote_interp trace_name
   ;;
 end

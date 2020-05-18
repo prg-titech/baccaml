@@ -36,14 +36,10 @@ let rec rename_guard { pc; tname } env =
         (fun pc_arg ->
           bind (M.find_opt pc_arg env) (fun pc_v ->
               if pc_v = pc
-              then
-                Let
-                  ( (Id.gentmp Type.Unit, Type.Unit)
-                  , Comment ("guard_pc." ^ string_of_int pc_v)
-                  , Ans (CallDir (Id.L tname, args, fargs)) )
-                |> some
+              then some @@ Ans (CallDir (Id.L tname, args, fargs))
               else none))
       |> value ~default:(Ans e))
+  | Ans e -> Ans e
 ;;
 
 (** TODO: Check the value of pc that a guard instruction has, and exec

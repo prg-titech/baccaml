@@ -9,6 +9,7 @@
 
 extern void call_caml_jit_entry(int *, int, int *, int) asm("call_caml_jit_entry");
 extern void call_caml_jit_exec(int, int *, int) asm("call_caml_jit_exec");
+extern void call_caml_guard_occur_at(int *, int, int *, int) asm("call_caml_guard_occur_at");
 extern int call_caml_jit_mj_call(int *, int, int *, int) asm("call_caml_mj_call");
 
 value init_f(int n) { return Val_int(n); }
@@ -48,6 +49,22 @@ void call_caml_jit_exec(int pc, int *st_ptr, int sp) {
   ml_args[2] = Val_int(sp);
   ml_args[3] = caml_alloc_array(init_f, st_ptr);
   caml_callbackN(*jit_exec_closure, 4, ml_args);
+  return;
+}
+
+void call_caml_guard_occur_at(int *st, int sp, int *bc, int pc) {
+  static value *jit_guard_occur_at_clsr = NULL;
+  value ml_args[6];
+  if (jit_guard_occur_at_clsr == NULL) {
+    jit_guard_occur_at_clsr = caml_named_value("jit_guard_occur_at");
+  }
+  ml_args[0] = caml_alloc_array(init_f, bc);
+  ml_args[1] = caml_alloc_array(init_f, st);
+  ml_args[2] = Val_int(pc);
+  ml_args[3] = Val_int(sp);
+  ml_args[4] = Val_hp(bc);
+  ml_args[5] = Val_hp(st);
+  caml_callbackN(*jit_guard_occur_at_clsr, 6, ml_args);
   return;
 }
 

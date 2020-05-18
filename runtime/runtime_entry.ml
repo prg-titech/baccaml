@@ -203,6 +203,10 @@ module TJ = struct
     ()
   ;;
 
+  let jit_guard_occur_at bytecode stack pc sp bc_ptr st_ptr =
+    ()
+  ;;
+
   let jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr =
     let open Util in
     let prog = Option.get !interp_ir |> Jit_annot.annotate `Meta_tracing in
@@ -340,6 +344,7 @@ let register_interp_ir () = interp_ir := Some (Util.gen_ir ())
 let callbacks () =
   Callback.register "jit_tracing_entry" TJ.jit_tracing_entry;
   Callback.register "jit_tracing_exec" TJ.jit_tracing_exec;
+  Callback.register "jit_guard_occur_at" TJ.jit_guard_occur_at;
   Callback.register "jit_method_call" MJ.jit_method_call;
   Callback.register "jit_setup" jit_gen_trace;
   register_interp_ir ();

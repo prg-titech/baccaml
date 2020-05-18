@@ -331,6 +331,18 @@ min_caml_jit_setup:
 	movl	%ebp, %esp
 	popl	%ebp
 	ret
+.globl min_caml_guard_occur_at
+min_caml_guard_occur_at:
+	pushl	%ebp
+	movl	%esp, %ebp
+	pushl	%edx
+	pushl	%ecx
+	pushl	%ebx
+	pushl	%eax
+	call	call_caml_guard_occur_at
+	movl	%ebp, %esp
+	popl	%ebp
+	ret
 .globl min_caml_loop_start
 min_caml_loop_start:
 	ret
@@ -342,9 +354,6 @@ min_caml_method_entry:
 	ret
 .globl min_caml_guard_promote
 min_caml_guard_promote:
-	ret
-.globl min_caml_guard_occur_at
-min_caml_guard_occur_at:
 	ret
 .data
 format_int:
