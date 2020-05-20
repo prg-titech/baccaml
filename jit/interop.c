@@ -1,4 +1,4 @@
-#include "caml/compatibility.h"
+#include <caml/compatibility.h>
 #include <caml/alloc.h>
 #include <caml/callback.h>
 #include <caml/mlvalues.h>
