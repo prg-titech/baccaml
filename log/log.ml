@@ -7,6 +7,7 @@ type level =
   ]
 
 let log_level : level ref = ref `Error
+let oc_debug = open_out "debug.log"
 
 let error s =
   match !log_level with
@@ -19,8 +20,7 @@ let error s =
 let debug s =
   match !log_level with
   | `Debug ->
-    Printf.fprintf stderr "[debug] %s\n" s;
-    flush stderr
+    Printf.fprintf oc_debug "[debug] %s\n" s
   | _ -> ()
 ;;
 

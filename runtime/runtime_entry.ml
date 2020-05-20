@@ -110,20 +110,16 @@ module Util = struct
   ;;
 
   let exec_dyn_arg2_with_elapsed_time ?(notation = None) ~name ~arg1 ~arg2 =
-    if Debug.is_debug ()
-    then (
-      let s = Sys.time () in
-      let v = exec_dyn_arg2 name arg1 arg2 in
-      let e = Sys.time () in
-      (match notation with
-      | Some `Tracing ->
-        Printf.eprintf "[tj] elapsed time %fus\n" ((e -. s) *. 1e6)
-      | Some `Method ->
-        Printf.eprintf "[mj] elapsed time %fus\n" ((e -. s) *. 1e6)
-      | None -> ());
-      flush stderr;
-      v)
-    else exec_dyn_arg2 name arg1 arg2
+    let s = Sys.time () in
+    let v = exec_dyn_arg2 name arg1 arg2 in
+    let e = Sys.time () in
+    (match notation with
+    | Some `Tracing ->
+      Debug.log_time "[tj] elapsed time %fus\n" ((e -. s) *. 1e6)
+    | Some `Method -> Debug.log_time "[mj] elapsed time %fus\n" ((e -. s) *. 1e6)
+    | None -> ());
+    flush stderr;
+    v
   ;;
 
   let exec_dyn_arg3 ~name ~arg1 ~arg2 ~arg3 =
@@ -239,8 +235,7 @@ module TJ = struct
       ~on:(fun _ ->
         match Trace_prof.find_opt pc with
         | Some tname ->
-          (* Log.debug (sprintf "executing %s at pc: %d sp: %d ..." tname pc
-             sp); *)
+          Log.debug (sprintf "executing %s at pc: %d sp: %d ..." tname pc sp);
           let _ =
             exec_dyn_arg2_with_elapsed_time
               ~notation:(Some `Tracing)
@@ -288,7 +283,8 @@ module MJ = struct
     let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
     match p |> jit_method env with
     | Ok name ->
-      Debug.with_debug (fun _ -> eprintf "[mj] compiled %s at pc: %d\n" name pc);
+      Debug.with_debug (fun _ ->
+          Log.debug (sprintf "[mj] compiled %s at pc: %d\n" name pc));
       Method_prof.register (pc, name)
     | Error e -> raise e
   ;;
@@ -310,7 +306,7 @@ module MJ = struct
       (match p |> jit_method env with
       | Ok name ->
         Method_prof.register (pc, name);
-        Printf.eprintf "[mj] compiled %s at pc: %d\n" name pc;
+        Log.debug @@ sprintf "[mj] compiled %s at pc: %d\n" name pc;
         let s = Sys.time () in
         let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
         let e = Sys.time () in

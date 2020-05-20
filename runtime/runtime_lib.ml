@@ -31,6 +31,8 @@ module Debug = struct
 
   let is_debug () = match !Config.log_level with `Debug -> true | _ -> false
   let with_debug f = match !Config.log_level with `Debug -> f () | _ -> ()
+  let oc_time = open_out "elapsed_time.log"
+  let log_time fmt = Printf.fprintf oc_time fmt
 end
 
 module Compat = struct
