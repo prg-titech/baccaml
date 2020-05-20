@@ -227,8 +227,8 @@ module TJ = struct
   ;;
 
   let jit_guard_occur_at bytecode stack pc sp bc_ptr st_ptr =
-    if pc <> 63 then Guard_prof.count_up pc (* UGLY, FIX IT *);
-    if Guard_prof.over_threshold pc
+    if pc <> 63 then Trace_prof.guard_count_up pc (* UGLY, FIX IT *);
+    if Trace_prof.guard_over_threshold pc
     then jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr
   ;;
 
