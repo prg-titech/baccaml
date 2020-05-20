@@ -4,12 +4,7 @@ open Opt_lib
 
 let check_sp sp =
   let sp_strs = String.split_on_char '.' sp in
-  List.hd sp_strs = "sp" && List.length sp_strs = 2
-;;
-
-let check_sp2 sp =
-  let sp_strs = String.split_on_char '.' sp in
-  List.hd sp_strs = "sp2"
+  (List.hd sp_strs = "sp" || List.hd sp_strs = "sp2") && List.length sp_strs = 2
 ;;
 
 let check_stack id =
@@ -24,7 +19,8 @@ let rec remove_rw (sp_env : int M.t) (mem_env : string M'.t) = function
   | Let ((var, typ), (Sub (x, C n) as e), t) when check_sp x ->
     let sp_env = M.add var (-n) sp_env in
     Let ((var, typ), e, remove_rw sp_env mem_env t)
-  | Let ((var, typ), (St (x, y, V z, w) as e), t) when check_stack y && check_sp z ->
+  | Let ((var, typ), (St (x, y, V z, w) as e), t)
+    when check_stack y && check_sp z ->
     let mem_env = M'.add 0 x mem_env in
     Let ((var, typ), e, t |> remove_rw sp_env mem_env)
   | Let ((var, typ), (St (x, y, V z, w) as e), t) when check_stack y ->
@@ -34,7 +30,8 @@ let rec remove_rw (sp_env : int M.t) (mem_env : string M'.t) = function
        Let ((var, typ), e, t |> remove_rw sp_env mem_env)
      with
     | Not_found -> Let ((var, typ), e, t |> remove_rw sp_env mem_env))
-  | Let ((var, typ), (Ld (x, V y, z) as e), t) when check_stack x && check_sp y ->
+  | Let ((var, typ), (Ld (x, V y, z) as e), t) when check_stack x && check_sp y
+    ->
     (try
        let addr = M'.find 0 mem_env in
        Let ((var, typ), Mov addr, t |> remove_rw sp_env mem_env)
@@ -81,7 +78,8 @@ let rec find_remove_candidate
   | Let ((var, typ), Sub (x, C n), t) when check_sp x ->
     let sp_env = M.add var (-n) sp_env in
     find_remove_candidate sp_env mem_env remove_cand t
-  | Let ((var, typ), (St (x, y, V z, w) as e), t) when check_stack y && check_sp z ->
+  | Let ((var, typ), (St (x, y, V z, w) as e), t)
+    when check_stack y && check_sp z ->
     (match M'.find_opt 0 mem_env with
     | Some (var', e') ->
       let remove_cand = M.add var' e' remove_cand in
@@ -103,8 +101,11 @@ let rec find_remove_candidate
          t |> find_remove_candidate sp_env mem_env remove_cand
      with
     | Not_found -> t |> find_remove_candidate sp_env mem_env remove_cand)
-  | Let ((var, typ), e, t) -> t |> find_remove_candidate sp_env mem_env remove_cand
-  | Ans (IfEq (x, y, t1, t2)) | Ans (IfLE (x, y, t1, t2)) | Ans (IfGE (x, y, t1, t2)) ->
+  | Let ((var, typ), e, t) ->
+    t |> find_remove_candidate sp_env mem_env remove_cand
+  | Ans (IfEq (x, y, t1, t2))
+  | Ans (IfLE (x, y, t1, t2))
+  | Ans (IfGE (x, y, t1, t2)) ->
     let f = find_remove_candidate sp_env mem_env remove_cand in
     if Opt_guard.is_guard_path t1 then f t2 else f t1
   | Ans e -> remove_cand
