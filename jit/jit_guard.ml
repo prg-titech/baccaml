@@ -64,36 +64,51 @@ let rec promote reg ~trace_name:tname = function
 ;;
 
 module TJ : sig
-  val create : reg -> string -> ?wlist:'a list -> t -> t
+  val create : reg -> Jit_env.env -> ?wlist:'a list -> t -> t
 end = struct
+  let guard_tbl : (int, int list) Hashtbl.t = Hashtbl.create 100
+
+  let append pc guard_pc =
+    Option.(
+      bind (Hashtbl.find_opt guard_tbl pc) (fun guard_pcs ->
+          if not (List.mem guard_pc guard_pcs)
+          then (
+            Hashtbl.replace guard_tbl pc (guard_pcs @ [ guard_pc ]));
+          some ())
+      |> value ~default:())
+  ;;
+
   let is_pc x =
     let re_pc = Str.regexp "^pc\\.[a-zA-Z0-9\\.]*" in
     let re_addr = Str.regexp "^addr\\.[a-zA-Z0-9\\.]*" in
     Str.string_match re_pc x 0 || Str.string_match re_addr x 0
   ;;
 
-  let rec insert_guard_occur_at env = function
+  let rec insert_guard_occur_at (merge_pc, env) = function
     | Let ((var, typ), (Set n as e), t) when is_pc var ->
       let env = M.add var n env in
-      Let ((var, typ), e, insert_guard_occur_at env t)
+      Let ((var, typ), e, insert_guard_occur_at (merge_pc, env) t)
     | Let ((var, typ), (Add (x, C y) as e), t) when is_pc x ->
       let pc_v = M.find x env in
       let env = M.add var (pc_v + y) env in
-      Let ((var, typ), e, insert_guard_occur_at env t)
+      Let ((var, typ), e, insert_guard_occur_at (merge_pc, env) t)
     | Let ((var, typ), (Sub (x, C y) as e), t) when is_pc x ->
       let pc_v = M.find x env in
       let env = M.add var (pc_v - y) env in
-      Let ((var, typ), e, insert_guard_occur_at env t)
-    | Let ((var, typ), e, t) -> Let ((var, typ), e, insert_guard_occur_at env t)
+      Let ((var, typ), e, insert_guard_occur_at (merge_pc, env) t)
+    | Let ((var, typ), e, t) ->
+      Let ((var, typ), e, insert_guard_occur_at (merge_pc, env) t)
     | Ans (CallDir (Id.L x, args, fargs) as e) ->
       Option.(
         bind
           (List.find_opt (fun arg -> M.mem arg env) args)
           (fun pc_arg ->
             bind (M.find_opt pc_arg env) (fun pc_v ->
+                (* append the value of pc at this guard failer *)
+                append merge_pc pc_v;
                 Let
                   ( (Id.gentmp Type.Unit, Type.Unit)
-                  , GuardAt (pc_v)
+                  , GuardAt pc_v
                   , Let
                       ( (Id.gentmp Type.Unit, Type.Unit)
                       , CallDir (Id.L "min_caml_guard_occur_at", args, [])
@@ -103,12 +118,14 @@ end = struct
     | Ans e -> Ans e
   ;;
 
-  let create reg trace_name ?wlist:(ws = []) cont =
+  let create reg env ?wlist:(ws = []) cont =
+    let { merge_pc } = env in
+    Hashtbl.add guard_tbl merge_pc [];
     let free_vars = List.unique (fv cont) in
     restore reg free_vars cont
     (* too slow *)
-    |> insert_guard_occur_at M.empty
-    |> promote_interp trace_name
+    |> insert_guard_occur_at (merge_pc, M.empty)
+    |> promote_interp env.trace_name
   ;;
 end
 

@@ -167,7 +167,7 @@ and tj_if p reg mem env exp =
   let guard t =
     let pc_guard = Ans (BranchingAt (env.current_pc)) in
     Asm.concat pc_guard (Id.gentmp Type.Unit, Type.Unit)
-      (TJ.create reg env.trace_name t)
+      (TJ.create reg env t)
   in
   match exp with
   | IfLE (id_t, id_or_imm, t1, t2) | SIfLE (id_t, id_or_imm, t1, t2) ->
