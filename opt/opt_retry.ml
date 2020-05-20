@@ -9,8 +9,10 @@ type rename_guard_env =
   }
 
 let is_pc x =
-  let re = Str.regexp "^pc\\.[a-zA-Z0-9\\.]*" in
-  Str.string_match re x 0
+  Str.(
+    let re_pc = regexp "^pc\\.[a-zA-Z0-9\\.]*" in
+    let re_addr = regexp "^addr\\.[a-zA-Z0-9\\.]*" in
+    string_match re_pc x 0 || string_match re_addr x 0)
 ;;
 
 let rec rename_guard { pc; tname } env =
@@ -116,7 +118,7 @@ let%test_module _ =
       print_endline "\027[32m[TEST] rename_guard test\027[0m";
       let rg_env = { pc = 18; tname = "renamed_tracetj1.999" } in
       let res = rename rg_env trace_sum in
-      print_t res.body;
+      print_fundef res;
       print_newline ();
       let _ =
         assert (
