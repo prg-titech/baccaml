@@ -35,8 +35,8 @@ module Make_prof (M_prof : Prof) = struct
   type pc = int
   type name = string
 
-  let count_tbl = Hashtbl.create 1000
-  let compiled_tbl = Hashtbl.create 1000
+  let count_tbl = Hashtbl.create 100
+  let compiled_tbl = Hashtbl.create 100
 
   let register : pc * name -> unit =
    fun (pc, name) ->
@@ -82,44 +82,44 @@ module Make_prof (M_prof : Prof) = struct
   ;;
 end
 
-module Guard_prof = struct
-  type pc = int
-  type count = Count of int
-
-  let count_tbl : (pc, count) Hashtbl.t = Hashtbl.create 100
-
-  let threshold =
-    Option.(
-      bind (Sys.getenv_opt "THOLD_GUARD") (fun th_grd_str ->
-          int_of_string_opt th_grd_str)
-      |> value ~default:2)
-  ;;
-
-  let count_up pc =
-    match Hashtbl.find_opt count_tbl pc with
-    | Some (Count v) -> Hashtbl.replace count_tbl pc (Count (v + 1))
-    | None -> Hashtbl.add count_tbl pc (Count 1)
-  ;;
-
-  let over_threshold pc =
-    match Hashtbl.find_opt count_tbl pc with
-    | Some (Count v) -> v > threshold
-    | None -> false
-  ;;
-end
-
 module Method_prof = Make_prof (struct
   let threshold = 0
   let typ = `Meta_method
 end)
 
-module Trace_prof = Make_prof (struct
-  (* fib: let threshold = 1 *)
-  let threshold =
+module Trace_prof = struct
+  include Make_prof (struct
+    (* fib: let threshold = 1 *)
+    let threshold =
+      Option.(
+        bind (Sys.getenv_opt "THOLD_TJ") (fun pc_str ->
+            int_of_string_opt pc_str)
+        |> value ~default:10)
+    ;;
+
+    let typ = `Meta_tracing
+  end)
+
+  let guard_threshold =
     Option.(
-      bind (Sys.getenv_opt "THOLD_TJ") (fun pc_str -> int_of_string_opt pc_str)
-      |> value ~default:10)
+      bind (Sys.getenv_opt "THOLD_GUARD") (fun v_str -> int_of_string_opt v_str)
+      |> value ~default:2)
   ;;
 
-  let typ = `Meta_tracing
-end)
+  type guard_count = Guard_count of int
+
+  let guard_count_tbl : (int, guard_count) Hashtbl.t = Hashtbl.create 100
+
+  let guard_count_up pc =
+    match Hashtbl.find_opt guard_count_tbl pc with
+    | Some (Guard_count count) ->
+      Hashtbl.replace guard_count_tbl pc (Guard_count (count + 1))
+    | None -> Hashtbl.add guard_count_tbl pc (Guard_count 1)
+  ;;
+
+  let guard_over_threshold pc =
+    match Hashtbl.find_opt guard_count_tbl pc with
+    | Some (Guard_count count) -> count > guard_threshold
+    | None -> false
+  ;;
+end
