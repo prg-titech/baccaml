@@ -192,13 +192,6 @@ module TJ = struct
         emit_and_compile_with_so prog `Meta_tracing others trace)
   ;;
 
-  let jit_tracing_retry
-      ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env)
-      prog
-    =
-    ()
-  ;;
-
   let jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr =
     let open Util in
     let prog = Option.get !interp_ir |> Jit_annot.annotate `Meta_tracing in
@@ -222,10 +215,46 @@ module TJ = struct
         ())
   ;;
 
+  let jit_tracing_retry
+      ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env)
+    =
+    let prog = Option.get !interp_ir |> Jit_annot.annotate `Meta_tracing in
+    let open Asm in
+    let open Jit_env in
+    let reg, mem = Setup.env runtime_env `Meta_tracing prog in
+    let { args } = Fundef.find_fuzzy prog "interp" in
+    let bridge_name = Trace_name.gen `Meta_tracing in
+    let env =
+      create_env
+        ~index_pc:
+          (List.mapi (fun i x -> i, x) args
+          |> List.find (fun (i, arg) -> String.get_name arg = "pc")
+          |> fst)
+        ~merge_pc:pc
+        ~current_pc:pc
+        ~trace_name:(Trace_name.value bridge_name)
+        ~red_names:!Config.reds
+        ~bytecode
+    in
+    let (`Result (trace, others)) = Jit_tracing.run prog reg mem env in
+    let trace =
+      trace |> Jit_constfold.h |> Opt_defuse.h |> Renaming.rename_fundef
+    in
+    Debug.with_debug (fun _ -> print_fundef trace);
+    ()
+  ;;
+
   let jit_guard_occur_at bytecode stack pc sp bc_ptr st_ptr =
-    if pc <> 63 then Trace_prof.guard_count_up pc (* UGLY, FIX IT *);
-    if Trace_prof.guard_over_threshold pc
-    then jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr
+    Trace_prof.(
+      if pc <> 63 then Guard.count_up pc (* UGLY, FIX IT *);
+      if Guard.over_threshold pc
+      then
+        if not (Guard.mem_name pc)
+        then (
+          let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+          jit_tracing_retry env;
+          Guard.register_name (pc, "test_name.1")
+          (* jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr *)))
   ;;
 
   let jit_tracing_exec pc st_ptr sp stack =
