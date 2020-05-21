@@ -114,9 +114,8 @@ module Util = struct
     let v = exec_dyn_arg2 name arg1 arg2 in
     let e = Sys.time () in
     (match notation with
-    | Some `Tracing ->
-      Debug.log_time "[tj] elapsed time %fus\n" ((e -. s) *. 1e6)
-    | Some `Method -> Debug.log_time "[mj] elapsed time %fus\n" ((e -. s) *. 1e6)
+    | Some `Tracing -> Log.time "[tj] elapsed time %fus\n" ((e -. s) *. 1e6)
+    | Some `Method -> Log.time "[mj] elapsed time %fus\n" ((e -. s) *. 1e6)
     | None -> ());
     flush stderr;
     v
@@ -160,6 +159,23 @@ let interp_ir : Asm.prog option ref = ref None
 
 module TJ = struct
   let traces : Asm.fundef list ref = ref []
+  let trace_tbl : (int, Asm.fundef) Hashtbl.t = Hashtbl.create 100
+
+  let update_trace merge_pc trace =
+    Hashtbl.find_opt trace_tbl merge_pc
+    |> Option.fold
+         ~some:(fun trace -> Hashtbl.replace trace_tbl merge_pc trace)
+         ~none:()
+  ;;
+
+  let append_trace ~merge_pc trace = Hashtbl.add trace_tbl merge_pc trace
+
+  let lookup_merge_trace ~guard_pc =
+    let open Jit_guard in
+    Option.(
+      bind (TJ.lookup_opt ~guard_pc) (function `Pc merge_pc ->
+          Hashtbl.find_opt trace_tbl merge_pc))
+  ;;
 
   let jit_tracing
       ({ bytecode; stack; pc; sp; bc_ptr; st_ptr } as runtime_env)
@@ -183,13 +199,13 @@ module TJ = struct
     in
     let (`Result (trace, others)) = Jit_tracing.run prog reg mem env in
     let trace = trace |> Jit_constfold.h |> Opt_defuse.h in
-    traces := !traces @ [ trace ];
+    append_trace pc trace;
     Debug.with_debug (fun _ -> print_fundef trace);
     Option.fold
       others
       ~none:(emit_and_compile prog `Meta_method trace)
       ~some:(fun others ->
-        emit_and_compile_with_so prog `Meta_tracing others trace)
+          emit_and_compile_with_so prog `Meta_tracing others trace)
   ;;
 
   let jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr =
@@ -241,20 +257,25 @@ module TJ = struct
       trace |> Jit_constfold.h |> Opt_defuse.h |> Renaming.rename_fundef
     in
     Debug.with_debug (fun _ -> print_fundef trace);
-    ()
+    bridge_name
   ;;
 
   let jit_guard_occur_at bytecode stack pc sp bc_ptr st_ptr =
-    Trace_prof.(
-      if pc <> 63 then Guard.count_up pc (* UGLY, FIX IT *);
-      if Guard.over_threshold pc
-      then
-        if not (Guard.mem_name pc)
-        then (
-          let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-          jit_tracing_retry env;
-          Guard.register_name (pc, "test_name.1")
-          (* jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr *)))
+    let open Trace_prof in
+    Guard.count_up pc (* UGLY, FIX IT *);
+    if Guard.over_threshold pc
+    then
+      if not (Guard.mem_name pc)
+      then (
+        let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
+        match jit_tracing_retry env with
+        | Trace_name b_name ->
+          Guard.register_name (pc, b_name);
+          (match lookup_merge_trace pc with
+          | Some mtrace ->
+            let mtrace' = Opt_retry.rename { pc = pc; tname = b_name } mtrace in
+            Debug.with_debug (fun _ -> Asm.print_fundef mtrace')
+          | None -> ()))
   ;;
 
   let jit_tracing_exec pc st_ptr sp stack =
