@@ -1,6 +1,15 @@
 let ( %> ) f g x = g (f x)
 let ( $ ) f g x = f (g x)
 
+module Printf = struct
+  include Printf
+
+  let sp = sprintf
+  let ep = eprintf
+  let fp = fprintf
+  let pp = printf
+end
+
 module Array = struct
   include Array
 
