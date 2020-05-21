@@ -2,10 +2,11 @@ open Std
 open MinCaml
 open Jit
 open Opt_lib
+open Asm
 
 type rename_guard_env =
   { pc : int
-  ; tname : string
+  ; bname : string
   }
 
 let is_pc x =
@@ -15,54 +16,45 @@ let is_pc x =
     string_match re_pc x 0 || string_match re_addr x 0)
 ;;
 
-let rec rename_guard { pc; tname } env =
+let rec has_guard_at guard_pc = function
+  | Let (x, GuardAt n, t) -> n = guard_pc
+  | Let (x, e, t) -> has_guard_at guard_pc t
+  | Ans e -> false
+;;
+
+let rec rename_guard ({ pc; bname } as rg_env) =
   let open Asm in
   function
-  | Let ((var, typ), Set n, t) when is_pc var ->
-    let env = M.add var n env in
-    Let ((var, typ), Set n, rename_guard { pc; tname } env t)
-  | Let ((var, typ), Add (x, C y), t) when is_pc x ->
-    let pc_v = M.find x env in
-    let env = M.add var (pc_v + y) env in
-    Let ((var, typ), Add (x, C y), rename_guard { pc; tname } env t)
-  | Let ((var, typ), Sub (x, C y), t) when is_pc x ->
-    let pc_v = M.find x env in
-    let env = M.add var (pc_v - y) env in
-    Let ((var, typ), Sub (x, C y), rename_guard { pc; tname } env t)
-  | Let ((var, typ), e, t) ->
-    Let ((var, typ), e, rename_guard { pc; tname } env t)
-  | Ans (CallDir (Id.L name, args, fargs) as e) ->
-    Option.(
-      bind
-        (List.find_opt (fun arg -> M.mem arg env) args)
-        (fun pc_arg ->
-          bind (M.find_opt pc_arg env) (fun pc_v ->
-              if pc_v = pc
-              then some @@ Ans (CallDir (Id.L tname, args, fargs))
-              else none))
-      |> value ~default:(Ans e))
+  | Let (x, CallDir (Id.L "min_caml_guard_occur_at", _, _), t) ->
+    rename_guard rg_env t
+  | Let ((var, typ), e, t) -> Let ((var, typ), e, rename_guard { pc; bname } t)
+  | Ans (CallDir (Id.L name, args, fargs)) when String.starts_with name "guard_"
+    ->
+    Ans (CallDir (Id.L bname, args, fargs))
   | Ans e -> Ans e
 ;;
 
 (** TODO: Check the value of pc that a guard instruction has, and exec
     `rename_guard' at that point **)
-let rename rg_env trace_fundef =
-  let open Asm in
+let rename ({ pc; bname } as rg_env) trace_fundef =
   let rec aux rg_env = function
     | Let (x, e, t) -> Let (x, e, aux rg_env t)
     | Ans (IfEq (x, y, t1, t2) as e)
     | Ans (IfLE (x, y, t1, t2) as e)
     | Ans (IfGE (x, y, t1, t2) as e) ->
-      if Opt_guard.is_guard_path t2
-      then Ans (e <=> (x, y, t1, rename_guard rg_env M.empty t2))
-      else Ans (e <=> (x, y, rename_guard rg_env M.empty t1, t2))
+      if Opt_guard.is_guard_path t1 && has_guard_at pc t1
+      then Ans (e <=> (x, y, rename_guard rg_env t1, t2))
+      else if Opt_guard.is_guard_path t2 && has_guard_at pc t2
+      then Ans (e <=> (x, y, t1, rename_guard rg_env t2))
+      else Ans (e <=> (x, y, aux rg_env t1, aux rg_env t2))
     | Ans e -> Ans e
   in
   let { name; args; fargs; body; ret } = trace_fundef in
   let renamed_body = aux rg_env body in
   create_fundef ~name ~args ~fargs ~body:renamed_body ~ret
-  |> Renaming.rename_fundef
 ;;
+
+(* |> Renaming.rename_fundef *)
 
 let%test_module _ =
   (module struct
@@ -116,7 +108,7 @@ let%test_module _ =
 
     let%test _ =
       print_endline "\027[32m[TEST] rename_guard test\027[0m";
-      let rg_env = { pc = 18; tname = "renamed_tracetj1.999" } in
+      let rg_env = { pc = 18; bname = "renamed_tracetj1.999" } in
       let res = rename rg_env trace_sum in
       print_fundef res;
       print_newline ();
