@@ -11,10 +11,7 @@ let static_dir = "_static"
 let create_static_dir _ =
   let mkdir () = Unix.system (sp "mkdir %s" static_dir) |> ignore in
   let rmdir () = Unix.system (sp "rm -rf %s" static_dir) |> ignore in
-  try
-    Sys.is_directory static_dir |> ignore;
-  with
-  | Sys_error _ -> mkdir ()
+  try Sys.is_directory static_dir |> ignore with Sys_error _ -> mkdir ()
 ;;
 
 (* [warn] work only in Linux *)
@@ -45,7 +42,11 @@ let compile_dyn trace_name =
   |> Unix.system
   |> function
   | Unix.WEXITED i when i = 0 -> () | _ -> failwith "compilation failed.");
-  sp "gcc -m32 -g -o %s -shared -fPIC %s -L./_static" so asm_name
+  sp
+    "gcc -m32 %s -o %s -shared -fPIC %s -L./_static"
+    (if !Log.log_level = `Debug then "-g" else "")
+    so
+    asm_name
   |> Unix.system
   |> function
   | Unix.WEXITED i when i = 0 ->
@@ -56,14 +57,12 @@ let compile_dyn trace_name =
 let compile_dyn_with_so tname others =
   let asm = tname ^ ".s" in
   let so = get_so_name tname in
-  let other_archives =
-    others |> List.map (fun so -> "-l" ^ so) |> String.concat " "
-  in
   let other_objs =
-    others |> List.map (fun so -> so^".o") |> String.concat " "
+    others |> List.map (fun so -> so ^ ".o") |> String.concat " "
   in
   sp
-    "gcc -m32 -g -o %s %s -shared -fPIC -ldl -L./_static %s"
+    "gcc -m32 %s -o %s %s -shared -fPIC -ldl -L./_static %s"
+    (if !Log.log_level = `Debug then "-g" else "")
     so
     asm
     other_objs
