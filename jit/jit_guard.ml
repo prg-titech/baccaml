@@ -64,18 +64,17 @@ let rec promote reg ~trace_name:tname = function
 ;;
 
 module TJ : sig
+  val lookup : guard_pc:int -> [ `Pc of int ]
+  val lookup_opt : guard_pc:int -> [ `Pc of int ] option
   val create : reg -> Jit_env.env -> ?wlist:'a list -> t -> t
 end = struct
-  let guard_tbl : (int, int list) Hashtbl.t = Hashtbl.create 100
+  (* merge_pc -> [guard_pc_1, gaurd_pc_2, ,,,] *)
+  let guard_tbl : (int, int) Hashtbl.t = Hashtbl.create 100
+  let register ~guard_pc ~merge_pc = Hashtbl.add guard_tbl guard_pc merge_pc
+  let lookup ~guard_pc = `Pc (Hashtbl.find guard_tbl guard_pc)
 
-  let append pc guard_pc =
-    Option.(
-      bind (Hashtbl.find_opt guard_tbl pc) (fun guard_pcs ->
-          if not (List.mem guard_pc guard_pcs)
-          then (
-            Hashtbl.replace guard_tbl pc (guard_pcs @ [ guard_pc ]));
-          some ())
-      |> value ~default:())
+  let lookup_opt ~guard_pc =
+    Option.(bind (Hashtbl.find_opt guard_tbl guard_pc) (fun v -> some @@ `Pc v))
   ;;
 
   let is_pc x =
@@ -105,7 +104,7 @@ end = struct
           (fun pc_arg ->
             bind (M.find_opt pc_arg env) (fun pc_v ->
                 (* append the value of pc at this guard failer *)
-                append merge_pc pc_v;
+                register ~guard_pc:pc_v ~merge_pc;
                 Let
                   ( (Id.gentmp Type.Unit, Type.Unit)
                   , GuardAt pc_v
@@ -120,7 +119,6 @@ end = struct
 
   let create reg env ?wlist:(ws = []) cont =
     let { merge_pc } = env in
-    Hashtbl.add guard_tbl merge_pc [];
     let free_vars = List.unique (fv cont) in
     restore reg free_vars cont
     (* too slow *)
