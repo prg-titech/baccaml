@@ -90,7 +90,8 @@ let%test_module _ =
        Let (("pc.402.1292", Int),  Set (16),
        Let (("bytecode.401.1293", Int),  CallDir (L "restore_min_caml_bp",[],[]),
        Let (("Ti195.686.1424", Int),  Add ("pc.402.1292",C 2 ),
-       Ans (CallDir (L "guard_tracetj0.844",["stack.399"; "sp.400"; "bytecode.401.1293"; "Ti195.686.1424"; ],[])))))))))))
+       Let (("dummy", Type.Unit), GuardAt (18),
+       Ans (CallDir (L "guard_tracetj0.844",["stack.399"; "sp.400"; "bytecode.401.1293"; "Ti195.686.1424"; ],[]))))))))))))
       ; ret= Type.Int; }
     [@@ocamlformat "disable"]
 
