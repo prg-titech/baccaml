@@ -107,7 +107,7 @@ let%test_module _ =
       | Let (_, _, t) -> extract_calldirs t
     ;;
 
-    let%test _ =
+    let%test "test rename_guard" =
       print_endline "\027[32m[TEST] rename_guard test\027[0m";
       let rg_env = { pc = 18; bname = "renamed_tracetj1.999" } in
       let res = rename rg_env trace_sum in
