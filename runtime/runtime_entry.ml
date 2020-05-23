@@ -259,37 +259,33 @@ module TJ = struct
     in
     Debug.with_debug (fun _ -> print_fundef bridge_trace);
     Guard.register_name (pc, Trace_name.value bridge_name);
-    Option.(
-      fold
-        others
-        ~some:(fun others ->
-          match
-            emit_and_compile_with_so prog `Meta_tracing others bridge_trace
-          with
-          | Ok bname ->
-            begin
-              match lookup_merge_trace pc with
-              | Some mtrace ->
-                let mtrace' =
-                  Opt_retry.rename
-                    { pc; bname = Trace_name.value bridge_name }
-                    mtrace
-                in
-                begin
-                  match
-                    emit_and_compile_with_so
-                      prog
-                      `Meta_tracing
-                      [ bname ]
-                      mtrace'
-                  with
-                  | Ok mname_compiled' -> ()
-                  | Error e -> ()
-                end
-              | None -> ()
-            end
-          | Error e -> ())
-        ~none:())
+    match others with
+    | Some others ->
+      begin
+        match
+          emit_and_compile_with_so prog `Meta_tracing others bridge_trace
+        with
+        | Ok bname ->
+          begin
+            match lookup_merge_trace pc with
+            | Some mtrace ->
+              let mtrace' =
+                Opt_retry.rename
+                  { pc; bname = Trace_name.value bridge_name }
+                  mtrace
+              in
+              begin
+                match
+                  emit_and_compile_with_so prog `Meta_tracing [ bname ] mtrace'
+                with
+                | Ok mname_compiled' -> ()
+                | Error e -> ()
+              end
+            | None -> ()
+          end
+        | Error e -> ()
+      end
+    | None -> ()
   ;;
 
   let jit_guard_occur_at bytecode stack pc sp bc_ptr st_ptr =
@@ -298,9 +294,10 @@ module TJ = struct
     if Guard.over_threshold pc
     then
       if not (Guard.mem_name pc)
-      then (
+      then begin
         let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
-        jit_tracing_retry env)
+        jit_tracing_retry env
+      end
   ;;
 
   let jit_tracing_exec pc st_ptr sp stack =
