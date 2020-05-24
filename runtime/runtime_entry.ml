@@ -165,11 +165,11 @@ module TJ = struct
                   emit_and_compile_with_so prog `Meta_tracing [ bname ] mtrace'
                 with
                 | Ok mname_compiled' -> ()
-                | Error e -> ()
+                | Error e -> raise e
               end
             | None -> ()
           end
-        | Error e -> ()
+        | Error e -> raise e
       end
     | None -> ()
   ;;
