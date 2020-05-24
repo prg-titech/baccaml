@@ -49,7 +49,7 @@ module Make_prof (M_prof : Prof) = struct
    fun pc ->
     match Hashtbl.find_opt count_tbl pc with
     | Some count -> Hashtbl.replace count_tbl pc (count + 1)
-    | None -> if pc <> 18 then Hashtbl.add count_tbl pc 1
+    | None -> Hashtbl.add count_tbl pc 1
  ;;
 
   let find : pc -> name =
@@ -89,12 +89,13 @@ end)
 
 module Trace_prof = struct
   include Make_prof (struct
-    (* fib: let threshold = 1 *)
+    (* fib: let threshold = 2 *)
+    (* tak: let threshold = 0 *)
     let threshold =
       Option.(
         bind (Sys.getenv_opt "THOLD_TJ") (fun pc_str ->
             int_of_string_opt pc_str)
-        |> value ~default:10)
+        |> value ~default:0)
     ;;
 
     let typ = `Meta_tracing
@@ -105,7 +106,7 @@ module Trace_prof = struct
       Option.(
         bind (Sys.getenv_opt "THOLD_GUARD") (fun v_str ->
             int_of_string_opt v_str)
-        |> value ~default:2)
+        |> value ~default:100)
     ;;
 
     type guard_count = Guard_count of int
@@ -116,6 +117,7 @@ module Trace_prof = struct
     let count_up pc =
       match Hashtbl.find_opt count_tbl pc with
       | Some (Guard_count count) ->
+        if pc <> 91  then
         Hashtbl.replace count_tbl pc (Guard_count (count + 1))
       | None -> Hashtbl.add count_tbl pc (Guard_count 1)
     ;;
