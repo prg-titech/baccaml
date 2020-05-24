@@ -72,10 +72,9 @@ module Util = struct
     |> int_of_string
   ;;
 
-  let make_reg prog args sp =
+  let make_reg ({ args; body= t}) =
     let open Jit_env in
     let reg = Array.make Internal_conf.size (Red 0) in
-    let Asm.{ args; body = t } = Fundef.find_fuzzy prog "interp" in
     Asm.fv t @ args
     |> List.iteri (fun i a ->
            if List.mem (String.get_name a) Internal_conf.greens
