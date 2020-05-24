@@ -7,6 +7,7 @@ clean: comp-clean
 	dune clean
 
 comp-clean:
+	$(RM) -r _static
 	$(RM) *.so *.s *.o
 
 test: comp-clean
