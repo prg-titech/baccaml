@@ -16,7 +16,7 @@ let rec is_occur var = function
 and is_occur_exp (var : Id.t) (e : Asm.exp) : bool =
   match e with
   | Nop -> false
-  | Mov x -> x = var
+  | Mov x | Neg x -> x = var
   | Add (x, V y) | Sub (x, V y) | Mul (x, V y) | Div (x, V y) | Mod (x, V y) ->
     x = var || y = var
   | Add (x, C _) | Sub (x, C _) | Mul (x, C _) | Div (x, C _) | Mod (x, C _) ->
@@ -91,6 +91,10 @@ let specialize lhs rhs =
 let rec const_fold_mov ?(env = M.empty) = function
   | Let ((var, typ), Mov x, t) ->
     fp "Folding: %s = Mov (%s)\n" var x;
+    let env = M.add var x env in
+    const_fold_mov ~env t
+  | Let ((var, typ), Neg x, t) ->
+    fp "Folding: %s = Neg (%s)\n" var x;
     let env = M.add var x env in
     const_fold_mov ~env t
   | Let ((var, typ), e, t) ->
@@ -225,6 +229,8 @@ let rec const_fold_mov ?(env = M.empty) = function
       (match e with
       | Mov x ->
         (match M.find_greedy x env with Some x' -> Mov x' | None -> e)
+      | Neg x ->
+        (match M.find_greedy x env with Some x' -> Neg x' | None -> e)
       | IfEq (x, V y, t1, t2) | IfLE (x, V y, t1, t2) | IfGE (x, V y, t1, t2) ->
         let x_opt, y_opt = M.find_greedy x env, M.find_greedy y env in
         (match x_opt, y_opt with
@@ -290,6 +296,10 @@ and const_fold_id' env = function
     (match M.find_opt x env with
     | Some x' -> `Folded x
     | None -> `Not_folded (Mov x))
+  | Neg x ->
+    (match M.find_opt x env with
+    | Some x' -> `Folded x
+    | None -> `Not_folded (Neg x))
   | Add (x, V y) ->
     `Not_folded
       (match M.find_opt x env, M.find_opt y env with
@@ -359,6 +369,10 @@ let rec const_fold_exp ?(env = M.empty) =
   let mem x env = M.mem x env in
   function
   | Let ((var, typ), Mov x, t) when mem x env ->
+    let exp' = M.find x env in
+    let env = extend_env var exp' env in
+    Let ((var, typ), exp', const_fold_exp ~env t)
+  | Let ((var, typ), Neg x, t) when mem x env ->
     let exp' = M.find x env in
     let env = extend_env var exp' env in
     Let ((var, typ), exp', const_fold_exp ~env t)
