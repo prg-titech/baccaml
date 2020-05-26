@@ -151,26 +151,32 @@ module TJ = struct
     match others with
     | Some others ->
       begin
-        match
-          emit_and_compile_with_so prog `Meta_tracing others bridge_trace
-        with
+        match emit_and_compile prog `Meta_tracing bridge_trace with
         | Ok bname ->
           begin
-            match lookup_merge_trace pc with
-            | Some mtrace ->
-              let mtrace' =
-                Opt_retry.rename
-                  { pc; bname = Trace_name.value bridge_name }
-                  mtrace
-              in
-              begin
-                match
-                  emit_and_compile_with_so prog `Meta_tracing [ bname ] mtrace'
-                with
-                | Ok mname_compiled' -> ()
-                | Error e -> raise e
-              end
-            | None -> ()
+            match
+              emit_and_compile_with_so prog `Meta_tracing others bridge_trace
+            with
+          | Ok bname ->
+            begin
+              match lookup_merge_trace pc with
+              | Some mtrace ->
+                let mtrace' =
+                  Opt_retry.rename
+                    { pc; bname = Trace_name.value bridge_name }
+                    mtrace
+                in
+                begin
+                  match
+                    emit_and_compile_with_so prog
+                      `Meta_tracing [ bname ] mtrace'
+                  with
+                  | Ok mname_compiled' -> ()
+                  | Error e -> raise e
+                end
+              | None -> ()
+            end
+          | Error e -> raise e
           end
         | Error e -> raise e
       end
