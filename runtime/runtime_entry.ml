@@ -271,8 +271,8 @@ module MJ = struct
       let s = Sys.time () in
       let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
       let e = Sys.time () in
-      printf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
-      flush stdout;
+      eprintf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
+      flush stderr;
       r
     | None ->
       let p, i = Option.(
@@ -287,9 +287,8 @@ module MJ = struct
         let s = Sys.time () in
         let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
         let e = Sys.time () in
-        Printf.printf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
+        eprintf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
         flush stderr;
-        flush stdout;
         r
       | Error e -> raise e)
   ;;
