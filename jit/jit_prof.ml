@@ -91,23 +91,12 @@ module Trace_prof = struct
   include Make_prof (struct
     (* fib: let threshold = 2 *)
     (* tak: let threshold = 0 *)
-    let threshold =
-      Option.(
-        bind (Sys.getenv_opt "THOLD_TJ") (fun pc_str ->
-            int_of_string_opt pc_str)
-        |> value ~default:0)
-    ;;
-
+    let threshold = 10
     let typ = `Meta_tracing
   end)
 
   module Guard = struct
-    let threshold =
-      Option.(
-        bind (Sys.getenv_opt "THOLD_GUARD") (fun v_str ->
-            int_of_string_opt v_str)
-        |> value ~default:100)
-    ;;
+    let threshold = 1000
 
     type guard_count = Guard_count of int
 
@@ -117,7 +106,6 @@ module Trace_prof = struct
     let count_up pc =
       match Hashtbl.find_opt count_tbl pc with
       | Some (Guard_count count) ->
-        if pc <> 91  then
         Hashtbl.replace count_tbl pc (Guard_count (count + 1))
       | None -> Hashtbl.add count_tbl pc (Guard_count 1)
     ;;
