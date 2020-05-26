@@ -2,14 +2,6 @@ open Std
 open MinCaml
 open Jit
 
-module Internal_conf = struct
-  let size = Sys.max_array_length
-  let greens = !Config.greens
-  let reds = !Config.reds
-  let bc_tmp_addr = 0
-  let st_tmp_addr = 1000
-end
-
 module Log = struct
   include Log
 
@@ -19,15 +11,18 @@ end
 
 module Util = struct
   open Asm
+  module I = Config.Internal
 
   let get_id elem = List.find (fun arg -> String.get_name arg = elem)
 
   let filter typ =
     match typ with
     | `Red ->
-      List.filter (fun a -> List.mem (String.get_name a) Internal_conf.reds)
+      List.filter (fun a ->
+          List.mem (String.get_name a) !Config.reds)
     | `Green ->
-      List.filter (fun a -> List.mem (String.get_name a) Internal_conf.greens)
+      List.filter (fun a ->
+          List.mem (String.get_name a) !Config.greens)
   ;;
 
   let find_mj_entries bytecode =
@@ -72,12 +67,12 @@ module Util = struct
     |> int_of_string
   ;;
 
-  let make_reg ({ args; body= t}) =
+  let make_reg { args; body = t } =
     let open Jit_env in
-    let reg = Array.make Internal_conf.size (Red 0) in
+    let reg = Array.make !I.size (Red 0) in
     Asm.fv t @ args
     |> List.iteri (fun i a ->
-           if List.mem (String.get_name a) Internal_conf.greens
+           if List.mem (String.get_name a) !Config.greens
            then reg.(i) <- Green 0
            else reg.(i) <- Red 0);
     reg
@@ -85,10 +80,11 @@ module Util = struct
 
   let make_mem ~bc_addr ~st_addr bytecode stack =
     let open Jit_env in
-    let mem = Array.make Internal_conf.size (Green 0) in
+    let mem = Array.make !I.size (Green 0) in
     bytecode
     |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Jit_env.Green a);
-    stack |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Jit_env.Red a);
+    stack
+    |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Jit_env.Red a);
     mem
   ;;
 
@@ -150,8 +146,13 @@ module Debug = struct
     else ()
   ;;
 
-  let is_debug () = match !Config.log_level with `Debug -> true | _ -> false
-  let with_debug f = match !Config.log_level with `Debug -> f () | _ -> ()
+  let is_debug () =
+    match !Config.log_level with `Debug -> true | _ -> false
+  ;;
+
+  let with_debug f =
+    match !Config.log_level with `Debug -> f () | _ -> ()
+  ;;
 end
 
 module Compat = struct

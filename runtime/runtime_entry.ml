@@ -21,6 +21,7 @@ let interp_ir : Asm.prog option ref = ref None
 let interp_fundef : Asm.fundef option ref = ref None
 
 module Setup = struct
+  module I = Config.Internal
   let env { bytecode; stack; pc; sp; bc_ptr; st_ptr } typ interp =
     let open Asm in
     let open Util in
@@ -28,7 +29,7 @@ module Setup = struct
     and { args; body } = interp in
     let reg = make_reg interp
     and mem =
-      Internal_conf.(
+      I.(
         make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack)
     and pc_method_entry = pc
     and pc_ir_addr = get_ir_addr args "pc"
@@ -38,8 +39,8 @@ module Setup = struct
     let module E = Jit_env in
     reg.(pc_ir_addr) <- E.Green pc_method_entry;
     reg.(sp_ir_addr) <- E.Red sp;
-    reg.(bc_ir_addr) <- E.Green Internal_conf.bc_tmp_addr;
-    reg.(st_ir_addr) <- E.Red Internal_conf.st_tmp_addr;
+    reg.(bc_ir_addr) <- E.Green I.bc_tmp_addr;
+    reg.(st_ir_addr) <- E.Red I.st_tmp_addr;
     reg, mem
   ;;
 end
