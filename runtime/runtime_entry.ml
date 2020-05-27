@@ -181,39 +181,39 @@ module TJ = struct
     in
     Debug.with_debug (fun _ -> print_fundef bridge_trace);
     Guard.register_name (pc, Trace_name.value bridge_name);
-    match others with
-    | Some others ->
-      begin
-        match emit_and_compile prog `Meta_tracing bridge_trace with
-        | Ok bname ->
-          begin
-            match
-              emit_and_compile_with_so prog `Meta_tracing others bridge_trace
-            with
-          | Ok bname ->
-            begin
-              match lookup_merge_trace pc with
-              | Some mtrace ->
-                let mtrace' =
-                  Opt_retry.rename
-                    { pc; bname = Trace_name.value bridge_name }
-                    mtrace
-                in
-                begin
-                  match
-                    emit_and_compile_with_so prog
-                      `Meta_tracing [ bname ] mtrace'
-                  with
-                  | Ok mname_compiled' -> ()
-                  | Error e -> raise e
-                end
-              | None -> ()
-            end
-          | Error e -> raise e
-          end
-        | Error e -> raise e
-      end
-    | None -> ()
+    begin
+      match others with
+      | Some others ->
+        Result.(
+          bind
+            (emit_and_compile prog `Meta_tracing bridge_trace)
+            (fun _ ->
+              bind
+                (emit_and_compile_with_so
+                   prog
+                   `Meta_tracing
+                   others
+                   bridge_trace)
+                (fun bname ->
+                  match lookup_merge_trace pc with
+                  | Some mtrace ->
+                    let mtrace' =
+                      Opt_retry.rename
+                        { pc; bname = Trace_name.value bridge_name }
+                        mtrace
+                    in
+                    bind
+                      (emit_and_compile_with_so
+                         prog
+                         `Meta_tracing
+                         [ bname ]
+                         mtrace')
+                      (fun mname_compiled' -> Ok ())
+                  | None -> Error (Failure "compilation failed")))
+          |> to_option)
+      | None -> None
+    end
+    |> Option.value ~default:()
   ;;
 
   let jit_guard_occur_at bytecode stack pc sp bc_ptr st_ptr =
