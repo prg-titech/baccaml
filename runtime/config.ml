@@ -9,7 +9,7 @@ let set field value = field := value
 let () = Log.log_level := !log_level
 
 module Internal = struct
-  let size = ref 100000
+  let size = ref 400000
   let thold_tj = ref 100
   let thold_guard = ref 100
   let bc_tmp_addr = 0
