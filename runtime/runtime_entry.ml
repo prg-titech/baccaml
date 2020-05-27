@@ -7,6 +7,7 @@ open Jit_compile
 open Opt
 open Runtime_lib
 open Printf
+module I = Config.Internal
 
 type runtime_env =
   { bytecode : int array
@@ -19,13 +20,11 @@ type runtime_env =
 
 let interp_ir : Asm.prog option ref = ref None
 let interp_fundef : Asm.fundef option ref = ref None
+let reg = Array.make !I.size (Red 0)
+let mem = Array.make !I.size (Green 0)
 
 module Setup = struct
   open Asm
-  module I = Config.Internal
-
-  let reg = Array.make !I.size (Red 0)
-  let mem = Array.make !I.size (Green 0)
 
   let get_ir_addr args name =
     List.find (fun a -> String.get_name a = name) args
@@ -40,24 +39,24 @@ module Setup = struct
            if List.mem (String.get_name a) !Config.greens
            then reg.(i) <- Green 0
            else reg.(i) <- Red 0);
-    reg
+    ()
   ;;
 
   let make_mem ~bc_addr ~st_addr bytecode stack =
     let open Jit_env in
     bytecode
-    |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Jit_env.Green a);
+    |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Green a);
     stack
-    |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Jit_env.Red a);
-    mem
+    |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Red a);
+    ()
   ;;
 
   let env { bytecode; stack; pc; sp; bc_ptr; st_ptr } typ interp =
     let open Asm in
     let open Util in
     let { args; body } = interp in
-    let reg = make_reg interp
-    and mem =
+    let _ = make_reg interp in
+    let _ =
       I.(make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack)
     and pc_method_entry = pc
     and pc_ir_addr = get_ir_addr args "pc"
@@ -69,7 +68,7 @@ module Setup = struct
     reg.(sp_ir_addr) <- E.Red sp;
     reg.(bc_ir_addr) <- E.Green I.bc_tmp_addr;
     reg.(st_ir_addr) <- E.Red I.st_tmp_addr;
-    reg, mem
+    ()
   ;;
 end
 
@@ -99,7 +98,7 @@ module TJ = struct
     =
     let open Asm in
     let open Jit_env in
-    let reg, mem = Setup.env runtime_env `Meta_tracing interp in
+    Setup.env runtime_env `Meta_tracing interp;
     let { args } = Option.get !interp_fundef in
     let trace_name = Trace_name.gen `Meta_tracing in
     let env =
@@ -160,7 +159,7 @@ module TJ = struct
     let open Asm in
     let open Jit_env in
     let open Trace_prof in
-    let reg, mem = Setup.env runtime_env `Meta_tracing interp in
+    Setup.env runtime_env `Meta_tracing interp;
     let { args } = interp in
     let bridge_name = Trace_name.gen `Meta_tracing in
     let env =
@@ -263,7 +262,7 @@ module MJ = struct
     =
     let open Asm in
     let open Jit_env in
-    let reg, mem = Setup.env runtime_env `Meta_method interp in
+    Setup.env runtime_env `Meta_method interp;
     let { args } = interp in
     let trace_name = Trace_name.gen `Meta_method in
     let env =
