@@ -54,8 +54,6 @@ let rename ({ pc; bname } as rg_env) trace_fundef =
   create_fundef ~name ~args ~fargs ~body:renamed_body ~ret
 ;;
 
-(* |> Renaming.rename_fundef *)
-
 let%test_module _ =
   (module struct
     open Asm
