@@ -18,7 +18,9 @@ let create_static_dir _ =
 let get_so_name : string -> string = fun name -> "lib" ^ name ^ ".so"
 
 let create_archive obj_name other_objs =
-  let archive_name = "lib" ^ (obj_name |> Filename.remove_extension) ^ ".a" in
+  let archive_name =
+    "lib" ^ (obj_name |> Filename.remove_extension) ^ ".a"
+  in
   create_static_dir ();
   sp
     "ar rcs _static/%s %s %s"
@@ -41,7 +43,8 @@ let compile_dyn trace_name =
   (sp "gcc -m32 -c %s" asm_name
   |> Unix.system
   |> function
-  | Unix.WEXITED i when i = 0 -> () | _ -> failwith "compilation failed.");
+  | Unix.WEXITED i when i = 0 -> ()
+  | _ -> raise @@ Compilation_failed trace_name);
   sp
     "gcc -m32 %s -o %s -shared -fPIC %s -L./_static"
     (if !Log.log_level = `Debug then "-g" else "")
@@ -50,7 +53,7 @@ let compile_dyn trace_name =
   |> Unix.system
   |> function
   | Unix.WEXITED i when i = 0 ->
-    (match create_archive obj_name None with Ok _ -> Ok trace_name | e -> e)
+    Result.bind (create_archive obj_name None) (fun _ -> Ok trace_name)
   | _ -> Error (Compilation_failed trace_name)
 ;;
 
@@ -74,18 +77,23 @@ let compile_dyn_with_so tname others =
 
 let compile_stdout tname =
   let so = get_so_name tname in
-  ignore
-    (Sys.command
-       (Printf.sprintf
-          "| gcc -x c -m32 -g -DRUNTIME -shared -fPIC -ldl -o %s -"
-          so))
+  Unix.(
+    system
+      (sp "| gcc -x c -m32 -g -DRUNTIME -shared -fPIC -ldl -o %s -" so)
+    |> function
+    | WEXITED i when i = 0 -> Ok tname
+    | _ -> Error (Compilation_failed tname))
 ;;
 
 let emit_dyn oc typ tname trace =
   try
+    trace
+    |> Simm.h
+    |> RegAlloc.h
+    |>
     match typ with
-    | `Meta_tracing -> trace |> Simm.h |> RegAlloc.h |> Jit_emit.emit_tj oc
-    | `Meta_method -> trace |> Simm.h |> RegAlloc.h |> Jit_emit.emit_mj oc
+    | `Meta_tracing -> Jit_emit.emit_tj oc
+    | `Meta_method -> Jit_emit.emit_mj oc
   with
   | e ->
     close_out oc;
@@ -105,6 +113,26 @@ let emit_and_compile typ (trace : fundef) =
     raise e
 ;;
 
+let emit_and_compile' typ (others : fundef list) (trace : fundef) =
+  let { name = Id.L name } = trace in
+  let asm_name = name ^ ".s" in
+  let oc = open_out asm_name in
+  try
+    let trace' = trace |> Simm.h |> RegAlloc.h in
+    (match typ with
+    | `Meta_tracing -> Jit_emit.emit_tj oc trace'
+    | `Meta_method -> Jit_emit.emit_mj oc trace');
+    List.iter
+      (fun other -> other |> Simm.h |> RegAlloc.h |> Emit.h oc)
+      others;
+    close_out oc;
+    compile_dyn name
+  with
+  | e ->
+    close_out oc;
+    raise e
+;;
+
 let emit_and_compile_with_so typ others (trace : fundef) =
   let { name = Id.L trace_name } = trace in
   let oc = open_out (trace_name ^ ".s") in
@@ -118,12 +146,25 @@ let emit_and_compile_with_so typ others (trace : fundef) =
     raise e
 ;;
 
-let compile_and_register_dyn prog typ (pc : int) (trace : fundef) : unit =
-  let open Jit_prof in
-  match emit_and_compile typ trace with
-  | Ok tname ->
-    (match typ with
-     | `Meta_tracing -> Trace_prof.register (pc, tname)
-     | `Meta_method -> Method_prof.register (pc, tname))
-  | Error e -> ()
+let emit_and_compile_with_so'
+    typ
+    (deps : string list)
+    (others : fundef list)
+    (trace : fundef)
+  =
+  let { name = Id.L name } = trace in
+  let oc = open_out (name ^ ".s") in
+  try
+    (trace |> Simm.h |> RegAlloc.h
+     |> match typ with
+     | `Meta_tracing -> Jit_emit.emit_tj oc
+     | `Meta_method -> Jit_emit.emit_mj oc);
+    List.iter
+      (fun other -> other |> Simm.h |> RegAlloc.h |> Emit.h oc)
+      others;
+    close_out oc;
+    compile_dyn_with_so name deps
+  with e ->
+    close_out oc;
+    raise e
 ;;
