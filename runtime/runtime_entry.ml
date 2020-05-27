@@ -120,9 +120,9 @@ module TJ = struct
     Debug.with_debug (fun _ -> print_fundef trace);
     Option.fold
       others
-      ~none:(emit_and_compile () `Meta_method trace)
+      ~none:(emit_and_compile `Meta_method trace)
       ~some:(fun others ->
-        emit_and_compile_with_so () `Meta_tracing others trace)
+        emit_and_compile_with_so `Meta_tracing others trace)
   ;;
 
   let jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr =
@@ -185,11 +185,10 @@ module TJ = struct
       | Some others ->
         Result.(
           bind
-            (emit_and_compile prog `Meta_tracing bridge_trace)
+            (emit_and_compile `Meta_tracing bridge_trace)
             (fun _ ->
               bind
                 (emit_and_compile_with_so
-                   prog
                    `Meta_tracing
                    others
                    bridge_trace)
@@ -279,9 +278,9 @@ module MJ = struct
     Debug.with_debug (fun _ -> print_fundef trace);
     Option.fold
       others
-      ~none:(emit_and_compile prog `Meta_method trace)
+      ~none:(emit_and_compile `Meta_method trace)
       ~some:(fun others ->
-        emit_and_compile_with_so prog `Meta_tracing others trace)
+        emit_and_compile_with_so `Meta_tracing others trace)
   ;;
 
   let jit_method_gen_trace bytecode stack pc sp bc_ptr st_ptr =

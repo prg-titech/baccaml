@@ -81,7 +81,7 @@ let compile_stdout tname =
           so))
 ;;
 
-let emit_dyn oc p typ tname trace =
+let emit_dyn oc typ tname trace =
   try
     match typ with
     | `Meta_tracing -> trace |> Simm.h |> RegAlloc.h |> Jit_emit.emit_tj oc
@@ -92,11 +92,11 @@ let emit_dyn oc p typ tname trace =
     raise e
 ;;
 
-let emit_and_compile prog typ (trace : fundef) =
+let emit_and_compile typ (trace : fundef) =
   let { name = Id.L trace_name } = trace in
   let oc = open_out (trace_name ^ ".s") in
   try
-    emit_dyn oc prog typ trace_name trace;
+    emit_dyn oc typ trace_name trace;
     close_out oc;
     compile_dyn trace_name
   with
@@ -105,11 +105,11 @@ let emit_and_compile prog typ (trace : fundef) =
     raise e
 ;;
 
-let emit_and_compile_with_so prog typ others (trace : fundef) =
+let emit_and_compile_with_so typ others (trace : fundef) =
   let { name = Id.L trace_name } = trace in
   let oc = open_out (trace_name ^ ".s") in
   try
-    emit_dyn oc prog typ trace_name trace;
+    emit_dyn oc typ trace_name trace;
     close_out oc;
     compile_dyn_with_so trace_name others
   with
@@ -119,11 +119,11 @@ let emit_and_compile_with_so prog typ others (trace : fundef) =
 ;;
 
 let compile_and_register_dyn prog typ (pc : int) (trace : fundef) : unit =
-  Jit_prof.(
-    match emit_and_compile prog typ trace with
-    | Ok tname ->
-      (match typ with
-      | `Meta_tracing -> Trace_prof.register (pc, tname)
-      | `Meta_method -> Method_prof.register (pc, tname))
-    | Error e -> ())
+  let open Jit_prof in
+  match emit_and_compile typ trace with
+  | Ok tname ->
+    (match typ with
+     | `Meta_tracing -> Trace_prof.register (pc, tname)
+     | `Meta_method -> Method_prof.register (pc, tname))
+  | Error e -> ()
 ;;
