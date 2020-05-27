@@ -274,6 +274,7 @@ and g' oc = function
     then Printf.fprintf oc "\tmovl\t%s, %s\n" regs.(0) a
     else if List.mem a allfregs && a <> fregs.(0)
     then Printf.fprintf oc "\tmovsd\t%s, %s\n" fregs.(0) a
+  | _, e -> failwith ("un matched pattern: " ^ (Asm.show_exp e))
 
 and g'_tail_if oc e1 e2 b bn =
   let b_else = Id.genid (b ^ "_else") in
