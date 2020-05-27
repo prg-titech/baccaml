@@ -25,12 +25,10 @@ module Setup = struct
   let env { bytecode; stack; pc; sp; bc_ptr; st_ptr } typ interp =
     let open Asm in
     let open Util in
-    let prog = Jit_annot.annotate_fundef typ interp
-    and { args; body } = interp in
+    let { args; body } = interp in
     let reg = make_reg interp
     and mem =
-      I.(
-        make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack)
+      I.(make_mem ~bc_addr:bc_tmp_addr ~st_addr:st_tmp_addr bytecode stack)
     and pc_method_entry = pc
     and pc_ir_addr = get_ir_addr args "pc"
     and sp_ir_addr = get_ir_addr args "sp"
@@ -77,7 +75,9 @@ module TJ = struct
     let env =
       create_env
         ~index_pc:
-          (let pc_id = List.find (fun arg -> String.get_name arg = "pc") args in
+          (let pc_id =
+             List.find (fun arg -> String.get_name arg = "pc") args
+           in
            List.index pc_id args)
         ~merge_pc:pc
         ~current_pc:pc
@@ -99,7 +99,9 @@ module TJ = struct
   let jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr =
     let open Util in
     let prog = Option.get !interp_ir |> Jit_annot.annotate `Meta_tracing in
-    let interp = Option.get !interp_fundef |> Jit_annot.annotate_fundef `Meta_tracing in
+    let interp =
+      Option.get !interp_fundef |> Jit_annot.annotate_fundef `Meta_tracing
+    in
     let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
     match (prog, interp) |> jit_tracing env with
     | Ok name -> Trace_prof.register (pc, name)
@@ -115,7 +117,8 @@ module TJ = struct
         then (
           match Trace_prof.find_opt pc with
           | Some _ -> ()
-          | None -> jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr)
+          | None ->
+            jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr)
         else Trace_prof.count_up pc;
         ())
   ;;
@@ -192,9 +195,10 @@ module TJ = struct
       then begin
         let prog, interp =
           Option.(
-            get !interp_ir |> Jit_annot.annotate `Meta_tracing,
-            get !interp_fundef |> Jit_annot.annotate_fundef `Meta_tracing
-          ) in
+            ( get !interp_ir |> Jit_annot.annotate `Meta_tracing
+            , get !interp_fundef |> Jit_annot.annotate_fundef `Meta_tracing
+            ))
+        in
         let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
         (prog, interp) |> jit_tracing_retry env;
         ()
@@ -208,7 +212,8 @@ module TJ = struct
       ~on:(fun _ ->
         match Trace_prof.find_opt pc with
         | Some tname ->
-          Log.debug (sprintf "executing %s at pc: %d sp: %d ..." tname pc sp);
+          Log.debug
+            (sprintf "executing %s at pc: %d sp: %d ..." tname pc sp);
           let _ =
             exec_dyn_arg2_with_elapsed_time
               ~notation:(Some `Tracing)
@@ -251,9 +256,11 @@ module MJ = struct
   ;;
 
   let jit_method_gen_trace bytecode stack pc sp bc_ptr st_ptr =
-    let p, i = Option.(
-        get !interp_ir |> Jit_annot.annotate `Meta_method,
-        get !interp_fundef |> Jit_annot.annotate_fundef `Meta_method) in
+    let p, i =
+      Option.(
+        ( get !interp_ir |> Jit_annot.annotate `Meta_method
+        , get !interp_fundef |> Jit_annot.annotate_fundef `Meta_method ))
+    in
     let bytecode = Compat.of_bytecode bytecode in
     let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
     match (p, i) |> jit_method env with
@@ -275,9 +282,11 @@ module MJ = struct
       flush stderr;
       r
     | None ->
-      let p, i = Option.(
-        get !interp_ir |> Jit_annot.annotate `Meta_method,
-        get !interp_fundef |> Jit_annot.annotate_fundef `Meta_method) in
+      let p, i =
+        Option.(
+          ( get !interp_ir |> Jit_annot.annotate `Meta_method
+          , get !interp_fundef |> Jit_annot.annotate_fundef `Meta_method ))
+      in
       let bytecode = Compat.of_bytecode bytecode in
       let env = { bytecode; stack; pc; sp; bc_ptr; st_ptr } in
       (match (p, i) |> jit_method env with

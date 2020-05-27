@@ -61,33 +61,6 @@ module Util = struct
       raise e
   ;;
 
-  let get_ir_addr args name =
-    List.find (fun a -> String.get_name a = name) args
-    |> String.get_extension
-    |> int_of_string
-  ;;
-
-  let make_reg { args; body = t } =
-    let open Jit_env in
-    let reg = Array.make !I.size (Red 0) in
-    Asm.fv t @ args
-    |> List.iteri (fun i a ->
-           if List.mem (String.get_name a) !Config.greens
-           then reg.(i) <- Green 0
-           else reg.(i) <- Red 0);
-    reg
-  ;;
-
-  let make_mem ~bc_addr ~st_addr bytecode stack =
-    let open Jit_env in
-    let mem = Array.make !I.size (Green 0) in
-    bytecode
-    |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Jit_env.Green a);
-    stack
-    |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Jit_env.Red a);
-    mem
-  ;;
-
   let with_jit_flg ~on:f ~off:g =
     match !Config.jit_flag with `On -> f () | `Off -> g ()
   ;;
