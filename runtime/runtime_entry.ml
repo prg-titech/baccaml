@@ -44,10 +44,8 @@ module Setup = struct
 
   let make_mem ~bc_addr ~st_addr bytecode stack =
     let open Jit_env in
-    bytecode
-    |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Green a);
-    stack
-    |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Red a);
+    bytecode |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Green a);
+    stack |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Red a);
     ()
   ;;
 
@@ -174,44 +172,39 @@ module TJ = struct
         ~red_names:!Config.reds
         ~bytecode
     in
-    let (`Result (trace, others)) = Jit_tracing.run prog reg mem env in
+    let (`Result (bridge_trace, bridge_others)) =
+      Jit_tracing.run prog reg mem env
+    in
     let bridge_trace =
-      trace |> Jit_constfold.h |> Opt_defuse.h |> Renaming.rename_fundef
+      bridge_trace
+      |> Jit_constfold.h
+      |> Opt_defuse.h
+      |> Renaming.rename_fundef
     in
     Debug.with_debug (fun _ -> print_fundef bridge_trace);
     Guard.register_name (pc, Trace_name.value bridge_name);
     begin
-      match others with
-      | Some others ->
-        Result.(
-          bind
-            (emit_and_compile `Meta_tracing bridge_trace)
-            (fun _ ->
-              bind
-                (emit_and_compile_with_so
-                   `Meta_tracing
-                   others
-                   bridge_trace)
-                (fun bname ->
-                  match lookup_merge_trace pc with
-                  | Some mtrace ->
-                    let mtrace' =
-                      Opt_retry.rename
-                        { pc; bname = Trace_name.value bridge_name }
-                        mtrace
-                    in
-                    bind
-                      (emit_and_compile_with_so
-                         prog
-                         `Meta_tracing
-                         [ bname ]
-                         mtrace')
-                      (fun mname_compiled' -> Ok ())
-                  | None -> Error (Failure "compilation failed")))
-          |> to_option)
-      | None -> None
+      match bridge_others with
+      | Some bridge_others ->
+        begin
+          match lookup_merge_trace pc with
+          | Some mtrace ->
+            let mtrace' =
+              Opt_retry.rename
+                { pc; bname = Trace_name.value bridge_name }
+                mtrace
+            in
+            (* TODO: compile with dependencies (shared libraries) *)
+            Result.bind
+              (emit_and_compile_with_so' `Meta_tracing bridge_others
+                 [ bridge_trace ] mtrace')
+              (fun _ -> Ok ())
+          | None -> Error Exit
+        end
+      | None -> Error Exit
     end
-    |> Option.value ~default:()
+    |> Result.to_option
+    |> Option.get
   ;;
 
   let jit_guard_occur_at bytecode stack pc sp bc_ptr st_ptr =
