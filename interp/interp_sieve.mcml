@@ -197,7 +197,7 @@ let rec interp stack sp bytecode pc =
     interp stack (sp+1) bytecode (pc+1)
   else
     -1000 in
-let stk  = Array.make 1000000 0 in
+let stk  = Array.make 100 0 in
 stk.(0) <- (-987);
 let code = Array.make 200 0 in
 save_bp ();
@@ -315,5 +315,7 @@ code.(164) <- 14;
 code.(165) <- 9; code.(166) <- 169;
 code.(167) <- 13; code.(168) <- 3;
 code.(169) <- 11; code.(170) <- 2;
+let s = get_current_micros () in
 let r = interp stk 1 code 0 in
-print_int r
+let e = get_current_micros () in
+print_int (e - s); print_newline ()
