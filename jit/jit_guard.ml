@@ -10,7 +10,8 @@ let rec ignore_hits = function
   | Ans exp -> Ans (ignore_hits_exp exp)
   | Let (x, CallDir (Id.L "min_caml_can_enter_jit", args, fargs), body) ->
     ignore_hits body
-  | Let (x, CallDir (Id.L "min_caml_jit_merge_point", args, fargs), body) ->
+  | Let (x, CallDir (Id.L "min_caml_jit_merge_point", args, fargs), body)
+    ->
     ignore_hits body
   | Let (x, exp, body) -> Let (x, ignore_hits_exp exp, ignore_hits body)
 
@@ -30,7 +31,8 @@ let rec restore reg ~args cont =
   | hd :: tl ->
     (match reg.(int_of_id_t hd) with
     | Green n
-      when String.get_name hd = "bytecode" || String.get_name hd = "code" ->
+      when String.get_name hd = "bytecode" || String.get_name hd = "code"
+      ->
       Let
         ( (hd, Type.Int)
         , CallDir (Id.L "restore_min_caml_bp", [], [])
@@ -60,7 +62,8 @@ let rec promote reg ~trace_name:tname = function
   | Let (x, e, body) -> promote reg tname body
   | Ans (CallDir (Id.L "min_caml_guard_promote", args, fargs)) ->
     restore reg ~args (Ans (CallDir (Id.L ("guard_" ^ tname), args, [])))
-  | Ans _ -> failwith "Jit_guard.promote could not find min_caml_guard_promote."
+  | Ans _ ->
+    failwith "Jit_guard.promote could not find min_caml_guard_promote."
 ;;
 
 module TJ : sig
@@ -70,11 +73,16 @@ module TJ : sig
 end = struct
   (* merge_pc -> [guard_pc_1, gaurd_pc_2, ,,,] *)
   let guard_tbl : (int, int) Hashtbl.t = Hashtbl.create 100
-  let register ~guard_pc ~merge_pc = Hashtbl.add guard_tbl guard_pc merge_pc
+
+  let register ~guard_pc ~merge_pc =
+    Hashtbl.add guard_tbl guard_pc merge_pc
+  ;;
+
   let lookup ~guard_pc = `Pc (Hashtbl.find guard_tbl guard_pc)
 
   let lookup_opt ~guard_pc =
-    Option.(bind (Hashtbl.find_opt guard_tbl guard_pc) (fun v -> some @@ `Pc v))
+    Option.(
+      bind (Hashtbl.find_opt guard_tbl guard_pc) (fun v -> some @@ `Pc v))
   ;;
 
   let is_pc x =
@@ -88,13 +96,19 @@ end = struct
       let env = M.add var n env in
       Let ((var, typ), e, insert_guard_occur_at (merge_pc, env) t)
     | Let ((var, typ), (Add (x, C y) as e), t) when is_pc x ->
-      let pc_v = M.find x env in
-      let env = M.add var (pc_v + y) env in
-      Let ((var, typ), e, insert_guard_occur_at (merge_pc, env) t)
+      (try
+         let pc_v = M.find x env in
+         let env = M.add var (pc_v + y) env in
+         Let ((var, typ), e, insert_guard_occur_at (merge_pc, env) t)
+       with
+      | Not_found -> failwith (Printf.sp "Not found %s" x))
     | Let ((var, typ), (Sub (x, C y) as e), t) when is_pc x ->
-      let pc_v = M.find x env in
-      let env = M.add var (pc_v - y) env in
-      Let ((var, typ), e, insert_guard_occur_at (merge_pc, env) t)
+      (try
+         let pc_v = M.find x env in
+         let env = M.add var (pc_v - y) env in
+         Let ((var, typ), e, insert_guard_occur_at (merge_pc, env) t)
+       with
+      | Not_found -> failwith (Printf.sp "Not found %s" x))
     | Let ((var, typ), e, t) ->
       Let ((var, typ), e, insert_guard_occur_at (merge_pc, env) t)
     | Ans (CallDir (Id.L x, args, fargs) as e) ->
@@ -109,7 +123,7 @@ end = struct
                   ( (Id.gentmp Type.Unit, Type.Unit)
                   , GuardAt pc_v
                   , Let
-                      ( (Id.gentmp Type.Unit, Type.Unit)
+                      ( (Id.gentmp Type.Unit, Type.Unit) (* HACK *)
                       , CallDir (Id.L "min_caml_guard_occur_at", args, [])
                       , Ans e ) )
                 |> some))
