@@ -159,7 +159,7 @@ module TJ = struct
     let open Trace_prof in
     Setup.env runtime_env `Meta_tracing interp;
     let { args } = interp in
-    let bridge_name = Trace_name.gen `Meta_tracing in
+    let bridge_name = Trace_name.(gen `Meta_tracing |> value) in
     let env =
       create_env
         ~index_pc:
@@ -168,7 +168,7 @@ module TJ = struct
           |> fst)
         ~merge_pc:pc
         ~current_pc:pc
-        ~trace_name:(Trace_name.value bridge_name)
+        ~trace_name:bridge_name
         ~red_names:!Config.reds
         ~bytecode
     in
@@ -182,29 +182,43 @@ module TJ = struct
       |> Renaming.rename_fundef
     in
     Debug.with_debug (fun _ -> print_fundef bridge_trace);
-    Guard.register_name (pc, Trace_name.value bridge_name);
-    begin
-      match bridge_others with
-      | Some bridge_others ->
-        begin
-          match lookup_merge_trace pc with
-          | Some mtrace ->
-            let mtrace' =
-              Opt_retry.rename
-                { pc; bname = Trace_name.value bridge_name }
-                mtrace
-            in
-            (* TODO: compile with dependencies (shared libraries) *)
-            Result.bind
-              (emit_and_compile_with_so' `Meta_tracing bridge_others
-                 [ bridge_trace ] mtrace')
-              (fun _ -> Ok ())
-          | None -> Error Exit
-        end
-      | None -> Error Exit
-    end
-    |> Result.to_option
-    |> Option.get
+    Guard.register_name (pc, bridge_name);
+    (* begin
+     *   match bridge_others with
+     *   | Some bridge_others ->
+     *     begin
+     *       match lookup_merge_trace pc with
+     *       | Some mtrace ->
+     *         let mtrace' =
+     *           Opt_retry.rename
+     *             { pc; bname = Trace_name.value bridge_name }
+     *             mtrace
+     *         in
+     *         (\* TODO: compile with dependencies (shared libraries) *\)
+     *         Result.bind
+     *           (emit_and_compile_with_so' `Meta_tracing bridge_others
+     *              [ bridge_trace ] mtrace')
+     *           (fun _ -> Ok ())
+     *       | None -> Error Exit
+     *     end
+     *   | None -> Error Exit
+     * end
+     * |> Result.to_option
+     * |> Option.get *)
+    Option.bind (lookup_merge_trace ~guard_pc:pc) (fun mtrace ->
+        Opt_retry.embed
+          { pc; bname = bridge_name }
+          ~mtrace
+          ~btrace:bridge_trace
+        |> fun embedded_mtrace ->
+        print_fundef embedded_mtrace;
+        print_newline ();
+        (match bridge_others with
+        | Some others ->
+          emit_and_compile_with_so `Meta_tracing others embedded_mtrace
+        | None -> emit_and_compile `Meta_tracing embedded_mtrace)
+        |> Result.to_option)
+    |> Option.fold ~some:(fun _ -> ()) ~none:()
   ;;
 
   let jit_guard_occur_at bytecode stack pc sp bc_ptr st_ptr =
