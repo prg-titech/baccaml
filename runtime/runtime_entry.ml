@@ -210,6 +210,8 @@ module TJ = struct
           { pc; bname = bridge_name }
           ~mtrace
           ~btrace:bridge_trace
+        |> Jit_constfold.h
+        |> Opt_defuse.h
         |> fun embedded_mtrace ->
         print_fundef embedded_mtrace;
         print_newline ();
