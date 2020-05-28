@@ -86,15 +86,7 @@ let compile_stdout tname =
 ;;
 
 let emit_dyn oc typ tname trace =
-  try
-    trace
-    |> Simm.h
-    |> RegAlloc.h
-    |>
-    match typ with
-    | `Meta_tracing -> Jit_emit.emit_tj oc
-    | `Meta_method -> Jit_emit.emit_mj oc
-  with
+  try trace |> Simm.h |> RegAlloc.h |> Jit_emit.h typ oc with
   | e ->
     close_out oc;
     raise e
@@ -119,9 +111,7 @@ let emit_and_compile' typ (others : fundef list) (trace : fundef) =
   let oc = open_out asm_name in
   try
     let trace' = trace |> Simm.h |> RegAlloc.h in
-    (match typ with
-    | `Meta_tracing -> Jit_emit.emit_tj oc trace'
-    | `Meta_method -> Jit_emit.emit_mj oc trace');
+    Jit_emit.h typ oc trace';
     List.iter
       (fun other -> other |> Simm.h |> RegAlloc.h |> Emit.h oc)
       others;
@@ -155,16 +145,14 @@ let emit_and_compile_with_so'
   let { name = Id.L name } = trace in
   let oc = open_out (name ^ ".s") in
   try
-    (trace |> Simm.h |> RegAlloc.h
-     |> match typ with
-     | `Meta_tracing -> Jit_emit.emit_tj oc
-     | `Meta_method -> Jit_emit.emit_mj oc);
+    trace |> Simm.h |> RegAlloc.h |> Jit_emit.h typ oc;
     List.iter
       (fun other -> other |> Simm.h |> RegAlloc.h |> Emit.h oc)
       others;
     close_out oc;
     compile_dyn_with_so name deps
-  with e ->
+  with
+  | e ->
     close_out oc;
     raise e
 ;;

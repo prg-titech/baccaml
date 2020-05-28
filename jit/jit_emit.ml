@@ -89,3 +89,9 @@ let emit_tj
   fprintf oc "\tcall\tmin_caml_guard_occur_at\n";
   fprintf oc "\tret\n"
 ;;
+
+let h typ oc fundef =
+  match typ with
+  | `Meta_tracing -> emit_tj oc fundef
+  | `Meta_method -> emit_mj oc fundef
+;;
