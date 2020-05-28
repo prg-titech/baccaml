@@ -35,8 +35,8 @@ module Make_prof (M_prof : Prof) = struct
   type pc = int
   type name = string
 
-  let count_tbl = Hashtbl.create 100
-  let compiled_tbl = Hashtbl.create 100
+  let count_tbl = Hashtbl.create 20
+  let compiled_tbl = Hashtbl.create 20
 
   let register : pc * name -> unit =
    fun (pc, name) ->
@@ -91,23 +91,23 @@ module Trace_prof = struct
   include Make_prof (struct
     (* fib: let threshold = 2 *)
     (* tak: let threshold = 0 *)
-    let threshold = 10
+    let threshold = 1
     let typ = `Meta_tracing
   end)
 
   module Guard = struct
-    let threshold = 1000
+    let threshold = 10
 
     type guard_count = Guard_count of int
 
-    let count_tbl : (int, guard_count) Hashtbl.t = Hashtbl.create 100
-    let name_tbl : (int, string) Hashtbl.t = Hashtbl.create 100
+    let count_tbl : (int, guard_count) Hashtbl.t = Hashtbl.create 20
+    let name_tbl : (int, string) Hashtbl.t = Hashtbl.create 20
 
     let count_up pc =
       match Hashtbl.find_opt count_tbl pc with
       | Some (Guard_count count) ->
         Hashtbl.replace count_tbl pc (Guard_count (count + 1))
-      | None -> Hashtbl.add count_tbl pc (Guard_count 1)
+      | None -> if pc <> 91 then Hashtbl.add count_tbl pc (Guard_count 1)
     ;;
 
     let over_threshold pc =
