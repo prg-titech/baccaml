@@ -85,7 +85,6 @@ module Util = struct
     | Some `Tracing -> Log.time "[tj] elapsed time %fus\n" ((e -. s) *. 1e6)
     | Some `Method -> Log.time "[mj] elapsed time %fus\n" ((e -. s) *. 1e6)
     | None -> ());
-    flush stderr;
     v
   ;;
 

@@ -183,28 +183,6 @@ module TJ = struct
     in
     Debug.with_debug (fun _ -> print_fundef bridge_trace);
     Guard.register_name (pc, bridge_name);
-    (* begin
-     *   match bridge_others with
-     *   | Some bridge_others ->
-     *     begin
-     *       match lookup_merge_trace pc with
-     *       | Some mtrace ->
-     *         let mtrace' =
-     *           Opt_retry.rename
-     *             { pc; bname = Trace_name.value bridge_name }
-     *             mtrace
-     *         in
-     *         (\* TODO: compile with dependencies (shared libraries) *\)
-     *         Result.bind
-     *           (emit_and_compile_with_so' `Meta_tracing bridge_others
-     *              [ bridge_trace ] mtrace')
-     *           (fun _ -> Ok ())
-     *       | None -> Error Exit
-     *     end
-     *   | None -> Error Exit
-     * end
-     * |> Result.to_option
-     * |> Option.get *)
     Option.bind (lookup_merge_trace ~guard_pc:pc) (fun mtrace ->
         Opt_retry.embed
           { pc; bname = bridge_name }
@@ -213,8 +191,10 @@ module TJ = struct
         |> Jit_constfold.h
         |> Opt_defuse.h
         |> fun embedded_mtrace ->
-        print_fundef embedded_mtrace;
-        print_newline ();
+        Debug.with_debug (fun _ ->
+            print_endline "[tj] embedded trace:";
+            print_fundef embedded_mtrace;
+            print_newline ());
         (match bridge_others with
         | Some others ->
           emit_and_compile_with_so `Meta_tracing others embedded_mtrace
@@ -225,6 +205,7 @@ module TJ = struct
 
   let jit_guard_occur_at bytecode stack pc sp bc_ptr st_ptr =
     let open Trace_prof in
+    (* if pc <> 167 then *)
     Guard.count_up pc;
     if Guard.over_threshold pc
     then
@@ -258,7 +239,7 @@ module TJ = struct
               ~arg1:st_ptr
               ~arg2:sp
           in
-          flush_all ()
+          ()
         | None -> ())
   ;;
 end
