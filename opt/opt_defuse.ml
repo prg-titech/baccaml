@@ -15,7 +15,14 @@ let exec t =
     |> Opt_const_fold.elim_dead_exp
     |> Opt_const_fold.const_fold_mov
   in
-  const_fold t |> opt_mem
-
+  let rec loop i t =
+    if i = 0 then t
+    else const_fold t
+  in
+  let rec loop' i t =
+    if i = 0 then t
+    else opt_mem t
+  in
+  loop 100 t |> loop' 100
 let h { name; args; fargs; body; ret } =
   { name; args; fargs; body = exec body; ret }
