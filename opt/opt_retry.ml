@@ -3,6 +3,7 @@ open MinCaml
 open Jit
 open Opt_lib
 open Asm
+open Printf
 
 type rename_guard_env =
   { pc : int
@@ -58,11 +59,7 @@ let rename ({ pc; bname } as rg_env) trace_fundef =
 let embed_bridge' bridge_args bridge_body e =
   let rec zip l1 l2 =
     match l1, l2 with
-    | hd1 :: tl1, hd2 :: tl2
-      when String.(get_name hd1 = get_name hd2)
-      -> (hd1, hd2) :: zip tl1 tl2
-    | hd1 :: tl1, hd2 :: tl2 ->
-      failwith "different name"
+    | hd1 :: tl1, hd2 :: tl2 -> (hd1, hd2) :: zip tl1 tl2
     | [], [] -> []
     | _ -> []
   in
@@ -80,14 +77,14 @@ let embed_bridge' bridge_args bridge_body e =
 let rec embed_bridge ~bargs:bridge_args ~bbody:bridge_body = function
   | Let (x, CallDir (Id.L "min_caml_guard_occur_at", _, _), t) ->
     embed_bridge ~bargs:bridge_args ~bbody:bridge_body t
-  | Let (x, e, t) -> Let (x, e, embed_bridge bridge_args bridge_body t)
+  | Let (x, e, t) -> embed_bridge ~bargs:bridge_args ~bbody:bridge_body t
   | Ans (CallDir (Id.L name, args, fargs) as e)
     when String.starts_with name "guard_" ->
     embed_bridge' bridge_args bridge_body e
   | Ans e -> Ans e
 ;;
 
-let embed { pc; bname } { name; args; fargs; body; ret } bridge
+let embed { pc; bname } ~mtrace:{ name; args; fargs; body; ret } ~btrace:bridge
   =
   let rec loop = function
     | Let (x, e, t) -> Let (x, e, loop t)
@@ -95,13 +92,9 @@ let embed { pc; bname } { name; args; fargs; body; ret } bridge
     | Ans (IfLE (x, y, t1, t2) as e)
     | Ans (IfGE (x, y, t1, t2) as e) ->
       if Opt_guard.is_guard_path t1 && has_guard_at pc t1
-      then
-        let { args= bargs'; body= bbody' } = Renaming.rename_fundef bridge in
-        Ans (e <=> (x, y, embed_bridge bargs' bbody' t1, t2))
-      else if Opt_guard.is_guard_path t2 && has_guard_at pc t1
-      then
-        let { args= bargs'; body= bbody' } = Renaming.rename_fundef bridge in
-        Ans (e <=> (x, y, t1, embed_bridge bargs' bbody' t2))
+      then Ans (e <=> (x, y, embed_bridge bridge.args bridge.body t1, t2))
+      else if Opt_guard.is_guard_path t2 && has_guard_at pc t2
+      then Ans (e <=> (x, y, t1, embed_bridge bridge.args bridge.body t2))
       else Ans (e <=> (x, y, loop t1, loop t2))
     | Ans e -> Ans e
   in
