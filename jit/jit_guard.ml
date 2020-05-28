@@ -122,10 +122,7 @@ end = struct
                 Let
                   ( (Id.gentmp Type.Unit, Type.Unit)
                   , GuardAt pc_v
-                  , Let
-                      ( (Id.gentmp Type.Unit, Type.Unit) (* HACK *)
-                      , CallDir (Id.L "min_caml_guard_occur_at", args, [])
-                      , Ans e ) )
+                  , Ans e )
                 |> some))
         |> value ~default:(Ans e))
     | Ans e -> Ans e
