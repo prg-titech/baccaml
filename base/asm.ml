@@ -11,12 +11,18 @@ let string_of_id_or_imm = function
 
 let print_dquote _ = print_string "\""
 
-let print_id_t id_t = print_dquote (); print_string id_t; print_dquote ()
+let print_id_t id_t =
+  print_dquote ();
+  print_string id_t;
+  print_dquote ()
+;;
 
 let print_id_or_imm = function
   | V id_t ->
-    print_string "V "; print_dquote ();
-    print_string id_t; print_dquote ();
+    print_string "V ";
+    print_dquote ();
+    print_string id_t;
+    print_dquote ()
   | C n ->
     print_string "C ";
     print_int n;
@@ -100,15 +106,23 @@ let rec print_t = function
 and print_exp = function
   | Nop -> print_string "Nop"
   | Comment str -> print_string ("Comment (" ^ str ^ ")")
-  | GuardAt n -> print_string "GuardAt ("; print_int n; print_string ")"
-  | BranchingAt n -> print_string "BranchingAt ("; print_int n; print_string ")"
+  | GuardAt n ->
+    print_string "GuardAt (";
+    print_int n;
+    print_string ")"
+  | BranchingAt n ->
+    print_string "BranchingAt (";
+    print_int n;
+    print_string ")"
   | Set n ->
     print_string "Set (";
     print_int n;
     print_string ")"
   | SetL id_l ->
-    print_string "SetL ("; print_dquote ();
-    Id.print_id_l id_l; print_dquote ();
+    print_string "SetL (";
+    print_dquote ();
+    Id.print_id_l id_l;
+    print_dquote ();
     print_string ")"
   | Mov id ->
     print_string "Mov (";
@@ -302,7 +316,9 @@ let print_fundef { name; args; fargs; body; ret } =
   print_string "[";
   args
   |> List.iter (fun arg ->
+         print_string "\"";
          print_string arg;
+         print_string "\"";
          print_string "; ");
   print_string "]";
   print_string "; ";
@@ -320,6 +336,7 @@ let print_fundef { name; args; fargs; body; ret } =
   print_t body;
   print_newline ();
   print_tab ();
+  print_string ";";
   print_string "ret= ";
   Type.print_type ret;
   print_string ";";
@@ -383,13 +400,22 @@ let rec remove_and_uniq xs = function
   | x :: ys -> x :: remove_and_uniq (S.add x xs) ys
 ;;
 
-(* free variables in the order of use (for spilling) (caml2html: sparcasm_fv) *)
+(* free variables in the order of use (for spilling) (caml2html:
+   sparcasm_fv) *)
 let fv_id_or_imm = function V x -> [ x ] | _ -> []
 
 let rec fv_exp = function
-  | Nop | Set _ | SetL _ | Comment _ | GuardAt _ | BranchingAt _ | Restore _ | SMov _ -> []
+  | Nop | Set _ | SetL _ | Comment _ | GuardAt _ | BranchingAt _
+  | Restore _ | SMov _ ->
+    []
   | Mov x | Neg x | FMovD x | FNegD x | Save (x, _) -> [ x ]
-  | Add (x, y') | Sub (x, y') | Mul (x, y') | Div (x, y') | Mod (x, y') | Ld (x, y', _) | LdDF (x, y', _) ->
+  | Add (x, y')
+  | Sub (x, y')
+  | Mul (x, y')
+  | Div (x, y')
+  | Mod (x, y')
+  | Ld (x, y', _)
+  | LdDF (x, y', _) ->
     x :: fv_id_or_imm y'
   | St (x, y, z', _) | StDF (x, y, z', _) -> x :: y :: fv_id_or_imm z'
   | FAddD (x, y) | FSubD (x, y) | FMulD (x, y) | FDivD (x, y) -> [ x; y ]
@@ -412,7 +438,8 @@ let rec fv_exp = function
 
 and fv = function
   | Ans exp -> fv_exp exp
-  | Let ((x, t), exp, e) -> fv_exp exp @ remove_and_uniq (S.singleton x) (fv e)
+  | Let ((x, t), exp, e) ->
+    fv_exp exp @ remove_and_uniq (S.singleton x) (fv e)
 ;;
 
 let fv e = remove_and_uniq S.empty (fv e)
