@@ -4,6 +4,8 @@ open Asm
 open Jit_env
 open Jit_util
 
+exception Not_found' of string
+
 let ignored x ys = ys |> List.exists (fun y -> String.get_name x = y)
 
 let rec ignore_hits = function
@@ -101,14 +103,14 @@ end = struct
          let env = M.add var (pc_v + y) env in
          Let ((var, typ), e, insert_guard_occur_at (merge_pc, env) t)
        with
-      | Not_found -> failwith (Printf.sp "Not found %s" x))
+      | Not_found -> raise @@ Not_found' x)
     | Let ((var, typ), (Sub (x, C y) as e), t) when is_pc x ->
       (try
          let pc_v = M.find x env in
          let env = M.add var (pc_v - y) env in
          Let ((var, typ), e, insert_guard_occur_at (merge_pc, env) t)
        with
-      | Not_found -> failwith (Printf.sp "Not found %s" x))
+      | Not_found -> raise @@ Not_found' x)
     | Let ((var, typ), e, t) ->
       Let ((var, typ), e, insert_guard_occur_at (merge_pc, env) t)
     | Ans (CallDir (Id.L x, args, fargs) as e) ->
@@ -119,10 +121,7 @@ end = struct
             bind (M.find_opt pc_arg env) (fun pc_v ->
                 (* append the value of pc at this guard failer *)
                 register ~guard_pc:pc_v ~merge_pc;
-                Let
-                  ( (Id.gentmp Type.Unit, Type.Unit)
-                  , GuardAt pc_v
-                  , Ans e )
+                Let ((Id.gentmp Type.Unit, Type.Unit), GuardAt pc_v, Ans e)
                 |> some))
         |> value ~default:(Ans e))
     | Ans e -> Ans e
