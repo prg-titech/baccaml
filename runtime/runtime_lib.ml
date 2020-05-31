@@ -77,7 +77,7 @@ module Util = struct
       ~arg2
   ;;
 
-  let exec_dyn_arg2_with_elapsed_time ?(notation = None) ~name ~arg1 ~arg2 =
+  let exec_dyn_arg2_time ?(notation = None) ~name ~arg1 ~arg2 =
     let s = Sys.time () in
     let v = exec_dyn_arg2 name arg1 arg2 in
     let e = Sys.time () in

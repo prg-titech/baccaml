@@ -135,19 +135,49 @@ module TJ = struct
     | Error e -> ()
   ;;
 
+  let traced = Array.make 200 (0, false)
+
   let jit_tracing_entry bytecode stack pc sp bc_ptr st_ptr =
     let open Util in
     with_jit_flg
       ~off:(fun _ -> ())
       ~on:(fun _ ->
+        (* for debug *)
+        (* if pc = 54 || pc = 96 then begin
+         *   traced.(pc) <- (fst traced.(pc) + 1, snd traced.(pc));
+         *   Trace_prof.change_count (pc, 10000);
+         *   if fst traced.(pc) > 1 && not (snd traced.(pc)) then begin
+         *     jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr;
+         *     traced.(pc) <- (fst traced.(pc), true)
+         *   end
+         * end *)
         if Trace_prof.over_threshold pc
         then (
           match Trace_prof.find_opt pc with
           | Some _ -> ()
           | None ->
             jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr)
-        else Trace_prof.count_up pc;
-        ())
+        else Trace_prof.count_up pc)
+  ;;
+
+  let jit_tracing_exec pc st_ptr sp stack =
+    let open Util in
+    with_jit_flg
+      ~off:(fun _ -> ())
+      ~on:(fun _ ->
+        match Trace_prof.find_opt pc with
+        | Some tname ->
+          Log.debug
+            (sprintf "executing %s at pc: %d sp: %d ..." tname pc sp);
+          let _ =
+            exec_dyn_arg2_time
+              ~notation:(Some `Tracing)
+              ~name:tname
+              ~arg1:st_ptr
+              ~arg2:sp
+          in
+          ()
+        | None -> ())
   ;;
 
   let jit_tracing_retry
@@ -205,7 +235,6 @@ module TJ = struct
 
   let jit_guard_occur_at bytecode stack pc sp bc_ptr st_ptr =
     let open Trace_prof in
-    (* if pc <> 167 then *)
     Guard.count_up pc;
     if Guard.over_threshold pc
     then
@@ -221,26 +250,6 @@ module TJ = struct
         (prog, interp) |> jit_tracing_retry env;
         ()
       end
-  ;;
-
-  let jit_tracing_exec pc st_ptr sp stack =
-    let open Util in
-    with_jit_flg
-      ~off:(fun _ -> ())
-      ~on:(fun _ ->
-        match Trace_prof.find_opt pc with
-        | Some tname ->
-          Log.debug
-            (sprintf "executing %s at pc: %d sp: %d ..." tname pc sp);
-          let _ =
-            exec_dyn_arg2_with_elapsed_time
-              ~notation:(Some `Tracing)
-              ~name:tname
-              ~arg1:st_ptr
-              ~arg2:sp
-          in
-          ()
-        | None -> ())
   ;;
 end
 
@@ -293,12 +302,15 @@ module MJ = struct
     let open Util in
     match Method_prof.find_opt pc with
     | Some name ->
-      let s = Sys.time () in
-      let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
-      let e = Sys.time () in
-      eprintf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
+      let v =
+        exec_dyn_arg2_time
+          ~notation:(Some `Method)
+          ~name
+          ~arg1:st_ptr
+          ~arg2:sp
+      in
       flush stderr;
-      r
+      v
     | None ->
       let p, i =
         Option.(
@@ -310,13 +322,15 @@ module MJ = struct
       (match (p, i) |> jit_method env with
       | Ok name ->
         Method_prof.register (pc, name);
-        Log.debug @@ sprintf "[mj] compiled %s at pc: %d\n" name pc;
-        let s = Sys.time () in
-        let r = exec_dyn_arg2 ~name ~arg1:st_ptr ~arg2:sp in
-        let e = Sys.time () in
-        eprintf "[mj] elapced time: %f us\n" ((e -. s) *. 1e6);
+        let v =
+          exec_dyn_arg2_time
+            ~notation:(Some `Method)
+            ~name
+            ~arg1:st_ptr
+            ~arg2:sp
+        in
         flush stderr;
-        r
+        v
       | Error e -> raise e)
   ;;
 end
