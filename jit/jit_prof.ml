@@ -13,7 +13,9 @@ end = struct
   let counter = ref 0
 
   let gen typ =
-    let mark = match typ with `Meta_tracing -> "tj" | `Meta_method -> "mj" in
+    let mark =
+      match typ with `Meta_tracing -> "tj" | `Meta_method -> "mj"
+    in
     let name = "trace" ^ mark ^ string_of_int !counter in
     incr counter;
     Trace_name (Id.genid name)
@@ -50,7 +52,14 @@ module Make_prof (M_prof : Prof) = struct
     match Hashtbl.find_opt count_tbl pc with
     | Some count -> Hashtbl.replace count_tbl pc (count + 1)
     | None -> Hashtbl.add count_tbl pc 1
- ;;
+  ;;
+
+  let change_count : (pc * int) -> unit =
+    fun (pc, n) ->
+      match Hashtbl.find_opt count_tbl pc with
+      | Some _ -> Hashtbl.replace count_tbl pc n
+      | None -> Hashtbl.add count_tbl pc n
+  ;;
 
   let find : pc -> name =
    fun pc ->
@@ -58,7 +67,9 @@ module Make_prof (M_prof : Prof) = struct
     | Not_found -> raise (Not_found_name_at pc)
  ;;
 
-  let find_opt : pc -> name option = fun pc -> Hashtbl.find_opt compiled_tbl pc
+  let find_opt : pc -> name option =
+   fun pc -> Hashtbl.find_opt compiled_tbl pc
+ ;;
 
   let over_threshold : pc -> bool =
    fun pc ->
@@ -90,13 +101,13 @@ end)
 module Trace_prof = struct
   include Make_prof (struct
     (* fib: let threshold = 2 *)
-    (* tak: let threshold = 0 *)
-    let threshold = 1
+    (* tak: let threshold = 2 *)
+    let threshold = 100
     let typ = `Meta_tracing
   end)
 
   module Guard = struct
-    let threshold = 10
+    let threshold = 100
 
     type guard_count = Guard_count of int
 
