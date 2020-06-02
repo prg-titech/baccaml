@@ -296,11 +296,9 @@ min_caml_jit_merge_point:
 	popl	%ebp
 	movl	min_caml_guard_fail_flg, %esi
 	cmpl	$0, %esi
-	jg	.L3
-	jmp	.L2
-.L2:
+	jg	min_caml_guard_restore
 	jmp	min_caml_jit_merge_point_cont
-.L3:
+min_caml_guard_restore:
 	movl	min_caml_guard_stack, %eax
 	movl	min_caml_guard_sp, %ebx
 	movl	min_caml_guard_bytecode, %ecx
