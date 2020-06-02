@@ -46,7 +46,7 @@ let compile_dyn trace_name =
   | Unix.WEXITED i when i = 0 -> ()
   | _ -> raise @@ Compilation_failed trace_name);
   sp
-    "gcc -m32 %s -o %s -shared -fPIC %s -L./_static"
+    "gcc -m32 %s -O3 -Wall -o %s -shared -fPIC %s -L./_static"
     (if !Log.log_level = `Debug then "-g" else "")
     so
     asm_name
@@ -64,7 +64,7 @@ let compile_dyn_with_so tname others =
     others |> List.map (fun so -> so ^ ".o") |> String.concat " "
   in
   sp
-    "gcc -m32 %s -o %s %s -shared -fPIC -ldl -L./_static %s"
+    "gcc -m32 %s -O3 -Wall -o %s %s -shared -fPIC -ldl -L./_static %s"
     (if !Log.log_level = `Debug then "-g" else "")
     so
     asm
