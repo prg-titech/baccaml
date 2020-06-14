@@ -12,15 +12,6 @@ typedef int (*fun_arg2)(intptr_t, int);
 
 typedef int (*fun_arg1)(int);
 
-int exists_file(char *name) {
-  FILE *file = fopen(name, "r");
-  if (file == NULL) {
-    return 0;
-  }
-  fclose(file);
-  return 1;
-}
-
 CAMLprim value call_dlfun_arg1(value filename, value funcname, value arg1) {
   fun_arg1 sym = NULL;
   void *handle = NULL;
@@ -49,15 +40,6 @@ CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1,
   int res = 0;
   char* name = String_val(filename);
 
-#ifdef DEBUG_DLOPEN
-  if (!exists_file(name)) {
-    fprintf(stderr, "NG: %s\n", name);
-    return -1;
-  } else {
-    fprintf(stderr, "OK: %s\n", name);
-  }
-#endif
-
   handle = dlopen(name, RTLD_LAZY);
   if (handle == NULL) {
     char s[100];
@@ -81,7 +63,7 @@ CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1,
   int sp = Int_val(arg2);
 
   res = sym(stk, sp);
-  dlclose(handle);
+  // dlclose(handle); // too slow
 
   return Val_int(res);
 }
