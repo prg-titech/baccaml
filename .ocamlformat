@@ -1,6 +1,6 @@
 profile = janestreet
 break-cases = fit
-margin = 75
+margin = 80
 parse-docstrings = true
 wrap-comments = true
 exp-grouping = preserve
