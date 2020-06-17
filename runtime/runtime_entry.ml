@@ -142,15 +142,6 @@ module TJ = struct
     with_jit_flg
       ~off:(fun _ -> ())
       ~on:(fun _ ->
-        (* for debug *)
-        (* if pc = 54 || pc = 96 then begin
-         *   traced.(pc) <- (fst traced.(pc) + 1, snd traced.(pc));
-         *   Trace_prof.change_count (pc, 10000);
-         *   if fst traced.(pc) > 1 && not (snd traced.(pc)) then begin
-         *     jit_tracing_gen_trace bytecode stack pc sp bc_ptr st_ptr;
-         *     traced.(pc) <- (fst traced.(pc), true)
-         *   end
-         * end *)
         if Trace_prof.over_threshold pc
         then (
           match Trace_prof.find_opt pc with
@@ -167,8 +158,7 @@ module TJ = struct
       ~on:(fun _ ->
         match Trace_prof.find_opt pc with
         | Some tname ->
-          Log.debug
-            (sprintf "executing %s at pc: %d sp: %d ..." tname pc sp);
+          (* Log.debug (sprintf "executing %s at pc: %d sp: %d ..." tname pc sp); *)
           let _ =
             exec_dyn_arg2_time
               ~notation:(Some `Tracing)
