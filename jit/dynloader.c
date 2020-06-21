@@ -43,14 +43,13 @@ CAMLprim value call_dlfun_arg1(value filename, value funcname, value arg1) {
 
 struct trace {
   char funcname[128]; // key
-  void *handle;   // value 1
   fun_arg2 sym;   // value 2
   UT_hash_handle hh;
 };
 
 struct trace *traces = NULL;
 
-void add_trace(char *funcname, void *handle, fun_arg2 sym) {
+void add_trace(char *funcname, fun_arg2 sym) {
   struct trace *t;
   HASH_FIND_STR(traces, funcname, t);
   if (t == NULL) {
@@ -58,7 +57,6 @@ void add_trace(char *funcname, void *handle, fun_arg2 sym) {
     strcpy(t->funcname, funcname);
     HASH_ADD_STR(traces, funcname, t);
   }
-  t->handle = handle;
   t->sym = sym;
 }
 
@@ -69,6 +67,9 @@ struct trace *find_trace(char *funcname) {
   return t;
 }
 
+fun_arg2 _sym = NULL;
+bool is_first = false;
+
 CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1,
                                value arg2) {
   fun_arg2 sym = NULL;
@@ -78,19 +79,16 @@ CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1,
   char *func = String_val(funcname);
   printf("name\t%s\tfunc\t%s\n", name, func);
 
-  struct trace *t = find_trace(func);
-
-  if (t) {
-    printf("found\t%s\tfunc\t%s\n", name, func);
-    sym = t->sym;
+  if (is_first && strcmp(func, "tracetj1") == 0) {
+    printf("found: %s\n", func);
     intptr_t stk = (intptr_t)Hp_val(arg1);
     int sp = Int_val(arg2);
-    res = sym(stk, sp);
+	res = _sym(stk, sp);
     return Val_int(res);
   } else {
-    printf("not found\t%s\tfunc\t%s\n", name, func);
+    printf("not found: %s\n", func);
 
-    handle = dlopen(name, RTLD_LAZY);
+    handle = dlopen(name, RTLD_NOW | RTLD_GLOBAL);
     if (handle == NULL) {
       char s[100];
       sprintf(s, "dlopen error: %s, %s", name, func);
@@ -107,7 +105,10 @@ CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1,
       return -1;
     }
 
-    add_trace(func, handle, sym);
+    if (strcmp(func, "tracetj1") == 0) {
+	  _sym = sym;
+	  is_first = true;
+	}
 
     intptr_t stk = Hp_val(arg1);
     int sp = Int_val(arg2);
@@ -116,6 +117,11 @@ CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1,
     return Val_int(res);
   }
 }
+
+/* CAMLprim value call_dlfun_arg2_with_pc(value filename, value funcname, */
+/*                                        value arg1, value arg2, value pc) { */
+/*   return; */
+/* } */
 
 CAMLprim value call_dlfun_arg3(value filename, value funcname, value arg1,
                                value arg2, value arg3) {
