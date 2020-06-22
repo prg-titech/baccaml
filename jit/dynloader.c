@@ -67,28 +67,36 @@ struct trace *find_trace(char *funcname) {
   return t;
 }
 
-fun_arg2 _sym = NULL;
-bool is_first = false;
+fun_arg2 sym_tj0 = NULL;
+fun_arg2 sym_tj1 = NULL;
 
 CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1,
                                value arg2) {
+  CAMLparam4(filename, funcname, arg1, arg2);
   fun_arg2 sym = NULL;
   void *handle = NULL;
   int res = 0;
   char *name = String_val(filename);
   char *func = String_val(funcname);
+
   printf("name\t%s\tfunc\t%s\n", name, func);
 
-  if (is_first && strcmp(func, "tracetj1") == 0) {
+  if (sym_tj0 && strcmp(func, "tracetj0") == 0) {
     printf("found: %s\n", func);
     intptr_t stk = (intptr_t)Hp_val(arg1);
     int sp = Int_val(arg2);
-	res = _sym(stk, sp);
-    return Val_int(res);
+    res = sym_tj0(stk, sp);
+    CAMLreturn(Val_int (res));
+  } else if (sym_tj1 && strcmp(func, "tracetj1") == 0) {
+    printf("found: %s\n", func);
+    intptr_t stk = (intptr_t)Hp_val(arg1);
+    int sp = Int_val(arg2);
+    res = sym_tj1(stk, sp);
+    CAMLreturn(Val_int (res));
   } else {
     printf("not found: %s\n", func);
 
-    handle = dlopen(name, RTLD_NOW | RTLD_GLOBAL);
+    handle = dlopen(name, RTLD_NOW);
     if (handle == NULL) {
       char s[100];
       sprintf(s, "dlopen error: %s, %s", name, func);
@@ -105,16 +113,18 @@ CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1,
       return -1;
     }
 
+    if (strcmp(func, "tracetj0") == 0) {
+      sym_tj0 = sym;
+    }
     if (strcmp(func, "tracetj1") == 0) {
-	  _sym = sym;
-	  is_first = true;
-	}
+      sym_tj1 = sym;
+    }
 
     intptr_t stk = Hp_val(arg1);
     int sp = Int_val(arg2);
     res = sym(stk, sp);
     // dlclose(handle); // too slow
-    return Val_int(res);
+    CAMLreturn(Val_int(res));
   }
 }
 
