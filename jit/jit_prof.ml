@@ -102,7 +102,7 @@ module Trace_prof = struct
   include Make_prof (struct
     (* fib: let threshold = 2 *)
     (* tak: let threshold = 2 *)
-    let threshold = 100
+    let threshold = 10
     let typ = `Meta_tracing
   end)
 

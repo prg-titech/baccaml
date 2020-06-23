@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <uthash.h>
 
 #define TABLE_SIZE 100
 
@@ -39,32 +38,6 @@ CAMLprim value call_dlfun_arg1(value filename, value funcname, value arg1) {
   res = sym(arg1);
   dlclose(handle);
   return Val_int(res);
-}
-
-struct trace {
-  char funcname[128]; // key
-  fun_arg2 sym;   // value 2
-  UT_hash_handle hh;
-};
-
-struct trace *traces = NULL;
-
-void add_trace(char *funcname, fun_arg2 sym) {
-  struct trace *t;
-  HASH_FIND_STR(traces, funcname, t);
-  if (t == NULL) {
-    t = malloc(sizeof(struct trace));
-    strcpy(t->funcname, funcname);
-    HASH_ADD_STR(traces, funcname, t);
-  }
-  t->sym = sym;
-}
-
-struct trace *find_trace(char *funcname) {
-  struct trace *t;
-
-  HASH_FIND_STR(traces, funcname, t);
-  return t;
 }
 
 fun_arg2 sym_tj0 = NULL;
@@ -127,11 +100,6 @@ CAMLprim value call_dlfun_arg2(value filename, value funcname, value arg1,
     CAMLreturn(Val_int(res));
   }
 }
-
-/* CAMLprim value call_dlfun_arg2_with_pc(value filename, value funcname, */
-/*                                        value arg1, value arg2, value pc) { */
-/*   return; */
-/* } */
 
 CAMLprim value call_dlfun_arg3(value filename, value funcname, value arg1,
                                value arg2, value arg3) {

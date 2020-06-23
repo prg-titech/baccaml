@@ -1,6 +1,14 @@
 (library
+ (name dynload_stub)
+ (public_name baccaml.dybload_stub)
+ (modules dynload_stub)
+ (c_names dynloader))
+
+(library
  (name runtime)
  (public_name baccaml.runtime)
+ (modules
+  (:standard \ dynload_stub))
  (libraries str unix jit opt minCaml log std)
  (inline_tests)
  (preprocess
