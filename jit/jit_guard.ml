@@ -130,10 +130,14 @@ end = struct
   let create reg env ?wlist:(ws = []) cont =
     let { merge_pc } = env in
     let free_vars = List.unique (fv cont) in
-    restore reg free_vars cont
-    (* too slow *)
-    |> insert_guard_occur_at (merge_pc, M.empty)
-    |> promote_interp env.trace_name
+    try
+      restore reg free_vars cont
+      (* too slow *)
+      |> insert_guard_occur_at (merge_pc, M.empty)
+      |> promote_interp env.trace_name
+    with e ->
+      restore reg free_vars cont
+      |> promote_interp env.trace_name
   ;;
 end
 
