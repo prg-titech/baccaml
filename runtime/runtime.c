@@ -79,27 +79,20 @@ void jit_compile(char *so, char *func, int pc) {
   return;
 }
 
-int* bytecode = NULL;
+int bytecode[1024] = {0};
 
-void call_caml_jit_merge_point(int *stack, int sp, int *code, int pc) {
+/**
+ * Entry point of jitting.
+ * TODO: change the arguments of jit_merge_point in interp.mcml
+ */
+void call_caml_jit_merge_point(int pc, int* stack, int sp) {
   int pc_count;
-
-  // error handling
-  if (stack == NULL) {
-    fprintf(stderr, "stack is null\n");
-    exit(-1);
-  }
-  if (code == NULL) {
-    fprintf(stderr, "bytecode is null\n");
-    exit(-1);
-  }
-
-  if (bytecode == NULL) bytecode = code;
 
   pc_count = prof_arr[pc]++;
 
   // exit if pc_count is under THOLD
   if (pc_count < THOLD_TJ) return;
 
+  printf("over thold\n");
   return;
 }
