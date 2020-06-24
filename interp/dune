@@ -32,13 +32,23 @@
     (run ../bin/min_caml.exe -o test_interp_tj.s %{deps} -type tjit -no-hint))))
 
 (rule (targets test_interp_tj.exe)
- (deps jit_entry.exe%{ext_obj} ../runtime/main.c ../runtime/interop.c ../runtime/libmincaml.S test_interp_tj.s)
+ (deps
+   jit_entry.exe%{ext_obj}
+   ../runtime/main.c
+   ../runtime/interop_caml.c
+   ../runtime/libmincaml.S
+   test_interp_tj.s)
  (action
   (run %{cc} -g -m32 -rdynamic -o %{targets} -I %{ocaml_where} -L
        %{ocaml_where} -I . %{deps} %{ocaml-config:native_c_libraries})))
 
 (rule (targets test_interp_mj.exe)
- (deps jit_entry.exe%{ext_obj} ../runtime/main.c ../runtime/interop.c ../runtime/libmincaml.S test_interp_mj.s)
+ (deps
+   jit_entry.exe%{ext_obj}
+   ../runtime/main.c
+   ../runtime/interop_caml.c
+   ../runtime/libmincaml.S
+   test_interp_mj.s)
  (action
   (run %{cc} -g -m32 -rdynamic -o %{targets} -I %{ocaml_where} -L
        %{ocaml_where} -I . %{deps} %{ocaml-config:native_c_libraries})))
@@ -47,7 +57,7 @@
  (deps
    jit_entry.exe%{ext_obj}
    ../runtime/main.c
-   ../runtime/interop.c
+   ../runtime/interop_caml.c
    ../runtime/runtime.c
    ../runtime/libmincaml.S
    interp_tj.s)
@@ -59,7 +69,7 @@
  (deps
    jit_entry.exe%{ext_obj}
    ../runtime/main.c
-   ../runtime/interop.c
+   ../runtime/interop_caml.c
    ../runtime/runtime.c
    ../runtime/libmincaml.S
    interp_mj.s)
