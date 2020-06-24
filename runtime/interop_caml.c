@@ -7,11 +7,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-extern void call_caml_jit_entry(int *, int, int *, int) asm("call_caml_jit_entry");
-extern void call_caml_jit_exec(int, int *, int) asm("call_caml_jit_exec");
-extern void call_caml_guard_occur_at(int *, int, int *, int) asm("call_caml_guard_occur_at");
-extern int call_caml_jit_mj_call(int *, int, int *, int) asm("call_caml_mj_call");
-
 value init_f(int n) { return Val_int(n); }
 
 value init_g(int n) {
