@@ -19,13 +19,18 @@
 
 #define PROF_LEN 2048
 #define THOLD_TJ 100
-#define THOLD_MJ 100
+#define THOLD_MJ 0
 
 #define JIT_COMPILE_COMMAND "gcc -m32 -fPIC -shared"
 
 typedef int (*fun_arg2)(int, int);
 
 enum jit_type { TJ, MJ };
+
+/**
+ * For profiling a program counter
+ */
+int prof_arr[1024] = {0};
 
 /**
  * For gen_trace_name
@@ -70,6 +75,31 @@ void jit_compile(char *so, char *func, int pc) {
   sprintf(buffer, "%s -shared -rdynamic -o %s %s.o", JIT_COMPILE_COMMAND, so,
           func);
   system(buffer);
+
+  return;
+}
+
+int* bytecode = NULL;
+
+void call_caml_jit_merge_point(int *stack, int sp, int *code, int pc) {
+  int pc_count;
+
+  // error handling
+  if (stack == NULL) {
+    fprintf(stderr, "stack is null\n");
+    exit(-1);
+  }
+  if (code == NULL) {
+    fprintf(stderr, "bytecode is null\n");
+    exit(-1);
+  }
+
+  if (bytecode == NULL) bytecode = code;
+
+  pc_count = prof_arr[pc]++;
+
+  // exit if pc_count is under THOLD
+  if (pc_count < THOLD_TJ) return;
 
   return;
 }
