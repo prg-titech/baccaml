@@ -33,7 +33,7 @@ void call_caml_jit_entry(int *st, int sp, int *bc, int pc) {
   return;
 }
 
-void call_caml_jit_exec(int pc, int *st_ptr, int sp) {
+void call_caml_jit_exec(int *st_ptr, int sp, int* code_ptr, int pc) {
   static value *jit_exec_closure = NULL;
   value ml_args[4];
   if (jit_exec_closure == NULL) {

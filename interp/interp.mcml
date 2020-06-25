@@ -20,7 +20,7 @@ let rec pop stack sp = stack.(sp - 1) in
 let rec push stack sp v = stack.(sp) <- v in
 
 let rec interp stack sp bytecode pc =
-  jit_merge_point pc stack sp;
+  jit_merge_point stack sp bytecode pc;
   let instr = bytecode.(pc) in
   if instr = 0 then             (* UNIT *)
     interp stack sp bytecode (pc + 1)

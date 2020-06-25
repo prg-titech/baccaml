@@ -67,7 +67,7 @@ and tj_exp
   | (IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _) as e ->
     Asm.concat (tj_if p reg mem env e) (dest, typ) (tj p reg mem env body)
   | CallDir (Id.L "min_caml_jit_merge_point", args, fargs) ->
-    let pc = value_of @@ reg.(int_of_id_t (List.hd args)) in
+    let pc = value_of @@ reg.(int_of_id_t (List.nth args index_pc)) in
     Log.debug ("jit_merge_point: " ^ string_of_int pc);
     if pc = merge_pc
     then

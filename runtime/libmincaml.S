@@ -288,6 +288,7 @@ min_caml_can_enter_jit:
 min_caml_jit_merge_point:
 	pushl	%ebp
 	movl	%esp, %ebp
+    pushl   %edx
 	pushl	%ecx
 	pushl	%ebx
 	pushl	%eax
