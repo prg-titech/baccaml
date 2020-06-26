@@ -38,5 +38,6 @@ let () =
   set file_name (Some !file);
   set reds [ "stack"; "sp"; "sp2"; "mode" ];
   set greens [ "pc"; "bytecode" ];
-  Runtime_entry.callbacks ()
+  Runtime_entry.callbacks ();
+  Runtime_caml.callbacks ();
 ;;
