@@ -13,6 +13,15 @@ type t =
   ; st_ptr : int
   }
 
+let create_runtime_env ~bytecode ~stack ~pc ~sp ~bc_ptr ~st_ptr =
+  { bytecode
+  ; stack
+  ; pc
+  ; sp
+  ; bc_ptr
+  ; st_ptr
+  }
+
 let interp_ir : Asm.prog option ref = ref None
 let interp_fundef : Asm.fundef option ref = ref None
 let reg = Array.make !I.size (Red 0)
