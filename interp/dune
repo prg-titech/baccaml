@@ -58,6 +58,7 @@
    jit_entry.exe%{ext_obj}
    ../runtime/main.c
    ../runtime/interop_caml.c
+   ../runtime/runtime_camlwrap.c
    ../runtime/runtime.c
    ../runtime/libmincaml.S
    interp_tj.s)
@@ -70,6 +71,7 @@
    jit_entry.exe%{ext_obj}
    ../runtime/main.c
    ../runtime/interop_caml.c
+   ../runtime/runtime_camlwrap.c
    ../runtime/runtime.c
    ../runtime/libmincaml.S
    interp_mj.s)
