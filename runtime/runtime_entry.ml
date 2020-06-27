@@ -40,7 +40,7 @@ let register_interp_ir () =
            Some (Fundef.find_fuzzy interp_ir "interp"))
 ;;
 
-let callbacks () =
+let callbacks _ =
   Callback.register "jit_tracing_gen_trace" TJ.jit_tracing_gen_trace;
   Callback.register "jit_tracing_entry" TJ.jit_tracing_entry;
   Callback.register "jit_tracing_exec" TJ.jit_tracing_exec;
