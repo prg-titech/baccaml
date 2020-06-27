@@ -29,6 +29,18 @@ typedef int (*fun_arg2)(int*, int);
 
 enum jit_type { TJ, MJ };
 
+#define elapsed_time(call)                                                     \
+  ({                                                                           \
+    struct timeval s, e;                                                       \
+    gettimeofday(&s, NULL);                                                    \
+    call;                                                                      \
+    gettimeofday(&e, NULL);                                                    \
+    long long int d =                                                          \
+        (e.tv_sec - s.tv_sec) * (double)1e6 + (e.tv_usec - s.tv_usec);         \
+    printf("elapsed time %10dus\n", d);                                        \
+    return;                                                                    \
+  })
+
 /**
  * For profiling a program counter
  */
@@ -111,8 +123,7 @@ void jit_compile(char *so, char *func) {
  */
 void c_can_enter_jit(int *stack, int sp, int *code, int pc) {
   //printf("back edge at pc %d\n", pc);
-  if (pc != 96)
-    prof_arr[pc]++;
+  prof_arr[pc]++;
   return;
 }
 
@@ -123,7 +134,7 @@ void c_can_enter_jit(int *stack, int sp, int *code, int pc) {
 void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
   int pc_count;
   char trace_name[128];
-  char so_name[1024];
+  char so_name[128];
   void* handle = NULL;
   fun_arg2 sym = NULL;
 
@@ -135,7 +146,8 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
     //printf("over thold at pc %d\n", pc);
     //call_caml_jit_entry(stack, sp, code, pc);
 
-    if (!compiled_arr[pc] ) {
+    if (!compiled_arr[pc]) {
+      // if not compiled, compile the trace and mark `already compiled'
       strcpy(trace_name, call_caml_jit_tracing(stack, sp, code, pc));
       trace_name_arr[pc] = malloc(128*sizeof(char));
       strcpy(trace_name_arr[pc], trace_name);
@@ -150,26 +162,26 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
       gen_so_name(so_name, trace_name);
 
       strip_ext(trace_name);
-      handle = dlopen(so_name, RTLD_NOW | RTLD_GLOBAL);
+      handle = dlopen(so_name, RTLD_NOW);
       if (handle == NULL) {
         fprintf(stderr, "error: dlopen %s\n", so_name);
-        exit(-1);
+        return;
       }
       dlerror();
 
-      sym = (fun_arg2)dlsym(RTLD_DEFAULT, trace_name);
+      sym = (fun_arg2)dlsym(handle, trace_name);
       if (sym == NULL) {
         fprintf(stderr, "error: dlsym \n");
         return;
       }
       sym_arr[pc] = malloc(sizeof(fun_arg2));
       sym_arr[pc] = sym;
-      sym(stack, sp);
+      elapsed_time(sym(stack, sp));
       printf("execution finished at pc %d\n", pc);
       return;
     } else {
       sym = sym_arr[pc];
-      sym(stack, sp);
+      elapsed_time(sym(stack, sp));
       return;
     }
   }
