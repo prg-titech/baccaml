@@ -99,6 +99,17 @@ void strip_ext(char *fname) {
   }
 }
 
+void concat(char* buf, char** arr, int size) {
+  strcpy(buf, "");
+
+  for (int i = 0; i < size; i++) {
+    strcat(buf, "-l");      // -l
+    strcat(buf, arr[i]); // -lfoo
+    strcat(buf, " ");
+  }
+
+}
+
 /**
  * Compile a trace into shared object
  */
@@ -116,7 +127,22 @@ void jit_compile(char *so, char *func) {
   return;
 }
 
+/**
+ * Compile a trace with other shared libraries
+ */
+void jit_compile_with_sl(char *so_main, char *func, char **arr, int size) {
+  char buffer[1024];
+  char other_sl[1024];
 
+  concat(other_sl, arr, size);
+
+  sprintf(buffer, "%s -c %s.s", JIT_COMPILE_COMMAND, func);
+  system(buffer);
+
+  sprintf(buffer, "%s -shared -rdynamic -L. %s %s.o", JIT_COMPILE_COMMAND, other_sl, func);
+  system(buffer);
+
+}
 
 /**
  * Profiling how many back-edge insertions occur.
