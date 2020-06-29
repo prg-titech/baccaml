@@ -3,6 +3,7 @@ open MinCaml
 open Asm
 open Jit
 open Jit_env
+open Jit_prof
 open Opt
 open Printf
 module E = Jit_env
@@ -61,15 +62,17 @@ let jit_tracing bytecode stack pc sp bc_ptr st_ptr =
       ~red_names:!Config.reds
       ~bytecode
   in
-  let (`Result (trace, others)) = Jit_tracing.run prog reg mem env in
+  let (`Result (trace, deps_opt)) = Jit_tracing.run prog reg mem env in
   let trace = trace |> Jit_constfold.h |> Opt_defuse.h in
+  let deps = Option.fold ~none:[||] ~some:(fun v -> Array.of_list v) deps_opt in
   append_trace pc trace;
   Log.with_debug (fun _ -> print_fundef trace);
+  Trace_prof.register (pc, trace_name);
   let oc = open_out (trace_name ^ ".s") in
   try
     trace |> Simm.h |> RegAlloc.h |> Jit_emit.h `Meta_tracing oc;
     close_out oc;
-    trace_name
+    trace_name, deps, Array.length deps
   with
   | e ->
     close_out oc;

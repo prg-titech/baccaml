@@ -163,6 +163,9 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
   char so_name[128];
   void* handle = NULL;
   fun_arg2 sym = NULL;
+  value v;
+  char* deps[10];
+  int d_size;
 
   pc_count = prof_arr[pc];
   if (pc_count < THOLD_TJ) {
@@ -174,9 +177,13 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
 
     if (!compiled_arr[pc]) {
       // if not compiled, compile the trace and mark `already compiled'
-      strcpy(trace_name, call_caml_jit_tracing(stack, sp, code, pc));
+      v = call_caml_jit_tracing(stack, sp, code, pc); // string, string array, int
+
+      strcpy(trace_name, strdup(String_val(Field(v, 0))));
       trace_name_arr[pc] = malloc(128*sizeof(char));
       strcpy(trace_name_arr[pc], trace_name);
+
+      d_size = Int_val(Field(v, 2));
 
       gen_so_name(so_name, trace_name);
       jit_compile(so_name, trace_name);
@@ -202,12 +209,14 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
       }
       sym_arr[pc] = malloc(sizeof(fun_arg2));
       sym_arr[pc] = sym;
-      elapsed_time(sym(stack, sp));
+      //elapsed_time(sym(stack, sp));
+      sym(stack, sp);
       printf("execution finished at pc %d\n", pc);
       return;
     } else {
       sym = sym_arr[pc];
-      elapsed_time(sym(stack, sp));
+      //elapsed_time(sym(stack, sp));
+      sym(stack, sp);
       return;
     }
   }
