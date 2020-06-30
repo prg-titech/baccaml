@@ -103,11 +103,18 @@ void concat(char* buf, char** arr, int size) {
   strcpy(buf, "");
 
   for (int i = 0; i < size; i++) {
-    strcat(buf, "-l");      // -l
-    strcat(buf, arr[i]); // -lfoo
+    strcat(buf, arr[i]);
+    strcat(buf, ".o");
     strcat(buf, " ");
   }
+}
 
+void chars_of_value(char *buf[], value deps, int size) {
+  for (int i = 0; i < size; i++) {
+    char* str = String_val(Field(deps, i));
+    buf[i] = malloc(128 * sizeof(char));
+    strcpy(buf[i], strdup(str));
+  }
 }
 
 /**
@@ -118,10 +125,12 @@ void jit_compile(char *so, char *func) {
 
   printf("compiling trace %s into shared object %s\n", func, so);
   sprintf(buffer, "%s -c %s.s", JIT_COMPILE_COMMAND, func);
+  fprintf(stderr, "%s\n", buffer);
   system(buffer);
 
-  sprintf(buffer, "%s -shared -rdynamic -o %s %s.o", JIT_COMPILE_COMMAND, so,
-          func);
+  sprintf(buffer, "%s -rdynamic -DRUNTIME -o %s %s.o", JIT_COMPILE_COMMAND, so, func);
+  fprintf(stderr, "%s\n", buffer);
+
   system(buffer);
 
   return;
@@ -130,16 +139,18 @@ void jit_compile(char *so, char *func) {
 /**
  * Compile a trace with other shared libraries
  */
-void jit_compile_with_sl(char *so_main, char *func, char **arr, int size) {
+void jit_compile_with_sl(char *so, char *func, char **arr, int size) {
   char buffer[1024];
   char other_sl[1024];
 
   concat(other_sl, arr, size);
 
   sprintf(buffer, "%s -c %s.s", JIT_COMPILE_COMMAND, func);
+  fprintf(stderr, "%s\n", buffer);
   system(buffer);
 
-  sprintf(buffer, "%s -shared -rdynamic -L. %s %s.o", JIT_COMPILE_COMMAND, other_sl, func);
+  sprintf(buffer, "%s -rdynamic -DRUNTIME -L. -I. -o %s %s %s.o ", JIT_COMPILE_COMMAND, so, other_sl, func);
+  fprintf(stderr, "%s\n", buffer);
   system(buffer);
 
 }
@@ -149,7 +160,7 @@ void jit_compile_with_sl(char *so_main, char *func, char **arr, int size) {
  */
 void c_can_enter_jit(int *stack, int sp, int *code, int pc) {
   //printf("back edge at pc %d\n", pc);
-  prof_arr[pc]++;
+  if (pc!=96) prof_arr[pc]++;
   return;
 }
 
@@ -184,9 +195,16 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
       strcpy(trace_name_arr[pc], trace_name);
 
       d_size = Int_val(Field(v, 2));
+      chars_of_value(deps, Field(v, 1), d_size);
 
       gen_so_name(so_name, trace_name);
-      jit_compile(so_name, trace_name);
+
+      if (d_size == 0) {
+        jit_compile(so_name, trace_name);
+      } else {
+        jit_compile_with_sl(so_name, trace_name, deps, d_size);
+      }
+
       compiled_arr[pc] = true;
     }
 
@@ -198,14 +216,14 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
       handle = dlopen(so_name, RTLD_NOW);
       if (handle == NULL) {
         fprintf(stderr, "error: dlopen %s\n", so_name);
-        return;
+        exit(-1);
       }
       dlerror();
 
       sym = (fun_arg2)dlsym(handle, trace_name);
       if (sym == NULL) {
         fprintf(stderr, "error: dlsym \n");
-        return;
+        exit(-1);
       }
       sym_arr[pc] = malloc(sizeof(fun_arg2));
       sym_arr[pc] = sym;
