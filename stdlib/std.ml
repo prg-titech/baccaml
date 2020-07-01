@@ -1,6 +1,15 @@
 let ( %> ) f g x = g (f x)
 let ( $ ) f g x = f (g x)
 
+module Printf = struct
+  include Printf
+
+  let sp = sprintf
+  let ep = eprintf
+  let fp = fprintf
+  let pp = printf
+end
+
 module Array = struct
   include Array
 
@@ -19,19 +28,9 @@ module Array = struct
   ;;
 end
 
-module ExString : sig
-  (* get first element xxx of a string such as xxx.yy.zz *)
-  val get_name : string -> string
+module String = struct
+  include String
 
-  (* get last element zz of a string such as xxx.yy.zz *)
-  val get_extension : string -> string
-
-  (* check whether s1 has substring s2 *)
-  val contains : string -> string -> bool
-
-  (* check wheter s1 starts with substring s2 *)
-  val starts_with : string -> string -> bool
-end = struct
   let get_name x = x |> String.split_on_char '.' |> List.hd
   let get_extension x = x |> String.split_on_char '.' |> List.rev |> List.hd
 
@@ -50,30 +49,19 @@ end = struct
     | Not_found -> false
   ;;
 
-  let _ =
-    assert (starts_with "min_caml_print_int" "min_caml");
-    assert (not (starts_with "__min_caml_print_int" "min_caml"))
+  let%test "get_name test" = get_name "Ti23.55" = "Ti23"
+  let%test "starts_with test 1" = (starts_with "min_caml_print_int") "min_caml"
+
+  let%test "starts_with test 2" =
+    not (starts_with "__min_caml_print_int" "min_caml")
   ;;
 end
 
-module String = struct
-  include String
-  include ExString
-end
+module List = struct
+  include List
 
-module ExList : sig
-  (* remove duplicated elements in a given list *)
-  val unique : 'a list -> 'a list
+  let string_of f lst = "[" ^ String.concat "; " (List.map f lst) ^ "]"
 
-  (* get a last element of list l *)
-  val last : 'a list -> 'a
-
-  (* get the index of an element elem in list lst *)
-  val index : 'a -> 'a list -> int
-
-  (* get the index of an element elem in list lst *)
-  val index_opt : 'a -> 'a list -> int option
-end = struct
   let rec unique list =
     let rec go l s =
       match l with
@@ -109,9 +97,4 @@ end = struct
     in
     go elem lst 0
   ;;
-end
-
-module List = struct
-  include List
-  include ExList
 end

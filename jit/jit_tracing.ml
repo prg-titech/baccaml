@@ -8,9 +8,16 @@ open Printf
 module JO = Jit_optimizer
 module Util = Jit_tracer_util
 
-let sp = sprintf
 let other_deps : string list ref = ref []
 let re_entry = ref false
+
+let reset () =
+  Renaming.counter := !Id.counter + 1;
+  other_deps := [];
+  re_entry := false;
+  ()
+;;
+
 let interp_fundef p = Fundef.find_fuzzy p "interp"
 
 let rec tj
@@ -23,6 +30,7 @@ let rec tj
   match t with
   | Ans (CallDir (id_l, args, fargs)) ->
     let pc = Util.value_of_id_t reg (List.nth args index_pc) in
+    env.current_pc <- pc;
     (match Method_prof.find_opt pc, Trace_prof.find_opt pc with
     | None, None ->
       let { name; args = argst; fargs; body; ret } = interp_fundef p in
@@ -37,8 +45,7 @@ let rec tj
       Ans (CallDir (Id.L tname, Util.filter red_names args, []))
     | Some tname, _ ->
       other_deps := !other_deps @ [ tname ];
-      Ans (CallDir (Id.L tname, Util.filter red_names args, []))
-    )
+      Ans (CallDir (Id.L tname, Util.filter red_names args, [])))
   | Ans exp ->
     (match exp with
     | IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _ ->
@@ -60,9 +67,8 @@ and tj_exp
   | (IfEq _ | IfLE _ | IfGE _ | SIfEq _ | SIfLE _ | SIfGE _) as e ->
     Asm.concat (tj_if p reg mem env e) (dest, typ) (tj p reg mem env body)
   | CallDir (Id.L "min_caml_jit_merge_point", args, fargs) ->
-    let id_pc = List.hd args in
-    let pc = value_of @@ reg.(int_of_id_t id_pc) in
-    Log.debug @@ sprintf "jit_merge_point: %d" pc;
+    let pc = value_of @@ reg.(int_of_id_t (List.hd args)) in
+    Log.debug ("jit_merge_point: " ^ string_of_int pc);
     if pc = merge_pc
     then
       if !re_entry
@@ -99,10 +105,7 @@ and tj_exp
     Let ((dest, typ), CallDir (Id.L x, args, fargs), tj p reg mem env body)
   | CallDir (Id.L x, args, fargs) when String.(starts_with x "frame_reset") ->
     Util.restore_greens reg args (fun () ->
-        Let
-          ( (dest, typ)
-          , CallDir (Id.L x, args, fargs)
-          , tj p reg mem env body ))
+        Let ((dest, typ), CallDir (Id.L x, args, fargs), tj p reg mem env body))
   | CallDir (Id.L x, args, fargs) when String.(starts_with x "min_caml") ->
     (* foreign functions *)
     Util.restore_greens reg args (fun () ->
@@ -160,7 +163,11 @@ and optimize_exp p reg mem env (dest, typ) exp body =
 
 and tj_if p reg mem env exp =
   let trace = tj p reg mem env in
-  let guard = Jit_guard.TJ.create reg env.trace_name in
+  let open Jit_guard in
+  let guard t =
+    let pc_guard = Ans (BranchingAt env.current_pc) in
+    Asm.concat pc_guard (Id.gentmp Type.Unit, Type.Unit) (TJ.create reg env t)
+  in
   match exp with
   | IfLE (id_t, id_or_imm, t1, t2) | SIfLE (id_t, id_or_imm, t1, t2) ->
     let r1 = reg.(int_of_id_t id_t) in
@@ -251,9 +258,7 @@ and tj_if p reg mem env exp =
 ;;
 
 let run p reg mem ({ trace_name; red_names; merge_pc } as env) =
-  Renaming.counter := !Id.counter + 1;
-  other_deps := [];
-  re_entry := false;
+  reset ();
   Log.debug @@ Printf.sprintf "staring trace (merge_pc: %d)" merge_pc;
   let fenv name = Fundef.find_fuzzy p name in
   let (Prog (tbl, _, fundefs, m)) = p in

@@ -160,6 +160,8 @@ and g' oc = function
   | NonTail _, StDF (x, y, C j, i) ->
     Printf.fprintf oc "\tmovsd\t%s, %d(%s)\n" x (j * i) y
   | NonTail _, Comment s -> Printf.fprintf oc "\t# %s\n" s
+  | NonTail _, BranchingAt i -> Printf.fprintf oc "\t# branching_pc = %d\n" i
+  | NonTail _, GuardAt i -> Printf.fprintf oc "\t# guard_pc = %d\n" i
   (* 退避の仮想命令の実装 (caml2html: emit_save) *)
   | NonTail _, Save (x, y) when List.mem x allregs && not (S.mem y !stackset) ->
     save y;
@@ -178,7 +180,7 @@ and g' oc = function
     assert (List.mem x allfregs);
     Printf.fprintf oc "\tmovsd\t%d(%s), %s\n" (offset y) reg_sp x
   (* 末尾だったら計算結果を第一レジスタにセットしてret (caml2html: emit_tailret) *)
-  | Tail, ((Nop | St _ | StDF _ | Comment _ | Save _) as exp) ->
+  | Tail, ((Nop | St _ | StDF _ | Comment _ | GuardAt _ | BranchingAt _ | Save _) as exp) ->
     g' oc (NonTail (Id.gentmp Type.Unit), exp);
     Printf.fprintf oc "\tret\n"
   | ( Tail
@@ -272,6 +274,7 @@ and g' oc = function
     then Printf.fprintf oc "\tmovl\t%s, %s\n" regs.(0) a
     else if List.mem a allfregs && a <> fregs.(0)
     then Printf.fprintf oc "\tmovsd\t%s, %s\n" fregs.(0) a
+  | _, e -> failwith ("un matched pattern: " ^ (Asm.show_exp e))
 
 and g'_tail_if oc e1 e2 b bn =
   let b_else = Id.genid (b ^ "_else") in

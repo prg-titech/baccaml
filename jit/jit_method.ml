@@ -31,6 +31,12 @@ let create_mj_env
   { trace_name; red_names; index_pc; merge_pc; function_pcs; bytecode }
 ;;
 
+let to_jit_env
+    { trace_name; red_names; index_pc; merge_pc; function_pcs; bytecode }
+  =
+  create_env ~trace_name ~red_names ~index_pc ~merge_pc ~bytecode ~current_pc:0
+;;
+
 let rec mj
     p
     reg
@@ -184,7 +190,7 @@ and mj_if p reg mem ({ index_pc; merge_pc; trace_name; bytecode } as env) fenv =
     if String.get_name id_t = "mode"
     then (
       let module G = Jit_guard in
-      let guard_code = G.TJ.create reg trace_name t1 in
+      let guard_code = G.TJ.create reg (to_jit_env env) t1 in
       Log.debug
       @@ sp
            "mode checking ==> IfEq(%d, %d)"
@@ -229,6 +235,7 @@ and mj_if p reg mem ({ index_pc; merge_pc; trace_name; bytecode } as env) fenv =
       let t1' = mj p reg1 mem1 env fenv t1 in
       let t2' = mj p reg2 mem2 env fenv t2 in
       Ans (exp <|> (id_t, id_or_imm, t1', t2')))
+  | e -> failwith (sprintf "un matched pattern in mj_if: %s" (show_exp e))
 ;;
 
 let run

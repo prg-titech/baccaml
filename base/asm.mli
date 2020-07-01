@@ -31,6 +31,8 @@ and exp =
   | LdDF of Id.t * id_or_imm * int
   | StDF of Id.t * Id.t * id_or_imm * int
   | Comment of string
+  | GuardAt of int
+  | BranchingAt of int
   (* virtual instructions *)
   | IfEq of Id.t * id_or_imm * t * t
   | IfLE of Id.t * id_or_imm * t * t
@@ -50,6 +52,9 @@ and exp =
 
 (* スタック変数から値を復元 (caml2html: sparcasm_restore) *)
 
+val pp_id_or_imm : Ppx_deriving_runtime.Format.formatter -> id_or_imm -> Ppx_deriving_runtime.unit
+val pp_exp : Ppx_deriving_runtime.Format.formatter -> exp -> Ppx_deriving_runtime.unit
+val show_id_or_imm : id_or_imm -> string
 val show : t -> string
 val show_exp : exp -> string
 

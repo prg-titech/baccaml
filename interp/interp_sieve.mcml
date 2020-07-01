@@ -197,25 +197,125 @@ let rec interp stack sp bytecode pc =
     interp stack (sp+1) bytecode (pc+1)
   else
     -1000 in
-let stk  = Array.make 5000000 0 in
+let stk  = Array.make 100 0 in
 stk.(0) <- (-987);
-
-let rec read_code i n arr =
-  if i = n then arr
-  else
-    (arr.(i) <- read_int ();
-     read_code (i+1) n arr) in
-let n = read_int () in
-let arr = Array.make n 0 in
-let code = read_code 0 n arr in
+let code = Array.make 200 0 in
 save_bp ();
-let rec loop i =
-  if i < 1 then ()
-  else
-    let s = get_current_micros () in
-    let r = (interp stk 1 code 0) in
-    let e = get_current_micros () in
-    prerr_int r; print_newline ();
-    print_int (e - s); print_newline ();
-    loop (i-1)
-in loop 2
+code.(0) <- 15; code.(1) <- 8192;
+code.(2) <- 15; code.(3) <- 1;
+code.(4) <- 13; code.(5) <- 1;
+code.(6) <- 13; code.(7) <- 1;
+code.(8) <- 18;
+code.(9) <- 15; code.(10) <- -1;
+code.(11) <- 24;
+code.(12) <- 13; code.(13) <- 2;
+code.(14) <- 23;
+code.(15) <- 17;
+code.(16) <- 15; code.(17) <- -1;
+code.(18) <- 24;
+code.(19) <- 13; code.(20) <- 4;
+code.(21) <- 15; code.(22) <- 1;
+code.(23) <- 17;
+code.(24) <- 15; code.(25) <- 1;
+code.(26) <- 13; code.(27) <- 5;
+code.(28) <- 13; code.(29) <- 1;
+code.(30) <- 27;
+code.(31) <- 10; code.(32) <- 96;
+code.(33) <- 2;
+code.(34) <- 13; code.(35) <- 6;
+code.(36) <- 15; code.(37) <- 23;
+code.(38) <- 16;
+code.(39) <- 24;
+code.(40) <- 20;
+code.(41) <- 14;
+code.(42) <- 14;
+code.(43) <- 14;
+code.(44) <- 14;
+code.(45) <- 14;
+code.(46) <- 14;
+code.(47) <- 14;
+code.(48) <- 14;
+code.(49) <- 14;
+code.(50) <- 14;
+code.(51) <- 14;
+code.(52) <- 12;
+code.(53) <- -1048;
+code.(54) <- 13; code.(55) <- 3;
+code.(56) <- 15; code.(57) <- 8192;
+code.(58) <- 6;
+code.(59) <- 8; code.(60) <- 91;
+code.(61) <- 15; code.(62) <- -1;
+code.(63) <- 24;
+code.(64) <- 13; code.(65) <- 6;
+code.(66) <- 13; code.(67) <- 6;
+code.(68) <- 17;
+code.(69) <- 13; code.(70) <- 5;
+code.(71) <- 13; code.(72) <- 5;
+code.(73) <- 1;
+code.(74) <- 13; code.(75) <- 7;
+code.(76) <- 13; code.(77) <- 1;
+code.(78) <- 13; code.(79) <- 7;
+code.(80) <- 19;
+code.(81) <- 4;
+code.(82) <- 3;
+code.(83) <- 3;
+code.(84) <- 9; code.(85) <- 54;
+code.(86) <- 14;
+code.(87) <- 14;
+code.(88) <- 14;
+code.(89) <- 9; code.(90) <- 93;
+code.(91) <- 13; code.(92) <- 4;
+code.(93) <- 11; code.(94) <- 3;
+code.(95) <- -1048;
+code.(96) <- 13; code.(97) <- 2;
+code.(98) <- 15; code.(99) <- 8192;
+code.(100) <- 6;
+code.(101) <- 8; code.(102) <- 167;
+code.(103) <- 13; code.(104) <- 3;
+code.(105) <- 13; code.(106) <- 3;
+code.(107) <- 16;
+code.(108) <- 24;
+code.(109) <- 15; code.(110) <- -1;
+code.(111) <- 6;
+code.(112) <- 8; code.(113) <- 132;
+code.(114) <- 13; code.(115) <- 3;
+code.(116) <- 15; code.(117) <- 1;
+code.(118) <- 1;
+code.(119) <- 13; code.(120) <- 5;
+code.(121) <- 13; code.(122) <- 1;
+code.(123) <- 19;
+code.(124) <- 3;
+code.(125) <- 2;
+code.(126) <- 2;
+code.(127) <- 9; code.(128) <- 96;
+code.(129) <- 14;
+code.(130) <- 9; code.(131) <- 164;
+code.(132) <- 13; code.(133) <- 3;
+code.(134) <- 13; code.(135) <- 4;
+code.(136) <- 1;
+code.(137) <- 13; code.(138) <- 5;
+code.(139) <- 13; code.(140) <- 1;
+code.(141) <- 13; code.(142) <- 6;
+code.(143) <- 10; code.(144) <- 54;
+code.(145) <- 3;
+code.(146) <- 13; code.(147) <- 5;
+code.(148) <- 15; code.(149) <- 1;
+code.(150) <- 1;
+code.(151) <- 13; code.(152) <- 7;
+code.(153) <- 13; code.(154) <- 1;
+code.(155) <- 19;
+code.(156) <- 3;
+code.(157) <- 4;
+code.(158) <- 2;
+code.(159) <- 9; code.(160) <- 96;
+code.(161) <- 14;
+code.(162) <- 14;
+code.(163) <- 14;
+code.(164) <- 14;
+code.(165) <- 9; code.(166) <- 169;
+code.(167) <- 13; code.(168) <- 3;
+code.(169) <- 11; code.(170) <- 2;
+let s = get_current_micros () in
+let r = interp stk 1 code 0 in
+let e = get_current_micros () in
+print_int (e - s); print_newline ()

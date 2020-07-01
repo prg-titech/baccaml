@@ -10,8 +10,8 @@
  (action
   (run %{cc} -lm -o %{targets} -I %{ocaml_where} -I. %{deps})))
 
-(alias
- (name runtest)
- (deps interp_sh.mcml)
- (action
-  (run ./interp_sh_tj.exe)))
+;(alias
+; (name runtest)
+; (deps interp_sh.mcml)
+; (action
+;  (run ./interp_sh_tj.exe)))

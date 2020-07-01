@@ -9,8 +9,8 @@ let string_of_id_l = function L id -> "L " ^ id
 
 let print_id_l = function
   | L name ->
-    print_string "L ";
-    print_string name;
+    print_string "L "; print_string "\"";
+    print_string name; print_string "\"";
     print_string ""
 ;;
 

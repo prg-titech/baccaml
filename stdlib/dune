@@ -1,4 +1,7 @@
 (library
  (name std)
  (public_name baccaml.stdlib)
- (libraries str))
+ (libraries str)
+ (inline_tests)
+ (preprocess
+  (pps ppx_inline_test)))

@@ -6,11 +6,12 @@ type env =
   ; red_names : string list
   ; index_pc : int
   ; merge_pc : int
+  ; mutable current_pc : int
   ; bytecode : int array
   }
 
-let create_env ~trace_name ~red_names ~index_pc ~merge_pc ~bytecode =
-  { trace_name; red_names; index_pc; merge_pc; bytecode }
+let create_env ~trace_name ~red_names ~index_pc ~merge_pc ~current_pc ~bytecode =
+  { trace_name; red_names; index_pc; merge_pc; current_pc; bytecode }
 ;;
 
 type value =

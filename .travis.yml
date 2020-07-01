@@ -1,10 +1,15 @@
 language: c
 env:
-  - OCAML_VERSION=4.08.1+32bit
+  - OCAML_VERSION=4.09.1+32bit
 cache:
   directories:
     - ${HOME}/.opam
+# Handle git submodules yourself
+git:
+    submodules: false
 before_install:
+  - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
+  - git submodule update --init --recursive
   - sudo apt-get update
   - sudo apt-get install -y gcc-multilib
   - wget -O ${HOME}/opam https://github.com/ocaml/opam/releases/download/2.0.2/opam-2.0.2-x86_64-linux
@@ -16,7 +21,7 @@ before_install:
   - eval `opam config env`
   - export OPAMVERBOSE=1
 install:
-  - opam update --upgrade
-  - opam install -y dune oUnit ppx_deriving ppx_inline_test alcotest
+# - opam update --upgrade
+  - opam install -y dune oUnit ppx_deriving ppx_inline_test ANSITerminal
 script:
-  - dune runtest -f jit
+  - dune runtest -f jit opt
