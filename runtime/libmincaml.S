@@ -280,8 +280,8 @@ min_caml_can_enter_jit:
 	pushl	%ecx
 	pushl	%ebx
 	pushl	%eax
-	call	call_caml_jit_entry
-#	call	c_can_enter_jit
+#	call	call_caml_jit_entry
+	call	c_can_enter_jit
 	movl	%ebp, %esp
 	popl	%ebp
 	ret
@@ -293,8 +293,8 @@ min_caml_jit_merge_point:
 	pushl	%ecx
 	pushl	%ebx
 	pushl	%eax
-	call	call_caml_jit_exec
-#	call	c_jit_merge_point
+#	call	call_caml_jit_exec
+	call	c_jit_merge_point
 	movl	%ebp, %esp
 	popl	%ebp
 	movl	min_caml_guard_fail_flg, %esi
@@ -316,7 +316,8 @@ min_caml_mj_call:
 	pushl	%ecx
 	pushl	%ebx
 	pushl	%eax
-	call	call_caml_mj_call
+#	call	call_caml_mj_call
+	call	c_mj_call
 	movl	%ebp, %esp
 	popl	%ebp
 	ret
