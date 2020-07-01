@@ -156,20 +156,89 @@ void jit_compile_with_sl(char *so, char *func, char **arr, int size) {
   concat(other_sl, arr, size);
 
   sprintf(buffer, "%s -c %s.s", JIT_COMPILE_COMMAND, func);
-  fprintf(stderr, "%s\n", buffer);
   system(buffer);
 
-  sprintf(buffer, "%s -rdynamic -DRUNTIME -L. -I. -o %s %s %s.o ", JIT_COMPILE_COMMAND, so, other_sl, func);
-  fprintf(stderr, "%s\n", buffer);
+  sprintf(buffer, "%s -rdynamic -DRUNTIME -L. -I. -o %s %s %s.o ",
+          JIT_COMPILE_COMMAND, so, other_sl, func);
   system(buffer);
+}
 
+int c_mj_call(int *stack, int sp, int *code, int pc) {
+  char trace_name[128]; char so_name[128];
+  char* deps[10];
+  value v;
+  void* handle = NULL;
+  fun_arg2 sym = NULL;
+
+
+  if (!compiled_arr[pc]) {
+    v = call_caml_jit_method(stack, sp, code, pc);
+    strcpy(trace_name, strdup(String_val(Field(v, 0))));
+    trace_name_arr[pc] = malloc(128*sizeof(char));
+    strcpy(trace_name_arr[pc], trace_name);
+
+    int d_size = Int_val(Field(v, 2));
+    chars_of_value(deps, Field(v, 1), d_size);
+
+    gen_so_name(so_name, trace_name);
+
+    if (d_size == 0) {
+      jit_compile(so_name, trace_name);
+    } else if (d_size > 0) {
+      jit_compile_with_sl(so_name, trace_name, deps, d_size);
+    } else {
+      fprintf(stderr, "value of dependency-size is not valid.\n");
+      exit(-1);
+    }
+
+    compiled_arr[pc] = true;
+  }
+
+  if (sym_arr[pc] == NULL) {
+    strcpy(trace_name, trace_name_arr[pc]);
+    gen_so_name(so_name, trace_name);
+
+    strip_ext(trace_name);
+    handle = dlopen(so_name, RTLD_NOW);
+    if (handle == NULL) {
+      fprintf(stderr, "error: dlopen %s\n", so_name);
+      exit(-1);
+    }
+    dlerror();
+
+    sym = (fun_arg2)dlsym(handle, trace_name);
+    if (sym == NULL) {
+      fprintf(stderr, "error: dlsym \n");
+      exit(-1);
+    }
+    sym_arr[pc] = malloc(sizeof(fun_arg2));
+    sym_arr[pc] = sym;
+
+    int r = time_it(sym, stack, sp);
+    //gettimeofday(&end, NULL);
+    //double d = (end.tv_sec - start.tv_sec) +
+    //  (end.tv_usec - start.tv_usec);
+    //printf("execution time %10f\n", d);
+    return r;
+    //printf("execution time %5ld us\n", total_t / CLOCKS_PER_SEC);
+  } else {
+    fun_arg2 sym = sym_arr[pc];
+    //elapsed_time(sym(stack, sp));
+    struct timeval s, e;
+    gettimeofday(&s, NULL);
+    int r = sym(stack, sp);
+    gettimeofday(&e, NULL);
+    long long int d =
+      (e.tv_sec - s.tv_sec) * (double)1e6 + (e.tv_usec - s.tv_usec);
+    printf("elapsed time %10lldus\n", d);
+    return r;
+  }
 }
 
 /**
  * Profiling how many back-edge insertions occur.
  */
 void c_can_enter_jit(int *stack, int sp, int *code, int pc) {
-  //printf("back edge at pc %d\n", pc);
   if (pc!=96) prof_arr[pc]++;
   return;
 }
@@ -179,7 +248,6 @@ void c_can_enter_jit(int *stack, int sp, int *code, int pc) {
  * TODO: change the arguments of jit_merge_point in interp.mcml
  */
 void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
-  int pc_count;
   char trace_name[128];
   char so_name[128];
   void* handle = NULL;
@@ -188,7 +256,7 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
   char* deps[10];
   int d_size;
 
-  pc_count = prof_arr[pc];
+  int pc_count = prof_arr[pc];
   if (pc_count < THOLD_TJ) {
     // exit if pc_count is under THOLD
     return;
@@ -211,8 +279,11 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
 
       if (d_size == 0) {
         jit_compile(so_name, trace_name);
-      } else {
+      } else if (d_size > 0) {
         jit_compile_with_sl(so_name, trace_name, deps, d_size);
+      } else {
+        fprintf(stderr, "value of dependency-size is not valid.\n");
+        exit(-1);
       }
 
       compiled_arr[pc] = true;
@@ -237,13 +308,11 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
       }
       sym_arr[pc] = malloc(sizeof(fun_arg2));
       sym_arr[pc] = sym;
-      //elapsed_time(sym(stack, sp));
       sym(stack, sp);
       printf("execution finished at pc %d\n", pc);
       return;
     } else {
       sym = sym_arr[pc];
-      //elapsed_time(sym(stack, sp));
       sym(stack, sp);
       return;
     }
