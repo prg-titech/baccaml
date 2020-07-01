@@ -1,0 +1,37 @@
+(rule
+ (deps interp_sieve.mcml)
+ (targets interp_sieve_tj.s interp_sieve_mj.s)
+ (action
+  (progn
+   (run ../../bin/min_caml.exe -o interp_sieve_mj.s %{deps} -type mjit -no-hint)
+   (run ../../bin/min_caml.exe -o interp_sieve_tj.s %{deps} -type tjit -no-hint))))
+
+(rule
+ (deps test_interp.mcml)
+ (targets test_interp_tj.s test_interp_mj.s)
+ (action
+  (progn
+    (run ../../bin/min_caml.exe -o test_interp_mj.s %{deps} -type mjit -no-hint)
+    (run ../../bin/min_caml.exe -o test_interp_tj.s %{deps} -type tjit -no-hint))))
+
+(rule (targets test_interp_tj.exe)
+ (deps
+   ../jit_entry.exe%{ext_obj}
+   ../../runtime/main.c
+   ../../runtime/interop_caml.c
+   ../../runtime/libmincaml.S
+   test_interp_tj.s)
+ (action
+  (run %{cc} -g -m32 -rdynamic -o %{targets} -I %{ocaml_where} -L
+       %{ocaml_where} -I . %{deps} %{ocaml-config:native_c_libraries})))
+
+(rule (targets test_interp_mj.exe)
+ (deps
+   ../jit_entry.exe%{ext_obj}
+   ../../runtime/main.c
+   ../../runtime/interop_caml.c
+   ../../runtime/libmincaml.S
+   test_interp_mj.s)
+ (action
+  (run %{cc} -g -m32 -rdynamic -o %{targets} -I %{ocaml_where} -L
+       %{ocaml_where} -I . %{deps} %{ocaml-config:native_c_libraries})))
