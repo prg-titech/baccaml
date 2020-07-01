@@ -82,7 +82,7 @@ let emit_tj
   fprintf oc "\tmovl\t%%ecx, min_caml_guard_bytecode\n";
   fprintf oc "\tmovl\t%%edx, min_caml_guard_pc\n";
   fprintf oc "\tmovl\t$1, min_caml_guard_fail_flg\n";
-  fprintf oc "\tcall\tmin_caml_guard_occur_at\n";
+  (* fprintf oc "\tcall\tmin_caml_guard_occur_at\n"; *)
   fprintf oc "\tret\n"
 ;;
 
