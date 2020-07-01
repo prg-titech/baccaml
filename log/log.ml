@@ -37,3 +37,5 @@ let app s =
   | `Error | `Warn | `App -> Printf.fprintf stdout "[app] %s\n" s
   | _ -> ()
 ;;
+
+let with_debug f = match !log_level with `Debug -> f () | _ -> ()

@@ -18,7 +18,7 @@ module M' = struct
   [@@ocamlformat "disable"]
 end
 
-let oc_opt_debug = open_out "opt.log"
+let oc_opt_debug = stderr
 let ep = eprintf
 let sp = sprintf
 let pp = printf

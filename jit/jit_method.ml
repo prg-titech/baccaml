@@ -53,7 +53,7 @@ let rec mj
   | Ans exp -> exp |> mj_exp p reg mem env fenv
   | Let ((x, typ), CallDir (Id.L "min_caml_jit_merge_point", args, fargs), body)
     ->
-    let pc = List.hd args |> int_of_id_t |> Array.get reg |> value_of in
+    let pc = List.nth args (index_pc) |> int_of_id_t |> Array.get reg |> value_of in
     Log.debug ("jit_merge_point: " ^ string_of_int pc);
     mj p reg mem env fenv body
   | Let ((x, typ), CallDir (Id.L "min_caml_can_enter_jit", args, fargs), body)
