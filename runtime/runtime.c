@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -29,17 +30,29 @@ typedef int (*fun_arg2)(int*, int);
 
 enum jit_type { TJ, MJ };
 
-#define elapsed_time(call)                                                     \
-  ({                                                                           \
-    struct timeval s, e;                                                       \
-    gettimeofday(&s, NULL);                                                    \
-    call;                                                                      \
-    gettimeofday(&e, NULL);                                                    \
-    long long int d =                                                          \
-        (e.tv_sec - s.tv_sec) * (double)1e6 + (e.tv_usec - s.tv_usec);         \
-    printf("elapsed time %10dus\n", d);                                        \
-    return;                                                                    \
-  })
+#ifdef CLOCK_PROCESS_CPUTIME_ID
+/* cpu time in the current process */
+#define CLOCKTYPE  CLOCK_PROCESS_CPUTIME_ID
+#else
+/* this one should be appropriate to avoid errors on multiprocessors systems */
+#define CLOCKTYPE  CLOCK_MONOTONIC
+#endif
+
+/**
+ * Estimate elapsed time (us).
+ */
+double time_it(int (*action)(int*, int), int* arg1, int arg2) {
+  struct timespec tsi, tsf;
+
+  clock_gettime(CLOCKTYPE, &tsi);
+  int r = action(arg1, arg2);
+  clock_gettime(CLOCKTYPE, &tsf);
+
+  double elaps_s = difftime(tsf.tv_sec, tsi.tv_sec);
+  long elaps_ns = tsf.tv_nsec - tsi.tv_nsec;
+  printf("execution time %10f us\n", elaps_s + ((double)elaps_ns) / 1.0e3);
+  return r;
+}
 
 /**
  * For profiling a program counter
@@ -125,12 +138,9 @@ void jit_compile(char *so, char *func) {
 
   printf("compiling trace %s into shared object %s\n", func, so);
   sprintf(buffer, "%s -c %s.s", JIT_COMPILE_COMMAND, func);
-  fprintf(stderr, "%s\n", buffer);
   system(buffer);
 
   sprintf(buffer, "%s -rdynamic -DRUNTIME -o %s %s.o", JIT_COMPILE_COMMAND, so, func);
-  fprintf(stderr, "%s\n", buffer);
-
   system(buffer);
 
   return;
