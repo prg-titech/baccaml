@@ -215,22 +215,10 @@ int c_mj_call(int *stack, int sp, int *code, int pc) {
     sym_arr[pc] = sym;
 
     int r = time_it(sym, stack, sp);
-    //gettimeofday(&end, NULL);
-    //double d = (end.tv_sec - start.tv_sec) +
-    //  (end.tv_usec - start.tv_usec);
-    //printf("execution time %10f\n", d);
     return r;
-    //printf("execution time %5ld us\n", total_t / CLOCKS_PER_SEC);
   } else {
     fun_arg2 sym = sym_arr[pc];
-    //elapsed_time(sym(stack, sp));
-    struct timeval s, e;
-    gettimeofday(&s, NULL);
-    int r = sym(stack, sp);
-    gettimeofday(&e, NULL);
-    long long int d =
-      (e.tv_sec - s.tv_sec) * (double)1e6 + (e.tv_usec - s.tv_usec);
-    printf("elapsed time %10lldus\n", d);
+    int r = time_it(sym, stack, sp);
     return r;
   }
 }
