@@ -209,9 +209,9 @@ let rec const_fold_mov ?(env = M.empty) = function
         , CallCls
             ( (if M.mem x env then M.find x env else x)
             , args
-              |> List.map (fun x -> if M.mem x env then M.find x env else x)
+              |> List.map (fun x -> if M.mem x env then M.find_greedy x env |> Option.get else x)
             , fargs
-              |> List.map (fun x -> if M.mem x env then M.find x env else x) )
+              |> List.map (fun x -> if M.mem x env then M.find_greedy x env |> Option.get else x) )
         , const_fold_mov ~env t )
     | CallDir (id_l, args, fargs) ->
       Let
@@ -219,9 +219,9 @@ let rec const_fold_mov ?(env = M.empty) = function
         , CallDir
             ( id_l
             , args
-              |> List.map (fun x -> if M.mem x env then M.find x env else x)
+              |> List.map (fun x -> if M.mem x env then M.find_greedy x env |> Option.get else x)
             , fargs
-              |> List.map (fun x -> if M.mem x env then M.find x env else x) )
+              |> List.map (fun x -> if M.mem x env then M.find_greedy x env |> Option.get else x) )
         , const_fold_mov ~env t )
     | _ -> Let ((var, typ), e, const_fold_mov ~env t))
   | Ans e ->
