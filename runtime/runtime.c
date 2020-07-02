@@ -21,8 +21,9 @@
 #include "runtime_camlwrap.h"
 
 #define ARR_LEN 2048
-#define THOLD_TJ 100
+#define THOLD_TJ 10
 #define THOLD_MJ 0
+//#define TIME_IT
 
 #define JIT_COMPILE_COMMAND "gcc -m32 -fPIC -shared"
 
@@ -50,7 +51,7 @@ double time_it(int (*action)(int*, int), int* arg1, int arg2) {
 
   double elaps_s = difftime(tsf.tv_sec, tsi.tv_sec);
   long elaps_ns = tsf.tv_nsec - tsi.tv_nsec;
-  printf("execution time %10f us\n", elaps_s + ((double)elaps_ns) / 1.0e3);
+  fprintf(stderr, "execution time %10f us\n", elaps_s + ((double)elaps_ns) / 1.0e3);
   return r;
 }
 
@@ -136,7 +137,6 @@ void chars_of_value(char *buf[], value deps, int size) {
 void jit_compile(char *so, char *func) {
   char buffer[1024];
 
-  printf("compiling trace %s into shared object %s\n", func, so);
   sprintf(buffer, "%s -c %s.s", JIT_COMPILE_COMMAND, func);
   system(buffer);
 
@@ -183,6 +183,7 @@ int c_mj_call(int *stack, int sp, int *code, int pc) {
     gen_so_name(so_name, trace_name);
 
     if (d_size == 0) {
+      fprintf(stderr, "compiling trace %s into %s at pc %d\n", trace_name, so_name, pc);
       jit_compile(so_name, trace_name);
     } else if (d_size > 0) {
       jit_compile_with_sl(so_name, trace_name, deps, d_size);
@@ -277,6 +278,7 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
       compiled_arr[pc] = true;
     }
 
+    //printf("executing at pc %d\n", pc);
     if (sym_arr[pc] == NULL) {
       strcpy(trace_name, trace_name_arr[pc]);
       gen_so_name(so_name, trace_name);
@@ -296,12 +298,19 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
       }
       sym_arr[pc] = malloc(sizeof(fun_arg2));
       sym_arr[pc] = sym;
+#if defined (TIME_IT)
+      time_it(sym, stack, sp);
+#else
       sym(stack, sp);
-      printf("execution finished at pc %d\n", pc);
+#endif
       return;
     } else {
       sym = sym_arr[pc];
+#if defined (TIME_IT)
+      time_it(sym, stack, sp);
+#else
       sym(stack, sp);
+#endif
       return;
     }
   }
