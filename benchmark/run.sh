@@ -6,7 +6,7 @@ existsFile() {
 
 allTests=(ack tak sieve ary sum sum-tail fib fact prefix_sum random)
 
-run_mincaml() {
+runMincaml() {
   echo "[Benchmark] MinCaml"
 
   for target in ${allTests[@]}; do
@@ -20,7 +20,7 @@ run_mincaml() {
   done
 }
 
-run_baccaml_tj() {
+runBacCamlTracing() {
   echo "[Benchmark] BacCaml Tracing JIT"
 
   for target in ${allTests[@]}; do
@@ -31,4 +31,10 @@ run_baccaml_tj() {
   done
 }
 
-run_mincaml
+TARGET=$1
+
+if [ "${TARGET}" = "mincaml" ]; then
+  runMincaml
+elif [ "${TARGET}" = "tj" ]; then
+  runBacCamlTracing
+fi
