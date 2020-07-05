@@ -22,6 +22,8 @@ let emit_mj
   fprintf oc "\tmovl\t32(%%esp),%s\n" regs.(0);
   fprintf oc "\tmovl\t36(%%esp),%s\n" regs.(1);
   fprintf oc "\tcall\t%s\n" x;
+  fprintf oc ".globl debug_%s\n" x;
+  fprintf oc "debug_%s:\n" x;
   fprintf oc "\tmovl\t%%eax, 32(%%esp)\n";
   fprintf oc "\tpopl\t%%ebp\n";
   fprintf oc "\tpopl\t%%edi\n";
