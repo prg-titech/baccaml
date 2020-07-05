@@ -6,7 +6,7 @@
     }
 
 } END {
-    for(i = 3; i <= length(x); i++)  {
+    for(i = 50; i <= length(x); i++)  {
       y[i] = x[i]
     }
 
