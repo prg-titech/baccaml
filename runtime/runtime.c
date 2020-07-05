@@ -21,7 +21,8 @@
 #include "runtime_camlwrap.h"
 
 #define ARR_LEN 2048
-#define THOLD_TJ (getenv("THOLD_TJ") != NULL ? atoi(getenv("THOLD_TJ")) : 100)
+//#define THOLD_TJ (getenv("THOLD_TJ") != NULL ? atoi(getenv("THOLD_TJ")) : 100)
+#define THOLD_TJ 100
 #define THOLD_MJ 0
 
 #define JIT_COMPILE_COMMAND "gcc -m32 -fPIC -shared"
@@ -50,7 +51,10 @@ double time_it(int (*action)(int*, int), int* arg1, int arg2) {
 
   double elaps_s = difftime(tsf.tv_sec, tsi.tv_sec);
   long elaps_ns = tsf.tv_nsec - tsi.tv_nsec;
-  fprintf(stderr, "execution time %10f us\n", elaps_s + ((double)elaps_ns) / 1.0e3);
+#if 1
+  fprintf(stdout, "execution time %10f us\n", elaps_s + ((double)elaps_ns) / 1.0e3);
+  fflush(stdout);
+#endif
   return r;
 }
 
@@ -213,22 +217,15 @@ int c_mj_call(int *stack, int sp, int *code, int pc) {
     }
     sym_arr[pc] = malloc(sizeof(fun_arg2));
     sym_arr[pc] = sym;
-
-#if 1
-    int r = time_it(sym, stack, sp);
-#else
-    int r = sym(stack, sp);
-#endif
-    return r;
   } else {
     fun_arg2 sym = sym_arr[pc];
+  }
 #if 1
     int r = time_it(sym, stack, sp);
 #else
     int r = sym(stack, sp);
 #endif
     return r;
-  }
 }
 
 /**
@@ -239,7 +236,7 @@ void c_can_enter_jit(int *stack, int sp, int *code, int pc) {
   return;
 }
 
-/**
+ /**
  * Entry point of jitting.
  * TODO: change the arguments of jit_merge_point in interp.mcml
  */
@@ -305,20 +302,14 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
       }
       sym_arr[pc] = malloc(sizeof(fun_arg2));
       sym_arr[pc] = sym;
-#if 1
-      time_it(sym, stack, sp);
-#else
-      sym(stack, sp);
-#endif
-      return;
     } else {
       sym = sym_arr[pc];
-#if 0
-      time_it(sym, stack, sp);
-#else
-      sym(stack, sp);
-#endif
-      return;
     }
+#if 0
+    time_it(sym, stack, sp);
+#else
+    sym(stack, sp);
+#endif
+    return;
   }
 }
