@@ -232,7 +232,7 @@ int c_mj_call(int *stack, int sp, int *code, int pc) {
  * Profiling how many back-edge insertions occur.
  */
 void c_can_enter_jit(int *stack, int sp, int *code, int pc) {
-  if (pc!=96) prof_arr[pc]++;
+  prof_arr[pc]++;
   return;
 }
 
@@ -249,6 +249,7 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
   char* deps[10];
   int d_size;
 
+  if (pc == 96 || pc == 47) return;
   int pc_count = prof_arr[pc];
   if (pc_count < THOLD_TJ) {
     // exit if pc_count is under THOLD
