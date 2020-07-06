@@ -5,16 +5,21 @@ open Jit
 open Jit_env
 open Jit_prof
 open Opt
+open Runtime_lib
+open Runtime_env
 open Printf
 module E = Jit_env
 module I = Config.Internal
-open Runtime_lib
-open Runtime_env
 
 let traces : Asm.fundef list ref = ref []
 let trace_tbl : (int, Asm.fundef) Hashtbl.t = Hashtbl.create 100
 let c_tracing = ref 0
 let c_method = ref 0
+
+let compile_trace trace_name =
+  let cmd = sprintf "gcc -m32 -shared -fPIC -c %s" (trace_name ^ ".s") in
+  Sys.command cmd |> ignore
+;;
 
 let gen_trace_name = function
   | `Meta_tracing ->
@@ -116,8 +121,28 @@ let jit_method bytecode stack pc sp bc_ptr st_ptr =
     raise e
 ;;
 
+let jit_setup_run_once = ref false
+
+let jit_setup bytecode stack pc sp bc_ptr st_ptr =
+  if not !jit_setup_run_once
+  then begin
+    jit_setup_run_once := true;
+    let tj_entries = Util.find_tj_entries bytecode |> List.rev in
+    let mj_entries = Util.find_mj_entries bytecode in
+    mj_entries
+    |> List.map (fun pc ->
+           let ((trace_name, deps, d_size) as result) =
+             jit_method bytecode stack (pc + 1) sp bc_ptr st_ptr
+           in
+           compile_trace trace_name;
+           result)
+  end
+  else []
+;;
+
 let callbacks _ =
   Callback.register "caml_jit_tracing" jit_tracing;
   Callback.register "caml_jit_method" jit_method;
+  Callback.register "caml_jit_setup" jit_setup;
   ()
 ;;
