@@ -7,16 +7,7 @@
 
 extern void min_caml_start(char *, char *);
 
-extern int get_current_millis(void) asm ("min_caml_get_current_millis");
-
 extern unsigned long get_current_micros(void) asm ("min_caml_get_current_micros");
-
-int get_current_millis() {
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  int time_in_mill = (tv.tv_sec) * 1000 + (tv.tv_usec) / 1000;
-  return time_in_mill;
-}
 
 unsigned long get_current_micros() {
   struct timeval current_time;
