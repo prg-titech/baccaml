@@ -191,9 +191,9 @@ let rec interp stack sp bytecode pc =
 let rec exec code pc =
   let stk = Array.make 30000 0 in
   (* jit_tracing_start stk 1 code 0; *)
-  let s = get_current_millis () in
+  let s = get_current_micros () in
   let r = interp stk 0 code pc in
-  let e = get_current_millis () in
+  let e = get_current_micros () in
   print_int (e - s); print_newline ();
   print_int r; print_newline ()
 ;;

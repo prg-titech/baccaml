@@ -12,6 +12,6 @@
  (flags
   (-annot -w -4-33-40-41))
  (libraries str std log)
- (c_names float)
+ (foreign_stubs (language c) (names float))
  (preprocess
   (pps ppx_deriving.show)))

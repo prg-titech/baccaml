@@ -201,7 +201,7 @@ let rec exec code pc =
   let s = get_current_micros () in
   let r = interp stk 0 code pc in
   let e = get_current_micros () in
-  print_int (e-s); print_string ("\t");
+  print_int (e-s); print_newline ();
   print_int r; print_newline ()
 ;;
 

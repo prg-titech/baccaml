@@ -2,7 +2,7 @@
  (name dynload_stub)
  (public_name baccaml.dybload_stub)
  (modules dynload_stub)
- (c_names dynloader))
+ (foreign_stubs (language c) (names dynloader)))
 
 (library
  (name runtime)
