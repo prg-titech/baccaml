@@ -17,12 +17,11 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#include "interop_caml.h"
 #include "runtime_camlwrap.h"
 
 #define ARR_LEN 2048
 //#define THOLD_TJ (getenv("THOLD_TJ") != NULL ? atoi(getenv("THOLD_TJ")) : 100)
-#define THOLD_TJ 100
+#define THOLD_TJ 1000
 #define THOLD_MJ 0
 
 #define JIT_COMPILE_COMMAND "gcc -m32 -fPIC -shared"
@@ -30,6 +29,10 @@
 typedef int (*fun_arg2)(int*, int);
 
 enum jit_type { TJ, MJ };
+
+enum jit_mode { HYBRID_TJ, HYBRID_MJ, NORMAL };
+
+static enum jit_mode jit_mode;
 
 #ifdef CLOCK_PROCESS_CPUTIME_ID
 /* cpu time in the current process */
