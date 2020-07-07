@@ -90,7 +90,7 @@ let rec interp stack sp bytecode pc =
       interp stack sp2 bytecode (pc + 2)
   else if instr = 9 then        (* JUMP *)
     let addr = bytecode.(pc + 1) in
-    if addr < pc then (
+    @if addr < pc then (
       can_enter_jit stack sp bytecode addr;
       interp stack sp bytecode addr
     ) else
@@ -106,9 +106,9 @@ let rec interp stack sp bytecode pc =
        interp stack (sp-rands+1) bytecode (pc+3))
     else
       (stack.(sp) <- pc+3;
-       stack.(sp+1) <- 200;   (* push jit flag *)
+       stack.(sp+1) <- 200;     (* push jit flag *)
        let sp2 = sp+2 in
-       @if addr < pc then (      (* addr=22 (tak) *)
+       @if addr < pc then (
          can_enter_jit stack sp2 bytecode addr;
          interp stack sp2 bytecode addr
        ) else (
@@ -121,7 +121,7 @@ let rec interp stack sp bytecode pc =
       (let n = bytecode.(pc + 1) in
        stack.(sp - n - 3) <- v; (* sp: sp-3-n+1 = sp-2-n *)
        let sp2 = sp - n - 2 in
-       @if addr < pc then (      (* if add = 42 then (fib) *)
+       @if addr < pc then (     (* if add = 42 then (fib) *)
          can_enter_jit stack sp2 bytecode addr;
          interp stack sp2 bytecode addr
        ) else (
@@ -197,7 +197,7 @@ let rec interp stack sp bytecode pc =
     interp stack (sp+1) bytecode (pc+1)
   else
     -1000 in
-let stk  = Array.make 5000000 0 in
+let stk  = Array.make 50000 0 in
 stk.(0) <- (-987);
 
 let rec read_code i n arr =
@@ -210,12 +210,12 @@ let arr = Array.make n 0 in
 let code = read_code 0 n arr in
 save_bp ();
 let rec loop i =
-  if i < 1 then ()
+  if i <= 0 then ()
   else
     let s = get_current_micros () in
     let r = (interp stk 1 code 0) in
     let e = get_current_micros () in
     prerr_int r; print_newline ();
-    print_int (e - s); print_newline ();
+    print_int (e-s); print_newline ();
     loop (i-1)
-in loop 2
+in loop 100
