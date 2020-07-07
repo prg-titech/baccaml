@@ -5,7 +5,10 @@ val jit_flag : [ `On | `Off ] ref
 val jit_setup_mode : [ `Tracing | `Method | `All | `Nothing ] ref
 val comp_only_flag : [ `On | `Off ] ref
 val log_level : Log.level ref
-val set : 'a ref -> 'a -> unit
+
+val set_debug_flg : unit -> unit
+
+val hybrid_flg : [`TJ | `MJ | `Nothing] ref
 
 module Internal : sig
   val size : int ref
