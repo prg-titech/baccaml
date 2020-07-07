@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
   char *hp, *sp;
   struct arguments arguments;
 
-  arguments.hybrid_mode = NORMAL;
+  arguments.hybrid_mode = OFF;
   arguments.debug = false;
 
   argp_parse(&argp, argc, argv, 0, 0, &arguments);
