@@ -329,7 +329,7 @@ min_caml_jit_setup:
 	pushl	%ecx
 	pushl	%ebx
 	pushl	%eax
-	call	call_caml_jit_setup
+	call	c_jit_setup
 	movl	%ebp, %esp
 	popl	%ebp
 	ret
