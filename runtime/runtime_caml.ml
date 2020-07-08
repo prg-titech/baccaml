@@ -127,28 +127,31 @@ let jit_method bytecode stack pc sp bc_ptr st_ptr =
     raise e
 ;;
 
-let jit_setup_run_once = ref false
+let jit_setup_tj bytecode stack pc sp bc_ptr st_ptr =
+  Util.find_tj_entries bytecode
+  |> List.rev
+  |> List.map (fun pc ->
+         let ((trace_name, deps, d_size) as result) =
+           jit_tracing bytecode stack (pc + 1) sp bc_ptr st_ptr
+         in
+         compile_trace trace_name;
+         result)
+;;
 
-let jit_setup bytecode stack pc sp bc_ptr st_ptr =
-  if not !jit_setup_run_once
-  then begin
-    jit_setup_run_once := true;
-    let tj_entries = Util.find_tj_entries bytecode |> List.rev in
-    let mj_entries = Util.find_mj_entries bytecode in
-    mj_entries
-    |> List.map (fun pc ->
-           let ((trace_name, deps, d_size) as result) =
-             jit_method bytecode stack (pc + 1) sp bc_ptr st_ptr
-           in
-           compile_trace trace_name;
-           result)
-  end
-  else []
+let jit_setup_mj bytecode stack pc sp bc_ptr st_ptr =
+  Util.find_mj_entries bytecode
+  |> List.map (fun pc ->
+         let ((trace_name, deps, d_size) as result) =
+           jit_method bytecode stack (pc + 1) sp bc_ptr st_ptr
+         in
+         compile_trace trace_name;
+         result)
 ;;
 
 let callbacks _ =
   Callback.register "caml_jit_tracing" jit_tracing;
   Callback.register "caml_jit_method" jit_method;
-  Callback.register "caml_jit_setup" jit_setup;
+  Callback.register "caml_jit_setup_tj" jit_setup_tj;
+  Callback.register "caml_jit_setup_mj" jit_setup_mj;
   ()
 ;;
