@@ -23,7 +23,7 @@
 
 #define ARR_LEN 2048
 //#define THOLD_TJ (getenv("THOLD_TJ") != NULL ? atoi(getenv("THOLD_TJ")) : 100)
-#define THOLD_TJ 10000
+#define THOLD_TJ 1000
 #define THOLD_MJ 0
 
 #define JIT_COMPILE_COMMAND "gcc -m32 -fPIC -shared"
@@ -293,16 +293,13 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
   int d_size;
 
   if (no_jit) return;
-  //if (pc == 129 || pc == 96 || pc == 47 || pc == 13) return;
+  if (pc == 129 || pc == 96 || pc == 47 || pc == 13) return;
 
   int pc_count = prof_arr[pc];
   if (pc_count < THOLD_TJ) {
     // exit if pc_count is under THOLD
     return;
   } else {
-    //printf("over thold at pc %d\n", pc);
-    //call_caml_jit_entry(stack, sp, code, pc);
-
     if (!compiled_arr[pc]) {
       // if not compiled, compile the trace and mark `already compiled'
       v = call_caml_jit_tracing(stack, sp, code, pc); // string, string array, int
@@ -328,7 +325,7 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
       compiled_arr[pc] = true;
     }
 
-    //printf("executing at pc %d\n", pc);
+    //printf("executing %s at pc %d\n", trace_name, pc);
     if (sym_arr[pc] == NULL) {
       strcpy(trace_name, trace_name_arr[pc]);
       gen_so_name(so_name, trace_name);
@@ -351,7 +348,7 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
     } else {
       sym = sym_arr[pc];
     }
-#if 0
+#if 1
     time_it(sym, stack, sp);
 #else
     sym(stack, sp);
