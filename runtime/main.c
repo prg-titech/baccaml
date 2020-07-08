@@ -39,6 +39,7 @@ static struct argp_option options[] = {
     { "hybrid", 'H', "MODE", 0, "Enable hybrid mode." },
     { "debug", 'd', 0, 0, "Enable debug mode" },
     { "no-jit", 'N', 0, 0, "Disable JIT compilation" },
+    { "no-opt", 0, 0, 0, "Disable optimization" },
     { 0 }
 };
 
@@ -46,6 +47,7 @@ struct arguments {
   enum { TJ, MJ, OFF } hybrid_mode;
   bool debug_flg;
   bool no_jit_flg;
+  bool no_opt_flg;
 };
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state) {
@@ -73,36 +75,27 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
   return 0;
 }
 
-static struct argp argp = { options, parse_opt, args_doc, doc, 0, 0, 0 };
+static struct argp argp = {options, parse_opt, args_doc, doc, 0, 0, 0};
+
+struct arguments arguments;
 
 int main(int argc, char *argv[]) {
   char *hp, *sp;
-  struct arguments arguments;
 
   arguments.hybrid_mode = OFF;
   arguments.debug_flg = false;
   arguments.no_jit_flg = false;
+  arguments.no_opt_flg = false;
 
   argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
   if (arguments.no_jit_flg) {
     no_jit = true;
   } else {
-    switch(arguments.hybrid_mode) {
-    case TJ:
-      jit_mode = HYBRID_TJ;
-      //puts("hybrid mode (tj)");
-      break;
-    case MJ:
-      jit_mode = HYBRID_MJ;
-      //puts("hybrid mode (mj)");
-      break;
-    case OFF:
-      jit_mode = NORMAL;
-      break;
-    default:
-      jit_mode = NORMAL;
-      break;
+    switch (arguments.hybrid_mode) {
+    case TJ: set_jit_mode(HYBRID_TJ); break;
+    case MJ: set_jit_mode(HYBRID_MJ); break;
+    default: break;
     }
   }
 
