@@ -36,20 +36,22 @@ static char doc[] = "main";
 static char args_doc[] = "[FILENAME]...";
 
 static struct argp_option options[] = {
-    { "hybrid", 'h', "MODE", 0, "Enable hybrid mode." },
+    { "hybrid", 'H', "MODE", 0, "Enable hybrid mode." },
     { "debug", 'd', 0, 0, "Enable debug mode" },
+    { "no-jit", 'N', 0, 0, "Disable JIT compilation" },
     { 0 }
 };
 
 struct arguments {
   enum { TJ, MJ, OFF } hybrid_mode;
-  bool debug;
+  bool debug_flg;
+  bool no_jit_flg;
 };
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state) {
   struct arguments *arguments = state->input;
   switch (key) {
-  case 'h':
+  case 'H':
     if (strcmp(arg, "tj") == 0 || strcmp(arg, "tracing") == 0) {
       arguments->hybrid_mode = TJ;
     } else if (strcmp(arg, "mj") == 0 || strcmp(arg, "method") == 0) {
@@ -57,8 +59,14 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
     } else {
       arguments->hybrid_mode = OFF;
     }
+    arguments->no_jit_flg = false;
     break;
-  case 'd': arguments->debug = true; break;
+  case 'd':
+    arguments->debug_flg = true;
+    break;
+  case 'N':
+    arguments->no_jit_flg = true;
+    break;
   case ARGP_KEY_ARG: return 0;
   default: return ARGP_ERR_UNKNOWN;
   }
@@ -72,25 +80,30 @@ int main(int argc, char *argv[]) {
   struct arguments arguments;
 
   arguments.hybrid_mode = OFF;
-  arguments.debug = false;
+  arguments.debug_flg = false;
+  arguments.no_jit_flg = false;
 
   argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
-  switch(arguments.hybrid_mode) {
-  case TJ:
-    jit_mode = HYBRID_TJ;
-    //puts("hybrid mode (tj)");
-    break;
-  case MJ:
-    jit_mode = HYBRID_MJ;
-    //puts("hybrid mode (mj)");
-    break;
-  case OFF:
-    jit_mode = NORMAL;
-    break;
-  default:
-    jit_mode = NORMAL;
-    break;
+  if (arguments.no_jit_flg) {
+    no_jit = true;
+  } else {
+    switch(arguments.hybrid_mode) {
+    case TJ:
+      jit_mode = HYBRID_TJ;
+      //puts("hybrid mode (tj)");
+      break;
+    case MJ:
+      jit_mode = HYBRID_MJ;
+      //puts("hybrid mode (mj)");
+      break;
+    case OFF:
+      jit_mode = NORMAL;
+      break;
+    default:
+      jit_mode = NORMAL;
+      break;
+    }
   }
 
   caml_main(argv);
