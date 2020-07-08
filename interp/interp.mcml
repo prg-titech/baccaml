@@ -186,7 +186,7 @@ let rec interp stack sp bytecode pc =
     interp stack sp bytecode (pc+1)
   else if instr = 26 then       (* TRACING_COMP *)
     interp stack sp bytecode (pc+1)
-  else if instr = 27 then
+  else if instr = 27 then       (* JIT_SETUP *)
     (jit_setup stack sp bytecode (pc+1);
      interp stack sp bytecode (pc+1))
   else if instr = 28 then       (* NOP *)
