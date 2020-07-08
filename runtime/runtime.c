@@ -1,3 +1,4 @@
+#include "runtime.h"
 #define _GNU_SOURCE
 
 #include <assert.h>
@@ -17,24 +18,27 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+//#include "runtime.h"
 #include "runtime_camlwrap.h"
 
 #define ARR_LEN 2048
 //#define THOLD_TJ (getenv("THOLD_TJ") != NULL ? atoi(getenv("THOLD_TJ")) : 100)
-#define THOLD_TJ 1000
+#define THOLD_TJ 10000
 #define THOLD_MJ 0
 
 #define JIT_COMPILE_COMMAND "gcc -m32 -fPIC -shared"
 
 typedef int (*fun_arg2)(int*, int);
-
 enum jit_type { TJ, MJ };
 
-enum jit_mode { HYBRID_TJ, HYBRID_MJ, NORMAL };
-
-static enum jit_mode jit_mode;
-
-extern bool no_jit;
+#ifndef RUNTIME_H_
+enum jit_mode { NORMAL, HYBRID_TJ, HYBRID_MJ };
+extern enum jit_mode jit_mode;
+extern bool no_jit = false;
+#else
+enum jit_mode jit_mode;
+bool no_jit = false;
+#endif
 
 #ifdef CLOCK_PROCESS_CPUTIME_ID
 /* cpu time in the current process */
@@ -56,11 +60,18 @@ double time_it(int (*action)(int*, int), int* arg1, int arg2) {
 
   double elaps_s = difftime(tsf.tv_sec, tsi.tv_sec);
   long elaps_ns = tsf.tv_nsec - tsi.tv_nsec;
-#if 1
+#if 0
   fprintf(stdout, "execution time %10f us\n", elaps_s + ((double)elaps_ns) / 1.0e3);
   fflush(stdout);
 #endif
   return r;
+}
+
+/**
+ * Change the value of `jit_mode'.
+ */
+void set_jit_mode(enum jit_mode mode) {
+  jit_mode = mode;
 }
 
 /**
@@ -237,11 +248,38 @@ int c_mj_call(int *stack, int sp, int *code, int pc) {
  * Profiling how many back-edge insertions occur.
  */
 void c_can_enter_jit(int *stack, int sp, int *code, int pc) {
+  if (no_jit) return;
   prof_arr[pc]++;
   return;
 }
 
- /**
+bool jit_setup_ran = false;
+
+/**
+ * Entry point of `jit_setup'.
+ */
+void c_jit_setup(int *stack, int sp, int *code, int pc) {
+  if (no_jit) return;
+
+  if (!jit_setup_ran) {
+    switch (jit_mode) {
+    case HYBRID_TJ:
+      call_caml_jit_setup_tj(stack, sp, code, pc);
+      break;
+    case HYBRID_MJ:
+      call_caml_jit_setup_mj(stack, sp, code, pc);
+      break;
+    default:
+      break;
+    }
+    jit_setup_ran = true;
+    compiled_arr[pc] = true;
+  }
+
+  return;
+}
+
+/**
  * Entry point of jitting.
  * TODO: change the arguments of jit_merge_point in interp.mcml
  */
