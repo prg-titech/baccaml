@@ -13,23 +13,21 @@ module I = Config.Internal
 
 let traces : Asm.fundef list ref = ref []
 let trace_tbl : (int, Asm.fundef) Hashtbl.t = Hashtbl.create 100
-let c_tracing = ref 0
-let c_method = ref 0
+let counter = ref 0
 
 let compile_trace trace_name =
   let cmd = sprintf "gcc -m32 -shared -fPIC -c %s" (trace_name ^ ".s") in
   Sys.command cmd |> ignore
 ;;
 
-let gen_trace_name = function
-  | `Meta_tracing ->
-    let str = sprintf "tracetj%d" !c_tracing in
-    incr c_tracing;
-    Id.genid str
-  | `Meta_method ->
-    let str = sprintf "tracemj%d" !c_method in
-    incr c_method;
-    Id.genid str
+let gen_trace_name typ =
+  let str =
+    match typ with
+    | `Meta_tracing -> sprintf "tracetj%d" !counter
+    | `Meta_method -> sprintf "tracemj%d" !counter
+  in
+  incr counter;
+  Id.genid str
 ;;
 
 let update_trace merge_pc trace =
