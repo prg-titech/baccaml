@@ -64,10 +64,6 @@ module Util = struct
     match !Config.jit_flag with `On -> f () | `Off -> g ()
   ;;
 
-  let with_comp_flg ~on:f ~off:g =
-    match !Config.comp_only_flag with `On -> f () | `Off -> g ()
-  ;;
-
   let exec_dyn_arg2 ~name ~arg1 ~arg2 =
     Dynload_stub.call_arg2
       ~lib:("./" ^ Jit_compile.get_so_name name)
@@ -119,11 +115,11 @@ module Debug = struct
   ;;
 
   let is_debug () =
-    match !Config.log_level with `Debug -> true | _ -> false
+    match !Log.log_level with `Debug -> true | _ -> false
   ;;
 
   let with_debug f =
-    match !Config.log_level with `Debug -> f () | _ -> ()
+    match !Log.log_level with `Debug -> f () | _ -> ()
   ;;
 end
 

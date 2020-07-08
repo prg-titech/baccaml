@@ -1,16 +1,16 @@
-let file_name = ref None
-let jit_flag = ref `On
-let jit_setup_mode = ref `Nothing
-let comp_only_flag = ref `On
-let reds = ref [ "" ]
-let greens = ref [ "" ]
+let file_name : string option ref = ref None
+let reds : string list ref = ref [ "" ]
+let greens : string list ref = ref [ "" ]
 
-let log_level = Log.log_level
-let hybrid_flg = ref `Nothing
+let jit_flag : [ `On | `Off ] ref = ref `On
+let hybrid_flag : [`TJ | `MJ | `Nothing] ref = ref `Nothing
+let opt_flag : [`On | `Off] ref = ref `On
 
-let set_debug_flg _ = log_level := `Debug
+let () = Log.log_level := `App
 
-let () = Log.log_level := !log_level
+module Deprecated = struct
+  let jit_setup_mode : [`Tracing | `Method | `All | `Nothing] ref = ref `Nothing
+end
 
 module Internal = struct
   let size = ref (Sys.max_array_length / 2)

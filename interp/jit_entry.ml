@@ -5,11 +5,14 @@ module F = Filename
 
 module V1 = struct
   let parser file =
+    let open Deprecated in
     Arg.parse
       [ ( "-no-jit"
         , Arg.Unit (fun _ -> jit_flag := `Off)
         , "disable jit compilation" )
-      ; "-debug", Arg.Unit (fun _ -> log_level := `Debug), "enable debug mode"
+      ; ( "-debug"
+        , Arg.Unit (fun _ -> Log.log_level := `Debug)
+        , "enable debug mode" )
       ; ( "-size"
         , Arg.Int (fun i -> Internal.size := i)
         , "change the size of virtual mems" )
@@ -24,9 +27,6 @@ module V1 = struct
       ; ( "-all"
         , Arg.Unit (fun _ -> jit_setup_mode := `All)
         , "comile other functions by tracing and method compilation" )
-      ; ( "-comp-only"
-        , Arg.Unit (fun _ -> comp_only_flag := `Off)
-        , "only compiling, not executing a resulting trace" )
       ]
       (fun f -> file := f)
       ("Usage: " ^ Sys.argv.(0) ^ " [-options] [your interp]")
@@ -39,16 +39,16 @@ module V2 = struct
       [ ( "--no-jit"
         , Arg.Unit (fun _ -> jit_flag := `Off)
         , "Disable JIT compilation" )
-      ; "--debug"
-        , Arg.Unit (fun _ -> log_level := `Debug)
-        , "Enable debug mode"
+      ; ( "--debug"
+        , Arg.Unit (fun _ -> Log.log_level := `Debug)
+        , "Enable debug mode" )
       ; ( "--hybrid"
         , Arg.String
             (fun msg ->
               match msg with
-              | "tj" | "tracing" -> hybrid_flg := `TJ
-              | "mj" | "method" -> hybrid_flg := `MJ
-              | _ -> hybrid_flg := `Nothing)
+              | "tj" | "tracing" -> hybrid_flag := `TJ
+              | "mj" | "method" -> hybrid_flag := `MJ
+              | _ -> hybrid_flag := `Nothing)
         , "Enable hybridization" )
       ]
       (fun f -> file := f)
@@ -65,7 +65,7 @@ let register_callbacks () =
 let () =
   let file = ref "" in
   V2.parse file;
-  file_name := (Some !file);
+  file_name := Some !file;
   reds := [ "stack"; "sp"; "sp2"; "mode" ];
   greens := [ "pc"; "bytecode" ];
   register_callbacks ()

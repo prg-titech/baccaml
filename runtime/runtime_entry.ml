@@ -24,7 +24,7 @@ let jit_gen_trace bytecode stack pc sp bc_ptr st_ptr =
   if not !jit_setup_run_once_flg
   then (
     jit_setup_run_once_flg := true;
-    match !Config.jit_setup_mode with
+    match !Config.Deprecated.jit_setup_mode with
     | `Tracing -> tj_pcs |> jit_apply TJ.jit_tracing_gen_trace
     | `Method -> mj_pcs |> jit_apply MJ.jit_method_gen_trace
     | `All ->
