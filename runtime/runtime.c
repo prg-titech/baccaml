@@ -34,6 +34,8 @@ enum jit_mode { HYBRID_TJ, HYBRID_MJ, NORMAL };
 
 static enum jit_mode jit_mode;
 
+extern bool no_jit;
+
 #ifdef CLOCK_PROCESS_CPUTIME_ID
 /* cpu time in the current process */
 #define CLOCKTYPE  CLOCK_PROCESS_CPUTIME_ID
@@ -252,7 +254,9 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
   char* deps[10];
   int d_size;
 
-  if (pc == 96 || pc == 47) return;
+  if (no_jit) return;
+  //if (pc == 129 || pc == 96 || pc == 47 || pc == 13) return;
+
   int pc_count = prof_arr[pc];
   if (pc_count < THOLD_TJ) {
     // exit if pc_count is under THOLD
