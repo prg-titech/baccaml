@@ -67,7 +67,11 @@ let jit_tracing bytecode stack pc sp bc_ptr st_ptr =
       ~bytecode
   in
   let (`Result (trace, deps_opt)) = Jit_tracing.run prog reg mem env in
-  let trace = trace |> Jit_constfold.h |> Opt_defuse.h in
+  let trace =
+    match !Config.opt_flag with
+    | `On -> trace |> Jit_constfold.h |> Opt_defuse.h
+    | `Off -> trace |> Jit_constfold.h
+  in
   let deps = Option.fold ~none:[||] ~some:(fun v -> Array.of_list v) deps_opt in
   append_trace pc trace;
   Log.with_debug (fun _ -> print_fundef trace);
@@ -104,7 +108,11 @@ let jit_method bytecode stack pc sp bc_ptr st_ptr =
       ~bytecode
   in
   let (`Result (trace, deps_opt)) = Jit_method.run prog reg mem env in
-  let trace = trace |> Jit_constfold.h |> Opt_defuse.h in
+  let trace =
+    match !Config.opt_flag with
+    | `On -> trace |> Jit_constfold.h |> Opt_defuse.h
+    | `Off -> trace |> Jit_constfold.h
+  in
   let deps = Option.fold ~none:[||] ~some:(fun v -> Array.of_list v) deps_opt in
   Log.with_debug (fun _ -> print_fundef trace);
   Method_prof.register (pc, trace_name);
