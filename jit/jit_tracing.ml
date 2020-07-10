@@ -106,7 +106,7 @@ and tj_exp
   | CallDir (Id.L x, args, fargs) when String.(starts_with x "frame_reset") ->
     Util.restore_greens reg args (fun () ->
         Let ((dest, typ), CallDir (Id.L x, args, fargs), tj p reg mem env body))
-  | CallDir (Id.L x, args, fargs) when String.(starts_with x "min_caml") ->
+  | CallDir (Id.L x, args, fargs) when String.(starts_with x "min_caml_") ->
     (* foreign functions *)
     Util.restore_greens reg args (fun () ->
         Let
