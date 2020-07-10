@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
   caml_main(argv);
 
   min_caml_stderr = stderr;
-  sp = alloca(1000000); hp = malloc(40000000);
+  sp = alloca(8000000); hp = malloc(80000000);
   if (hp == NULL || sp == NULL) {
     fprintf(stderr, "malloc or alloca failed\n");
     return 1;
