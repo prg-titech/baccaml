@@ -18,7 +18,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-//#include "runtime.h"
+#include "runtime.h"
 #include "runtime_camlwrap.h"
 
 #define ARR_LEN 2048
@@ -33,10 +33,10 @@ enum jit_type { TJ, MJ };
 
 #ifndef RUNTIME_H_
 enum jit_mode { NORMAL, HYBRID_TJ, HYBRID_MJ };
-extern enum jit_mode jit_mode;
+extern enum jit_mode jit_mode = NORMAL;
 extern bool no_jit = false;
 #else
-enum jit_mode jit_mode;
+enum jit_mode jit_mode = NORMAL;
 bool no_jit = false;
 #endif
 
@@ -60,10 +60,8 @@ double time_it(int (*action)(int*, int), int* arg1, int arg2) {
 
   double elaps_s = difftime(tsf.tv_sec, tsi.tv_sec);
   long elaps_ns = tsf.tv_nsec - tsi.tv_nsec;
-#if 0
   fprintf(stdout, "execution time %10f us\n", elaps_s + ((double)elaps_ns) / 1.0e3);
   fflush(stdout);
-#endif
   return r;
 }
 
@@ -214,7 +212,9 @@ int c_mj_call(int *stack, int sp, int *code, int pc) {
     compiled_arr[pc] = true;
   }
 
-  if (sym_arr[pc] == NULL) {
+
+ // if (true) {
+ if (sym_arr[pc] == NULL) {
     strcpy(trace_name, trace_name_arr[pc]);
     gen_so_name(so_name, trace_name);
 
@@ -293,7 +293,7 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
   int d_size;
 
   if (no_jit) return;
-  if (pc == 129 || pc == 96 || pc == 47 || pc == 13) return;
+  //if (pc == 54) return;
 
   int pc_count = prof_arr[pc];
   if (pc_count < THOLD_TJ) {
@@ -348,7 +348,7 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
     } else {
       sym = sym_arr[pc];
     }
-#if 1
+#if 0
     time_it(sym, stack, sp);
 #else
     sym(stack, sp);
