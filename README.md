@@ -10,7 +10,7 @@ We are developing the BacCamel meta-compiler framework as a proof-of-concept, wh
 
 ## Prerequiements
 
-You need the OCaml 4.07.0+ configured with 32bit mode. This is run only on Linux.
+You need the OCaml 4.09.0+ configured with 32bit mode. This is run only on Linux.
 
 ## Papers
 
