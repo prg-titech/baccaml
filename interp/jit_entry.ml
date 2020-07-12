@@ -50,6 +50,9 @@ module V2 = struct
               | "mj" | "method" -> hybrid_flag := `MJ
               | _ -> hybrid_flag := `Nothing)
         , "Enable hybridization" )
+      ; ( "--no-opt"
+        , Arg.Unit (fun _ -> opt_flag := `Off)
+        , "Disable optimizations")
       ]
       (fun f -> file := f)
       ("Usage: " ^ Sys.argv.(0) ^ " [-options] [interp]")
