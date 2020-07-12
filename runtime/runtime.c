@@ -293,7 +293,7 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
   int d_size;
 
   if (no_jit) return;
-  //if (pc == 54) return;
+  //if (pc == 95) return;
 
   int pc_count = prof_arr[pc];
   if (pc_count < THOLD_TJ) {
