@@ -44,7 +44,7 @@ static struct argp_option options[] = {
 };
 
 struct arguments {
-  enum { TJ, MJ, OFF } hybrid_mode;
+  enum { ALL, TJ, MJ, OFF } hybrid_mode;
   bool debug_flg;
   bool no_jit_flg;
   bool no_opt_flg;
@@ -58,6 +58,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
       arguments->hybrid_mode = TJ;
     } else if (strcmp(arg, "mj") == 0 || strcmp(arg, "method") == 0) {
       arguments->hybrid_mode = MJ;
+    } else if (strcmp(arg, "all") == 0) {
+      arguments->hybrid_mode = ALL;
     } else {
       arguments->hybrid_mode = OFF;
     }
@@ -95,6 +97,7 @@ int main(int argc, char *argv[]) {
     switch (arguments.hybrid_mode) {
     case TJ: set_jit_mode(HYBRID_TJ); break;
     case MJ: set_jit_mode(HYBRID_MJ); break;
+    case ALL: set_jit_mode(HYBRID_ALL); break;
     default: break;
     }
   }

@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-enum jit_mode { NORMAL, HYBRID_TJ, HYBRID_MJ };
+enum jit_mode { NORMAL, HYBRID_TJ, HYBRID_MJ, HYBRID_ALL };
 
 extern bool no_jit;
 

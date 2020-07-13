@@ -23,7 +23,7 @@
 
 #define ARR_LEN 2048
 //#define THOLD_TJ (getenv("THOLD_TJ") != NULL ? atoi(getenv("THOLD_TJ")) : 100)
-#define THOLD_TJ 1000
+#define THOLD_TJ 100
 #define THOLD_MJ 0
 
 #define JIT_COMPILE_COMMAND "gcc -m32 -fPIC -shared"
@@ -32,7 +32,7 @@ typedef int (*fun_arg2)(int*, int);
 enum jit_type { TJ, MJ };
 
 #ifndef RUNTIME_H_
-enum jit_mode { NORMAL, HYBRID_TJ, HYBRID_MJ };
+enum jit_mode { NORMAL, HYBRID_TJ, HYBRID_MJ, HYBRID_ALL };
 extern enum jit_mode jit_mode = NORMAL;
 extern bool no_jit = false;
 #else
