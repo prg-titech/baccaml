@@ -59,17 +59,13 @@ module V2 = struct
   ;;
 end
 
-let register_callbacks () =
-  Runtime_entry.callbacks ();
-  Runtime_caml.callbacks ();
-  ()
-;;
-
 let () =
   let file = ref "" in
   V2.parse file;
-  file_name := Some !file;
+  file_name :=
+    if !file = "" then failwith "interpreter definition is not specified."
+    else Some !file;
   reds := [ "stack"; "sp"; "sp2"; "mode" ];
   greens := [ "pc"; "bytecode" ];
-  register_callbacks ()
+  Runtime_caml.callbacks ();
 ;;
