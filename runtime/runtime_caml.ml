@@ -148,10 +148,18 @@ let jit_setup_mj bytecode stack pc sp bc_ptr st_ptr =
          result)
 ;;
 
+let register_interp_ir () =
+  interp_ir := Some (Util.gen_ir ());
+  interp_fundef
+    := Option.bind !interp_ir (fun interp_ir ->
+           Some (Fundef.find_fuzzy interp_ir "interp"))
+;;
+
 let callbacks _ =
   Callback.register "caml_jit_tracing" jit_tracing;
   Callback.register "caml_jit_method" jit_method;
   Callback.register "caml_jit_setup_tj" jit_setup_tj;
   Callback.register "caml_jit_setup_mj" jit_setup_mj;
+  register_interp_ir ();
   ()
 ;;

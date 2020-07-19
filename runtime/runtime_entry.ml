@@ -33,13 +33,6 @@ let jit_gen_trace bytecode stack pc sp bc_ptr st_ptr =
     | `Nothing -> ())
 ;;
 
-let register_interp_ir () =
-  interp_ir := Some (Util.gen_ir ());
-  interp_fundef
-    := Option.bind !interp_ir (fun interp_ir ->
-           Some (Fundef.find_fuzzy interp_ir "interp"))
-;;
-
 let callbacks _ =
   Callback.register "jit_tracing_gen_trace" TJ.jit_tracing_gen_trace;
   Callback.register "jit_tracing_entry" TJ.jit_tracing_entry;
@@ -47,6 +40,5 @@ let callbacks _ =
   Callback.register "jit_guard_occur_at" TJ.jit_guard_occur_at;
   Callback.register "jit_method_call" MJ.jit_method_call;
   Callback.register "jit_setup" jit_gen_trace;
-  register_interp_ir ();
   ()
 ;;
