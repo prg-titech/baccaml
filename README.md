@@ -12,6 +12,13 @@ We are developing the BacCamel meta-compiler framework as a proof-of-concept, wh
 
 You need the OCaml 4.09.0+ configured with 32bit mode. This is run only on Linux.
 
+Plese follow these instructions:
+
+```shell
+$ opam switch create 4.09.0+32bit
+$ opam install -y merlin tuareg ocp-indent ocamlformat ppx_deriving ppx_inline_test
+```
+
 ## Papers
 
 - Master's thesis: Yusuke Izawa, "Stack Hybridization: A Mechanism for Bridging Two Compilation Strategies in a Meta Compiler Framework". [[url]](https://3tty0n.github.io/baccaml-master-thesis.pdf)
