@@ -64,34 +64,6 @@ module Util = struct
     match !Config.jit_flag with `On -> f () | `Off -> g ()
   ;;
 
-  let exec_dyn_arg2 ~name ~arg1 ~arg2 =
-    Dynload_stub.call_arg2
-      ~lib:("./" ^ Jit_compile.get_so_name name)
-      ~func:(String.split_on_char '.' name |> List.hd)
-      ~arg1
-      ~arg2
-  ;;
-
-  let exec_dyn_arg2_time ?(notation = None) ~name ~arg1 ~arg2 =
-    let s = Sys.time () in
-    let v = exec_dyn_arg2 name arg1 arg2 in
-    let e = Sys.time () in
-    (match notation with
-    | Some `Tracing -> Log.time "[tj] elapsed time %fus\n" ((e -. s) *. 1e6)
-    | Some `Method -> Log.time "[mj] elapsed time %fus\n" ((e -. s) *. 1e6)
-    | None -> ());
-    flush stderr;
-    v
-  ;;
-
-  let exec_dyn_arg3 ~name ~arg1 ~arg2 ~arg3 =
-    Dynload_stub.call_arg3
-      ~lib:("./" ^ Jit_compile.get_so_name name)
-      ~func:(String.split_on_char '.' name |> List.hd)
-      ~arg1
-      ~arg2
-      ~arg3
-  ;;
 end
 
 module Debug = struct
