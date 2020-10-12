@@ -23,6 +23,8 @@ $ opam install -y ppx_deriving ppx_inline_test
 
 ## Papers
 
+- DLS'20: Yusuke Izawa, Hidehiko Masuhara. "Amalgamating Different JIT Compilations in a Meta-tracing JIT Compiler Framework". [url]
+
 - Master's thesis: Yusuke Izawa, "Stack Hybridization: A Mechanism for Bridging Two Compilation Strategies in a Meta Compiler Framework". [[url]](https://3tty0n.github.io/baccaml-master-thesis.pdf)
 
 - MoveVMs'19 workshop: Yusuke Izawa, Hidehiko Masuhara, Tomoyuki Aotani, "Extending a Meta-tracing Compiler to Mix Method and Tracing Compilation". [[url]](https://3tty0n.github.io/baccaml-programming-morevms-2019.pdf)
