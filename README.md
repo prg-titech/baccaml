@@ -10,7 +10,7 @@ We are developing the BacCamel meta-compiler framework as a proof-of-concept, wh
 
 ## Prerequiements
 
-You need the OCaml 4.10.0+ configured with 32bit mode. 
+You need the OCaml 4.10.0+ configured with 32bit mode.
 
 This is run only on Linux.
 
@@ -23,7 +23,7 @@ $ opam install -y ppx_deriving ppx_inline_test
 
 ## Papers
 
-- DLS'20: Yusuke Izawa, Hidehiko Masuhara. "Amalgamating Different JIT Compilations in a Meta-tracing JIT Compiler Framework". [url]
+- DLS'20: Yusuke Izawa, Hidehiko Masuhara. "Amalgamating Different JIT Compilations in a Meta-tracing JIT Compiler Framework". [[url]](https://arxiv.org/abs/2011.03516)
 
 - Master's thesis: Yusuke Izawa, "Stack Hybridization: A Mechanism for Bridging Two Compilation Strategies in a Meta Compiler Framework". [[url]](https://3tty0n.github.io/baccaml-master-thesis.pdf)
 
