@@ -26,7 +26,7 @@ Next, write your own interpreter with BacCaml. For reference, please see the imp
 
 ## Papers
 
-_If you cite this work, please use the [the DLS'20 paper on "Amalgamating Different JIT Compilations in a Meta-tracing JIT Compiler Framework"](https://dl.acm.org/doi/10.1145/3426422.3426977)_
+_If you cite this work, please use [the DLS'20 paper on "Amalgamating Different JIT Compilations in a Meta-tracing JIT Compiler Framework"](https://dl.acm.org/doi/10.1145/3426422.3426977)_
 
 ### 2020
 
