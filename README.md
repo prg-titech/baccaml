@@ -1,6 +1,6 @@
 # BacCaml: The Meta-Hybrid Just-In-Time Compiler
 
-[![Build Status](https://travis-ci.org/prg-titech/baccaml.svg?branch=develop)](https://travis-ci.org/prg-titech/baccaml)
+[![Build Status](https://www.travis-ci.com/prg-titech/baccaml.svg?branch=develop)](https://www.travis-ci.com/prg-titech/baccaml)
 
 Trace-based compilation and method-based compilation are two major compilation strategies in JIT compilers. In general, the former excels in compiling programs with more in-depth method calls and more dynamic branches, while the latter is a suitable wide range of applications.
 
