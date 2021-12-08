@@ -22,7 +22,7 @@ $ opam switch create 4.10.0+32bit
 $ opam install -y ppx_deriving ppx_inline_test
 ```
 
-Next, write your own interpreter with BacCaml. For reference, please see the implementation of [the MinCaml-- language](https://github.com/prg-titech/mincaml--).
+Next, write your own interpreter with BacCaml. For reference, please see the implementation of [the PMinCaml language](https://github.com/prg-titech/pmincaml).
 
 ## Papers
 
