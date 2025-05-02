@@ -1,3 +1,9 @@
+# Obsolete
+
+This project is no longer maintained. We are currently working on the [Adaptive RPython](https://prg.is.titech.ac.jp/projects/runtime-compilation/baccaml/) project.
+
+---
+
 # BacCaml: The Meta-Hybrid Just-In-Time Compiler
 
 Trace-based compilation and method-based compilation are two major compilation strategies in JIT compilers. In general, the former excels in compiling programs with more in-depth method calls and more dynamic branches, while the latter is a suitable wide range of applications.
@@ -29,8 +35,6 @@ _If you cite this work, please use [the DLS'20 paper on "Amalgamating Different 
 ### 2020
 
 - **DLS'20**: Yusuke Izawa, Hidehiko Masuhara. "Amalgamating Different JIT Compilations in a Meta-tracing JIT Compiler Framework". [[url]](https://arxiv.org/abs/2011.03516)
-
-- **Master's thesis**: Yusuke Izawa, "Stack Hybridization: A Mechanism for Bridging Two Compilation Strategies in a Meta Compiler Framework". [[url]](https://3tty0n.github.io/baccaml-master-thesis.pdf)
 
 ### 2019
 
