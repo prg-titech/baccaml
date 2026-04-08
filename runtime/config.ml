@@ -13,9 +13,9 @@ module Deprecated = struct
 end
 
 module Internal = struct
-  let size = ref (Sys.max_array_length / 2)
+  let size = ref 1_000_000
   let thold_tj = ref 100
   let thold_guard = ref 100
   let bc_tmp_addr = 0
-  let st_tmp_addr = 1024
+  let st_tmp_addr = 8192
 end

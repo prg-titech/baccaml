@@ -48,8 +48,8 @@ module Setup = struct
 
   let make_mem ~bc_addr ~st_addr bytecode stack =
     let open Jit_env in
-    bytecode |> Array.iteri (fun i a -> mem.(bc_addr + (4 * i)) <- Green a);
-    stack |> Array.iteri (fun i a -> mem.(st_addr + (4 * i)) <- Red a);
+    bytecode |> Array.iteri (fun i a -> mem.(bc_addr + (Arch.int_size * i)) <- Green a);
+    stack |> Array.iteri (fun i a -> mem.(st_addr + (Arch.int_size * i)) <- Red a);
     ()
   ;;
 

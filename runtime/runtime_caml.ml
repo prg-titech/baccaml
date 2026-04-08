@@ -16,7 +16,7 @@ let trace_tbl : (int, Asm.fundef) Hashtbl.t = Hashtbl.create 100
 let counter = ref 0
 
 let compile_trace trace_name =
-  let cmd = sprintf "gcc -m32 -shared -fPIC -c %s" (trace_name ^ ".s") in
+  let cmd = sprintf "gcc -shared -fPIC -c %s" (trace_name ^ ".s") in
   Sys.command cmd |> ignore
 ;;
 
