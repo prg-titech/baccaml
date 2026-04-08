@@ -25,7 +25,7 @@
    ../runtime/libmincaml.S
    interp_tj.s)
  (action
-  (run %{cc} -g -m32 -rdynamic -o %{targets} -I %{ocaml_where}
+  (run %{cc} -g -no-pie -rdynamic -o %{targets} -I %{ocaml_where}
     -L %{ocaml_where} -I . %{deps} %{ocaml-config:native_c_libraries})))
 
 (rule (targets interp_mj.exe)
@@ -38,5 +38,5 @@
    ../runtime/libmincaml.S
    interp_mj.s)
  (action
-  (run %{cc} -g -m32 -rdynamic -o %{targets} -I %{ocaml_where}
+  (run %{cc} -g -no-pie -rdynamic -o %{targets} -I %{ocaml_where}
        -L %{ocaml_where} -I . %{deps} %{ocaml-config:native_c_libraries})))
