@@ -4,7 +4,6 @@
 #include <assert.h>
 #include <caml/alloc.h>
 #include <caml/callback.h>
-#include <caml/compatibility.h>
 #include <caml/custom.h>
 #include <caml/memory.h>
 #include <caml/mlvalues.h>
@@ -22,19 +21,17 @@
 #include "runtime_camlwrap.h"
 
 #define ARR_LEN 2048
-//#define THOLD_TJ (getenv("THOLD_TJ") != NULL ? atoi(getenv("THOLD_TJ")) : 100)
 #define THOLD_TJ 100
 #define THOLD_MJ 0
 
-#define JIT_COMPILE_COMMAND "gcc -m32 -fPIC -shared"
+#define JIT_COMPILE_COMMAND "gcc -fPIC -shared"
 
-typedef int (*fun_arg2)(int*, int);
+typedef long (*fun_arg2)(long*, long);
 enum jit_type { TJ, MJ };
 
 #ifndef RUNTIME_H_
-enum jit_mode { NORMAL, HYBRID_TJ, HYBRID_MJ, HYBRID_ALL };
-extern enum jit_mode jit_mode = NORMAL;
-extern bool no_jit = false;
+enum jit_mode jit_mode = NORMAL;
+bool no_jit = false;
 #else
 enum jit_mode jit_mode = NORMAL;
 bool no_jit = false;
@@ -51,11 +48,11 @@ bool no_jit = false;
 /**
  * Estimate elapsed time (us).
  */
-double time_it(int (*action)(int*, int), int* arg1, int arg2) {
+double time_it(long (*action)(long*, long), long* arg1, long arg2) {
   struct timespec tsi, tsf;
 
   clock_gettime(CLOCKTYPE, &tsi);
-  int r = action(arg1, arg2);
+  long r = action(arg1, arg2);
   clock_gettime(CLOCKTYPE, &tsf);
 
   double elaps_s = difftime(tsf.tv_sec, tsi.tv_sec);
@@ -75,7 +72,12 @@ void set_jit_mode(enum jit_mode mode) {
 /**
  * For profiling a program counter
  */
-int prof_arr[ARR_LEN] = {0};
+long prof_arr[ARR_LEN] = {0};
+
+/* Track guard failures per-PC to inform hybrid switching decisions.
+   High guard failure rates suggest tracing is ineffective at that PC
+   and method-based compilation may be more suitable. */
+long guard_fail_arr[ARR_LEN] = {0};
 
 bool compiled_arr[ARR_LEN] = {false};
 
@@ -180,7 +182,7 @@ void jit_compile_with_sl(char *so, char *func, char **arr, int size) {
   system(buffer);
 }
 
-int c_mj_call(int *stack, int sp, int *code, int pc) {
+long c_mj_call(long *stack, long sp, long *code, long pc) {
   char trace_name[128]; char so_name[128];
   char* deps[10];
   value v;
@@ -200,7 +202,7 @@ int c_mj_call(int *stack, int sp, int *code, int pc) {
     gen_so_name(so_name, trace_name);
 
     if (d_size == 0) {
-      fprintf(stderr, "compiling trace %s into %s at pc %d\n", trace_name, so_name, pc);
+      fprintf(stderr, "compiling trace %s into %s at pc %ld\n", trace_name, so_name, pc);
       jit_compile(so_name, trace_name);
     } else if (d_size > 0) {
       jit_compile_with_sl(so_name, trace_name, deps, d_size);
@@ -213,7 +215,6 @@ int c_mj_call(int *stack, int sp, int *code, int pc) {
   }
 
 
- // if (true) {
  if (sym_arr[pc] == NULL) {
     strcpy(trace_name, trace_name_arr[pc]);
     gen_so_name(so_name, trace_name);
@@ -237,9 +238,9 @@ int c_mj_call(int *stack, int sp, int *code, int pc) {
     fun_arg2 sym = sym_arr[pc];
   }
 #if 1
-    int r = time_it(sym, stack, sp);
+    long r = time_it(sym, stack, sp);
 #else
-    int r = sym(stack, sp);
+    long r = sym(stack, sp);
 #endif
     return r;
 }
@@ -247,7 +248,7 @@ int c_mj_call(int *stack, int sp, int *code, int pc) {
 /**
  * Profiling how many back-edge insertions occur.
  */
-void c_can_enter_jit(int *stack, int sp, int *code, int pc) {
+void c_can_enter_jit(long *stack, long sp, long *code, long pc) {
   if (no_jit) return;
   prof_arr[pc]++;
   return;
@@ -258,7 +259,7 @@ bool jit_setup_ran = false;
 /**
  * Entry point of `jit_setup'.
  */
-void c_jit_setup(int *stack, int sp, int *code, int pc) {
+void c_jit_setup(long *stack, long sp, long *code, long pc) {
   if (no_jit) return;
 
   if (!jit_setup_ran) {
@@ -281,9 +282,8 @@ void c_jit_setup(int *stack, int sp, int *code, int pc) {
 
 /**
  * Entry point of jitting.
- * TODO: change the arguments of jit_merge_point in interp.mcml
  */
-void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
+void c_jit_merge_point(long* stack, long sp, long* code, long pc) {
   char trace_name[128];
   char so_name[128];
   void* handle = NULL;
@@ -293,9 +293,8 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
   int d_size;
 
   if (no_jit) return;
-  //if (pc == 95) return;
 
-  int pc_count = prof_arr[pc];
+  long pc_count = prof_arr[pc];
   if (pc_count < THOLD_TJ) {
     // exit if pc_count is under THOLD
     return;
@@ -325,7 +324,6 @@ void c_jit_merge_point(int* stack, int sp, int* code, int pc) {
       compiled_arr[pc] = true;
     }
 
-    //printf("executing %s at pc %d\n", trace_name, pc);
     if (sym_arr[pc] == NULL) {
       strcpy(trace_name, trace_name_arr[pc]);
       gen_so_name(so_name, trace_name);

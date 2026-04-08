@@ -21,9 +21,9 @@ unsigned long get_current_micros() {
   return current_time.tv_sec * (int)1e6 + current_time.tv_usec;
 }
 
-int divide(int rhs, int lhs) { return rhs / lhs; }
+long divide(long rhs, long lhs) { return rhs / lhs; }
 
-int modulo(int rhs, int lhs) { return rhs % lhs; }
+long modulo(long rhs, long lhs) { return rhs % lhs; }
 
 /* "stderr" is a macro and cannot be referred to in libmincaml.S, so */
 /*    this "min_caml_stderr" is used (in place of "__iob+32") for better */

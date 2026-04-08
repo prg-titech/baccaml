@@ -5,23 +5,23 @@
 #include <sys/time.h>
 
 extern void min_caml_start(char *, char *);
-extern void interp_debug(int, int, int);
+extern void interp_debug(long, long, long);
 extern unsigned long get_current_micros(void) asm ("min_caml_get_current_micros");
 
-void interp_debug(int pc, int instr, int sp) {
-  fprintf(stderr, "pc: %d, instr: %d, sp: %d\n", pc, instr, sp);
+void interp_debug(long pc, long instr, long sp) {
+  fprintf(stderr, "pc: %ld, instr: %ld, sp: %ld\n", pc, instr, sp);
   return;
 }
 
 unsigned long get_current_micros() {
   struct timeval current_time;
   gettimeofday(&current_time, NULL);
-  return current_time.tv_sec * (int)1e6 + current_time.tv_usec;
+  return current_time.tv_sec * (long)1e6 + current_time.tv_usec;
 }
 
-int divide(int rhs, int lhs) { return rhs / lhs; }
+long divide(long rhs, long lhs) { return rhs / lhs; }
 
-int modulo(int rhs, int lhs) { return rhs % lhs; }
+long modulo(long rhs, long lhs) { return rhs % lhs; }
 
 /* "stderr" is a macro and cannot be referred to in libmincaml.S, so */
 /*    this "min_caml_stderr" is used (in place of "__iob+32") for better */
