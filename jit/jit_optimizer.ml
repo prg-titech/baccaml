@@ -84,8 +84,9 @@ let run p e reg mem =
       | Green n -> Not_specialized (Ld (id_t, C (n1 + (n2 / x)), x), Red n)
       | Red n -> Not_specialized (Ld (id_t, C (n1 + (n2 / x)), x), Red n))
     | Red n1, Red n2 ->
-      let n = mem.(n1 + n2) in
-      Not_specialized (exp, Red (value_of n)))
+      (* Both base and offset are Red -- cannot resolve at compile time.
+         Emit the load as-is and treat result as Red. *)
+      Not_specialized (exp, Red 0))
   | St (src, dest, offset, x) ->
     let src' = reg.(int_of_id_t src) in
     let dest' = reg.(int_of_id_t dest) in
@@ -116,14 +117,10 @@ let run p e reg mem =
         | Green n -> Not_specialized (St (src, dest, C n, x), Red 0)
         | Red n -> Not_specialized (St (src, dest, offset, x), Red 0)))
     | Red n1, Red n2 ->
-      (match src' with
-      | Green n ->
-        mem.(n1 + n2) <- Red (value_of src');
-        Not_specialized (St (src, dest, C (n1 + n2), x), Red 0)
-      | Red n ->
-        (* [XXX]: PUT isn't worked well *)
-        (* mem.(n1 + n2) <- src'; *)
-        Not_specialized (St (src, dest, offset, x), Red 0)))
+      (* Both destination and offset are Red (runtime-dynamic).
+         Do NOT update simulated memory -- we cannot know the actual
+         address at trace-compile time. Emit the store as-is. *)
+      Not_specialized (St (src, dest, offset, x), Red 0))
   | _ ->
     Asm.print_exp e;
     print_newline ();
