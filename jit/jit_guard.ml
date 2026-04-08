@@ -97,14 +97,22 @@ end = struct
     | Let ((var, typ), (Set n as e), t) when is_pc var ->
       let env = M.add var n env in
       Let ((var, typ), e, insert_guard_occur_at (merge_pc, env) t)
-    | Let ((var, typ), (Add (x, C y) as e), t) when is_pc x ->
+    | Let ((var, typ), (Mov x as e), t) when is_pc var || M.mem x env ->
+      (* Propagate PC value through Mov instructions *)
+      let env =
+        match M.find_opt x env with
+        | Some pc_v -> M.add var pc_v env
+        | None -> env
+      in
+      Let ((var, typ), e, insert_guard_occur_at (merge_pc, env) t)
+    | Let ((var, typ), (Add (x, C y) as e), t) when is_pc x || M.mem x env ->
       (try
          let pc_v = M.find x env in
          let env = M.add var (pc_v + y) env in
          Let ((var, typ), e, insert_guard_occur_at (merge_pc, env) t)
        with
       | Not_found -> raise @@ Not_found' x)
-    | Let ((var, typ), (Sub (x, C y) as e), t) when is_pc x ->
+    | Let ((var, typ), (Sub (x, C y) as e), t) when is_pc x || M.mem x env ->
       (try
          let pc_v = M.find x env in
          let env = M.add var (pc_v - y) env in

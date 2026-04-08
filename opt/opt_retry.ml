@@ -18,8 +18,12 @@ let is_pc x =
 ;;
 
 let rec has_guard_at guard_pc = function
-  | Let (x, GuardAt n, t) -> n = guard_pc
+  | Let (x, GuardAt n, t) -> n = guard_pc || has_guard_at guard_pc t
   | Let (x, e, t) -> has_guard_at guard_pc t
+  | Ans (IfEq (_, _, t1, t2))
+  | Ans (IfLE (_, _, t1, t2))
+  | Ans (IfGE (_, _, t1, t2)) ->
+    has_guard_at guard_pc t1 || has_guard_at guard_pc t2
   | Ans e -> false
 ;;
 
@@ -36,24 +40,26 @@ let rec rename_guard ({ pc; bname } as rg_env) =
   | Ans e -> Ans e
 ;;
 
-(** TODO: Check the value of pc that a guard instruction has, and exec
-    `rename_guard' at that point **)
 let rename ({ pc; bname } as rg_env) trace_fundef =
-  let rec aux rg_env = function
-    | Let (x, e, t) -> Let (x, e, aux rg_env t)
-    | Ans (IfEq (x, y, t1, t2) as e)
-    | Ans (IfLE (x, y, t1, t2) as e)
-    | Ans (IfGE (x, y, t1, t2) as e) ->
-      if Opt_guard.is_guard_path t1 && has_guard_at pc t1
-      then Ans (e <=> (x, y, rename_guard rg_env t1, t2))
-      else if Opt_guard.is_guard_path t2 && has_guard_at pc t2
-      then Ans (e <=> (x, y, t1, rename_guard rg_env t2))
-      else Ans (e <=> (x, y, aux rg_env t1, aux rg_env t2))
-    | Ans e -> Ans e
-  in
-  let { name; args; fargs; body; ret } = trace_fundef in
-  let renamed_body = aux rg_env body in
-  create_fundef ~name ~args ~fargs ~body:renamed_body ~ret
+  (* Only apply rename if this trace actually has a guard at the target PC *)
+  if not (has_guard_at pc trace_fundef.body)
+  then trace_fundef
+  else
+    let rec aux rg_env = function
+      | Let (x, e, t) -> Let (x, e, aux rg_env t)
+      | Ans (IfEq (x, y, t1, t2) as e)
+      | Ans (IfLE (x, y, t1, t2) as e)
+      | Ans (IfGE (x, y, t1, t2) as e) ->
+        if Opt_guard.is_guard_path t1 && has_guard_at pc t1
+        then Ans (e <=> (x, y, rename_guard rg_env t1, t2))
+        else if Opt_guard.is_guard_path t2 && has_guard_at pc t2
+        then Ans (e <=> (x, y, t1, rename_guard rg_env t2))
+        else Ans (e <=> (x, y, aux rg_env t1, aux rg_env t2))
+      | Ans e -> Ans e
+    in
+    let { name; args; fargs; body; ret } = trace_fundef in
+    let renamed_body = aux rg_env body in
+    create_fundef ~name ~args ~fargs ~body:renamed_body ~ret
 ;;
 
 let embed_bridge' bridge_args bridge_body e =
@@ -86,19 +92,22 @@ let rec embed_bridge ~bargs:bridge_args ~bbody:bridge_body = function
 
 let embed { pc; bname } ~mtrace:{ name; args; fargs; body; ret } ~btrace:bridge
   =
-  let rec loop = function
-    | Let (x, e, t) -> Let (x, e, loop t)
-    | Ans (IfEq (x, y, t1, t2) as e)
-    | Ans (IfLE (x, y, t1, t2) as e)
-    | Ans (IfGE (x, y, t1, t2) as e) ->
-      if Opt_guard.is_guard_path t1 && has_guard_at pc t1
-      then Ans (e <=> (x, y, embed_bridge bridge.args bridge.body t1, t2))
-      else if Opt_guard.is_guard_path t2 && has_guard_at pc t2
-      then Ans (e <=> (x, y, t1, embed_bridge bridge.args bridge.body t2))
-      else Ans (e <=> (x, y, loop t1, loop t2))
-    | Ans e -> Ans e
-  in
-  { name; args; fargs; body= loop body; ret }
+  if not (has_guard_at pc body)
+  then { name; args; fargs; body; ret }
+  else
+    let rec loop = function
+      | Let (x, e, t) -> Let (x, e, loop t)
+      | Ans (IfEq (x, y, t1, t2) as e)
+      | Ans (IfLE (x, y, t1, t2) as e)
+      | Ans (IfGE (x, y, t1, t2) as e) ->
+        if Opt_guard.is_guard_path t1 && has_guard_at pc t1
+        then Ans (e <=> (x, y, embed_bridge bridge.args bridge.body t1, t2))
+        else if Opt_guard.is_guard_path t2 && has_guard_at pc t2
+        then Ans (e <=> (x, y, t1, embed_bridge bridge.args bridge.body t2))
+        else Ans (e <=> (x, y, loop t1, loop t2))
+      | Ans e -> Ans e
+    in
+    { name; args; fargs; body= loop body; ret }
 ;;
 
 let%test_module _ =

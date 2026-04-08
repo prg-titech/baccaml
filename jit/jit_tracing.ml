@@ -207,7 +207,7 @@ and tj_if p reg mem env exp =
            (string_of_id_or_imm id_or_imm)
            (value_of r1)
            (value_of r2);
-      Ans (IfEq (id_t, C 200, trace t1, guard t2)))
+      Ans (IfEq (id_t, C Arch.mode_tracing, trace t1, guard t2)))
     else (
       match r1, r2 with
       | Green n1, Green n2 ->
