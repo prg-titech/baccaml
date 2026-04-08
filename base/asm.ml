@@ -373,24 +373,18 @@ let fletd (x, e1, e2) = Let ((x, Type.Float), e1, e2)
 let seq (e1, e2) = Let ((Id.gentmp Type.Unit, Type.Unit), e1, e2)
 
 let regs =
-  (* Array.init 16 (fun i -> Printf.sprintf "%%r%d" i) *)
-  [| "%eax"; "%ebx"; "%ecx"; "%edx"; "%esi"; "%edi" |]
+  [| "%rax"; "%rbx"; "%rcx"; "%rdx"; "%rsi"; "%rdi"
+   ; "%r8"; "%r9"; "%r10"; "%r11"; "%r12"; "%r13" |]
 ;;
 
 let fregs = Array.init 8 (fun i -> Printf.sprintf "%%xmm%d" i)
 let allregs = Array.to_list regs
 let allfregs = Array.to_list fregs
-let reg_cl = regs.(Array.length regs - 1)
-
-(* closure address (caml2html: sparcasm_regcl) *)
-
-(* let reg_sw = regs.(Array.length regs - 1) (* temporary for swap *) let
-   reg_fsw = fregs.(Array.length fregs - 1) (* temporary for swap *) *)
-let reg_sp = "%ebp" (* stack pointer *)
+let reg_cl = regs.(Array.length regs - 1) (* %r13: closure address, callee-saved *)
+let reg_sp = "%rbp" (* stack pointer *)
 
 let reg_hp = "min_caml_hp" (* heap pointer (caml2html: sparcasm_reghp) *)
 
-(* let reg_ra = "%eax" (* return address *) *)
 let is_reg x = x.[0] = '%' || x = reg_hp
 
 (* super-tenuki *)
@@ -450,4 +444,4 @@ let rec concat e1 xt e2 =
   | Let (yt, exp, e1') -> Let (yt, exp, concat e1' xt e2)
 ;;
 
-let align i = if i mod 8 = 0 then i else i + 4
+let align i = Arch.align i

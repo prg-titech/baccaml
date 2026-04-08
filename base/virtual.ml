@@ -31,8 +31,8 @@ let expand xts ini addf addi =
     ini
     (fun (offset, acc) x ->
       let offset = align offset in
-      offset + 8, addf x offset acc)
-    (fun (offset, acc) x t -> offset + 4, addi x t offset acc)
+      offset + Arch.float_size, addf x offset acc)
+    (fun (offset, acc) x t -> offset + Arch.int_size, addi x t offset acc)
 ;;
 
 (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
@@ -111,7 +111,7 @@ let rec g env = function
     let offset, store_fv =
       expand
         (List.map (fun y -> y, M.find y env) ys)
-        (4, e2')
+        (Arch.pointer_size, e2')
         (fun y offset store_fv -> seq (StDF (y, x, C offset, 1), store_fv))
         (fun y _ offset store_fv -> seq (St (y, x, C offset, 1), store_fv))
     in
@@ -167,14 +167,14 @@ let rec g env = function
     (* 配列の読み出し (caml2html: virtual_get) *)
     (match M.find x env with
     | Type.Array Type.Unit -> Ans Nop
-    | Type.Array Type.Float -> Ans (LdDF (x, V y, 8))
-    | Type.Array _ -> Ans (Ld (x, V y, 4))
+    | Type.Array Type.Float -> Ans (LdDF (x, V y, Arch.float_size))
+    | Type.Array _ -> Ans (Ld (x, V y, Arch.int_size))
     | _ -> assert false)
   | Closure.Put (x, y, z) ->
     (match M.find x env with
     | Type.Array Type.Unit -> Ans Nop
-    | Type.Array Type.Float -> Ans (StDF (z, x, V y, 8))
-    | Type.Array _ -> Ans (St (z, x, V y, 4))
+    | Type.Array Type.Float -> Ans (StDF (z, x, V y, Arch.float_size))
+    | Type.Array _ -> Ans (St (z, x, V y, Arch.int_size))
     | _ -> assert false)
   | Closure.ExtArray (Id.L x) -> Ans (SetL (Id.L ("min_caml_" ^ x)))
 ;;
@@ -191,7 +191,7 @@ let h
   let offset, load =
     expand
       zts
-      (4, g (M.add x t (M.add_list yts (M.add_list zts M.empty))) e)
+      (Arch.pointer_size, g (M.add x t (M.add_list yts (M.add_list zts M.empty))) e)
       (fun z offset load -> fletd (z, LdDF (x, C offset, 1), load))
       (fun z t offset load -> Let ((z, t), Ld (x, C offset, 1), load))
   in
